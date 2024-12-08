@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --color-primary: #1E3A8A; /* الأزرق الداكن */
+    --color-secondary: #FFC107; /* الذهبي */
+    --color-background: #F8F9FA; /* الخلفية الفاتحة */
+    --color-text: #212529; /* النص الأسود */
+}
+
+body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+a {
+    color: var(--color-primary);
+}
+
+a:hover {
+    color: var(--color-secondary);
+}
+
+button {
+    background-color: var(--color-primary);
+    color: #ffffff;
+}
+
+button:hover {
+    background-color: var(--color-secondary);
+    color: #000000;
+}
+
+.card {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
