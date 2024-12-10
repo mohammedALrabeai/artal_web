@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\AttendanceController;
 
 
 
@@ -41,6 +42,39 @@ Route::middleware(['auth:employee'])->group(function () {
 Route::middleware('auth:employee')->group(function () {
     Route::get('employee/schedule', [EmployeeController::class, 'schedule']);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+Route::middleware('auth:employee')->group(function () {
+    Route::post('employee/attendance/check-in', [AttendanceController::class, 'checkIn']);
+    Route::post('employee/attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::get('employee/attendance', [AttendanceController::class, 'index']);
+    Route::get('attendances/filter', [AttendanceController::class, 'filter']);
+
+});
+// Route::middleware('auth:employee')->group(function () {
+//     Route::post('/employee/check-in', [AttendanceController::class, 'checkIn']);
+//     Route::post('/employee/check-out', [AttendanceController::class, 'checkOut']);
+// });
+
+Route::middleware('auth:employee')->group(function () {
+    Route::post('/employee/attendance', [AttendanceController::class, 'markAttendance']);
+});
+
+
+
+
+
+
 
 
 

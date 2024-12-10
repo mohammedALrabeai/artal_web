@@ -78,6 +78,21 @@ public static function getNavigationGroup(): ?string
                     'leave' => __('On Leave'),
                 ])
                 ->required(),
+
+                   // ساعات العمل
+            Forms\Components\TextInput::make('work_hours')
+            ->label(__('Work Hours'))
+            ->numeric()
+            ->required(false),
+
+        // ملاحظات الموظف
+        Forms\Components\Textarea::make('notes')
+            ->label(__('Notes'))
+            ->rows(3),
+
+        // تسجيل ما إذا كان الموظف متأخرًا أم لا
+        Forms\Components\Checkbox::make('is_late')
+            ->label(__('Is Late')),
         ]);
     }
     
@@ -116,6 +131,20 @@ public static function getNavigationGroup(): ?string
                     'success' => fn ($state) => $state === __('Present'),
                     'danger' => fn ($state) => $state === __('Absent'),
                     'warning' => fn ($state) => $state === __('On Leave'),
+                ]),
+
+                Tables\Columns\TextColumn::make('work_hours')
+                ->label(__('Work Hours')),
+
+            Tables\Columns\TextColumn::make('notes')
+                ->label(__('Notes')),
+
+                Tables\Columns\BadgeColumn::make('is_late')
+                ->label(__('Is Late'))
+                ->getStateUsing(fn ($record) => $record->is_late ? __('Yes') : __('No'))
+                ->colors([
+                    'danger' => fn ($state) => $state === __('Yes'),
+                    'success' => fn ($state) => $state === __('No')
                 ]),
         ])
         ->filters([
