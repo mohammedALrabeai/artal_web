@@ -147,9 +147,14 @@ public function filter(Request $request)
     }
 
     try {
+             // تعديل التاريخين لضبط الوقت
+             $startDateTime = $startDate . ' 00:00:00';
+             $endDateTime = $endDate . ' 23:59:59';
+            //  echo $startDateTime;
+            //  echo $endDateTime;
         // استرجاع السجلات من قاعدة البيانات بناءً على الفترة الزمنية
         $attendances = Attendance::where('employee_id', $user->id)
-        ->whereBetween('created_at', [$startDate, $endDate])
+        ->whereBetween('created_at', [$startDateTime, $endDateTime])
         ->get();
         return response()->json([
             'message' => 'Attendances retrieved successfully',
