@@ -83,6 +83,7 @@ class AttendanceController extends Controller
 {
     $employee = $request->user();
     $date = Carbon::now()->toDateString();
+    $currentDateTime = Carbon::now();
 
     // تسجيل البيانات المطلوبة
     $attendance = Attendance::firstOrCreate(
@@ -90,6 +91,7 @@ class AttendanceController extends Controller
         [
             'zone_id' => $request->zone_id,
             'check_in' => Carbon::now()->toTimeString(),
+            'check_in_datetime' => $currentDateTime,
             'status' => 'present',
             'is_late' => Carbon::now()->gt(Carbon::createFromFormat('H:i', $request->input('expected_start_time'))),
             'notes' => $request->input('notes'),
@@ -102,28 +104,74 @@ class AttendanceController extends Controller
     ]);
 }
 
+// public function checkOut(Request $request)
+// {
+//     $employee = $request->user();
+//     $date = Carbon::now()->toDateString();
+
+//     $currentDateTime = Carbon::now();
+
+//     $attendance = Attendance::where('employee_id', $employee->id)->where('date', $date)->first();
+
+//     if (!$attendance || !$attendance->check_in) {
+//         return response()->json(['message' => 'Cannot check-out without check-in.'], 400);
+//     }
+
+//     if ($attendance->check_out) {
+//         return response()->json(['message' => 'Already checked out.'], 400);
+//     }
+
+//     $currentTime = Carbon::now()->toTimeString();
+
+//     // حساب ساعات العمل
+//     $workHours = Carbon::parse($attendance->check_in)->diffInMinutes(Carbon::now()) / 60;
+
+//     $attendance->update([
+//         'check_out' => $currentTime,
+//         'work_hours' => $workHours,
+//         'notes' => $attendance->notes . ' | ' . $request->input('notes'),
+//     ]);
+
+//     return response()->json([
+//         'message' => 'Checked out successfully.',
+//         'attendance' => $attendance,
+//     ]);
+// }
+
 public function checkOut(Request $request)
 {
     $employee = $request->user();
-    $date = Carbon::now()->toDateString();
+    $currentDateTime = Carbon::now();
 
-    $attendance = Attendance::where('employee_id', $employee->id)->where('date', $date)->first();
+    // تحديد اليوم الحالي واليوم السابق
+    $today = $currentDateTime->toDateString();
+    $yesterday = $currentDateTime->copy()->subDay()->toDateString();
 
-    if (!$attendance || !$attendance->check_in) {
+    // البحث عن الحضور لهذا اليوم أو اليوم السابق
+    $attendance = Attendance::where('employee_id', $employee->id)
+        ->where(function ($query) use ($today, $yesterday) {
+            $query->where('date', $today)
+                  ->orWhere('date', $yesterday);
+        })
+        ->whereNotNull('check_in_datetime') // التأكد من وجود وقت الحضور
+        ->latest('check_in_datetime') // جلب آخر سجل حضور
+        ->first();
+
+    if (!$attendance) {
         return response()->json(['message' => 'Cannot check-out without check-in.'], 400);
     }
 
-    if ($attendance->check_out) {
+    if ($attendance->check_out || $attendance->check_out_datetime) {
         return response()->json(['message' => 'Already checked out.'], 400);
     }
 
-    $currentTime = Carbon::now()->toTimeString();
+    // حساب ساعات العمل بناءً على وقت الحضور
+    $workHours = Carbon::parse($attendance->check_in_datetime)->diffInMinutes($currentDateTime) / 60;
 
-    // حساب ساعات العمل
-    $workHours = Carbon::parse($attendance->check_in)->diffInMinutes(Carbon::now()) / 60;
-
+    // تحديث بيانات الانصراف
     $attendance->update([
-        'check_out' => $currentTime,
+        'check_out' => $currentDateTime->toTimeString(), // العمود القديم
+        'check_out_datetime' => $currentDateTime, // العمود الجديد
         'work_hours' => $workHours,
         'notes' => $attendance->notes . ' | ' . $request->input('notes'),
     ]);
@@ -133,6 +181,7 @@ public function checkOut(Request $request)
         'attendance' => $attendance,
     ]);
 }
+
 
 
 public function filter(Request $request)

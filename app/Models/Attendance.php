@@ -12,9 +12,12 @@ class Attendance extends Model
         'employee_id',
         'zone_id',
         'shift_id',
+
         'date',
         'check_in',
+        'check_in_datetime',
         'check_out',
+        'check_out_datetime',
         'status',
         'work_hours', 'notes', 'is_late'
     ];

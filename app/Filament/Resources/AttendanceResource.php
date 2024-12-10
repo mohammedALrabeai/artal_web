@@ -103,9 +103,16 @@ public static function getNavigationGroup(): ?string
     
             Forms\Components\TimePicker::make('check_in')
                 ->label(__('Check In')),
-    
+            Forms\Components\DateTimePicker::make('check_in_datetime')
+                ->label(__('Check In Datetime'))
+                ->required(false)
+            ,
             Forms\Components\TimePicker::make('check_out')
                 ->label(__('Check Out')),
+            Forms\Components\DateTimePicker::make('check_out_datetime')
+                ->label(__('Check Out Datetime'))
+                ->required(false)
+               ,
     
             Forms\Components\Select::make('status')
                 ->label(__('Status'))
@@ -155,8 +162,16 @@ public static function getNavigationGroup(): ?string
             Tables\Columns\TextColumn::make('check_in')
                 ->label(__('Check In')),
     
+            Tables\Columns\TextColumn::make('check_in_datetime')
+                ->label(__('Check In Datetime'))
+                ->toggleable(isToggledHiddenByDefault: true),
+    
             Tables\Columns\TextColumn::make('check_out')
                 ->label(__('Check Out')),
+    
+            Tables\Columns\TextColumn::make('check_out_datetime')
+                ->label(__('Check Out Datetime'))
+                ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\BadgeColumn::make('status')
                 ->label(__('Status'))
                 ->getStateUsing(function ($record) {
