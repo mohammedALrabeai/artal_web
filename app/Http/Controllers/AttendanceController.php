@@ -153,7 +153,7 @@ public function filter(Request $request)
             //  echo $startDateTime;
             //  echo $endDateTime;
         // استرجاع السجلات من قاعدة البيانات بناءً على الفترة الزمنية
-        $attendances = Attendance::where('employee_id', $user->id)
+        $attendances = Attendance::with('zone')->where('employee_id', $user->id)
         ->whereBetween('created_at', [$startDateTime, $endDateTime])
         ->get();
         return response()->json([

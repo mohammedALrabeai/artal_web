@@ -6,6 +6,8 @@ use Filament\Forms;
 use Filament\Tables;
 use Filament\Forms\Form;
 use App\Models\Attendance;
+use App\Models\Shift;
+use Filament\Forms\Components\Select;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
@@ -57,12 +59,47 @@ public static function getNavigationGroup(): ?string
                 ->label(__('Date'))
                 ->required(),
     
-                Forms\Components\Select::make('zone_id')
-                ->label(__('Zone'))
-                ->options(\App\Models\Zone::all()->pluck('name', 'id'))
-                ->searchable()
-                ->required(),
-            
+                // Forms\Components\Select::make('zone_id')
+                // ->label(__('Zone'))
+                // ->options(\App\Models\Zone::all()->pluck('name', 'id'))
+                // ->searchable()
+                // ->required(),
+                // Forms\Components\Select::make('shift_id')
+                // ->label(__('Shift'))
+                // ->relationship('shift', 'name')
+                // ->required(),
+                
+                 // اختيار الموقع
+        Select::make('zone_id')
+        ->label(__('Zone'))
+         ->options(\App\Models\Zone::all()->pluck('name', 'id'))
+
+        // ->options(function (callable $get) {
+        //     $projectId = $get('project_id');
+        //     if (!$projectId) {
+        //         return [];
+        //     }
+        //     return \App\Models\Zone::where('project_id', $projectId)->pluck('name', 'id');
+        // })
+        ->searchable()
+        ->required()
+        ->reactive()
+        ->afterStateUpdated(function (callable $set) {
+            $set('shift_id', null); // إعادة تعيين اختيار الوردية عند تغيير الموقع
+        }),
+
+    // اختيار الوردية
+    Select::make('shift_id')
+        ->label(__('Shift'))
+        ->options(function (callable $get) {
+            $zoneId = $get('zone_id');
+            if (!$zoneId) {
+                return [];
+            }
+            return \App\Models\Shift::where('zone_id', $zoneId)->pluck('name', 'id');
+        })
+        ->searchable()
+        ->required(),
     
             Forms\Components\TimePicker::make('check_in')
                 ->label(__('Check In')),
@@ -111,6 +148,9 @@ public static function getNavigationGroup(): ?string
                 Tables\Columns\TextColumn::make('zone.name')
                 ->label(__('Zone'))
                 ->searchable(),
+                Tables\Columns\TextColumn::make('shift.name')
+                ->label(__('Shift'))
+                ->searchable(),
     
             Tables\Columns\TextColumn::make('check_in')
                 ->label(__('Check In')),
@@ -152,6 +192,10 @@ public static function getNavigationGroup(): ?string
                 Tables\Filters\Filter::make('present_status')
                 ->query(fn (Builder $query) => $query->where('status', 'present'))
                 ->label(__('Present')),
+
+                SelectFilter::make('shift_id')
+                ->label('Shift')
+                ->options(Shift::all()->pluck('name', 'id')->toArray()),
              
 
                 SelectFilter::make('status')

@@ -11,6 +11,7 @@ class Attendance extends Model
     protected $fillable = [
         'employee_id',
         'zone_id',
+        'shift_id',
         'date',
         'check_in',
         'check_out',
@@ -26,5 +27,10 @@ class Attendance extends Model
     public function zone()
     {
         return $this->belongsTo(Zone::class);
+    }
+
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
     }
 }
