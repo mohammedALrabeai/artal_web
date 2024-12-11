@@ -87,5 +87,10 @@ class Shift extends Model
             }
             return null;
         }
+
+        public function attendances()
+        {
+            return $this->hasMany(Attendance::class);
+        }
         
 }

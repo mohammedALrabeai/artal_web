@@ -8,6 +8,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AreaController;
 
 
 
@@ -71,6 +72,15 @@ Route::middleware('auth:employee')->group(function () {
 });
 
 
+
+
+
+
+
+
+
+
+Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
 
 
 
