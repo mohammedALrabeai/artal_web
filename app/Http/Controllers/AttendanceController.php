@@ -91,6 +91,7 @@ class AttendanceController extends Controller
         [
             'zone_id' => $request->zone_id,
             'shift_id' => $request->shift_id,
+            'ismorning'=>$request->ismorning,
             'check_in' => Carbon::now()->toTimeString(),
             'check_in_datetime' => $currentDateTime,
             'status' => 'present',

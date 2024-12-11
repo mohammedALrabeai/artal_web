@@ -100,6 +100,15 @@ public static function getNavigationGroup(): ?string
         })
         ->searchable()
         ->required(),
+        Forms\Components\Select::make('ismorning')
+        ->label(__('Time of Day')) // يمكن تغيير النص حسب الحاجة
+        ->options([
+            true => __('Morning'),  // صباحًا
+            false => __('Evening'), // مساءً
+        ])
+        ->nullable() // للسماح بالقيمة الافتراضية null
+        ->default(null) // إذا كنت تريد قيمة افتراضية
+        ->required(),
     
             Forms\Components\TimePicker::make('check_in')
                 ->label(__('Check In')),
@@ -158,6 +167,15 @@ public static function getNavigationGroup(): ?string
                 Tables\Columns\TextColumn::make('shift.name')
                 ->label(__('Shift'))
                 ->searchable(),
+                Tables\Columns\TextColumn::make('ismorning')
+                ->label(__('Time of Day'))
+                ->formatStateUsing(function ($state) {
+                    if (is_null($state)) {
+                        return __(''); // عرض فارغ إذا كانت القيمة null
+                    }
+                    return $state ? __('Morning') : __('Evening'); // صباحي أو مسائي
+                }),
+            
     
             Tables\Columns\TextColumn::make('check_in')
                 ->label(__('Check In')),
@@ -211,8 +229,19 @@ public static function getNavigationGroup(): ?string
                 SelectFilter::make('shift_id')
                 ->label('Shift')
                 ->options(Shift::all()->pluck('name', 'id')->toArray()),
-             
-
+              
+              
+                SelectFilter::make('ismorning')
+                ->options([
+                    true => 'صباح',
+                    false => 'مساء',
+                ]),
+            
+            
+            
+            
+            
+            
                 SelectFilter::make('status')
     ->label(__('Status'))
     ->options([

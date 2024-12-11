@@ -14,6 +14,7 @@ class Attendance extends Model
         'shift_id',
 
         'date',
+        'ismorning',
         'check_in',
         'check_in_datetime',
         'check_out',
