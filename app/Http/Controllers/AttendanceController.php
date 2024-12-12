@@ -82,8 +82,8 @@ class AttendanceController extends Controller
     public function checkIn(Request $request)
 {
     $employee = $request->user();
-    $date = Carbon::now()->toDateString();
-    $currentDateTime = Carbon::now();
+    $date = Carbon::now('Asia/Riyadh')->toDateString();
+    $currentDateTime = Carbon::now('Asia/Riyadh');
 
     // تسجيل البيانات المطلوبة
     $attendance = Attendance::firstOrCreate(
@@ -92,10 +92,10 @@ class AttendanceController extends Controller
             'zone_id' => $request->zone_id,
             'shift_id' => $request->shift_id,
             'ismorning'=>$request->ismorning,
-            'check_in' => Carbon::now()->toTimeString(),
+            'check_in' => Carbon::now('Asia/Riyadh')->toTimeString(),
             'check_in_datetime' => $currentDateTime,
             'status' => 'present',
-            'is_late' => Carbon::now()->gt(Carbon::createFromFormat('H:i', $request->input('expected_start_time'))),
+            'is_late' => Carbon::now('Asia/Riyadh')->gt(Carbon::createFromFormat('H:i', $request->input('expected_start_time'))),
             'notes' => $request->input('notes'),
         ]
     );
@@ -143,7 +143,7 @@ class AttendanceController extends Controller
 public function checkOut(Request $request)
 {
     $employee = $request->user();
-    $currentDateTime = Carbon::now();
+    $currentDateTime = Carbon::now('Asia/Riyadh');
 
     // تحديد اليوم الحالي واليوم السابق
     $today = $currentDateTime->toDateString();
