@@ -55,6 +55,10 @@ class ProjectResource extends Resource
                 Forms\Components\DatePicker::make('start_date')
                     ->required(),
                 Forms\Components\DatePicker::make('end_date'),
+                Forms\Components\TextInput::make('emp_no')
+                ->label(__('Number of Employees'))
+                ->numeric()
+                ->required(),
             ]);
     }
 
@@ -72,6 +76,9 @@ class ProjectResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('end_date')
                     ->date()
+                    ->sortable(),
+                    Tables\Columns\TextColumn::make('emp_no')
+                    ->label(__('Number of Employees'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

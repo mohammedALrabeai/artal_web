@@ -14,6 +14,7 @@ class Project extends Model
         'area_id',
         'start_date',
         'end_date',
+        'emp_no'
     ];
 
     // علاقة مع المنطقة

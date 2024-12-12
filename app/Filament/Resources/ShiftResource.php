@@ -144,6 +144,27 @@ class ShiftResource extends Resource
                 Tables\Columns\BooleanColumn::make('status')
                     ->label(__('Active'))
                     ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('last_entry_time')
+                    ->label(__('Last Entry Time (Minutes)'))
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('early_exit_time')
+                    ->label(__('Early Exit Time (Minutes)'))
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('last_time_out')
+                    ->label(__('Last Time Out (Minutes)'))
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('start_date')
+                    ->label(__('Start Date'))
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('emp_no')
+                    ->label(__('Number of Employees'))
+                    ->sortable(),
+
             ])
             ->filters([
                 SelectFilter::make('zone_id')

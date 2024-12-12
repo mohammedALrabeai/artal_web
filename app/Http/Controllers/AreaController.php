@@ -73,6 +73,7 @@ class AreaController extends Controller
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
+                        'emp_no' => $project->emp_no,
                         'zones' => $project->zones->map(function ($zone) use ($currentTime) {
                             $shifts = $zone->shifts->map(function ($shift) use ($currentTime) {
                                 $isCurrentShift = $this->isCurrentShift($shift, $currentTime);
