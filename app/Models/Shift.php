@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Shift extends Model
 {
@@ -92,5 +93,43 @@ class Shift extends Model
         {
             return $this->hasMany(Attendance::class);
         }
+
+
+     public function isWorkingDay()
+{
+    // استرجاع المنطقة المرتبطة بالوردية
+    $zone = $this->zone;
+
+    if (!$zone || !$zone->pattern) {
+        // إذا لم تكن هناك بيانات كافية
+        return null;
+    }
+
+    $pattern = $zone->pattern;
+
+    $workingDays = $pattern->working_days;
+    $offDays = $pattern->off_days;
+
+    // التأكد من وجود بيانات صالحة
+    if ($workingDays === null || $offDays === null || $workingDays <= 0) {
+        return null;
+    }
+
+    // دورة العمل = عدد أيام العمل + الإجازة
+    $cycleLength = $workingDays + $offDays;
+
+    // تاريخ بداية الوردية
+    $startDate = Carbon::parse($this->start_date);
+
+    // عدد الأيام منذ تاريخ البداية
+    $daysSinceStart = $startDate->diffInDays(Carbon::today());
+
+    // حساب اليوم الحالي داخل الدورة
+    $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+    // إذا كان اليوم الحالي أقل من عدد أيام العمل، فهو يوم عمل
+    return $currentDayInCycle < $workingDays;
+}
+
         
 }

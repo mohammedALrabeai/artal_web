@@ -58,14 +58,13 @@ class AreaController extends Controller
 
         return response()->json($data);
     }
-
     public function getAreasWithDetails2()
     {
         // تعيين التوقيت إلى توقيت الرياض
         $currentTime = Carbon::now('Asia/Riyadh');
-
+    
         $areas = Area::with(['projects.zones.shifts.attendances'])->get();
-
+    
         $data = $areas->map(function ($area) use ($currentTime) {
             return [
                 'id' => $area->id,
@@ -76,15 +75,15 @@ class AreaController extends Controller
                         'name' => $project->name,
                         'emp_no' => $project->emp_no,
                         'zones' => $project->zones->map(function ($zone) use ($currentTime) {
-                            $shifts = $zone->shifts->map(function ($shift) use ($currentTime) {
-                                $isCurrentShift = $this->isCurrentShift($shift, $currentTime);
-
+                            $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
+                                $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $zone);
+    
                                 // تعداد الحضور في الشفت الحالي لهذا اليوم
                                 $attendanceCount = $shift->attendances
                                     ->where('status', 'present')
                                     ->where('date', Carbon::today('Asia/Riyadh')->toDateString())
                                     ->count();
-
+    
                                 return [
                                     'id' => $shift->id,
                                     'name' => $shift->name,
@@ -94,9 +93,9 @@ class AreaController extends Controller
                                     'emp_no' => $shift->emp_no,
                                 ];
                             });
-
+    
                             $currentShift = $shifts->where('is_current_shift', true)->first();
-
+    
                             return [
                                 'id' => $zone->id,
                                 'name' => $zone->name,
@@ -109,17 +108,26 @@ class AreaController extends Controller
                 }),
             ];
         });
-
+    
         return response()->json($data);
     }
-
-    private function isCurrentShift($shift, $currentTime)
+    
+    private function isCurrentShift($shift, $currentTime, $zone)
     {
+        // تحقق من إذا كان اليوم يوم عمل
+        $isWorkingDay = $shift->isWorkingDay();
+    
+        // تحقق من أوقات الشفت
         $morningStart = Carbon::createFromTimeString($shift->morning_start, 'Asia/Riyadh');
         $morningEnd = Carbon::createFromTimeString($shift->morning_end, 'Asia/Riyadh');
         $eveningStart = Carbon::createFromTimeString($shift->evening_start, 'Asia/Riyadh');
         $eveningEnd = Carbon::createFromTimeString($shift->evening_end, 'Asia/Riyadh');
-
-        return $currentTime->between($morningStart, $morningEnd) || $currentTime->between($eveningStart, $eveningEnd);
+    
+        $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd) || $currentTime->between($eveningStart, $eveningEnd);
+    
+        // الشرط النهائي
+        return $isWorkingDay && $isWithinShiftTime;
     }
-}
+    
+
+    }
