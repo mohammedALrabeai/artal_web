@@ -11,7 +11,8 @@ class AreaController extends Controller
 {
     public function getAreasWithDetails()
     {
-        $currentTime = Carbon::now();
+        // تعيين التوقيت إلى توقيت الرياض
+        $currentTime = Carbon::now('Asia/Riyadh');
 
         $areas = Area::with(['projects.zones.shifts.attendances'])->get();
 
@@ -26,10 +27,10 @@ class AreaController extends Controller
                         'zones' => $project->zones->map(function ($zone) use ($currentTime) {
                             // الشفت الحالي
                             $currentShift = $zone->shifts->filter(function ($shift) use ($currentTime) {
-                                $morningStart = Carbon::createFromTimeString($shift->morning_start);
-                                $morningEnd = Carbon::createFromTimeString($shift->morning_end);
-                                $eveningStart = Carbon::createFromTimeString($shift->evening_start);
-                                $eveningEnd = Carbon::createFromTimeString($shift->evening_end);
+                                $morningStart = Carbon::createFromTimeString($shift->morning_start, 'Asia/Riyadh');
+                                $morningEnd = Carbon::createFromTimeString($shift->morning_end, 'Asia/Riyadh');
+                                $eveningStart = Carbon::createFromTimeString($shift->evening_start, 'Asia/Riyadh');
+                                $eveningEnd = Carbon::createFromTimeString($shift->evening_end, 'Asia/Riyadh');
 
                                 return ($currentTime->between($morningStart, $morningEnd) || $currentTime->between($eveningStart, $eveningEnd));
                             })->first();
@@ -58,10 +59,10 @@ class AreaController extends Controller
         return response()->json($data);
     }
 
-
     public function getAreasWithDetails2()
     {
-        $currentTime = Carbon::now();
+        // تعيين التوقيت إلى توقيت الرياض
+        $currentTime = Carbon::now('Asia/Riyadh');
 
         $areas = Area::with(['projects.zones.shifts.attendances'])->get();
 
@@ -78,13 +79,11 @@ class AreaController extends Controller
                             $shifts = $zone->shifts->map(function ($shift) use ($currentTime) {
                                 $isCurrentShift = $this->isCurrentShift($shift, $currentTime);
 
-                                // $attendanceCount = $shift->attendances
-                                //     ->where('status', 'present')
-                                //     ->count();
+                                // تعداد الحضور في الشفت الحالي لهذا اليوم
                                 $attendanceCount = $shift->attendances
-    ->where('status', 'present')
-    ->where('date', Carbon::today()->toDateString())
-    ->count();
+                                    ->where('status', 'present')
+                                    ->where('date', Carbon::today('Asia/Riyadh')->toDateString())
+                                    ->count();
 
                                 return [
                                     'id' => $shift->id,
@@ -116,13 +115,11 @@ class AreaController extends Controller
 
     private function isCurrentShift($shift, $currentTime)
     {
-        $morningStart = Carbon::createFromTimeString($shift->morning_start);
-        $morningEnd = Carbon::createFromTimeString($shift->morning_end);
-        $eveningStart = Carbon::createFromTimeString($shift->evening_start);
-        $eveningEnd = Carbon::createFromTimeString($shift->evening_end);
+        $morningStart = Carbon::createFromTimeString($shift->morning_start, 'Asia/Riyadh');
+        $morningEnd = Carbon::createFromTimeString($shift->morning_end, 'Asia/Riyadh');
+        $eveningStart = Carbon::createFromTimeString($shift->evening_start, 'Asia/Riyadh');
+        $eveningEnd = Carbon::createFromTimeString($shift->evening_end, 'Asia/Riyadh');
 
         return $currentTime->between($morningStart, $morningEnd) || $currentTime->between($eveningStart, $eveningEnd);
     }
-
-
 }
