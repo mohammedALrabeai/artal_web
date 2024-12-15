@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Attendance;
+use App\Models\EmployeeProjectRecord;
+
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -186,6 +188,83 @@ public function checkOut(Request $request)
 
 
 
+public function syncCheckIn(Request $request)
+{
+    $employee = $request->user();
+    // $date = Carbon::now('Asia/Riyadh')->toDateString();
+    // $currentDateTime = Carbon::now('Asia/Riyadh');
+    $currentDateTime =  Carbon::parse($request->check_in_time);
+    $date = $currentDateTime->toDateString();
+
+    // تسجيل البيانات المطلوبة
+    $attendance = Attendance::firstOrCreate(
+        ['employee_id' => $employee->id, 'date' => $date],
+        [
+            'zone_id' => $request->zone_id,
+            'shift_id' => $request->shift_id,
+            'ismorning'=>$request->ismorning,
+            'check_in' => $currentDateTime->toTimeString(),
+            'check_in_datetime' => $currentDateTime,
+            'status' => 'present',
+            'is_late' => $currentDateTime->gt(Carbon::createFromFormat('H:i', $request->input('expected_start_time'))),
+            'notes' => $request->input('notes'),
+        ]
+    );
+
+    return response()->json([
+        'message' => 'Checked in successfully.',
+        'attendance' => $attendance,
+    ]);
+}
+
+
+public function syncCheckOut(Request $request)
+{
+    $employee = $request->user();
+    // $currentDateTime = Carbon::now('Asia/Riyadh');
+    $currentDateTime =  Carbon::parse($request->check_out_time);
+
+    // تحديد اليوم الحالي واليوم السابق
+    $today = $currentDateTime->toDateString();
+    $yesterday = $currentDateTime->copy()->subDay()->toDateString();
+
+    // البحث عن الحضور لهذا اليوم أو اليوم السابق
+    $attendance = Attendance::where('employee_id', $employee->id)
+        ->where(function ($query) use ($today, $yesterday) {
+            $query->where('date', $today)
+                  ->orWhere('date', $yesterday);
+        })
+        ->whereNotNull('check_in_datetime') // التأكد من وجود وقت الحضور
+        ->latest('check_in_datetime') // جلب آخر سجل حضور
+        ->first();
+
+    if (!$attendance) {
+        return response()->json(['message' => 'Cannot check-out without check-in.'], 400);
+    }
+
+    if ($attendance->check_out || $attendance->check_out_datetime) {
+        return response()->json(['message' => 'Already checked out.'], 400);
+    }
+
+    // حساب ساعات العمل بناءً على وقت الحضور
+    $workHours = Carbon::parse($attendance->check_in_datetime)->diffInMinutes($currentDateTime) / 60;
+
+    // تحديث بيانات الانصراف
+    $attendance->update([
+        'check_out' => $currentDateTime->toTimeString(), // العمود القديم
+        'check_out_datetime' => $currentDateTime, // العمود الجديد
+        'work_hours' => $workHours,
+        'notes' => $attendance->notes . ' | ' . $request->input('notes'),
+    ]);
+
+    return response()->json([
+        'message' => 'Checked out successfully.',
+        'attendance' => $attendance,
+    ]);
+}
+
+
+
 public function filter(Request $request)
 {
     $user = $request->user();
@@ -216,5 +295,69 @@ public function filter(Request $request)
         return response()->json(['message' => 'Failed to fetch records', 'error' => $e->getMessage()], 500);
     }
 }
+
+
+public function getAttendanceStatus(Request $request)
+    {
+        // التحقق من المدخلات
+        $request->validate([
+            'project_id' => 'required|integer',
+            'zone_id' => 'required|integer',
+            'shift_id' => 'required|integer',
+            'date' => 'required|date', // تأكد أن التاريخ موجود وصحيح
+        ]);
+
+        // جلب البيانات من المدخلات
+        $projectId = $request->input('project_id');
+        $zoneId = $request->input('zone_id');
+        $shiftId = $request->input('shift_id');
+        $date = Carbon::parse($request->input('date'));
+
+        // جلب الموظفين المرتبطين بالمشروع، الموقع، والوردية
+        $employeeRecords = EmployeeProjectRecord::with('employee')
+            ->where('project_id', $projectId)
+            ->where('zone_id', $zoneId)
+            ->where('shift_id', $shiftId)
+            ->where(function ($query) use ($date) {
+                $query->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $date);
+            })
+            ->where('start_date', '<=', $date)
+            ->get();
+
+        // قائمة الموظفين
+        $employees = $employeeRecords->map(function ($record) {
+            return $record->employee;
+        });
+
+        // جلب حالات التحضير من جدول Attendance
+        $attendanceRecords = Attendance::where('zone_id', $zoneId)
+            ->where('shift_id', $shiftId)
+            ->whereDate('date', $date)
+            ->get();
+
+        // بناء النتيجة النهائية
+        $result = $employees->map(function ($employee) use ($attendanceRecords) {
+            $attendance = $attendanceRecords->firstWhere('employee_id', $employee->id);
+
+            return [
+                'employee_id' => $employee->id,
+                'employee_name' => $employee->first_name . ' ' . $employee->father_name . ' ' . $employee->family_name,
+                'status' => $attendance ? $attendance->status : 'absent', // حالة الموظف
+                'check_in' => $attendance ? $attendance->check_in : null,
+                'check_out' => $attendance ? $attendance->check_out : null,
+                'mobile_number' => $employee->mobile_number,
+                'phone_number' => $employee->phone_number,
+                'notes' => $attendance ? $attendance->notes : null,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $result,
+        ]);
+    }
+
+
 
 }

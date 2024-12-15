@@ -16,6 +16,8 @@ use App\Http\Controllers\AreaController;
 
 
 
+
+
 Route::post('/employee/login', [EmployeeAuthController::class, 'login']);
 Route::post('/employee/verify-otp', [EmployeeAuthController::class, 'verifyOtp']);
 Route::post('employee/check-device-approval', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'checkDeviceApproval']);
@@ -58,6 +60,8 @@ Route::middleware('auth:employee')->group(function () {
 Route::middleware('auth:employee')->group(function () {
     Route::post('employee/attendance/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('employee/attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::post('employee/attendance/sync-check-in', [AttendanceController::class, 'syncCheckIn']);
+    Route::post('employee/attendance/sync-check-out', [AttendanceController::class, 'syncCheckOut']);
     Route::get('employee/attendance', [AttendanceController::class, 'index']);
     Route::get('attendances/filter', [AttendanceController::class, 'filter']);
 
@@ -83,6 +87,8 @@ Route::middleware('auth:employee')->group(function () {
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
 
 
+
+Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 
 
 
