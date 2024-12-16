@@ -107,7 +107,7 @@ class EmployeeResource extends Resource
                         ->required(),
                         Forms\Components\DatePicker::make('contract_end')
     ->label(__('Contract End'))
-    ->required()
+    
     ->minDate(now()) // لضمان اختيار تاريخ مستقبلي
     ->displayFormat('Y-m-d')
     ->placeholder(__('Select contract end date')),

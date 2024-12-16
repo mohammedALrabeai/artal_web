@@ -9,6 +9,7 @@ use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\Api\SlideController;
 
 
 
@@ -92,6 +93,13 @@ Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 
 
 
+
+
+
+
+
+
+Route::get('/slides', [SlideController::class, 'getActiveSlides']);
 
 
 

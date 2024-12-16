@@ -287,6 +287,14 @@
     "Rejected": "مرفوض",
     "Requests": "الطلبات",
     "Request Management": "إدارة الطلبات",
+    "title": "عنوان السلايد",
+    "description": "وصف السلايد",
+    "image_url": "رابط الصورة",
+    "is_active": "نشط",
+    "title_placeholder": "أدخل عنوان السلايد",
+    "description_placeholder": "أدخل وصف السلايد",
+    "created_at": "تاريخ الإنشاء",
+
     "notification": {
         "resource_label": "الإشعار",
         "resource_plural_label": "الإشعارات",

@@ -295,6 +295,15 @@
     "Requests": "Requests",
     "Request Management": "Request Management",
 
+    "management": "Management",
+    "title": "Slide Title",
+    "description": "Slide Description",
+    "image_url": "Slide Image",
+    "is_active": "Active",
+    "created_at": "Created At", 
+    "title_placeholder" :"Enter slide title",
+    "description_placeholder" : "Enter slide description",
+
     "notification": {
         "resource_label": "Notification",
         "resource_plural_label": "Notifications",
@@ -306,4 +315,8 @@
         "read": "Read",
         "management": "Management"
     }
+
+
+  
+
 }
