@@ -125,14 +125,15 @@ public static function getNavigationGroup(): ?string
                 ->required(false)
                ,
     
-            Forms\Components\Select::make('status')
-                ->label(__('Status'))
-                ->options([
-                    'present' => __('Present'),
-                    'absent' => __('Absent'),
-                    'leave' => __('On Leave'),
-                ])
-                ->required(),
+               Forms\Components\Select::make('status')
+               ->label(__('Status'))
+               ->options([
+                   'present' => __('Present'),
+                   'absent' => __('Absent'),
+                   'leave' => __('On Leave'),
+                   'coverage' => __('Coverage'), // إضافة خيار التغطية
+               ])
+               ->required(),
 
                    // ساعات العمل
             Forms\Components\TextInput::make('work_hours')
@@ -202,6 +203,7 @@ public static function getNavigationGroup(): ?string
                         'present' => __('Present'),
                         'absent' => __('Absent'),
                         'leave' => __('On Leave'),
+                        'coverage' => __('Coverage'), // إضافة حالة التغطية
                         default => __('Unknown'),
                     };
                 })
@@ -209,6 +211,7 @@ public static function getNavigationGroup(): ?string
                     'success' => fn ($state) => $state === __('Present'),
                     'danger' => fn ($state) => $state === __('Absent'),
                     'warning' => fn ($state) => $state === __('On Leave'),
+                    'info' => fn ($state) => $state === __('Coverage'), // لون خاص بالتغطية
                 ]),
 
                 Tables\Columns\TextColumn::make('work_hours')

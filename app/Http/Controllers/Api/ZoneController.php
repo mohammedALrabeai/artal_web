@@ -43,8 +43,7 @@ class ZoneController extends Controller
             $zoneRadius = 0.1; // 0.1 كم = 100 متر
 
             // تحديد ما إذا كانت الإحداثيات داخل المنطقة
-            $zone->is_inside = $zone->distance <= $zone->area ;
-
+            $zone->is_inside = $zone->distance <= $zone->area ; 
             return $zone;
         });
 
