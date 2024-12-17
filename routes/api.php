@@ -65,6 +65,12 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('employee/attendance/sync-check-out', [AttendanceController::class, 'syncCheckOut']);
     Route::get('employee/attendance', [AttendanceController::class, 'index']);
     Route::get('attendances/filter', [AttendanceController::class, 'filter']);
+    // Route::post('attendances/coverage', [AttendanceController::class, 'store']);
+    Route::post('/attendances/coverage/check-in', [AttendanceController::class, 'checkInCoverage']);
+    Route::post('/attendances/coverage/check-out', [AttendanceController::class, 'checkOutCoverage']);
+
+
+
 
 });
 // Route::middleware('auth:employee')->group(function () {

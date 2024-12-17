@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\AttendanceResource\Pages;
 use App\Filament\Resources\AttendanceResource\RelationManagers;
+use Filament\Tables\Columns\BadgeColumn;
+
 
 class AttendanceResource extends Resource
 {
@@ -146,6 +148,9 @@ public static function getNavigationGroup(): ?string
         // تسجيل ما إذا كان الموظف متأخرًا أم لا
         Forms\Components\Checkbox::make('is_late')
             ->label(__('Is Late')),
+
+            Forms\Components\Toggle::make('is_coverage')
+            ->label('Coverage Request'),
         ]);
     }
     
@@ -219,6 +224,17 @@ public static function getNavigationGroup(): ?string
                     'danger' => fn ($state) => $state === __('Yes'),
                     'success' => fn ($state) => $state === __('No')
                 ]),
+                Tables\Columns\BadgeColumn::make('approval_status')
+                ->label('Status')
+                ->formatStateUsing(fn (string $state): string => ucfirst($state)) // تنسيق النص
+                ->colors([
+                    'pending' => 'warning',
+                    'approved' => 'success',
+                    'rejected' => 'danger',
+                ]),
+
+                Tables\Columns\BooleanColumn::make('is_coverage')
+                    ->label('Coverage Request'),   
         ])
         ->filters([
          
@@ -289,6 +305,28 @@ Filter::make('date_range')
 
         ])
             ->actions([
+                Tables\Actions\Action::make('Approve')
+                ->label('Approve')
+                ->action(function ($record) {
+                    // تحديث حالة الطلب إلى "موافق عليه"
+                    $record->update(['approval_status' => 'approved']);
+
+                    // إضافة سجل في جدول التغطيات
+                    \App\Models\Coverage::create([
+                        'employee_id' => $record->employee_id,
+                        'absent_employee_id' => auth()->id(), // افترض الموظف الحالي هو البديل
+                        'zone_id' => $record->zone_id,
+                        'date' => $record->date,
+                        'status' => 'active',
+                        'added_by' => auth()->id(),
+                    ]);
+
+                    // تحديث معرف التغطية في الحضور
+                    $record->update(['coverage_id' => $record->id]);
+                }),
+            Tables\Actions\Action::make('Reject')
+                ->label('Reject')
+                ->action(fn ($record) => $record->update(['approval_status' => 'rejected'])),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

@@ -7,6 +7,8 @@ use App\Models\Attendance;
 use App\Models\EmployeeProjectRecord;
 
 use Carbon\Carbon;
+use App\Notifications\CoverageRequestNotification;
+use App\Models\User;
 
 class AttendanceController extends Controller
 {
@@ -24,15 +26,15 @@ class AttendanceController extends Controller
         // تحديد وقت البداية المتوقع للحضور
         // $expectedStartTime = Carbon::createFromTime(9, 0, 0); // الساعة 9:00 صباحًا
             // قراءة الوقت المتوقع من الطلب
-    $expectedStartTime = $request->input('expected_start_time'); // متغير الوقت المطلوب
+        $expectedStartTime = $request->input('expected_start_time'); // متغير الوقت المطلوب
 
-    if (!$expectedStartTime) {
-        return response()->json(['message' => 'Expected start time is required'], 400);
-    }
+            if (!$expectedStartTime) {
+                return response()->json(['message' => 'Expected start time is required'], 400);
+            }
 
-    $expectedStartTime = Carbon::createFromFormat('H:i', $expectedStartTime);
+            $expectedStartTime = Carbon::createFromFormat('H:i', $expectedStartTime);
 
-        $currentTime = Carbon::now();
+                $currentTime = Carbon::now();
 
         // جلب سجل الحضور أو إنشاؤه إذا لم يكن موجودًا
         $attendance = Attendance::firstOrCreate(
@@ -87,20 +89,85 @@ class AttendanceController extends Controller
     $date = Carbon::now('Asia/Riyadh')->toDateString();
     $currentDateTime = Carbon::now('Asia/Riyadh');
 
-    // تسجيل البيانات المطلوبة
-    $attendance = Attendance::firstOrCreate(
-        ['employee_id' => $employee->id, 'date' => $date],
-        [
-            'zone_id' => $request->zone_id,
-            'shift_id' => $request->shift_id,
-            'ismorning'=>$request->ismorning,
-            'check_in' => Carbon::now('Asia/Riyadh')->toTimeString(),
-            'check_in_datetime' => $currentDateTime,
-            'status' => 'present',
-            'is_late' => Carbon::now('Asia/Riyadh')->gt(Carbon::createFromFormat('H:i', $request->input('expected_start_time'))),
-            'notes' => $request->input('notes'),
-        ]
-    );
+       // التحقق إذا كان الموظف قد سجل حضور طبيعي اليوم
+       $existingAttendance = Attendance::where('employee_id', $employee->id)
+       ->where('date', $date)
+       ->where('status', 'present')
+       ->first();
+
+   if ($existingAttendance) {
+       return response()->json([
+           'message' => 'You have already checked in today.',
+           'attendance' => $existingAttendance,
+       ], 200);
+   }
+
+ 
+
+       // تسجيل حضور طبيعي جديد
+       $attendance = Attendance::create([
+        'employee_id' => $employee->id,
+        'zone_id' => $request->zone_id,
+        'shift_id' => $request->shift_id,
+        'ismorning' => $request->ismorning,
+        'date' => $date,
+        'check_in' => Carbon::now('Asia/Riyadh')->toTimeString(),
+        'check_in_datetime' => $currentDateTime,
+        'status' => 'present',
+        'is_late' => Carbon::now('Asia/Riyadh')->gt(Carbon::createFromFormat('H:i', $request->input('expected_start_time'))),
+        'notes' => $request->input('notes'),
+    ]);
+
+    return response()->json([
+        'message' => 'Checked in successfully.',
+        'attendance' => $attendance,
+    ]);
+}
+
+public function checkInCoverage(Request $request)
+{
+    $employee = $request->user(); // الموظف الحالي
+    $date = Carbon::now('Asia/Riyadh')->toDateString(); // تاريخ اليوم
+    $currentDateTime = Carbon::now('Asia/Riyadh'); // الوقت الحالي
+
+    // التحقق من البيانات المطلوبة
+    $request->validate([
+        'zone_id' => 'required|exists:zones,id',
+        // 'shift_id' => 'required|exists:shifts,id',
+        'notes' => 'nullable|string',
+    ]);
+
+    // البحث عن آخر تغطية اليوم للموظف نفسه والتي لم يتم تسجيل الانصراف لها
+    $existingCoverage = Attendance::where('employee_id', $employee->id)
+        ->where('date', $date)
+        ->where('status', 'coverage') // سجل تغطية
+        ->whereNull('check_out') // لم يتم تسجيل انصراف
+        ->first();
+
+    if ($existingCoverage) {
+        return response()->json([
+            'message' => 'You cannot create a new coverage without checking out from the previous coverage.',
+            'attendance' => $existingCoverage,
+        ], 400);
+    }
+
+    // تسجيل تغطية جديدة
+    $attendance = Attendance::create([
+        'employee_id' => $employee->id,
+        'zone_id' => $request->zone_id,
+        // 'shift_id' => $request->shift_id,
+        'date' => $date,
+        'check_in' => Carbon::now('Asia/Riyadh')->toTimeString(),
+        'check_in_datetime' => $currentDateTime,
+        'status' => 'coverage',
+        'notes' => $request->input('notes'),
+    ]);
+  
+
+$admins = User::all();
+foreach ($admins as $admin) {
+    $admin->notify(new CoverageRequestNotification($attendance));
+}
 
     return response()->json([
         'message' => 'Checked in successfully.',
@@ -185,6 +252,57 @@ public function checkOut(Request $request)
         'attendance' => $attendance,
     ]);
 }
+
+
+public function checkOutCoverage(Request $request)
+{
+    $employee = $request->user();
+    $currentDateTime = Carbon::now('Asia/Riyadh');
+
+    // تحديد اليوم الحالي واليوم السابق
+    $today = $currentDateTime->toDateString();
+    $yesterday = $currentDateTime->copy()->subDay()->toDateString();
+
+    // البحث عن آخر سجل تغطية نشط (بدون انصراف)
+    $attendance = Attendance::where('employee_id', $employee->id)
+        ->where('status', 'coverage') // التأكد من حالة التغطية
+        ->where(function ($query) use ($today, $yesterday) {
+            $query->where('date', $today)
+                  ->orWhere('date', $yesterday);
+        })
+        ->whereNotNull('check_in_datetime') // التأكد من وجود وقت الحضور
+        ->whereNull('check_out_datetime') // لم يتم تسجيل انصراف
+        ->latest('check_in_datetime') // جلب آخر تغطية مسجلة
+        ->first();
+
+    // التحقق من وجود سجل التغطية
+    if (!$attendance) {
+        return response()->json(['message' => 'No active coverage found to check-out.'], 400);
+    }
+
+    // التحقق من وجود انصراف سابق
+    if ($attendance->check_out || $attendance->check_out_datetime) {
+        return response()->json(['message' => 'Already checked out for this coverage.'], 400);
+    }
+
+    // حساب ساعات العمل بناءً على وقت الحضور
+    $workHours = Carbon::parse($attendance->check_in_datetime)->diffInMinutes($currentDateTime) / 60;
+
+    // تحديث بيانات الانصراف للتغطية
+    $attendance->update([
+        'check_out' => $currentDateTime->toTimeString(),
+        'check_out_datetime' => $currentDateTime,
+        'work_hours' => $workHours,
+        'notes' => $attendance->notes . ' | ' . $request->input('notes'),
+    ]);
+
+    return response()->json([
+        'message' => 'Checked out successfully for coverage.',
+        'attendance' => $attendance,
+    ]);
+}
+
+
 
 
 
