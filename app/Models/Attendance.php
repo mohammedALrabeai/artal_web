@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
+
 
 class Attendance extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'employee_id',
@@ -38,4 +42,25 @@ class Attendance extends Model
     {
         return $this->belongsTo(Shift::class);
     }
+
+
+
+    //   // تفعيل تسجيل التغييرات
+    //   protected static $logAttributes = ['*'];
+    //   protected static $logOnlyDirty = true;
+    //   protected static $submitEmptyLogs = false;
+    //   protected static $logName = 'attendance';
+  
+      public function getDescriptionForEvent(string $eventName): string
+      {
+          return "Attendance record has been {$eventName}";
+      }
+
+      public function getActivitylogOptions(): LogOptions
+{
+    return LogOptions::defaults()
+        ->logAll() // تسجيل جميع الحقول
+        ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
+        ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
+}
 }

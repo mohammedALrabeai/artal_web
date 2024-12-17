@@ -4,11 +4,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
 
 
 class Employee extends Model
 {
-    use HasFactory,Notifiable;
+    use HasFactory,Notifiable, LogsActivity;
     
 
     protected $fillable = [
@@ -108,5 +111,34 @@ public function loans()
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+// // تفعيل تسجيل التغييرات
+// protected static $logAttributes = ['*']; // تسجيل جميع الحقول
+// protected static $logOnlyDirty = true; // تسجيل الحقول التي تغيرت فقط
+// protected static $submitEmptyLogs = false; // عدم تسجيل التعديلات الفارغة
+// protected static $logName = 'employee'; // اسم الـ log
+
+public function getDescriptionForEvent(string $eventName): string
+{
+    return "Employee record has been {$eventName}";
+}
+
+public function getActivitylogOptions(): LogOptions
+{
+    return LogOptions::defaults()
+        ->logAll() // تسجيل جميع الحقول
+        ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
+        ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
+}
 
 }
