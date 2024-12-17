@@ -11,6 +11,10 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Api\SlideController;
 
+use App\Http\Controllers\Api\ZoneController;
+
+
+
 
 
 
@@ -57,7 +61,6 @@ Route::middleware('auth:employee')->group(function () {
 
 
 
-
 Route::middleware('auth:employee')->group(function () {
     Route::post('employee/attendance/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('employee/attendance/check-out', [AttendanceController::class, 'checkOut']);
@@ -70,7 +73,7 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/attendances/coverage/check-out', [AttendanceController::class, 'checkOutCoverage']);
 
 
-
+    Route::post('/zones/nearby', [ZoneController::class, 'nearbyZones']);
 
 });
 // Route::middleware('auth:employee')->group(function () {
