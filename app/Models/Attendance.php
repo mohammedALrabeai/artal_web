@@ -25,7 +25,10 @@ class Attendance extends Model
         'check_out',
         'check_out_datetime',
         'status',
-        'work_hours', 'notes', 'is_late'
+        'work_hours', 'notes', 'is_late',
+        "approval_status",
+        "coverage_id",
+        "is_coverage"
     ];
 
     public function employee()

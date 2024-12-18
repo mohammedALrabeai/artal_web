@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Filament\Resources;
+use Filament\Tables\Actions\Action;
 
 use Filament\Forms;
 use Filament\Tables;
@@ -228,7 +229,7 @@ public static function getNavigationGroup(): ?string
                     'success' => fn ($state) => $state === __('No')
                 ]),
                 Tables\Columns\BadgeColumn::make('approval_status')
-                ->label('Status')
+                ->label('Approval Status')
                 ->formatStateUsing(fn (string $state): string => ucfirst($state)) // تنسيق النص
                 ->colors([
                     'pending' => 'warning',
@@ -308,28 +309,50 @@ Filter::make('date_range')
 
         ])
             ->actions([
+
+                Action::make('viewMap')
+                ->label('عرض المسار')
+                ->color('primary')
+                ->icon('heroicon-o-map')
+                ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->employee_id])),
+            
                 Tables\Actions\Action::make('Approve')
                 ->label('Approve')
-                ->action(function ($record) {
+                ->form([
+                    Forms\Components\Select::make('absent_employee_id')
+                        ->label(__('Select Absent Employee'))
+                        ->options(\App\Models\Employee::pluck('first_name', 'id')) // جلب قائمة الموظفين
+                        ->searchable() // إضافة خاصية البحث في القائمة
+                        ->required(),
+                ])
+                ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // إظهار الزر فقط عند status = coverage
+                ->action(function ($record, array $data) {
                     // تحديث حالة الطلب إلى "موافق عليه"
                     $record->update(['approval_status' => 'approved']);
-
+            
                     // إضافة سجل في جدول التغطيات
-                    \App\Models\Coverage::create([
-                        'employee_id' => $record->employee_id,
-                        'absent_employee_id' => auth()->id(), // افترض الموظف الحالي هو البديل
-                        'zone_id' => $record->zone_id,
-                        'date' => $record->date,
-                        'status' => 'active',
-                        'added_by' => auth()->id(),
+                    $coverage =  \App\Models\Coverage::create([
+                        'employee_id' => $record->employee_id, // معرف الموظف الذي قام بالتغطية
+                        'absent_employee_id' => $data['absent_employee_id'], // معرف الموظف الغائب
+                        'zone_id' => $record->zone_id, // استنتاج معرف الزون من السجل
+                        'date' => $record->date, // استنتاج التاريخ من السجل
+                        'status' => 'completed',
+                        'added_by' => auth()->id(), // المستخدم الحالي هو من وافق
                     ]);
-
+            
                     // تحديث معرف التغطية في الحضور
-                    $record->update(['coverage_id' => $record->id]);
-                }),
+                    $record->update(['coverage_id' => $coverage->id]);
+                })
+                ->modalHeading('Approve Coverage')
+                ->modalSubmitActionLabel('Approve')
+                ->modalCancelActionLabel('Cancel'),
+            
+            
             Tables\Actions\Action::make('Reject')
                 ->label('Reject')
+                ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // الشرط لإظهار الزر
                 ->action(fn ($record) => $record->update(['approval_status' => 'rejected'])),
+             
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

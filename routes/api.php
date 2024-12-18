@@ -12,6 +12,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\Api\SlideController;
 
 use App\Http\Controllers\Api\ZoneController;
+use App\Http\Controllers\EmployeeCoordinateController;
 
 
 
@@ -76,6 +77,15 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/zones/nearby', [ZoneController::class, 'nearbyZones']);
 
 });
+
+
+
+
+Route::middleware('auth:employee')->group(function () {
+    Route::post('/coordinates', [EmployeeCoordinateController::class, 'store']);
+    Route::get('/coordinates', [EmployeeCoordinateController::class, 'index']);
+});
+
 // Route::middleware('auth:employee')->group(function () {
 //     Route::post('/employee/check-in', [AttendanceController::class, 'checkIn']);
 //     Route::post('/employee/check-out', [AttendanceController::class, 'checkOut']);
