@@ -98,12 +98,12 @@ class AreaController extends Controller
                             });
     
                             $currentShift = $shifts->where('is_current_shift', true)->first();
-                                // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا
-                                $activeCoveragesCount = $zone->shifts
-                                ->flatMap(fn($shift) => $shift->attendances)
-                                ->where('status', 'coverage')
-                                ->where('check_out', null)
-                                ->count();
+                                // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا في اليوم الحالي
+                                $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                    ->where('status', 'coverage')
+                                    ->where('check_out', null)
+                                    ->whereDate('check_in', now()->toDateString())
+                                    ->count();
                             return [
                                 'id' => $zone->id,
                                 'name' => $zone->name,
