@@ -6,6 +6,8 @@ use Filament\Pages\Page;
 
 class EmployeeMap extends Page
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     // protected static ?string $navigationIcon = 'heroicon-o-location-marker';
     protected static ?string $title = 'خريطة الموظف';
     protected static string $view = 'filament.pages.employee-map';
