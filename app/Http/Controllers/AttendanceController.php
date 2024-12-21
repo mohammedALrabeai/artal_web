@@ -425,57 +425,93 @@ public function getAttendanceStatus(Request $request)
             'date' => 'required|date', // تأكد أن التاريخ موجود وصحيح
         ]);
 
-        // جلب البيانات من المدخلات
-        $projectId = $request->input('project_id');
-        $zoneId = $request->input('zone_id');
-        $shiftId = $request->input('shift_id');
-        $date = Carbon::parse($request->input('date'));
+        try {
+            // جلب البيانات من المدخلات
+            $projectId = $request->input('project_id');
+            $zoneId = $request->input('zone_id');
+            $shiftId = $request->input('shift_id');
+            $date = Carbon::parse($request->input('date'));
 
-        // جلب الموظفين المرتبطين بالمشروع، الموقع، والوردية
-        $employeeRecords = EmployeeProjectRecord::with('employee')
-            ->where('project_id', $projectId)
-            ->where('zone_id', $zoneId)
-            ->where('shift_id', $shiftId)
-            ->where(function ($query) use ($date) {
-                $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', $date);
-            })
-            ->where('start_date', '<=', $date)
-            ->get();
+            // جلب الموظفين المرتبطين بالمشروع، الموقع، والوردية
+            $employeeRecords = EmployeeProjectRecord::with('employee')
+                ->where('project_id', $projectId)
+                ->where('zone_id', $zoneId)
+                ->where('shift_id', $shiftId)
+                ->where(function ($query) use ($date) {
+                    $query->whereNull('end_date')
+                          ->orWhere('end_date', '>=', $date);
+                })
+                ->where('start_date', '<=', $date)
+                ->get();
 
-        // قائمة الموظفين
-        $employees = $employeeRecords->map(function ($record) {
-            return $record->employee;
-        });
+            // قائمة الموظفين
+            $employees = $employeeRecords->map(function ($record) {
+                return $record->employee;
+            });
 
-        // جلب حالات التحضير من جدول Attendance
-        $attendanceRecords = Attendance::where('zone_id', $zoneId)
-            ->where('shift_id', $shiftId)
-            ->whereDate('date', $date)
-            ->get();
+            // جلب حالات التحضير من جدول Attendance
+            $attendanceRecords = Attendance::where('zone_id', $zoneId)
+                ->where('shift_id', $shiftId)
+                ->whereDate('date', $date)
+                ->get();
 
-        // بناء النتيجة النهائية
-        $result = $employees->map(function ($employee) use ($attendanceRecords) {
-            $attendance = $attendanceRecords->firstWhere('employee_id', $employee->id);
+            // جلب موظفي التغطية الحاليين
+            $coverageAttendances = Attendance::with('employee')
+                ->where('zone_id', $zoneId)
+                // ->where('shift_id', $shiftId)
+                ->where('status', 'coverage')
+                ->whereNull('check_out')
+                ->whereDate('date', $date)
+                ->get();
 
-            return [
-                'employee_id' => $employee->id,
-                'employee_name' => $employee->first_name . ' ' . $employee->father_name . ' ' . $employee->family_name,
-                'status' => $attendance ? $attendance->status : 'absent', // حالة الموظف
-                'check_in' => $attendance ? $attendance->check_in : null,
-                'check_out' => $attendance ? $attendance->check_out : null,
-                'mobile_number' => $employee->mobile_number,
-                'phone_number' => $employee->phone_number,
-                'notes' => $attendance ? $attendance->notes : null,
-            ];
-        });
+            // تحضير النتيجة للموظفين الأساسيين
+            $regularEmployees = $employees->map(function ($employee) use ($attendanceRecords) {
+                $attendance = $attendanceRecords->firstWhere('employee_id', $employee->id);
+                
+                return [
+                    'employee_id' => $employee->id,
+                    'employee_name' => $employee->first_name . ' ' . $employee->father_name . ' ' . $employee->family_name,
+                    'status' => $attendance ? $attendance->status : 'absent',
+                    'check_in' => $attendance ? $attendance->check_in : null,
+                    'check_out' => $attendance ? $attendance->check_out : null,
+                    'mobile_number' => $employee->mobile_number,
+                    'phone_number' => $employee->phone_number,
+                    'notes' => $attendance ? $attendance->notes : null,
+                    'is_coverage' => false
+                ];
+            });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $result,
-        ]);
+            // تحضير النتيجة لموظفي التغطية
+            $coverageEmployees = $coverageAttendances->map(function ($attendance) {
+                $employee = $attendance->employee;
+                
+                return [
+                    'employee_id' => $employee->id,
+                    'employee_name' => $employee->first_name . ' ' . $employee->father_name . ' ' . $employee->family_name,
+                    'status' => 'coverage',
+                    'check_in' => $attendance->check_in,
+                    'check_out' => null,
+                    'mobile_number' => $employee->mobile_number,
+                    'phone_number' => $employee->phone_number,
+                    'notes' => $attendance->notes,
+                    'is_coverage' => true
+                ];
+            });
+
+            // دمج النتائج
+            $allEmployees = $regularEmployees->concat($coverageEmployees);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $allEmployees
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-
-
-
 }
