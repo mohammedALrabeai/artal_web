@@ -15,7 +15,9 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "pusher/pusher-php-server": "^7.2",
-        "spatie/laravel-activitylog": "^4.9"
+        "setasign/fpdf": "^1.8",
+        "spatie/laravel-activitylog": "^4.9",
+        "tecnickcom/tcpdf": "^6.7"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

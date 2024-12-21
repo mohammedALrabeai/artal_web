@@ -13,7 +13,17 @@ Route::get('/', function () {
 
 
 
+
 use App\Filament\Pages\EmployeePaths;
+
+
+use App\Http\Controllers\EmployeePDFController;
+
+Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
+
+
+
+
 
 Route::get('/filament/employee-paths/{employeeId}', EmployeePaths::class)
     ->name('filament.pages.employee-paths');
@@ -52,6 +62,8 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 
 
 
+
+
     
     
     
@@ -77,5 +89,3 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 
 //     return response()->json($geoJson);
 // });
-
-
