@@ -268,6 +268,7 @@ public static function getNavigationGroup(): ?string
         'present' => __('Present'),
         'absent' => __('Absent'),
         'leave' => __('On Leave'),
+        'coverage' => __('Coverage'),
     ]),
  // فلتر الحالة
 

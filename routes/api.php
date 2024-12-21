@@ -96,6 +96,24 @@ Route::middleware('auth:employee')->group(function () {
 });
 
 
+Route::post('/test-broadcast', function () {
+    $testData = [
+        'id' => 1,
+        'name' => 'Test Area',
+        'projects' => [
+            [
+                'id' => 1,
+                'name' => 'Test Project',
+                'zones' => []
+            ]
+        ]
+    ];
+    
+    event(new \App\Events\AreasUpdated([$testData]));
+    return response()->json(['status' => 'Event broadcasted successfully']);
+});
+
+
 
 
 
@@ -105,7 +123,6 @@ Route::middleware('auth:employee')->group(function () {
 
 
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
-
 
 
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);

@@ -65,9 +65,9 @@ class AreaController extends Controller
     {
         // تعيين التوقيت إلى توقيت الرياض
         $currentTime = Carbon::now('Asia/Riyadh');
-    
+
         $areas = Area::with(['projects.zones.shifts.attendances'])->get();
-    
+
         $data = $areas->map(function ($area) use ($currentTime) {
             return [
                 'id' => $area->id,
@@ -80,13 +80,13 @@ class AreaController extends Controller
                         'zones' => $project->zones->map(function ($zone) use ($currentTime) {
                             $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
                                 $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $zone);
-    
+
                                 // تعداد الحضور في الشفت الحالي لهذا اليوم
                                 $attendanceCount = $shift->attendances
                                     ->where('status', 'present')
                                     ->where('date', Carbon::today('Asia/Riyadh')->toDateString())
                                     ->count();
-    
+
                                 return [
                                     'id' => $shift->id,
                                     'name' => $shift->name,
@@ -96,14 +96,14 @@ class AreaController extends Controller
                                     'emp_no' => $shift->emp_no,
                                 ];
                             });
-    
+
                             $currentShift = $shifts->where('is_current_shift', true)->first();
-                                // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا في اليوم الحالي
-                                $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
-                                    ->where('status', 'coverage')
-                                    ->where('check_out', null)
-                                    ->whereDate('check_in', now()->toDateString())
-                                    ->count();
+                            // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا في اليوم الحالي
+                            $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                ->where('status', 'coverage')
+                                ->where('check_out', null)
+                                ->whereDate('check_in', now()->toDateString())
+                                ->count();
                             return [
                                 'id' => $zone->id,
                                 'name' => $zone->name,
@@ -118,108 +118,108 @@ class AreaController extends Controller
                 }),
             ];
         });
-    
+
         return response()->json($data);
     }
-    
+
     private function isCurrentShift($shift, $currentTime, $zone)
     {
         // تحقق من إذا كان اليوم يوم عمل
         $isWorkingDay = $shift->isWorkingDay();
-    
+
         // تحليل النوع وتحديد الوردية الحالية
         $morningStart = Carbon::createFromTimeString($shift->morning_start, 'Asia/Riyadh');
         $morningEnd = Carbon::createFromTimeString($shift->morning_end, 'Asia/Riyadh');
         $eveningStart = Carbon::createFromTimeString($shift->evening_start, 'Asia/Riyadh');
         $eveningEnd = Carbon::createFromTimeString($shift->evening_end, 'Asia/Riyadh');
-    
+
         // التحقق من امتداد الفترة عبر منتصف الليل
-if ($eveningEnd->lessThan($eveningStart)) {
-    $eveningEnd = $eveningEnd->addDay(); // إضافة يوم إلى وقت النهاية
-}
+        if ($eveningEnd->lessThan($eveningStart)) {
+            $eveningEnd = $eveningEnd->addDay(); // إضافة يوم إلى وقت النهاية
+        }
         $isWithinShiftTime = false;
-    
+
         switch ($shift->type) {
             case 'morning':
                 $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd);
                 break;
-    
+
             case 'evening':
                 $isWithinShiftTime = $currentTime->between($eveningStart, $eveningEnd);
                 break;
-    
+
             case 'morning_evening':
                 $isWithinShiftTime = $this->determineShiftCycle($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, 'morning_evening');
                 break;
-    
+
             case 'evening_morning':
                 $isWithinShiftTime = $this->determineShiftCycle($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, 'evening_morning');
                 break;
         }
-    
+
         // الشرط النهائي
         return $isWorkingDay && $isWithinShiftTime;
     }
 
 
     private function determineShiftCycle($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, $type)
-{
-    // دورة العمل = عدد أيام العمل + الإجازة
-   
-    if (!$shift->zone || !$shift->zone->pattern) {
-        // إذا لم تكن هناك بيانات كافية
-        return false;
+    {
+        // دورة العمل = عدد أيام العمل + الإجازة
+
+        if (!$shift->zone || !$shift->zone->pattern) {
+            // إذا لم تكن هناك بيانات كافية
+            return false;
+        }
+
+        $pattern = $shift->zone->pattern;
+
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+
+        // تحقق إذا كانت دورة العمل غير صالحة (صفر أو أقل)
+        if ($cycleLength <= 0) {
+
+            throw new Exception('Cycle length must be greater than zero. Please check the working_days and off_days values.');
+        }
+
+        // تاريخ بداية الوردية
+        $startDate = Carbon::parse($shift->start_date)->startOfDay();
+
+        // عدد الأيام منذ تاريخ البداية
+        $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
+
+        // رقم الدورة الحالية
+        $currentCycleNumber = floor($daysSinceStart / $cycleLength) + 1;
+
+        // اليوم الحالي داخل الدورة
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+        // إذا كان اليوم الحالي داخل أيام العمل
+        $isWorkingDayInCycle = $currentDayInCycle < $pattern->working_days;
+
+        // تحديد إذا كانت الدورة الحالية فردية أو زوجية
+        $isOddCycle = $currentCycleNumber % 2 === 0;
+
+        // تحديد الوردية الحالية بناءً على نوعها
+        if ($type === 'morning_evening') {
+            // دورة فردية: صباحية، دورة زوجية: مسائية
+            return $isWorkingDayInCycle && (
+                ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) ||
+                (!$isOddCycle && $currentTime->between($eveningStart, $eveningEnd))
+            );
+        }
+
+        if ($type === 'evening_morning') {
+            // دورة فردية: مسائية، دورة زوجية: صباحية
+            return $isWorkingDayInCycle && (
+                ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) ||
+                (!$isOddCycle && $currentTime->between($morningStart, $morningEnd))
+            );
+        }
+
+        return false; // الأنواع الأخرى ليست متداخلة
     }
 
-    $pattern = $shift->zone->pattern;
+  
 
-    $cycleLength = $pattern->working_days + $pattern->off_days;
-
-    // تحقق إذا كانت دورة العمل غير صالحة (صفر أو أقل)
-if ($cycleLength <= 0) {
-
-    throw new Exception('Cycle length must be greater than zero. Please check the working_days and off_days values.');
+  
 }
-
-    // تاريخ بداية الوردية
-    $startDate = Carbon::parse($shift->start_date)->startOfDay();
-
-    // عدد الأيام منذ تاريخ البداية
-    $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
-
-    // رقم الدورة الحالية
-    $currentCycleNumber = floor($daysSinceStart / $cycleLength) + 1;
-
-    // اليوم الحالي داخل الدورة
-    $currentDayInCycle = $daysSinceStart % $cycleLength;
-
-    // إذا كان اليوم الحالي داخل أيام العمل
-    $isWorkingDayInCycle = $currentDayInCycle < $pattern->working_days;
-
-    // تحديد إذا كانت الدورة الحالية فردية أو زوجية
-    $isOddCycle = $currentCycleNumber % 2 === 0;
-
-    // تحديد الوردية الحالية بناءً على نوعها
-    if ($type === 'morning_evening') {
-        // دورة فردية: صباحية، دورة زوجية: مسائية
-        return $isWorkingDayInCycle && (
-            ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) ||
-            (!$isOddCycle && $currentTime->between($eveningStart, $eveningEnd))
-        );
-    }
-
-    if ($type === 'evening_morning') {
-        // دورة فردية: مسائية، دورة زوجية: صباحية
-        return $isWorkingDayInCycle && (
-            ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) ||
-            (!$isOddCycle && $currentTime->between($morningStart, $morningEnd))
-        );
-    }
-
-    return false; // الأنواع الأخرى ليست متداخلة
-}
-
-    
-    
-
-    }
