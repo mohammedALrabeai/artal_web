@@ -102,7 +102,7 @@ class AreaController extends Controller
                             $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
                                 ->where('status', 'coverage')
                                 ->where('check_out', null)
-                                ->whereDate('check_in', now()->toDateString())
+                                ->whereDate('date', $currentTime->toDateString())
                                 ->count();
                             return [
                                 'id' => $zone->id,

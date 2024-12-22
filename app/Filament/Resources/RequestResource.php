@@ -104,7 +104,7 @@ public static function getNavigationGroup(): ?string
     public static function getRelations(): array
 {
     return [
-        RelationManagers\RequestApprovalRelationManager::class,
+        RelationManagers\ApprovalsRelationManager::class,
     ];
 }
 

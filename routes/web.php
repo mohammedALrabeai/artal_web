@@ -17,7 +17,7 @@ Route::get('/', function () {
 use App\Filament\Pages\EmployeePaths;
 
 
-use App\Http\Controllers\EmployeePDFController;
+
 
 Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
 

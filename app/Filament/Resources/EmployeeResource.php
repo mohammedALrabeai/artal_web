@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EmployeeResource\Pages;
+use Filament\Tables\Actions\Action;
 
 use App\Filament\Resources\EmployeeResource\RelationManagers;
 use App\Models\Employee;
@@ -456,6 +457,12 @@ class EmployeeResource extends Resource
                     ->options(User::all()->pluck('name', 'id')),
             ])
             ->actions([
+                Action::make('viewMap')
+                ->label('عرض المسار')
+                ->color('primary')
+                ->icon('heroicon-o-map')
+                ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
+            
                 Tables\Actions\Action::make('view')
                 ->label(__('View'))
                 ->icon('heroicon-o-eye')
@@ -486,9 +493,9 @@ class EmployeeResource extends Resource
     return [
         RelationManagers\ProjectRecordsRelationManager::class,
         RelationManagers\AttachmentsRelationManager::class,
-        RelationManagers\AttendanceRelationManager::class,
+        RelationManagers\AttendancesRelationManager::class,
         RelationManagers\DevicesRelationManager::class,
-        RelationManagers\LoanRelationManager::class,
+        RelationManagers\LoansRelationManager::class,
     
     ];
 }

@@ -8,7 +8,7 @@ class PdfController extends Controller
 {
     public function generatePdf()
     {
-        require_once base_path('app/Http/Controllers/pdf/tcpdf_include.php');
+        require_once base_path('helpers/tcpdf_include.php');
 
         $pdf = new \TCPDF();
         $pdf->AddPage();

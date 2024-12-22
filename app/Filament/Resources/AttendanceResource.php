@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Filament\Resources;
-use Filament\Tables\Actions\Action;
+
 
 use Filament\Forms;
 use Filament\Tables;
@@ -311,11 +311,6 @@ Filter::make('date_range')
         ])
             ->actions([
 
-                Action::make('viewMap')
-                ->label('عرض المسار')
-                ->color('primary')
-                ->icon('heroicon-o-map')
-                ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->employee_id])),
             
                 Tables\Actions\Action::make('Approve')
                 ->label('Approve')

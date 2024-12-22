@@ -9,7 +9,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\RelationManagers\RelationManager;
 
-class LoanRelationManager extends RelationManager
+class LoansRelationManager extends RelationManager
 {
     protected static string $relationship = 'loans'; // العلاقة بين الموظفين والقروض
 

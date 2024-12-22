@@ -1,6 +1,8 @@
 <?php
 
+
 namespace App\Filament\Resources\RequestResource\RelationManagers;
+
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,7 +20,7 @@ use App\Models\User;
 
 
 
-class RequestApprovalRelationManager extends RelationManager
+class ApprovalsRelationManager extends RelationManager
 {
     protected static string $relationship = 'approvals'; // اسم العلاقة في موديل الطلب
 

@@ -18,10 +18,18 @@ class CoverageRequestNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', 'broadcast']; // استخدام قاعدة البيانات والبث
     }
 
     public function toDatabase($notifiable)
+    {
+        return [
+            'title' => 'New Coverage Request',
+            'message' => 'Employee ' . $this->attendance->employee->first_name . ' submitted a coverage request.',
+            'attendance_id' => $this->attendance->id,
+        ];
+    }
+    public function toBroadcast($notifiable)
     {
         return [
             'title' => 'New Coverage Request',

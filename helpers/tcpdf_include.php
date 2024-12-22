@@ -1,12 +1,20 @@
 <?php
-require_once('tcpdf_include.php');
+// require_once('tcpdf_include.php');
 
 class PDF extends TCPDF {
-    public function Header() {
-        // Set the image as a background
-        $img_file = public_path('images/back.jpg'); // المسار المناسب داخل Laravel
-        $this->Image($img_file, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0);
-   }
+//     public function Header() {
+//         // تعيين مسار الصورة بناءً على الموقع الحالي للملف
+//     $img_file = __DIR__ . '/../../public/images/back.jpg'; // عدل المسار ليطابق موقع مجلد public بالنسبة لمجلد helpers
+    
+//     // التحقق من وجود الملف لتجنب الأخطاء
+//     if (file_exists($img_file)) {
+//         // ضبط الصورة كخلفية
+//         $this->Image($img_file, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0);
+//     } else {
+//         // معالجة الخطأ إذا لم يتم العثور على الصورة
+//         error_log("Image file not found: $img_file");
+//     }
+//    }
 
     public function Footer() {
         // Footer content (if needed)

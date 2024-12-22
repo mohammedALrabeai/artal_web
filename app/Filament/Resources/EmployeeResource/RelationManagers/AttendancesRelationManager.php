@@ -8,7 +8,7 @@ use Filament\Tables;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 
-class AttendanceRelationManager extends RelationManager
+class AttendancesRelationManager extends RelationManager
 {
     protected static string $relationship = 'attendances'; // العلاقة مع الحضور والانصراف
 
