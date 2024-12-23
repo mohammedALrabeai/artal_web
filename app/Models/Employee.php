@@ -110,6 +110,12 @@ public function loans()
     return $this->hasMany(Loan::class);
 }
 
+public function name()
+{
+    return $this->first_name . ' ' . $this->father_name . ' ' . $this->family_name;
+}
+
+
 
 
 

@@ -171,6 +171,11 @@ class EmployeeProjectRecordResource extends Resource
                     ->nullable(),
             ])
             ->actions([
+                Action::make('print')
+                ->label(__('Print Contract'))
+                ->icon('heroicon-o-printer')
+                ->url(fn ($record) => route('employee_project_record.pdf', $record)) // إعادة توجيه إلى رابط PDF
+                ->color('primary'),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

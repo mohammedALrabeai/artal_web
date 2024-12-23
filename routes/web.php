@@ -19,7 +19,19 @@ use App\Filament\Pages\EmployeePaths;
 
 Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
 
+use App\Models\Employee;
+use App\Services\EmployeePdfService;
 
+use App\Models\EmployeeProjectRecord;
+
+
+Route::get('/employee-project-record/{id}/pdf', function ($id) {
+    $record = EmployeeProjectRecord::findOrFail($id);
+
+    // إنشاء كائن الخدمة وتوليد PDF
+    $service = new EmployeePdfService();
+    $service->generatePdf($record);
+})->name('employee_project_record.pdf');
 
 
 

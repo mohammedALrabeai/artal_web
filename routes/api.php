@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\SlideController;
 
 use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\EmployeeCoordinateController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\AdminNotificationController;
 
 
 
@@ -200,4 +202,20 @@ Route::get('/test', function (Request $request) {
             'message' => 'test'
         ]   
     );
+});
+
+// routes for notifications
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    Route::post('/notifications/send-test', [NotificationController::class, 'sendTestNotification']);
+});
+
+Route::prefix('admin')->group(function () {
+    Route::post('/notifications/test/all-managers', [AdminNotificationController::class, 'sendTestNotificationToAllManagers']);
+    Route::post('/notifications/test/manager/{managerId}', [AdminNotificationController::class, 'sendTestNotificationToManager']);
+    Route::get('/notifications/managers', [AdminNotificationController::class, 'getManagersWithNotifications']);
+    Route::delete('/notifications/all', [AdminNotificationController::class, 'deleteAllNotifications']);
 });
