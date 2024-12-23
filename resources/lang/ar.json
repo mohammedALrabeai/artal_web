@@ -305,5 +305,73 @@
         "unread": "غير مقروء",
         "read": "مقروء",
         "management": "الإدارة"
-    }
+    },
+
+    "Create": "إنشاء",
+    "Edit": "تعديل",
+    "View": "عرض",
+    "Delete": "حذف",
+    "Search": "بحث",
+    "Filter": "تصفية",
+    "Reset": "إعادة تعيين",
+    "No records found": "لم يتم العثور على سجلات",
+    "Loading": "جاري التحميل",
+
+    "View Employee Path": "عرض مسار الموظف",
+    "Employee Path": "مسار الموظف",
+    "Path History": "سجل المسار",
+    "Current Location": "الموقع الحالي",
+    "Last Updated": "آخر تحديث",
+    "Distance from Zone": "المسافة من المنطقة",
+    "Within Zone": "داخل المنطقة",
+    "Outside Zone": "خارج المنطقة",
+
+    "Pick Location": "اختر الموقع",
+    "Map": "الخريطة",
+    "Range": "النطاق",
+    "Location Details": "تفاصيل الموقع",
+    "Zone Information": "معلومات المنطقة",
+
+    "Pattern Details": "تفاصيل النمط",
+    "Working Hours": "ساعات العمل",
+    "Break Hours": "ساعات الراحة",
+    "Schedule": "الجدول",
+
+    "Check In": "تسجيل الحضور",
+    "Check Out": "تسجيل الانصراف",
+    "Attendance Status": "حالة الحضور",
+    "Late": "متأخر",
+    "Early Leave": "خروج مبكر",
+    "Overtime": "ساعات إضافية",
+
+    "Leave Type": "نوع الإجازة",
+    "Leave Period": "فترة الإجازة",
+    "Leave Status": "حالة الإجازة",
+    "Approved": "معتمد",
+    "Pending": "قيد الانتظار",
+    "Rejected": "مرفوض",
+
+    "Project Details": "تفاصيل المشروع",
+    "Project Manager": "مدير المشروع",
+    "Project Status": "حالة المشروع",
+    "Start Date": "تاريخ البدء",
+    "End Date": "تاريخ الانتهاء",
+    "Progress": "التقدم",
+
+    "Device Information": "معلومات الجهاز",
+    "Device Type": "نوع الجهاز",
+    "Device Status": "حالة الجهاز",
+    "Last Sync": "آخر مزامنة",
+    "Battery Level": "مستوى البطارية",
+
+    "Report Type": "نوع التقرير",
+    "Report Period": "فترة التقرير",
+    "Generate Report": "إنشاء التقرير",
+    "Export Report": "تصدير التقرير",
+    "Report Summary": "ملخص التقرير",
+
+    "Mark as Read": "تعليم كمقروء",
+    "Clear All": "مسح الكل",
+    "No Notifications": "لا توجد إشعارات",
+    "New Notification": "إشعار جديد"
 }

@@ -25,6 +25,19 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
+            ->brandName('ارتال') // تخصيص اسم اللوحة
+            ->brandLogo(asset('images/icon.png')) // إضافة شعار مخصص
+            ->favicon(asset('images/favicon.png')) // أيقونة المتصفح
+
+            ->colors([
+                'primary' => Color::Amber,
+                'secondary' => Color::Blue,
+            ]) // تخصيص الألوان
+            ->brandLogoHeight('120px')
+
+            ->darkMode() // تفعيل الوضع الليلي
+            ->sidebarCollapsibleOnDesktop() // قابلية طي القائمة الجانبية
+
             ->id('admin')
             ->path('admin')
             ->login()

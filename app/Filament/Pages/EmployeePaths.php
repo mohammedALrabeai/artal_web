@@ -12,7 +12,8 @@ use App\Models\Zone; // تأكد من وجود موديل المنطقة
 class EmployeePaths extends Page
 {
     protected static bool $shouldRegisterNavigation = false;
-    // protected static ?string $navigationIcon = 'heroicon-o-map-pin';
+    protected static ?string $navigationIcon = 'heroicon-o-map';
+    protected static ?string $navigationIconColor = 'success';
     protected static ?string $title = '';
     protected static string $view = 'filament.pages.employee-paths';
 
