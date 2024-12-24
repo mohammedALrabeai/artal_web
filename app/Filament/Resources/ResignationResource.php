@@ -99,6 +99,11 @@ class ResignationResource extends Resource
                         return $query->when($data['start_date'], fn ($q) => $q->whereDate('resignation_date', '>=', $data['start_date']))
                                      ->when($data['end_date'], fn ($q) => $q->whereDate('resignation_date', '<=', $data['end_date']));
                     }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
             ]);
     }
 
