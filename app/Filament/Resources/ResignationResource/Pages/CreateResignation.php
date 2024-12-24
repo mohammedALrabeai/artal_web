@@ -112,7 +112,7 @@ class CreateResignation extends CreateRecord
         $bankEmail = $loan->bank->email;
 
         if ($bankEmail) {
-            Mail::raw("Employee resignation notice: Loan details for Employee ID {$loan->employee_id}", function ($message) use ($bankEmail) {
+            Mail::raw("Employee resignation notice: Loan details for Employee ID {$loan->employee_id} are: Amount: {$loan->amount}, Start Date: {$loan->start_date}, End Date: {$loan->end_date}.", function ($message) use ($bankEmail) {
                 $message->to($bankEmail)
                         ->subject('Employee Resignation Notification');
             });

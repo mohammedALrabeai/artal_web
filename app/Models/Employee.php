@@ -118,7 +118,10 @@ public function resignations()
 {
     return $this->hasMany(Resignation::class);
 }
-
+public function fullAddress()
+{
+    return $this->region . ' - ' . $this->city . ' - ' . $this->street . ' - ' . $this->building_number . ' - ' . $this->apartment_number;
+}
 
 
 

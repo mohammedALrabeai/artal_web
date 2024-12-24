@@ -42,10 +42,11 @@ class EmployeePdfService
 
        // Personal Information Section
 $pdf->SetXY(40, 29.9); // Position for Employee Name
-$pdf->Cell(0, 0, $employeeProjectRecord->employee->id, 0, 1);
-
-$pdf->SetXY(85, 29.9); 
 $pdf->Cell(0, 0, $employeeProjectRecord->employee->national_id, 0, 1);
+
+
+$pdf->SetXY(89, 29.9); 
+$pdf->Cell(0, 0, 'ar'.$employeeProjectRecord->employee->id, 0, 1);
 
 $pdf->SetXY(140, 29.9); // Position for Employee ID
 $pdf->Cell(0, 0, $employeeProjectRecord->employee->name(), 0, 1); 
@@ -55,10 +56,15 @@ $pdf->SetFont('aealarabiya', '', 12);
 
 $pdf->SetXY(140, 35); // Position for Birth Date
 $pdf->Cell(0, 0, $employeeProjectRecord->employee->birth_date, 0, 1);
+$pdf->SetXY(83, 35); 
+$pdf->Cell(0, 0, $employeeProjectRecord->employee->mobile_number, 0, 1);
 
 $pdf->SetXY(84,35); 
 $pdf->Cell(0, 0, $employeeProjectRecord->employee->contact_numbers, 0, 1);
 $pdf->SetFont('aealarabiya', '', 10);
+
+$pdf->SetXY(83, 41); 
+$pdf->Cell(0, 0, $employeeProjectRecord->employee->fullAddress(), 0, 1);
 
 $pdf->SetXY(10, 35); // Position for Employee Name
 $pdf->Cell(0, 0, $employeeProjectRecord->employee->email, 0, 1);
@@ -97,7 +103,11 @@ $pdf->Cell(0, 0, "--", 0, 1);
 $pdf->SetXY(140, 115); // Position for Contract Type
 $pdf->Cell(0, 0, $employeeProjectRecord->start_date, 0, 1);
 
+if($employeeProjectRecord->end_date){
 
+$pdf->SetXY(140, 120); // Position for Contract Type
+$pdf->Cell(0, 0, $employeeProjectRecord->end_date, 0, 1);
+}
 
 
 // $pdf->SetXY(140, 163); // Position for Onboarding Type
