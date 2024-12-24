@@ -314,7 +314,13 @@
         "unread": "Unread",
         "read": "Read",
         "management": "Management"
-    }
+    },
+    "Approve": "Approve",
+    "Select Absent Employee": "Select Absent Employee",
+    "Approve Coverage": "Approve Coverage",
+    "Cancel": "Cancel",
+    "National ID Expiry": "National ID Expiry",
+    "Education": "Education"
 
 
   

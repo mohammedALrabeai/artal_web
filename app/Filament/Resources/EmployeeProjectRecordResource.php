@@ -32,7 +32,9 @@ class EmployeeProjectRecordResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
+        
     }
+    protected static ?int $navigationSort = 0; 
 
     public static function getNavigationLabel(): string
     {

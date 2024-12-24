@@ -152,7 +152,7 @@ public static function getNavigationGroup(): ?string
             ->label(__('Is Late')),
 
             Forms\Components\Toggle::make('is_coverage')
-            ->label('Coverage Request'),
+            ->label(__('Coverage Request')),
         ]);
     }
     
@@ -229,7 +229,7 @@ public static function getNavigationGroup(): ?string
                     'success' => fn ($state) => $state === __('No')
                 ]),
                 Tables\Columns\BadgeColumn::make('approval_status')
-                ->label('Approval Status')
+                ->label(__('Approval Status'))
                 ->formatStateUsing(fn (string $state): string => ucfirst($state)) // تنسيق النص
                 ->colors([
                     'pending' => 'warning',
@@ -238,7 +238,7 @@ public static function getNavigationGroup(): ?string
                 ]),
 
                 Tables\Columns\BooleanColumn::make('is_coverage')
-                    ->label('Coverage Request'),   
+                    ->label(__('Coverage Request')),   
         ])
         ->filters([
          
@@ -311,9 +311,8 @@ Filter::make('date_range')
         ])
             ->actions([
 
-            
                 Tables\Actions\Action::make('Approve')
-                ->label('Approve')
+                ->label(__('Approve'))
                 ->form([
                     Forms\Components\Select::make('absent_employee_id')
                         ->label(__('Select Absent Employee'))
@@ -339,13 +338,13 @@ Filter::make('date_range')
                     // تحديث معرف التغطية في الحضور
                     $record->update(['coverage_id' => $coverage->id]);
                 })
-                ->modalHeading('Approve Coverage')
-                ->modalSubmitActionLabel('Approve')
-                ->modalCancelActionLabel('Cancel'),
+                ->modalHeading(__('Approve Coverage'))
+                ->modalSubmitActionLabel(__('Approve'))
+                ->modalCancelActionLabel(__('Cancel')),
             
             
             Tables\Actions\Action::make('Reject')
-                ->label('Reject')
+                ->label(__('Reject'))
                 ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // الشرط لإظهار الزر
                 ->action(fn ($record) => $record->update(['approval_status' => 'rejected'])),
              

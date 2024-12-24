@@ -374,5 +374,24 @@
     "Clear All": "مسح الكل",
     "No Notifications": "لا توجد إشعارات",
     "New Notification": "إشعار جديد",
-    "Print Contract": "طباعة العقد"
+    "Print Contract": "طباعة العقد",
+    "Description": "الوصف",
+    "Approve": "موافقة",
+    "Select Absent Employee": "اختر الموظف الغائب",
+    "Approve Coverage": "موافقة على التغطية",
+    "Cancel": "إلغاء",
+    "National ID Expiry": "انتهاء الهوية",
+    "Education": "التعليم",
+    "Time of Day": "وقت اليوم",
+    "Check In Datetime": "تاريخ ووقت الحضور",
+    "Check Out Datetime": "تاريخ ووقت الانصراف",
+    "Work Hours": "ساعات العمل",
+    "Is Late": "متأخر",
+
+    "Coverage Request": "طلب تغطية",
+    "Resignation": "استقالة",
+    "Resignations": "الاستقالات",
+    "Employee": "الموظف",
+    "Resignation Date": "تاريخ الاستقالة"
+  
 }

@@ -114,6 +114,11 @@ public function name()
 {
     return $this->first_name . ' ' . $this->father_name . ' ' . $this->family_name;
 }
+public function resignations()
+{
+    return $this->hasMany(Resignation::class);
+}
+
 
 
 

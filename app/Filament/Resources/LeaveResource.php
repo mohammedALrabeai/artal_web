@@ -20,6 +20,7 @@ class LeaveResource extends Resource
 {
     return static::getModel()::count();
 }
+protected static ?int $navigationSort = 2; 
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
