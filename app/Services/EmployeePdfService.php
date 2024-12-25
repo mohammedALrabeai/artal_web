@@ -37,7 +37,7 @@ class EmployeePdfService
           if (file_exists($backgroundImagePath)) {
               $pdf->Image($backgroundImagePath, 0, 0, 210, 297, '', '', '', false, 300, '', false, false, 0);
           } else {
-              error_log('Background image not found at: ' . $backgroundImagePath);
+              error_log('Background image not found at: ' . $backgroundImagePath); 
           }
 
        // Personal Information Section
