@@ -1,13 +1,14 @@
 <?php
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ResignationResource\Pages;
-use App\Models\Resignation;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\Resignation;
+use Filament\Resources\Resource;
+use App\Filament\Resources\ResignationResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ResignationResource extends Resource
 {
@@ -104,6 +105,7 @@ class ResignationResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+                ExportBulkAction::make()
             ]);
     }
 

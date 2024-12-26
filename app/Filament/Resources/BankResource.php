@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\BankResource\Pages;
-use App\Filament\Resources\BankResource\RelationManagers;
-use App\Models\Bank;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Bank;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\BankResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-use Filament\Tables\Filters\Filter;
+use App\Filament\Resources\BankResource\RelationManagers;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class BankResource extends Resource
 {
@@ -72,6 +73,14 @@ class BankResource extends Resource
                 Filter::make('has_loans')
                     ->label(__('Has Loans'))
                     ->query(fn ($query) => $query->whereHas('loans')),
+            ])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+                ExportBulkAction::make()
             ]);
     }
 

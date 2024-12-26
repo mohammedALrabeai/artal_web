@@ -2,29 +2,30 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
-use App\Models\EmployeeProjectRecord;
-use App\Models\Employee;
-use App\Models\Project;
-use App\Models\Zone;
+use Closure;
 use Filament\Forms;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Toggle;
-use Filament\Resources\Resource;
+use App\Models\Zone;
+use App\Models\Project;
+use App\Models\Employee;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\BooleanColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
+use App\Models\EmployeeProjectRecord;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Columns\BooleanColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Actions\DeleteBulkAction;
 
 
-use Closure;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 
 class EmployeeProjectRecordResource extends Resource
 {
@@ -183,6 +184,7 @@ class EmployeeProjectRecordResource extends Resource
             ])
             ->bulkActions([
                 DeleteBulkAction::make(),
+                ExportBulkAction::make()
             ]);
     }
 

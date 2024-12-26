@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use App\Filament\Resources\LoanResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class LoanResource extends Resource
 {
@@ -134,6 +135,7 @@ class LoanResource extends Resource
             ->defaultSort('start_date', 'desc') // ترتيب افتراضي حسب تاريخ البداية
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                ExportBulkAction::make()
             ]);
     }
     

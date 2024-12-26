@@ -2,16 +2,17 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\LeaveResource\Pages;
-use App\Filament\Resources\LeaveResource\RelationManagers;
-use App\Models\Leave;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Leave;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\LeaveResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\LeaveResource\RelationManagers;
 
 class LeaveResource extends Resource
 {
@@ -127,6 +128,7 @@ protected static ?int $navigationSort = 2;
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+                ExportBulkAction::make()
             ]);
     }
 

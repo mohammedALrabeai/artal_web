@@ -2,21 +2,22 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ShiftResource\Pages;
-use App\Models\Shift;
-use App\Models\Zone;
 use Filament\Forms;
+use App\Models\Zone;
 use Filament\Tables;
+use App\Models\Shift;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\Toggle;
-use Filament\Resources\Resource;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use App\Filament\Resources\ShiftResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ShiftResource extends Resource
 {
@@ -190,6 +191,7 @@ class ShiftResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                ExportBulkAction::make()
             ]);
     }
 

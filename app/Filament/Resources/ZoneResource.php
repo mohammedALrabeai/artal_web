@@ -2,29 +2,30 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ZoneResource\Pages;
-use App\Filament\Resources\ZoneResource\RelationManagers;
-use App\Models\Zone;
-use App\Models\Project;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Zone;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-
-
-
-
 use App\Models\Pattern;
-
-
-
-
-
+use App\Models\Project;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Filters\TernaryFilter;
+
+
+
+
+use App\Filament\Resources\ZoneResource\Pages;
+
+
+
+
+
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\ZoneResource\RelationManagers;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ZoneResource extends Resource
 {
@@ -161,6 +162,7 @@ class ZoneResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                ExportBulkAction::make()
             ]);
     }
 

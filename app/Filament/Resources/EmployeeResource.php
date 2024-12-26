@@ -17,14 +17,16 @@ use Illuminate\Database\Eloquent\Builder;
 
 
 
-use App\Filament\Resources\EmployeeResource\Pages;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 
 
 
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\EmployeeResource\RelationManagers;
 use App\Notifications\NewEmployeeNotification;
+use App\Filament\Resources\EmployeeResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\EmployeeResource\RelationManagers;
 
 class EmployeeResource extends Resource
 {
@@ -53,6 +55,38 @@ class EmployeeResource extends Resource
     {
         return __('Employee Management');
     }
+
+    public static function getWidgets(): array
+{
+    return [
+        \App\Filament\Resources\EmployeeResource\Widgets\ExportEmployeesWidget::class,
+    ];
+}
+
+public static function getHeaderActions(): array
+{
+    return [
+        Tables\Actions\Action::make('export')
+            ->label(__('Export All'))
+            ->icon('heroicon-o-arrow-down-tray') // استخدم أيقونة متوفرة
+            ->color('primary') // يمكن تغيير اللون إذا لزم الأمر
+            ->action(function () {
+                return \Pxlrbt\FilamentExcel\Exports\ExcelExport::make()
+                    ->table('employees') // اسم الجدول
+                    ->columns([
+                        'first_name' => __('First Name'),
+                        'family_name' => __('Family Name'),
+                        'national_id' => __('National ID'),
+                        'job_status' => __('Job Status'),
+                        'email' => __('Email'),
+                    ])
+                    ->filename('all_employees.pdf')
+                    ->pdf(); // تصدير بصيغة PDF
+            }),
+    ];
+}
+
+
 
     public static function form(Form $form): Form
     {
@@ -478,6 +512,23 @@ class EmployeeResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                ExportBulkAction::make(),
+                // Tables\Actions\BulkAction::make('exportAll')
+                // ->label(__('Export All to PDF'))
+                // ->icon('heroicon-o-document-download')
+                // ->action(function () {
+                //     return ExcelExport::make()
+                //         ->table('employees') // اسم الجدول في قاعدة البيانات
+                //         ->columns([
+                //             'first_name' => __('First Name'),
+                //             'family_name' => __('Family Name'),
+                //             'national_id' => __('National ID'),
+                //             'job_status' => __('Job Status'),
+                //             'email' => __('Email'),
+                //         ])
+                //         ->filename('all_employees.pdf')
+                //         ->pdf();
+                // }),
             ]);
     }
 

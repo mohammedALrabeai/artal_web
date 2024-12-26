@@ -1,19 +1,20 @@
 <?php
 namespace App\Filament\Resources;
 
-use App\Models\Attachment;
-use App\Models\Employee;
-use App\Models\User;
+use Closure;
 use Filament\Forms;
+use App\Models\User;
 use Filament\Tables;
+use Filament\Forms\Get;
+use App\Models\Employee;
 use Filament\Forms\Form;
+use App\Models\Attachment;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use App\Filament\Resources\AttachmentResource\Pages;
-use Closure;
-use Filament\Forms\Get;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 
 
@@ -184,6 +185,7 @@ class AttachmentResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                ExportBulkAction::make()
             ]);
     }
     
