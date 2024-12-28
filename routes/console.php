@@ -3,9 +3,9 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
+// Artisan::command('inspire', function () {
+//     $this->comment(Inspiring::quote());
+// })->purpose('Display an inspiring quote')->hourly();
 
 
 
@@ -19,4 +19,4 @@ Artisan::command('inspire', function () {
 // جدولة المهمة لتعمل كل ساعة
 app(Schedule::class)->call(function () {
     dispatch(new ProcessAttendanceJob());
-})->hourly();
+})->everyMinute();
