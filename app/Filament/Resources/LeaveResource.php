@@ -130,6 +130,21 @@ protected static ?int $navigationSort = 2;
     Tables\Filters\Filter::make('approved')
         ->label(__('Approved'))
         ->query(fn (Builder $query) => $query->where('approved', true)),
+        // فلتر التاريخ
+ Tables\Filters\Filter::make('date_range')
+->label(__('Date Range'))
+->form([
+    Forms\Components\DatePicker::make('from')->label(__('From')),
+    Forms\Components\DatePicker::make('to')->label(__('To')),
+])
+->query(function (\Illuminate\Database\Eloquent\Builder $query, $data) {
+    if (!empty($data['from'])) {
+        $query->where('start_date', '>=', $data['from']);
+    }
+    if (!empty($data['to'])) {
+        $query->where('start_date', '<=', $data['to']);
+    }
+}),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -140,6 +155,10 @@ protected static ?int $navigationSort = 2;
                 ]),
                 ExportBulkAction::make()
             ]);
+
+
+            // فلتر التاريخ
+
     }
 
     public static function getRelations(): array
