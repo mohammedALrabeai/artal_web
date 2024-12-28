@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 
-use App\Filament\Resources\EmployeeProjectRecordResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
+use App\Filament\Resources\EmployeeProjectRecordResource;
 
 class ListEmployeeProjectRecords extends ListRecords
 {
@@ -14,6 +15,7 @@ class ListEmployeeProjectRecords extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExportAction::make(),
         ];
     }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\ResignationResource\Pages;
 
-use App\Filament\Resources\ResignationResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use App\Filament\Resources\ResignationResource;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
 
 class ListResignations extends ListRecords
 {
@@ -14,6 +15,7 @@ class ListResignations extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExportAction::make(),
         ];
     }
 }

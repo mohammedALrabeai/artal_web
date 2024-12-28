@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\LoanResource\Pages;
 
-use App\Filament\Resources\LoanResource;
 use Filament\Actions;
+use App\Filament\Resources\LoanResource;
 use Filament\Resources\Pages\ListRecords;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
 
 class ListLoans extends ListRecords
 {
@@ -14,6 +15,7 @@ class ListLoans extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExportAction::make(),
         ];
     }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\LeaveResource\Pages;
 
-use App\Filament\Resources\LeaveResource;
 use Filament\Actions;
+use App\Filament\Resources\LeaveResource;
 use Filament\Resources\Pages\ListRecords;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
 
 class ListLeaves extends ListRecords
 {
@@ -14,6 +15,7 @@ class ListLeaves extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExportAction::make(),
         ];
     }
 }

@@ -85,6 +85,16 @@ protected static ?int $navigationSort = 2;
             Tables\Columns\TextColumn::make('start_date')
                 ->label(__('Start Date'))
                 ->date(),
+
+            Tables\Columns\TextColumn::make('end_date')
+                ->label(__('End Date'))
+                ->date()
+                ->toggleable(isToggledHiddenByDefault: true),
+            
+            Tables\Columns\TextColumn::make('reason')
+                ->label(__('Reason'))
+                ->toggleable(isToggledHiddenByDefault: true),
+          
     
                 Tables\Columns\BadgeColumn::make('type')
                 ->label(__('Type'))

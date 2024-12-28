@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\ShiftResource\Pages;
 
-use App\Filament\Resources\ShiftResource;
 use Filament\Actions;
+use App\Filament\Resources\ShiftResource;
 use Filament\Resources\Pages\ListRecords;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
 
 class ListShifts extends ListRecords
 {
@@ -14,6 +15,7 @@ class ListShifts extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExportAction::make(),
         ];
     }
 }
