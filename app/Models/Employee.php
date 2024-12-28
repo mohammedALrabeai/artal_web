@@ -57,7 +57,11 @@ class Employee extends Model
         'status',
         'onesignal_player_id',
         'remember_token',
-        'api_token'
+        'api_token',
+        'out_of_zone'
+    ];
+    protected $casts = [
+        'out_of_zone' => 'boolean',
     ];
 
     // علاقة مع المستخدم الذي أضاف الموظف

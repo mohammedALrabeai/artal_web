@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\AttendanceResource\Pages;
 
-use App\Filament\Resources\AttendanceResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use App\Filament\Resources\AttendanceResource;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
 
 class ListAttendances extends ListRecords
 {
@@ -14,6 +15,7 @@ class ListAttendances extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ExportAction::make(),
         ];
     }
 

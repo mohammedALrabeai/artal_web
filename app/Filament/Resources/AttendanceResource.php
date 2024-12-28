@@ -5,20 +5,21 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
+use App\Models\Shift;
 use Filament\Forms\Form;
 use App\Models\Attendance;
-use App\Models\Shift;
-use Filament\Forms\Components\Select;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Columns\BadgeColumn;
 
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\AttendanceResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\AttendanceResource\RelationManagers;
-use Filament\Tables\Columns\BadgeColumn;
 
 
 class AttendanceResource extends Resource
@@ -353,6 +354,7 @@ Filter::make('date_range')
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make(),
                 ]),
             ]);
     }

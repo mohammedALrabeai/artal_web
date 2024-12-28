@@ -28,7 +28,8 @@ class Attendance extends Model
         'work_hours', 'notes', 'is_late',
         "approval_status",
         "coverage_id",
-        "is_coverage"
+        "is_coverage",
+        "out_of_zone"
     ];
 
     public function employee()

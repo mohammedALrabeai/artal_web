@@ -477,7 +477,8 @@ public function getAttendanceStatus(Request $request)
                     'mobile_number' => $employee->mobile_number,
                     'phone_number' => $employee->phone_number,
                     'notes' => $attendance ? $attendance->notes : null,
-                    'is_coverage' => false
+                    'is_coverage' => false,
+                    'out_of_zone' => $employee ? $employee->out_of_zone : false,
                 ];
             });
 
@@ -494,7 +495,8 @@ public function getAttendanceStatus(Request $request)
                     'mobile_number' => $employee->mobile_number,
                     'phone_number' => $employee->phone_number,
                     'notes' => $attendance->notes,
-                    'is_coverage' => true
+                    'is_coverage' => true,
+                    'out_of_zone' => $employee ? $employee->out_of_zone : false,
                 ];
             });
 

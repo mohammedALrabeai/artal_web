@@ -104,6 +104,18 @@ class AreaController extends Controller
                                 ->where('check_out', null)
                                 ->whereDate('date', $currentTime->toDateString())
                                 ->count();
+
+                                   // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا وخرجوا عن الموقع
+                                   $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                   ->where('status', 'present') // الحضور
+                                   ->where('check_out', null) // بدون انصراف
+                                   ->whereDate('date', $currentTime->toDateString())
+                                   ->whereHas('employee', function ($query) {
+                                       $query->where('out_of_zone', true); // التحقق من حالة الموظف خارج النطاق
+                                   })
+                                   ->count();
+
+
                             return [
                                 'id' => $zone->id,
                                 'name' => $zone->name,
@@ -111,7 +123,7 @@ class AreaController extends Controller
                                 'shifts' => $shifts,
                                 'current_shift_emp_no' => $currentShift ? $currentShift['emp_no'] : 0,
                                 'active_coverages_count' => $activeCoveragesCount, // عدد التغطيات النشطة
-
+                                'out_of_zone_count' => $outOfZoneCount,
                             ];
                         }),
                     ];

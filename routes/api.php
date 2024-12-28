@@ -78,6 +78,9 @@ Route::middleware('auth:employee')->group(function () {
 
     Route::post('/zones/nearby', [ZoneController::class, 'nearbyZones']);
 
+    Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
+
+
 });
 
 
