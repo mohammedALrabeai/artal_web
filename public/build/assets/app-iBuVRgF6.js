@@ -1,0 +1,1 @@
+import{P as n,E as r}from"./pusher-DxtW_XPu.js";window.Pusher=n;window.Echo=new r({broadcaster:"pusher",key:"8178602d2715fd4ee0ff",cluster:"mt1",forceTLS:!1});var o=window.Echo.channel("try-channel");o.listen(".try-event",function(e){alert(JSON.stringify(e))});

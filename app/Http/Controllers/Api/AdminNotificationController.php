@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Filament\Resources\EmployeeResource;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Filament\Facades\Filament;
 use App\Models\User;
 use App\Models\Employee;
 use App\Notifications\NewEmployeeNotification;
+use Filament\Notifications\Notification;
+use Filament\Notifications\Actions\Action;
 
 class AdminNotificationController extends Controller
 {
@@ -15,19 +18,44 @@ class AdminNotificationController extends Controller
     {
         $managers = User::whereIn('role', ['manager', 'general_manager', 'hr'])->get();
         $employee = Employee::first();
+
+        $fullName = implode(' ', array_filter([
+            $employee->first_name,
+            $employee->father_name,
+            $employee->grandfather_name,
+            $employee->family_name
+        ]));
         
         if (!$employee) {
             return response()->json(['message' => 'لا يوجد موظفين في النظام'], 404);
         }
 
         foreach ($managers as $manager) {
-            $manager->notify(new NewEmployeeNotification($employee));
+            // $manager->notify(new NewEmployeeNotification($employee));
+
+            Notification::make()
+            ->title('موظف جديد')
+            ->body( "تم إضافة موظف جديد: {$fullName}")
+            ->info()
+            ->viewData(['employee' => $employee])
+            ->actions([
+                Action::make('view')
+                    ->button()
+                    ->url(EmployeeResource::getUrl('view', ['record' => $employee->id]), shouldOpenInNewTab: false),
+                Action::make('undo')
+                    ->color('gray')->close(),
+            ])
+            ->persistent()
+            ->sendToDatabase($manager, isEventDispatched: true)
+            ->broadcast($manager);
+           
         }
 
         return response()->json([
             'message' => 'تم إرسال إشعار تجريبي لجميع المدراء',
             'managers_count' => $managers->count()
         ]);
+
     }
 
     // إرسال إشعار لمدير محدد

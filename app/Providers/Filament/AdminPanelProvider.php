@@ -73,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->databaseNotifications()
-            // ->databaseNotificationsPolling('15s')
+            ->databaseNotificationsPolling(null)
 
 ;
     }
