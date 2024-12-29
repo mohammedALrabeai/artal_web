@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use App\Models\Loan;
 use Filament\Tables;
+use App\Models\Employee;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
@@ -38,9 +39,12 @@ class LoanResource extends Resource
     {
         return $form->schema([
             Forms\Components\Select::make('employee_id')
-                ->label(__('Employee'))
-                ->relationship('employee', 'first_name')
-                ->required(),
+            ->label(__('Employee'))
+            ->options(Employee::all()->mapWithKeys(function ($employee) {
+                return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+            }))
+            ->required()
+            ->searchable(),
             Forms\Components\Select::make('bank_id')
                 ->label(__('Bank'))
                 ->relationship('bank', 'name')

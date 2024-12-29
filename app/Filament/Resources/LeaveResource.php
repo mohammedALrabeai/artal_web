@@ -13,6 +13,7 @@ use App\Filament\Resources\LeaveResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\LeaveResource\RelationManagers;
+use App\Models\Employee;
 
 class LeaveResource extends Resource
 {
@@ -45,10 +46,12 @@ protected static ?int $navigationSort = 2;
     {
         return $form->schema([
             Forms\Components\Select::make('employee_id')
-                ->label(__('Employee'))
-                ->options(\App\Models\Employee::all()->pluck('first_name', 'id'))
-                ->searchable()
-                ->required(),
+            ->label(__('Employee'))
+            ->options(Employee::all()->mapWithKeys(function ($employee) {
+                return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+            }))
+            ->required()
+            ->searchable(),
             
             Forms\Components\DatePicker::make('start_date')
                 ->label(__('Start Date'))

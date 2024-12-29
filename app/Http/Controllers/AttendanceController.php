@@ -402,6 +402,7 @@ public function filter(Request $request)
             //  echo $endDateTime;
         // استرجاع السجلات من قاعدة البيانات بناءً على الفترة الزمنية
         $attendances = Attendance::with('zone')->where('employee_id', $user->id)
+        ->where('approval_status', '!=', 'rejected')
         ->whereBetween('created_at', [$startDateTime, $endDateTime])
         ->get();
         return response()->json([

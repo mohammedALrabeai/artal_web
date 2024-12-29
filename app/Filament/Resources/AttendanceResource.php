@@ -6,14 +6,15 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Shift;
+use App\Models\Employee;
 use Filament\Forms\Form;
 use App\Models\Attendance;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
-use Filament\Tables\Columns\BadgeColumn;
 
+use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -54,10 +55,12 @@ public static function getNavigationGroup(): ?string
     {
         return $form->schema([
             Forms\Components\Select::make('employee_id')
-                ->label(__('Employee'))
-                ->options(\App\Models\Employee::all()->pluck('first_name', 'id'))
-                ->searchable()
-                ->required(),
+            ->label(__('Employee'))
+            ->options(Employee::all()->mapWithKeys(function ($employee) {
+                return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+            }))
+            ->required()
+            ->searchable(),
     
             Forms\Components\DatePicker::make('date')
                 ->label(__('Date'))

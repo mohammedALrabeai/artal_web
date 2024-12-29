@@ -3,6 +3,7 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
+use App\Models\Employee;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Models\Resignation;
@@ -43,10 +44,12 @@ class ResignationResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('employee_id')
-                    ->label(__('Employee'))
-                    ->relationship('employee', 'first_name') // افترض أن هناك عمود `full_name` في جدول الموظفين
-                    ->required(),
-
+                ->label(__('Employee'))
+                ->options(Employee::all()->mapWithKeys(function ($employee) {
+                    return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+                }))
+                ->required()
+                ->searchable(),
                 Forms\Components\DatePicker::make('resignation_date')
                     ->label(__('Resignation Date'))
                     ->required(),

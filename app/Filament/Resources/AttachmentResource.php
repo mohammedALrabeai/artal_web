@@ -54,11 +54,14 @@ class AttachmentResource extends Resource
             Forms\Components\TextInput::make('title')
     ->label(__('Title'))
     ->required(),
-            Forms\Components\Select::make('employee_id')
-                ->label(__('Employee'))
-                ->options(Employee::all()->pluck('first_name', 'id'))
-                ->searchable()
-                ->required(),
+   
+    Forms\Components\Select::make('employee_id')
+        ->label(__('Employee'))
+        ->options(Employee::all()->mapWithKeys(function ($employee) {
+            return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+        }))
+        ->required()
+        ->searchable(),
     
             Forms\Components\Select::make('type')
                 ->label(__('Type'))

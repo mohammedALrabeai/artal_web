@@ -53,11 +53,13 @@ class EmployeeProjectRecordResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Select::make('employee_id')
-                ->label(__('Employee'))
-                ->options(Employee::all()->pluck('first_name', 'id'))
-                ->searchable()
-                ->required(),
+           Select::make('employee_id')
+            ->label(__('Employee'))
+            ->options(Employee::all()->mapWithKeys(function ($employee) {
+                return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+            }))
+            ->required()
+            ->searchable(),
             
                 Select::make('project_id')
             ->label(__('Project'))
