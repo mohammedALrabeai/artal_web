@@ -392,6 +392,10 @@
     "Resignation": "استقالة",
     "Resignations": "الاستقالات",
     "Employee": "الموظف",
-    "Resignation Date": "تاريخ الاستقالة"
+    "Resignation Date": "تاريخ الاستقالة",
+    "Approval Flows": "سير العمل",
+    "Approval Flow": "سير العمل",
+    "Policy": "السياسة",
+    "Policies": "السياسات"
   
 }

@@ -18,6 +18,24 @@ class RequestApproval extends Model
         'approved_at',
     ];
 
+
+    public function approvalFlow()
+{
+    return $this->belongsTo(ApprovalFlow::class, 'request_type', 'request_type');
+}
+
+public function updateApprovalStatus($status, $comments = null)
+{
+    $this->status = $status; // تحديث الحالة (موافقة/رفض)
+    $this->comments = $comments; // إضافة الملاحظات (إن وجدت)
+    $this->approved_at = now(); // تسجيل وقت الموافقة
+    $this->save();
+
+    // تحديث حالة الطلب الأساسي
+    $this->request->updateRequestStatus();
+}
+
+
     // علاقة مع الطلب
     public function request()
     {

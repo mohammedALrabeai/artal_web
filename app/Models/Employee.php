@@ -58,6 +58,7 @@ class Employee extends Model
         'onesignal_player_id',
         'remember_token',
         'api_token',
+        'leave_balance',
         'out_of_zone'
     ];
     protected $casts = [
