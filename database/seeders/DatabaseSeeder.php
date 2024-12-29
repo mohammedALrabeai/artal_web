@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
+        if (RequestType::count() === 0) {
        // إدخال الأنواع
        $requestTypes = [
         ['key' => 'leave', 'name' => 'Leave Request'],
@@ -103,4 +104,5 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
     }
+}
 }

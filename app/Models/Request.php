@@ -79,17 +79,23 @@ public function updateRequestStatus()
     );
 }
 
-public function approveRequest($approver)
+public function approveRequest($approver, $comments = null)
 {
-    $currentLevel = $this->approvals->max('approval_level');
-    $nextLevel = $this->approvalFlows
+    // الحصول على المستوى الحالي من الموافقات
+    $currentLevel = $this->approvals->max('approval_level') ?? 0;
+
+    // جلب المستوى التالي في سلسلة الموافقات
+    $nextApprovalFlow = $this->approvalFlows
         ->where('approval_level', $currentLevel + 1)
         ->first();
 
-    if (!$nextLevel) {
-        $this->status = 'approved'; // إذا لم تكن هناك مستويات أخرى
+    if ($nextApprovalFlow) {
+        // إذا كان هناك مستوى موافقة آخر
+        $this->current_approver_role = $nextApprovalFlow->approver_role;
     } else {
-        $this->current_approver_id = $nextLevel->approver_role;
+        // إذا انتهت جميع المستويات
+        $this->current_approver_role = null; // لا مزيد من الموافقات
+        $this->status = 'approved'; // حالة الطلب تصبح "مقبول"
     }
 
     $this->save();
@@ -97,25 +103,44 @@ public function approveRequest($approver)
     // تسجيل الموافقة
     $this->approvals()->create([
         'approver_id' => $approver->id,
-        'approver_type' => get_class($approver), // تحديد نوع الموافق
+        'approver_role' => $approver->role,
+        'approval_level' => $currentLevel + 1,
         'status' => 'approved',
         'approved_at' => now(),
+        'comments' => $comments,
     ]);
+
+    // إشعار الموظف إذا كانت الموافقة النهائية
+    if ($this->status === 'approved') {
+        $this->employee->notify(
+            new RequestStatusNotification($this, 'approved', $approver)
+        );
+    }
 }
+
 
 public function rejectRequest($approver, $comments = null)
 {
+    // تحديث حالة الطلب إلى "مرفوض"
     $this->status = 'rejected';
+    $this->current_approver_role = null; // لا مزيد من الموافقات بعد الرفض
     $this->save();
 
     // تسجيل الرفض
     $this->approvals()->create([
         'approver_id' => $approver->id,
+        'approver_role' => $approver->role,
         'status' => 'rejected',
         'approved_at' => now(),
         'comments' => $comments,
     ]);
+
+    // إشعار الموظف بالرفض
+    $this->employee->notify(
+        new RequestStatusNotification($this, 'rejected', $approver, $comments)
+    );
 }
+
 
 
 }

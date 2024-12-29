@@ -56,9 +56,11 @@ class ApprovalFlowResource extends Resource
                 ->label('دور المراجع')
                 ->required()
                 ->maxLength(255),
-            Forms\Components\Textarea::make('conditions')
-                ->label('شروط الموافقة')
-                ->maxLength(500),
+                Forms\Components\KeyValue::make('conditions')
+                ->label(__('Conditions'))
+                ->keyLabel(__('Key'))
+                ->valueLabel(__('Value'))
+                ->nullable(),
             ]);
     }
 
@@ -69,7 +71,9 @@ class ApprovalFlowResource extends Resource
                 Tables\Columns\TextColumn::make('request_type')->label('نوع الطلب'),
                 Tables\Columns\TextColumn::make('approval_level')->label('مستوى الموافقة'),
                 Tables\Columns\TextColumn::make('approver_role')->label('دور المراجع'),
-                Tables\Columns\TextColumn::make('conditions')->label('شروط الموافقة'),
+                Tables\Columns\TextColumn::make('conditions')
+                ->label(__('Conditions'))
+                ->formatStateUsing(fn($state) => $state ? json_encode($state) : '-'),
            
             ])
             ->filters([
