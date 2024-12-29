@@ -27,6 +27,13 @@ class EditRequest extends EditRecord
             throw new \Exception(__('No policy defined for this request type.'));
         }
     
+        // تحويل conditions إلى مصفوفة إذا كانت نصًا
+        $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
+    
+        if (!$conditions) {
+            throw new \Exception(__('Policy conditions are invalid.'));
+        }
+    
         switch ($data['type']) {
             case 'leave':
                 $employee = Employee::find($data['employee_id']);
@@ -36,15 +43,13 @@ class EditRequest extends EditRecord
                 if ($employee->leave_balance < $data['duration']) {
                     throw new \Exception(__('Insufficient leave balance.'));
                 }
-                if ($data['duration'] > $policy->conditions['max_duration']) {
+                if (isset($conditions['max_duration']) && $data['duration'] > $conditions['max_duration']) {
                     throw new \Exception(__('Requested duration exceeds the maximum allowed.'));
                 }
                 break;
     
             case 'loan':
-                $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
-
-                if ($data['amount'] > $conditions['max_amount']) {
+                if (isset($conditions['max_amount']) && $data['amount'] > $conditions['max_amount']) {
                     \Filament\Notifications\Notification::make()
                         ->title(__('Amount Exceeds Maximum'))
                         ->body(__('Requested amount exceeds the maximum allowed: :max_amount.', ['max_amount' => $conditions['max_amount']]))
@@ -52,7 +57,7 @@ class EditRequest extends EditRecord
                         ->send();
     
                     throw new \Exception(__('Requested amount exceeds the maximum allowed.'));
-                }    
+                }
                 break;
     
             case 'compensation':
@@ -68,7 +73,7 @@ class EditRequest extends EditRecord
                 break;
     
             case 'overtime':
-                if ($data['duration'] > $policy->conditions['max_hours']) {
+                if (isset($conditions['max_hours']) && $data['duration'] > $conditions['max_hours']) {
                     throw new \Exception(__('Overtime hours exceed the maximum allowed.'));
                 }
                 break;
@@ -79,6 +84,7 @@ class EditRequest extends EditRecord
     
         return $data;
     }
+    
     
     
 }

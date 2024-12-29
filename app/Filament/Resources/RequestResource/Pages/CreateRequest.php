@@ -20,6 +20,13 @@ class CreateRequest extends CreateRecord
             throw new \Exception(__('No policy defined for this request type.'));
         }
     
+        // تحويل conditions إلى مصفوفة إذا كانت نصًا
+        $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
+    
+        if (!$conditions) {
+            throw new \Exception(__('Policy conditions are invalid.'));
+        }
+    
         switch ($data['type']) {
             case 'leave':
                 $employee = Employee::find($data['employee_id']);
@@ -29,13 +36,13 @@ class CreateRequest extends CreateRecord
                 if ($employee->leave_balance < $data['duration']) {
                     throw new \Exception(__('Insufficient leave balance.'));
                 }
-                if ($data['duration'] > $policy->conditions['max_duration']) {
+                if (isset($conditions['max_duration']) && $data['duration'] > $conditions['max_duration']) {
                     throw new \Exception(__('Requested duration exceeds the maximum allowed.'));
                 }
                 break;
     
             case 'loan':
-                if ($data['amount'] > $policy->conditions['max_amount']) {
+                if (isset($conditions['max_amount']) && $data['amount'] > $conditions['max_amount']) {
                     throw new \Exception(__('Requested amount exceeds the maximum allowed.'));
                 }
                 break;
@@ -53,7 +60,7 @@ class CreateRequest extends CreateRecord
                 break;
     
             case 'overtime':
-                if ($data['duration'] > $policy->conditions['max_hours']) {
+                if (isset($conditions['max_hours']) && $data['duration'] > $conditions['max_hours']) {
                     throw new \Exception(__('Overtime hours exceed the maximum allowed.'));
                 }
                 break;
@@ -64,6 +71,7 @@ class CreateRequest extends CreateRecord
     
         return $data;
     }
+    
     
     
     
