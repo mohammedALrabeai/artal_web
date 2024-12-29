@@ -97,6 +97,7 @@ public function approveRequest($approver)
     // تسجيل الموافقة
     $this->approvals()->create([
         'approver_id' => $approver->id,
+        'approver_type' => get_class($approver), // تحديد نوع الموافق
         'status' => 'approved',
         'approved_at' => now(),
     ]);
