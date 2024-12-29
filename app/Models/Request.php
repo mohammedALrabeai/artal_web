@@ -107,7 +107,7 @@ public function approveRequest($approver, $comments = null)
         'approval_level' => $currentLevel + 1,
         'status' => 'approved',
         'approved_at' => now(),
-        'comments' => $comments,
+        'notes' =>  $comments,
     ]);
 
     // إشعار الموظف إذا كانت الموافقة النهائية
@@ -132,7 +132,7 @@ public function rejectRequest($approver, $comments = null)
         'approver_role' => $approver->role,
         'status' => 'rejected',
         'approved_at' => now(),
-        'comments' => $comments,
+        'notes' =>  $comments,
     ]);
 
     // إشعار الموظف بالرفض
