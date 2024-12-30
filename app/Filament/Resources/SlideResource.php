@@ -47,6 +47,7 @@ class SlideResource extends Resource
                 FileUpload::make('image_url')
                     ->label(__('image_url'))
                     ->image()
+                    ->disk('s3')
                     ->directory('slides')
                     ->visibility('public')
                     ->required(),
