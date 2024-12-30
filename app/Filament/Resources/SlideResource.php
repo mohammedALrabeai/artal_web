@@ -12,6 +12,7 @@ use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Log;
 use App\Filament\Resources\SlideResource\Pages;
 use Filament\Forms\Components\{TextInput, Textarea, Toggle, FileUpload};
+use Filament\Tables\Actions\Action;
 
 class SlideResource extends Resource
 {
@@ -29,6 +30,7 @@ class SlideResource extends Resource
     {
         return __('الإعدادات');
     }
+   public $view_image2 ;
 
     public static function form(Form $form): Form
     {
@@ -62,6 +64,7 @@ class SlideResource extends Resource
 
     public static function table(Table $table): Table
     {
+        
         return $table
         ->columns([
             Tables\Columns\TextColumn::make('id')
@@ -72,10 +75,30 @@ class SlideResource extends Resource
                 ->sortable()
                 ->searchable(),
 
-       
+            Tables\Columns\ImageColumn::make('image_url')
+                ->label(__('Image URL'))
+                ->toggleable()
+                ->url(fn ($record) => $record->image_url, true),
+                // Tables\Columns\TextColumn::make('image_url2')
+                // ->label(__('View Image'))
+                // ->getStateUsing(fn ($record) => $record->image_url)
+                // ->formatStateUsing(fn ($state, Slide $record) => '<a href="' . $record->image_url . '" target="_blank">' . __('View Image') . '</a>')
+                // ->html(),
+                // Tables\Columns\TextColumn::make('url')
+                //     ->label('URL')
+                //     ->url(fn ($record) => $record->image_url)
+                //     ->formatStateUsing(fn ($state) => 'Open'),
 
-            Tables\Columns\BooleanColumn::make('is_active')
-                ->label(__('is_active')),
+          
+
+            // Tables\Columns\TextColumn::make('view_image')
+            //     ->label(__('View Image'))
+            //     ->formatStateUsing(fn ($state, Slide $record) => '<a href="' . $record->image_url . '" target="_blank">' . __('View Image') . '</a>')
+            //     ->html(),
+
+            Tables\Columns\ToggleColumn::make('is_active')
+                ->label(__('Active'))
+                ,
 
             Tables\Columns\TextColumn::make('created_at')
                 ->label(__('created_at'))
@@ -85,6 +108,12 @@ class SlideResource extends Resource
                 Filter::make('is_active')
                     ->label(__('.active'))
                     ->query(fn (Builder $query) => $query->where('is_active', true)),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 

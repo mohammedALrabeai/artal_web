@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use App\Models\Attachment;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Illuminate\Support\Facades\Storage;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use App\Filament\Resources\AttachmentResource\Pages;
@@ -88,20 +89,30 @@ class AttachmentResource extends Resource
                         ->visible(fn (Get $get) => $get('type') === 'link')
                         ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
     
-                    Forms\Components\FileUpload::make('content_image')
+                        Forms\Components\FileUpload::make('content_image')
                         ->label(__('Content (Image)'))
                         ->image()
+                        ->disk('s3') // التخزين في S3
+                        ->directory('attachments') // تحديد المجلد في الحاوية
+                        ->visibility('public') // ضبط الرؤية للملفات
                         ->visible(fn (Get $get) => $get('type') === 'image')
                         ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
     
                     Forms\Components\FileUpload::make('content_video')
                         ->label(__('Content (Video)'))
+                        ->disk('s3') 
+                        ->directory('attachments') // تحديد المجلد في الحاوية
+                        ->visibility('public') 
                         ->acceptedFileTypes(['video/*'])
                         ->visible(fn (Get $get) => $get('type') === 'video')
                         ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
     
                     Forms\Components\FileUpload::make('content_file')
                         ->label(__('Content (File)'))
+                        ->disk('s3') 
+                        ->directory('attachments') // تحديد المجلد في الحاوية
+                        ->visibility('public') 
+                        ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/x-rar-compressed', 'application/octet-stream'])
                         ->visible(fn (Get $get) => $get('type') === 'file')
                         ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
                 ])
@@ -139,24 +150,42 @@ class AttachmentResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
                     ->sortable(),
+                    Tables\Columns\TextColumn::make('content')
+    ->label(__('Content'))
+    ->getStateUsing(function ($record) {
+        $contentUrl = Storage::disk('s3')->url($record->content); // استرجاع رابط الملف من S3
+        switch ($record->type) {
+            case 'text':
+            case 'link':
+                return $record->content; // عرض النص أو الرابط مباشرة
+            case 'image':
+                return '<a href="' . $contentUrl . '" target="_blank"><img src="' . $contentUrl . '" width="50" style="border-radius: 5px;" /></a>';
+            case 'video':
+            case 'file':
+                return '<a href="' . $contentUrl . '" target="_blank">' . __('Download File') . '</a>';
+            default:
+                return '';
+        }
+    })
+    ->html(),
     
-                Tables\Columns\TextColumn::make('content')
-                    ->label(__('Content'))
-                    ->getStateUsing(function ($record) {
-                        switch ($record->type) {
-                            case 'text':
-                            case 'link':
-                                return $record->content;
-                            case 'image':
-                                return '<img src="' . asset($record->content) . '" width="50" />';
-                            case 'video':
-                            case 'file':
-                                return '<a href="' . asset($record->content) . '" target="_blank">' . __('Download') . '</a>';
-                            default:
-                                return '';
-                        }
-                    })
-                    ->html(), // لعرض الروابط أو الصور بصيغة HTML
+                // Tables\Columns\TextColumn::make('content')
+                //     ->label(__('Content'))
+                //     ->getStateUsing(function ($record) {
+                //         switch ($record->type) {
+                //             case 'text':
+                //             case 'link':
+                //                 return $record->content;
+                //             case 'image':
+                //                 return '<img src="' . asset($record->content) . '" width="50" />';
+                //             case 'video':
+                //             case 'file':
+                //                 return '<a href="' . asset($record->content) . '" target="_blank">' . __('Download') . '</a>';
+                //             default:
+                //                 return '';
+                //         }
+                //     })
+                //     ->html(), // لعرض الروابط أو الصور بصيغة HTML
     
                 Tables\Columns\TextColumn::make('expiry_date')
                     ->label(__('Expiry Date')),

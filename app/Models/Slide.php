@@ -32,4 +32,6 @@ class Slide extends Model
         //  return $value ? asset('storage/' . $value) : null;
          return $value ? Storage::disk('s3')->url($value) : null;
      }
+
+     
 }
