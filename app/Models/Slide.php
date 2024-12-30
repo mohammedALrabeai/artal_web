@@ -1,8 +1,9 @@
 <?php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Slide extends Model
 {
@@ -28,6 +29,7 @@ class Slide extends Model
      // الحصول على رابط كامل للصورة
      public function getImageUrlAttribute($value)
      {
-         return $value ? asset('storage/' . $value) : null;
+        //  return $value ? asset('storage/' . $value) : null;
+         return $value ? Storage::disk('s3')->url($value) : null;
      }
 }

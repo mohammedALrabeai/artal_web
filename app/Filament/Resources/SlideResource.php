@@ -52,7 +52,7 @@ class SlideResource extends Resource
                     ->visibility('public') // ضبط الرؤية للملفات
                     ->preserveFilenames() // الاحتفاظ باسم الملف الأصلي
                     ->required(),// اجعل الحقل مطلوبًا
-    
+             
                 Toggle::make('is_active')
                     ->label(__('is_active'))
                     ->default(true),
