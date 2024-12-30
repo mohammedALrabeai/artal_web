@@ -5,6 +5,7 @@ use App\Models\EmployeeCoordinate;
 use App\Filament\Pages\EmployeeMap;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EmployeeMapController;
+use App\Http\Controllers\FileUploadController2;
 use Illuminate\Http\Request; 
 
 Route::get('/', function () {
@@ -73,6 +74,17 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 
 
 
+
+
+
+
+Route::get('/upload', [FileUploadController2::class, 'showForm'])->name('upload.form');
+Route::post('/upload', [FileUploadController2::class, 'uploadFile'])->name('upload.file');
+
+
+use App\Http\Controllers\S3TestController;
+
+Route::get('/test-s3', [S3TestController::class, 'testS3']);
 
     
     

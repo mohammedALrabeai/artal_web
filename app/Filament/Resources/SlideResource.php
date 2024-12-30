@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\SlideResource\Pages;
-use App\Models\Slide;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables\Table;
 use Filament\Tables;
+use App\Models\Slide;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
+use Illuminate\Support\Facades\Log;
+use App\Filament\Resources\SlideResource\Pages;
 use Filament\Forms\Components\{TextInput, Textarea, Toggle, FileUpload};
 
 class SlideResource extends Resource
@@ -43,14 +44,14 @@ class SlideResource extends Resource
                     ->label(__('description')) // مفتاح الترجمة
                     ->placeholder(__('description_placeholder')) // مفتاح placeholder
                     ->maxLength(255),
-    
-                FileUpload::make('image_url')
-                    ->label(__('image_url'))
-                    ->image()
-                    ->disk('s3')
-                    ->directory('slides')
-                    ->visibility('public')
-                    ->required(),
+                    FileUpload::make('image_url')
+                    ->label(__('Image URL'))
+                    ->image() // لتفعيل رفع الصور فقط
+                    ->disk('s3') // استخدام القرص S3
+                    ->directory('slides') // تحديد المجلد في الحاوية
+                    ->visibility('public') // ضبط الرؤية للملفات
+                    ->preserveFilenames() // الاحتفاظ باسم الملف الأصلي
+                    ->required(),// اجعل الحقل مطلوبًا
     
                 Toggle::make('is_active')
                     ->label(__('is_active'))
