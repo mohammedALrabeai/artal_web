@@ -75,6 +75,9 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 
 
 
+use App\Http\Controllers\ExportController;
+
+Route::get('/export/attendance', [ExportController::class, 'exportAttendance'])->name('export.attendance');
 
 
 

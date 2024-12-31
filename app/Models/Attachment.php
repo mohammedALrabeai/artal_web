@@ -55,7 +55,10 @@ public function getContentDisplayAttribute()
             return '';
     }
 }
-
+public function getFileUrlAttribute($value)
+{
+    return $value ? Storage::disk('s3')->url($value) : null;
+}
 
 
 }
