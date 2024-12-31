@@ -320,7 +320,21 @@
     "Approve Coverage": "Approve Coverage",
     "Cancel": "Cancel",
     "National ID Expiry": "National ID Expiry",
-    "Education": "Education"
+    "Education": "Education",
+    "اسم الشركة": "Company Name",
+    "تاريخ التفعيل": "Activation Date",
+    "تاريخ الانتهاء": "Expiration Date",
+    "رقم الوثيقة": "Policy Number",
+    "الفرع": "Branch",
+    "الشركات النشطة": "Active Companies",
+    "شركة التأمين": "Insurance Company",
+    "شركات التأمين": "Insurance Companies",
+    "مفعل": "Active",
+    "غير مفعل": "Inactive",
+    "بالتأمين": "With Insurance",
+    "بدون تأمين": "Without Insurance",
+    "شركة التأمين": "Insurance Company",
+    "كل الشركات": "All Companies"
 
 
   

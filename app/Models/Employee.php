@@ -59,7 +59,8 @@ class Employee extends Model
         'remember_token',
         'api_token',
         'leave_balance',
-        'out_of_zone'
+        'out_of_zone',
+        'insurance_company_id'
     ];
     protected $casts = [
         'out_of_zone' => 'boolean',
@@ -103,6 +104,11 @@ public function attendances()
 {
     return $this->hasMany(Attendance::class);
 }
+// public function attendances()
+// {
+//     return $this->hasMany(Attendance::class, 'employee_id');
+// }
+
 
 public function devices()
 {
@@ -128,7 +134,10 @@ public function fullAddress()
     return $this->region . ' - ' . $this->city . ' - ' . $this->street . ' - ' . $this->building_number . ' - ' . $this->apartment_number;
 }
 
-
+public function insuranceCompany()
+{
+    return $this->belongsTo(InsuranceCompany::class, 'insurance_company_id');
+}
 
 
 

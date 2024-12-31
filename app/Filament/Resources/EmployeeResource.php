@@ -11,17 +11,18 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Filters\Filter;
 use App\Services\EmployeePdfService;
 use Filament\Tables\Filters\SelectFilter;
+
+
+
 use Illuminate\Database\Eloquent\Builder;
 
 
 
+
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
-
-
-
-
 use App\Notifications\NewEmployeeNotification;
 use App\Filament\Resources\EmployeeResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -132,6 +133,18 @@ public static function getHeaderActions(): array
                     Forms\Components\TextInput::make('sponsor_company')
                         ->label(__('Sponsor Company'))
                         ->required(),
+
+                        
+                        Forms\Components\Select::make('insurance_company_id')
+                        ->label(__('Insurance Company'))
+                        ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
+                        ->options(function () {
+                            return \App\Models\InsuranceCompany::pluck('name', 'id')->prepend('لا توجد شركة تأمين', '');
+                        }) // إضافة خيار لتصفير القيمة
+                        ->placeholder('اختر شركة التأمين') // النص الافتراضي
+                        ->nullable() // السماح للحقل بأن يكون فارغًا
+                        ->searchable() // دعم البحث
+                        ->preload(), // تحميل البيانات مسبقًا
     
                     Forms\Components\TextInput::make('blood_type')
                         ->label(__('Blood Type')),
@@ -339,6 +352,11 @@ public static function getHeaderActions(): array
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
     
+                Tables\Columns\TextColumn::make('insuranceCompany.name')
+                    ->label(__('Insurance Company'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+    
                 Tables\Columns\TextColumn::make('blood_type')
                     ->label(__('Blood Type'))
                     ->searchable()
@@ -492,6 +510,21 @@ public static function getHeaderActions(): array
                 SelectFilter::make('added_by')
                     ->label(__('Added By'))
                     ->options(User::all()->pluck('name', 'id')),
+
+                      // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
+            Filter::make('with_insurance')
+            ->label(__('بالتأمين'))
+            ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
+
+        Filter::make('without_insurance')
+            ->label(__('بدون تأمين'))
+            ->query(fn ($query) => $query->whereNull('insurance_company_id')),
+
+        // فلتر حسب شركات التأمين
+        SelectFilter::make('insurance_company_id')
+            ->label(__('شركة التأمين'))
+            ->relationship('insuranceCompany', 'name') // الربط مع جدول شركات التأمين
+            ->placeholder(__('كل الشركات')), // الخيار الافتراضي
             ])
             ->actions([
               
