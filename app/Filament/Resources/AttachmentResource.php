@@ -1,69 +1,63 @@
 <?php
+
 namespace App\Filament\Resources;
 
-use Closure;
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use Filament\Forms\Get;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use App\Models\Attachment;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Illuminate\Support\Facades\Storage;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use App\Filament\Resources\AttachmentResource\Pages;
+use App\Models\Attachment;
+use App\Models\Employee;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-
-
 
 class AttachmentResource extends Resource
 {
     protected static ?string $model = Attachment::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?int $navigationSort = 1; 
+
+    protected static ?int $navigationSort = 1;
 
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        return static::getModel()::count();
+    }
 
     public static function getNavigationLabel(): string
     {
         return __('Attachments');
     }
-    
+
     public static function getPluralLabel(): string
     {
         return __('Attachments');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Employee Management');
     }
-    
-
-
 
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\TextInput::make('title')
-    ->label(__('Title'))
-    ->required(),
-   
-    Forms\Components\Select::make('employee_id')
-        ->label(__('Employee'))
-        ->options(Employee::all()->mapWithKeys(function ($employee) {
-            return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
-        }))
-        ->required()
-        ->searchable(),
-    
+                ->label(__('Title'))
+                ->required(),
+
+            Forms\Components\Select::make('employee_id')
+                ->label(__('Employee'))
+                ->options(Employee::all()->mapWithKeys(function ($employee) {
+                    return [$employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"];
+                }))
+                ->required()
+                ->searchable(),
+
             Forms\Components\Select::make('type')
                 ->label(__('Type'))
                 ->options([
@@ -75,63 +69,67 @@ class AttachmentResource extends Resource
                 ])
                 ->required()
                 ->reactive(),
-    
-            Forms\Components\Fieldset::make(__('Content'))
-                ->schema([
-                    Forms\Components\Textarea::make('content_text')
-                        ->label(__('Content (Text)'))
-                        ->visible(fn (Get $get) => $get('type') === 'text')
-                        ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
-    
-                    Forms\Components\TextInput::make('content_link')
-                        ->label(__('Content (Link)'))
-                        ->url()
-                        ->visible(fn (Get $get) => $get('type') === 'link')
-                        ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
-    
-                        Forms\Components\FileUpload::make('content_image')
-                        ->label(__('Content (Image)'))
-                        ->image()
-                        ->disk('s3') // التخزين في S3
-                        ->directory('attachments') // تحديد المجلد في الحاوية
-                        ->visibility('public') // ضبط الرؤية للملفات
-                        ->visible(fn (Get $get) => $get('type') === 'image')
-                        ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
-    
-                    Forms\Components\FileUpload::make('content_video')
-                        ->label(__('Content (Video)'))
-                        ->disk('s3') 
-                        ->directory('attachments') // تحديد المجلد في الحاوية
-                        ->visibility('public') 
-                        ->acceptedFileTypes(['video/*'])
-                        ->visible(fn (Get $get) => $get('type') === 'video')
-                        ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
-    
-                    Forms\Components\FileUpload::make('content_file')
-                        ->label(__('Content (File)'))
-                        ->disk('s3') 
-                        ->directory('attachments') // تحديد المجلد في الحاوية
-                        ->visibility('public') 
-                        ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/x-rar-compressed', 'application/octet-stream'])
-                        ->visible(fn (Get $get) => $get('type') === 'file')
-                        ->afterStateUpdated(fn ($state, $set) => $set('content', $state)),
+
+          
+        Forms\Components\Fieldset::make(__('Content'))
+        ->schema([
+            Forms\Components\Textarea::make('content')
+                ->label(__('Content (Text)'))
+                ->visible(fn (Get $get) => $get('type') === 'text'),
+
+            Forms\Components\TextInput::make('content')
+                ->label(__('Content (Link)'))
+                ->url()
+                ->visible(fn (Get $get) => $get('type') === 'link'),
+
+            Forms\Components\FileUpload::make('file_url')
+                ->label(__('Content (Image)'))
+                ->image()
+                ->disk('s3')
+                ->directory('attachments/images')
+                ->visibility('public')
+                ->preserveFilenames()
+                ->visible(fn (Get $get) => $get('type') === 'image'),
+
+            Forms\Components\FileUpload::make('file_url')
+                ->label(__('Content (Video)'))
+                ->disk('s3')
+                ->directory('attachments/videos')
+                ->visibility('public')
+                ->acceptedFileTypes(['video/*'])
+                ->preserveFilenames()
+                ->visible(fn (Get $get) => $get('type') === 'video'),
+
+            Forms\Components\FileUpload::make('file_url')
+                ->label(__('Content (File)'))
+                ->disk('s3')
+                ->directory('attachments/files')
+                ->visibility('public')
+                ->acceptedFileTypes([
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/zip',
+                    'application/x-rar-compressed',
                 ])
-                ->columns(1),
-    
+                ->preserveFilenames()
+                ->visible(fn (Get $get) => $get('type') === 'file'),
+        ])
+        ->columns(1),
+
+        
             Forms\Components\DatePicker::make('expiry_date')
                 ->label(__('Expiry Date'))
                 ->nullable(),
-    
+
             Forms\Components\Textarea::make('notes')
                 ->label(__('Notes'))
                 ->nullable(),
-    
+
             Forms\Components\Hidden::make('content')
                 ->required(), // الحقل الفعلي الذي سيتم حفظه في قاعدة البيانات
         ]);
     }
-    
-    
 
     public static function table(Table $table): Table
     {
@@ -139,36 +137,37 @@ class AttachmentResource extends Resource
             ->columns([
 
                 Tables\Columns\TextColumn::make('title')
-    ->label(__('Title'))
-    ->sortable()
-    ->searchable(),
+                    ->label(__('Title'))
+                    ->sortable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('employee.first_name')
                     ->label(__('Employee'))
                     ->searchable(),
-    
+
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
                     ->sortable(),
-                    Tables\Columns\TextColumn::make('content')
-    ->label(__('Content'))
-    ->getStateUsing(function ($record) {
-        $contentUrl = Storage::disk('s3')->url($record->content); // استرجاع رابط الملف من S3
-        switch ($record->type) {
-            case 'text':
-            case 'link':
-                return $record->content; // عرض النص أو الرابط مباشرة
-            case 'image':
-                return '<a href="' . $contentUrl . '" target="_blank"><img src="' . $contentUrl . '" width="50" style="border-radius: 5px;" /></a>';
-            case 'video':
-            case 'file':
-                return '<a href="' . $contentUrl . '" target="_blank">' . __('Download File') . '</a>';
-            default:
-                return '';
-        }
-    })
-    ->html(),
-    
+                Tables\Columns\TextColumn::make('content')
+                    ->label(__('Content'))
+                    ->getStateUsing(function ($record) {
+                        $contentUrl = Storage::disk('s3')->url($record->content); // استرجاع رابط الملف من S3
+                        // dd($contentUrl);
+                        switch ($record->type) {
+                            case 'text':
+                            case 'link':
+                                return $record->content; // عرض النص أو الرابط مباشرة
+                            case 'image':
+                                return '<a href="'.$contentUrl.'" target="_blank"><img src="'.$contentUrl.'" width="50" style="border-radius: 5px;" /></a>';
+                            case 'video':
+                            case 'file':
+                                return '<a href="'.$contentUrl.'" target="_blank">'.__('Download File').'</a>';
+                            default:
+                                return '';
+                        }
+                    })
+                    ->html(),
+
                 // Tables\Columns\TextColumn::make('content')
                 //     ->label(__('Content'))
                 //     ->getStateUsing(function ($record) {
@@ -186,13 +185,13 @@ class AttachmentResource extends Resource
                 //         }
                 //     })
                 //     ->html(), // لعرض الروابط أو الصور بصيغة HTML
-    
+
                 Tables\Columns\TextColumn::make('expiry_date')
                     ->label(__('Expiry Date')),
-    
+
                 Tables\Columns\TextColumn::make('addedBy.name')
                     ->label(__('Added By')),
-    
+
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Notes')),
             ])
@@ -206,7 +205,7 @@ class AttachmentResource extends Resource
                         'video' => __('Video'),
                         'file' => __('File'),
                     ]),
-    
+
                 SelectFilter::make('employee_id')
                     ->label(__('Employee'))
                     ->options(Employee::all()->pluck('first_name', 'id')),
@@ -217,10 +216,9 @@ class AttachmentResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
-                ExportBulkAction::make()
+                ExportBulkAction::make(),
             ]);
     }
-    
 
     public static function getPages(): array
     {
