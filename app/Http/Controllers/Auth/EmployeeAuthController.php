@@ -209,6 +209,7 @@ public function checkDeviceApproval(Request $request)
     $device = \App\Models\EmployeeDevice::where('employee_id', $request->employee_id)
         ->where('device_id', $request->device_id)
         ->first();
+        
 
     if (!$device) {
         return response()->json([
@@ -218,7 +219,9 @@ public function checkDeviceApproval(Request $request)
     }
 
     if ($device->status === 'approved') {
+        $employee=$device->employee;
         return response()->json([
+            'employeeStatus' => $employee->status,
             'message' => 'Device approved.',
             'status' => 'approved',
         ]);
