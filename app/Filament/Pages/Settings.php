@@ -1,0 +1,129 @@
+<?php
+namespace App\Filament\Pages;
+
+use Filament\Forms;
+use Filament\Pages\Page;
+use App\Models\Setting;
+
+class Settings extends Page
+{
+    protected static ?string $navigationIcon = 'heroicon-o-cog';
+    protected static ?string $navigationGroup = 'System Settings';
+    protected static string $view = 'filament.pages.settings';
+
+    public $settings = [];
+
+    public function mount()
+    {
+        $this->settings = Setting::pluck('value', 'key')->toArray();
+
+        // التأكد من وجود جميع المفاتيح الافتراضية
+        $defaultSettings = [
+            'offline_mode' => false,
+            'coverages_enabled' => false,
+            'show_attendance_log' => false,
+            'force_update' => false,
+        ];
+    
+        $this->settings = array_merge($defaultSettings, $this->settings);
+    
+        \Log::info('Loaded settings: ' . json_encode($this->settings));
+    }
+
+    public function save()
+    {
+        \Log::info('Saving settings: ' . json_encode($this->settings));
+
+    foreach ($this->settings as $key => $value) {
+        \Log::info("Key: {$key}, Value: " . json_encode($value));
+
+        if ($value === 'true') {
+            $value = true;
+        } elseif ($value === 'false') {
+            $value = false;
+        }
+
+        Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+    }
+    
+
+        \Filament\Notifications\Notification::make()
+        ->title('Settings saved successfully!')
+        ->success()
+        ->send();
+    }
+
+    protected function getFormSchema(): array
+    {
+        return [
+            Forms\Components\Select::make('settings.app_mode')
+                ->label('وضع التطبيق')
+                ->options([
+                    'maintenance' => 'الصيانة',
+                    'normal' => 'طبيعي',
+                    'external_source' => 'مصدر خارجي',
+                ])
+                ->default($this->settings['app_mode'] ?? 'normal'),
+
+                Forms\Components\Toggle::make('settings.offline_mode')
+                ->label('امكانية التحضير Offline')
+                ->default($this->settings['offline_mode'])
+                ->reactive(),
+            
+            Forms\Components\Toggle::make('settings.coverages_enabled')
+                ->label('تفعيل التغطيات')
+                ->default($this->settings['coverages_enabled'])
+                ->reactive(),
+            
+            Forms\Components\Toggle::make('settings.show_attendance_log')
+                ->label('عرض سجل التحضير')
+                ->default($this->settings['show_attendance_log'])
+                ->reactive(),
+            Forms\Components\Select::make('settings.otp_type')
+                ->label('نوع OTP')
+                ->options([
+                    'whatsapp' => 'واتساب',
+                    'sms' => 'SMS',
+                ])
+                ->default($this->settings['otp_type'] ?? 'sms'),
+
+            Forms\Components\TextInput::make('settings.coordinate_sync_duration')
+                ->label('مدة مزامنة الاحداثيات (بالدقائق)')
+                ->numeric()
+                ->default($this->settings['coordinate_sync_duration'] ?? 60),
+
+            Forms\Components\TextInput::make('settings.coordinate_sync_distance')
+                ->label('مسافة مزامنة الاحداثيات')
+                ->numeric()
+                ->default($this->settings['coordinate_sync_distance'] ?? 100),
+
+            Forms\Components\TextInput::make('settings.latest_android_version')
+                ->label('آخر نسخة للأندرويد')
+                ->numeric()
+                ->default($this->settings['latest_android_version'] ?? 1),
+
+            Forms\Components\TextInput::make('settings.latest_ios_version')
+                ->label('آخر نسخة للآيفون')
+                ->numeric()
+                ->default($this->settings['latest_ios_version'] ?? 1),
+
+    
+                Forms\Components\Toggle::make('settings.force_update')
+                ->label('تحديث إجباري')
+                ->default($this->settings['force_update']?? false)
+                ->reactive(),
+
+            Forms\Components\TextInput::make('settings.mobile')
+                ->label('موبايل')
+                ->default($this->settings['mobile'] ?? ''),
+
+            Forms\Components\TextInput::make('settings.phone')
+                ->label('هاتف')
+                ->default($this->settings['phone'] ?? ''),
+
+            Forms\Components\TextInput::make('settings.whatsapp')
+                ->label('واتساب')
+                ->default($this->settings['whatsapp'] ?? ''),
+        ];
+    }
+}

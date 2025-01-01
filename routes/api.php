@@ -29,6 +29,8 @@ use App\Http\Controllers\Api\AdminNotificationController;
 Route::post('/employee/login', [EmployeeAuthController::class, 'login']);
 Route::post('/employee/verify-otp', [EmployeeAuthController::class, 'verifyOtp']);
 Route::post('employee/check-device-approval', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'checkDeviceApproval']);
+Route::middleware('auth:employee')->get('/me', [EmployeeAuthController::class, 'getEmployeeByToken']);
+
 Route::middleware('auth:employee')->post('/update-player-id', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'updatePlayerId']);
 
 
@@ -52,6 +54,16 @@ Route::middleware(['auth:employee'])->group(function () {
 
 Route::middleware('auth:employee')->group(function () {
     Route::get('employee/schedule', [EmployeeController::class, 'schedule']);
+});
+
+
+
+
+use App\Http\Controllers\Api\SettingsController;
+
+Route::prefix('settings')->group(function () {
+    Route::get('/', [SettingsController::class, 'index']); // الحصول على جميع الإعدادات
+    Route::post('/', [SettingsController::class, 'update']); // تحديث الإعدادات
 });
 
 

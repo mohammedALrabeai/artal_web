@@ -100,7 +100,21 @@ class EmployeeAuthController extends Controller
 
     public function verifyOtp(Request $request)
 {
-    // dd($request->all());
+    // Check if Authorization header is present
+    $token = $request->header('Authorization');
+    if ($token) {
+        $token = str_replace('Bearer ', '', $token);
+        $employee = Employee::where('api_token', $token)->first();
+
+        if ($employee) {
+            return response()->json([
+                'message' => 'Token is valid',
+                'employee' => $employee,
+            ]);
+        }
+    }
+
+    // Existing OTP verification logic
     $employee = Employee::where('id', $request->employee_id)->first();
     
 
@@ -218,6 +232,26 @@ public function checkDeviceApproval(Request $request)
     }
 }
 
+
+public function getEmployeeByToken(Request $request)
+{
+    $token = $request->header('Authorization');
+
+    if (!$token) {
+        return response()->json(['message' => 'Token not provided'], 400);
+    }
+
+    $employee = Employee::where('api_token', $token)->first();
+
+    if (!$employee) {
+        return response()->json(['message' => 'Invalid token'], 401);
+    }
+
+    return response()->json([
+        'message' => 'Employee information retrieved successfully',
+        'employee' => $employee,
+    ]);
+}
 
 public function updatePlayerId(Request $request)
 {
