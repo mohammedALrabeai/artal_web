@@ -53,7 +53,9 @@ class AdminNotificationController extends Controller
 
         return response()->json([
             'message' => 'تم إرسال إشعار تجريبي لجميع المدراء',
-            'managers_count' => $managers->count()
+            'managers_count' => $managers->count(),
+            'employee' => $employee,
+            'managers' => $managers
         ]);
 
     }
