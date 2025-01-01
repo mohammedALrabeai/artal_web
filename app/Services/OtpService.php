@@ -6,21 +6,19 @@ use Illuminate\Support\Facades\Http;
 
 class OtpService
 {
-    protected $baseUrl = 'https://otp.intshar.net/send_msg.php';
-    protected $authorization = '40703bb7812b727ec01c24f2da518c407342559c';
-    // protected $profileId = 'aedd0dc2-8453';
+    protected $baseUrl = 'https://login.isender360.com/api/sync/message/send';
     protected $profileId = '35ab7ec0-63dd';
-
 
     public function sendOtp(string $phone, string $message): bool
     {
-        $response = Http::asForm()->post($this->baseUrl, [
-            'Authorization' => $this->authorization,
-            'recipient' => $phone,
+        $response = Http::withHeaders([
+            'accept' => 'application/json',
+            'Content-Type' => 'application/json',
+        ])->post($this->baseUrl, [
             'profile_id' => $this->profileId,
-            'message' => $message,
+            'body' => $message,
+            'recipient' => $phone,
         ]);
-
         return $response->ok();
     }
 }
