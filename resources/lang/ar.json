@@ -398,6 +398,13 @@
     "Policy": "السياسة",
     "Policies": "السياسات",
     "Insurance Company": "شركة التأمين",
-    "Insurance Companies": "شركات التأمين"
+    "Insurance Companies": "شركات التأمين",
+    "Loan Request": "طلب قرض",
+    "Loan Requests": "طلبات القروض",
+    "Loan": "القرض",
+    "Loan Type": "نوع القرض",
+    "Overtime Request": "طلب ساعات إضافية",
+    "Overtime Requests": "طلبات ساعات إضافية"
+ 
   
 }

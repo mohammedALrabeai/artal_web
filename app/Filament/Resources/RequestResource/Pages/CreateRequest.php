@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RequestResource\Pages;
 
+use App\Models\Role;
 use Filament\Actions;
 use App\Models\Policy;
 use App\Models\Employee;
@@ -17,14 +18,12 @@ class CreateRequest extends CreateRecord
     {
         // التحقق من وجود سياسة مرتبطة بنوع الطلب
         $policy = Policy::where('policy_type', $data['type'])->first();
-    
         if (!$policy) {
             throw new \Exception(__('No policy defined for this request type.'));
         }
     
         // تحويل الشروط إلى مصفوفة إذا كانت نصًا
         $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
-    
         if (!$conditions) {
             throw new \Exception(__('Policy conditions are invalid.'));
         }
@@ -33,14 +32,17 @@ class CreateRequest extends CreateRecord
         $approvalFlow = ApprovalFlow::where('request_type', $data['type'])
             ->orderBy('approval_level', 'asc')
             ->first();
-    
         if (!$approvalFlow) {
             throw new \Exception(__('No approval flow defined for this request type.'));
         }
     
         // تخزين الدور الأول في `current_approver_role`
-    $data['current_approver_role'] = $approvalFlow->approver_role;
-    $data['status'] = 'pending'; // الحالة المبدئية للطلب
+        $role = Role::where('name', $approvalFlow->approver_role)->first();
+        if (!$role) {
+            throw new \Exception(__('Role not found for the approver in the approval flow.'));
+        }
+        $data['current_approver_role'] = $role->name;
+        $data['status'] = 'pending'; // الحالة المبدئية للطلب
     
         // التحقق من نوع الطلب وتطبيق القيود
         switch ($data['type']) {
@@ -89,9 +91,5 @@ class CreateRequest extends CreateRecord
     
         return $data;
     }
-    
-    
-    
-    
     
 }

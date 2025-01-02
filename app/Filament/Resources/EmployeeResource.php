@@ -13,15 +13,18 @@ use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Filters\Filter;
 use App\Services\EmployeePdfService;
+use Filament\Forms\Components\Select;
+
+
+
+use Filament\Forms\Components\Repeater;
+
+
+
+
+use Filament\Forms\Components\TextInput;
 use Filament\Tables\Filters\SelectFilter;
-
-
-
 use Illuminate\Database\Eloquent\Builder;
-
-
-
-
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use App\Notifications\NewEmployeeNotification;
 use App\Filament\Resources\EmployeeResource\Pages;
@@ -147,7 +150,8 @@ public static function getHeaderActions(): array
                         ->preload(), // تحميل البيانات مسبقًا
     
                     Forms\Components\TextInput::make('blood_type')
-                        ->label(__('Blood Type')),
+                        ->label(__('Blood Type'))
+                        ->required(),
                 ]),
     
             // Job Information
@@ -182,17 +186,20 @@ public static function getHeaderActions(): array
                         ->numeric(),
     
                     Forms\Components\TextInput::make('job_status')
-                        ->label(__('Job Status')),
+                        ->label(__('Job Status'))
+                        ->required(),
     
                     Forms\Components\TextInput::make('health_insurance_status')
-                        ->label(__('Health Insurance Status')),
+                        ->label(__('Health Insurance Status'))
+                        ->required(),
     
                     Forms\Components\TextInput::make('health_insurance_company')
                         ->label(__('Health Insurance Company')),
     
                     Forms\Components\TextInput::make('vacation_balance')
                         ->label(__('Vacation Balance'))
-                        ->numeric(),
+                        ->numeric()
+                        ->required(),
     
                     Forms\Components\TextInput::make('social_security')
                         ->label(__('Social Security')),
@@ -205,10 +212,12 @@ public static function getHeaderActions(): array
             Forms\Components\Fieldset::make(__('Education'))
                 ->schema([
                     Forms\Components\TextInput::make('qualification')
-                        ->label(__('Qualification')),
+                        ->label(__('Qualification'))
+                        ->required(),
     
                     Forms\Components\TextInput::make('specialization')
-                        ->label(__('Specialization')),
+                        ->label(__('Specialization'))
+                        ->required(),
                 ]),
     
             // Contact Information
@@ -238,10 +247,12 @@ public static function getHeaderActions(): array
                         ->required(),
     
                     Forms\Components\TextInput::make('street')
-                        ->label(__('Street')),
+                        ->label(__('Street'))
+                        ->required(),
     
                     Forms\Components\TextInput::make('building_number')
-                        ->label(__('Building Number')),
+                        ->label(__('Building Number'))
+                        ->required(),
     
                     Forms\Components\TextInput::make('apartment_number')
                         ->label(__('Apartment Number')),
@@ -262,6 +273,23 @@ public static function getHeaderActions(): array
                     Forms\Components\TextInput::make('linkedin')
                         ->label(__('LinkedIn')),
                 ]),
+                Repeater::make('leaveBalances')
+    ->relationship('leaveBalances')
+    ->schema([
+        Select::make('leave_type')
+            ->label('نوع الإجازة')
+            ->options([
+                'annual' => 'سنوية',
+                'sick' => 'مرضية',
+                'other' => 'أخرى',
+            ])
+            ->required(),
+        TextInput::make('balance')->label('الرصيد المتبقي')->numeric(),
+        TextInput::make('accrued_per_month')->label('المستحق شهريًا')->numeric(),
+        TextInput::make('used_balance')->label('المستخدم')->numeric(),
+    ])
+    ->label('رصيد الإجازات')
+    ->columns(3),
     
             // Security
             Forms\Components\Fieldset::make(__('Security'))
@@ -316,6 +344,15 @@ public static function getHeaderActions(): array
                     ->label(__('Grandfather Name'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                 
+    Tables\Columns\TextColumn::make('leaveBalances_sum_balance')
+    ->label('إجمالي رصيد الإجازات')
+    ->sortable()
+    ->getStateUsing(function ($record) {
+        return $record->leaveBalances->sum('balance');
+    })
+    ->default('0') // القيمة الافتراضية في حال لم يكن هناك رصيد
+->toggleable(isToggledHiddenByDefault: false),
     
                 Tables\Columns\TextColumn::make('family_name')
                     ->label(__('Family Name'))

@@ -48,7 +48,9 @@ class RequestResource extends Resource
             //     ->required(),
             Forms\Components\Select::make('type')
                 ->label(__('Type'))
-                ->options(\App\Models\RequestType::all()->pluck('name', 'key'))
+                ->options( \App\Models\RequestType::all()
+                ->mapWithKeys(fn ($type) => [$type->key => __($type->name)]) // تطبيق الترجمة الديناميكية
+                ->toArray())
                 ->required()
                 ->reactive(),
 

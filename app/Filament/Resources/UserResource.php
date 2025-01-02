@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Filament\Resources;
 
 use Filament\Forms;
@@ -17,30 +18,30 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        return static::getModel()::count();
+    }
 
     public static function getNavigationLabel(): string
     {
         return __('Users');
     }
-    
+
     public static function getPluralLabel(): string
     {
         return __('Users');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('User Management');
     }
-     // أو أي مجموعة أخرى
+    // أو أي مجموعة أخرى
     protected static ?int $navigationSort = 1; // ترتيب التبويب
     // protected static ?string $navigationIcon = 'heroicon-o-user-group'; // أيقونة التبويب
     protected static bool $shouldRegisterNavigation = true;
 
-    
+
 
     public static function form(Form $form): Form
     {
@@ -59,13 +60,9 @@ class UserResource extends Resource
                 ->label(__('Phone')) // Translation
                 ->tel(),
 
-            Forms\Components\Select::make('role')
-                ->label(__('Role')) // Translation
-                ->options([
-                    'manager' => __('Manager'),
-                    'general_manager' => __('General Manager'),
-                    'hr' => __('HR'),
-                ])
+                Forms\Components\Select::make('role_id')
+                ->label(__('Role'))
+                ->relationship('role', 'name') // ربط الحقل مع جدول roles
                 ->required(),
 
             Forms\Components\TextInput::make('password')
@@ -94,34 +91,23 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->label(__('Phone'))
                     ->searchable(),
-
-                    Tables\Columns\TextColumn::make('role')
+                  
+                    Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
                     ->label(__('Role'))
-                    ->formatStateUsing(function ($state) {
-                        return match ($state) {
-                            'manager' => __('Manager'),
-                            'general_manager' => __('General Manager'),
-                            'hr' => __('HR'),
-                            default => $state,
-                        };
-                    })
+                    ->sortable()
                     ->color(function ($state) {
                         return match ($state) {
-                            'manager' => 'primary',
-                            'general_manager' => 'success',
-                            'hr' => 'danger',
+                            'Manager' => 'primary',
+                            'General Manager' => 'success',
+                            'HR' => 'danger',
                             default => 'secondary',
                         };
                     }),
             ])
             ->filters([
-                SelectFilter::make('role')
-                    ->label(__('Role'))
-                    ->options([
-                        'manager' => __('Manager'),
-                        'general_manager' => __('General Manager'),
-                        'hr' => __('HR'),
-                    ]),
+                SelectFilter::make('role_id')
+                ->label(__('Role'))
+                ->relationship('role', 'name'), // فلترة باستخدام العلاقة
 
                 TernaryFilter::make('email_verified_at')
                     ->label(__('Verified Email'))

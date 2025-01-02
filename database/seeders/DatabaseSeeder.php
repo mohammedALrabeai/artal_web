@@ -104,5 +104,11 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
     }
+
+    $this->call([
+        RequestTypeSeeder::class,
+        PolicySeeder::class,
+        ApprovalFlowSeeder::class,
+    ]);
 }
 }

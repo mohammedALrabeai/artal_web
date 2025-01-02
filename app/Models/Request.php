@@ -14,7 +14,8 @@ class Request extends Model
         'type',
         'submitted_by',
         'employee_id',
-        'current_approver_id',
+        // 'current_approver_id',
+        'current_approver_role',
         'status',
         'description',
         'description',
@@ -42,10 +43,16 @@ class Request extends Model
     }
 
     // علاقة مع الموافقات المرتبطة بالطلب
+    // public function approvals()
+    // {
+    //     return $this->hasMany(RequestApproval::class);
+    // }
     public function approvals()
-    {
-        return $this->hasMany(RequestApproval::class);
-    }
+{
+    return $this->hasMany(RequestApproval::class)
+        ->orderBy('approved_at', 'asc'); // ترتيب الموافقات حسب الوقت
+}
+
 
     // المستخدم الذي يوافق حاليًا
     public function currentApprover()
@@ -81,21 +88,70 @@ public function updateRequestStatus()
 
 public function approveRequest($approver, $comments = null)
 {
-    // الحصول على المستوى الحالي من الموافقات
-    $currentLevel = $this->approvals->max('approval_level') ?? 0;
+    // التحقق من أن حالة الطلب تسمح بالموافقة
+    if ($this->status !== 'pending') {
+        throw new \Exception(__('This request cannot be approved as it is already :status.', ['status' => $this->status]));
+    }
+    \Log::info('Approver Role:', ['user_role' => $approver->role]);
+    \Log::info('Request Current Approver Role:', ['current_approver_role' => $this->current_approver_role]);
+    
+    // التحقق من أن المسؤول الحالي لديه نفس الدور المطلوب
+    $approverRoleName = $approver->role->name;
 
-    // جلب المستوى التالي في سلسلة الموافقات
-    $nextApprovalFlow = $this->approvalFlows
-        ->where('approval_level', $currentLevel + 1)
+    // التحقق من أن المسؤول الحالي لديه نفس الدور المطلوب
+    if (strtolower($approverRoleName) !== strtolower($this->current_approver_role)) {
+        throw new \Exception(__('You are not authorized to approve this request. Your role: :role, Required role: :required_role', [
+            'role' => $approverRoleName,
+            'required_role' => $this->current_approver_role,
+        ]));
+    }
+
+    // التحقق مما إذا كان المسؤول قد وافق مسبقًا
+    $existingApproval = $this->approvals()
+        ->where('approver_id', $approver->id)
+        ->where('approver_role', $approver->role)
+        ->where('status', 'approved')
+        ->first();
+
+    if ($existingApproval) {
+        throw new \Exception(__('You have already approved this request.'));
+    }
+
+    // التحقق من سلسلة الموافقات
+    $approvalFlow = $this->approvalFlows
+        ->where('approver_role', $this->current_approver_role)
+        ->first();
+
+    if (!$approvalFlow) {
+        throw new \Exception(__('Approval flow is not properly configured for this request type.'));
+    }
+
+    // التحقق من الشروط الإضافية (مثال: رصيد الإجازات)
+    if ($this->type === 'leave' && $approvalFlow->conditions['min_balance'] ?? false) {
+        $employee = $this->employee;
+        if ($employee->leave_balance < $approvalFlow->conditions['min_balance']) {
+            throw new \Exception(__('Insufficient leave balance for approval.'));
+        }
+    }
+
+    // التحقق من البيانات المطلوبة (مثال: التعليقات)
+    if ($approvalFlow->conditions['requires_comments'] ?? false && empty($comments)) {
+        throw new \Exception(__('Comments are required for this approval.'));
+    }
+
+    // جلب المستوى التالي من سلسلة الموافقات
+    $currentRole = $this->current_approver_role;
+    $nextApprovalFlow = Role::where('level', '>', Role::where('name', $currentRole)->first()->level)
+        ->orderBy('level', 'asc')
         ->first();
 
     if ($nextApprovalFlow) {
         // إذا كان هناك مستوى موافقة آخر
-        $this->current_approver_role = $nextApprovalFlow->approver_role;
+        $this->current_approver_role = $nextApprovalFlow->name;
     } else {
         // إذا انتهت جميع المستويات
-        $this->current_approver_role = null; // لا مزيد من الموافقات
-        $this->status = 'approved'; // حالة الطلب تصبح "مقبول"
+        $this->current_approver_role = null;
+        $this->status = 'approved';
     }
 
     $this->save();
@@ -103,12 +159,12 @@ public function approveRequest($approver, $comments = null)
     // تسجيل الموافقة
     $this->approvals()->create([
         'approver_id' => $approver->id,
-        'approver_role' => $approver->role,
-        'approval_level' => $currentLevel + 1,
+        'approver_role' => $approverRoleName, // تخزين اسم الدور
         'status' => 'approved',
         'approved_at' => now(),
-        'notes' =>  $comments,
+        'notes' => $comments,
     ]);
+    
 
     // إشعار الموظف إذا كانت الموافقة النهائية
     if ($this->status === 'approved') {
@@ -117,6 +173,7 @@ public function approveRequest($approver, $comments = null)
         );
     }
 }
+
 
 
 public function rejectRequest($approver, $comments = null)

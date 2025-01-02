@@ -140,6 +140,12 @@ public function insuranceCompany()
 }
 
 
+public function leaveBalances()
+{
+    return $this->hasMany(LeaveBalance::class);
+}
+
+
 
 
 

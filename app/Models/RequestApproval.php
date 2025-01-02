@@ -12,7 +12,7 @@ class RequestApproval extends Model
     protected $fillable = [
         'request_id',
         'approver_id',
-        'approver_type',
+        'approver_role',
         'status',
         'notes',
         'approved_at',
@@ -21,7 +21,7 @@ class RequestApproval extends Model
 
     public function approvalFlow()
 {
-    return $this->belongsTo(ApprovalFlow::class, 'request_type', 'request_type');
+    return $this->belongsTo(ApprovalFlow::class, 'approver_role', 'approver_role');
 }
 
 public function updateApprovalStatus($status, $comments = null)
