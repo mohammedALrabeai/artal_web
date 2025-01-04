@@ -423,7 +423,10 @@
     "leave": "إجازة",
     "pending": "قيد الانتظار",
     "approved": "معتمد",
-    "rejected": "مرفوض"
+    "rejected": "مرفوض",
+    "loan": "قرض",
+    "overtime": "ساعات إضافية",
+    "resignation": "استقالة"
  
   
 }
