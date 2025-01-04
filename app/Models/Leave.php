@@ -20,6 +20,12 @@ class Leave extends Model
     // علاقة بالموظف
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_id');
     }
+
+    public function request()
+{
+    return $this->hasOne(Request::class, 'leave_id');
+}
+
 }

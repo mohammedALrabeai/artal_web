@@ -2,14 +2,16 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use App\Models\User;
+use Filament\Tables;
+use App\Models\Request;
+use App\Models\Employee;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Notifications\Notification;
 use App\Filament\Resources\RequestResource\Pages;
 use App\Filament\Resources\RequestResource\RelationManagers;
-use App\Models\Employee;
-use App\Models\Request;
-use App\Models\User;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
 
 class RequestResource extends Resource
 {
@@ -38,71 +40,115 @@ class RequestResource extends Resource
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([
-            // Forms\Components\Select::make('type')
-            //     ->label(__('Type'))
-            //     ->options([
-            //         'leave' => __('Leave Request'),
-            //         'transfer' => __('Transfer Request'),
-            //         'compensation' => __('Compensation Request'),
-            //     ])
-            //     ->required(),
+            // اختيار نوع الطلب
             Forms\Components\Select::make('type')
                 ->label(__('Type'))
-                ->options( \App\Models\RequestType::all()
-                ->mapWithKeys(fn ($type) => [$type->key => __($type->name)]) // تطبيق الترجمة الديناميكية
-                ->toArray())
+                ->options(\App\Models\RequestType::all()
+                    ->mapWithKeys(fn($type) => [$type->key => __($type->name)]) // ترجمة ديناميكية
+                    ->toArray())
                 ->required()
                 ->reactive(),
-
+    
+            // اختيار الموظف
             Forms\Components\Select::make('employee_id')
                 ->label(__('Employee'))
                 ->options(Employee::all()->pluck('first_name', 'id'))
                 ->searchable()
                 ->nullable()
                 ->required(),
-
+    
+            // المقدم
             Forms\Components\Select::make('submitted_by')
                 ->label(__('Submitted By'))
                 ->options(User::all()->pluck('name', 'id'))
                 ->searchable()
                 ->required(),
-
+    
+            // وصف الطلب
             Forms\Components\Textarea::make('description')
                 ->label(__('Description')),
+    
+            // الحقول الديناميكية بناءً على نوع الطلب
+            // إذا كان نوع الطلب "إجازة"
+            Forms\Components\Group::make([
+                Forms\Components\DatePicker::make('start_date')
+                    ->label(__('Start Date'))
+                    ->required()
+                    ->reactive()
+                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+                
+                Forms\Components\DatePicker::make('end_date')
+                    ->label(__('End Date'))
+                    ->required()
+                    ->reactive()
+                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+    
+                Forms\Components\TextInput::make('duration')
+                    ->label(__('Duration (Days)'))
+                    ->numeric()
+                    ->disabled() // يتم حساب المدة بناءً على تاريخ البداية والنهاية
+                    ->default(fn ($livewire) => $livewire->data['start_date'] && $livewire->data['end_date']
+        ? \Carbon\Carbon::parse($livewire->data['start_date'])->diffInDays(\Carbon\Carbon::parse($livewire->data['end_date'])) + 1
+        : null)
+                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+    
+                Forms\Components\Select::make('leave_type')
+                    ->label(__('Leave Type'))
+                    ->options([
+                        'annual' => __('Annual Leave'),
+                        'sick' => __('Sick Leave'),
+                        'unpaid' => __('Unpaid Leave'),
+                    ])
+                    ->required()
+                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+    
+                Forms\Components\Textarea::make('reason')
+                    ->label(__('Reason'))
+                    ->nullable()
+                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+            ])->columns(1)
 
-            // حقول ديناميكية بناءً على نوع الطلب
-            Forms\Components\TextInput::make('duration')
-                ->label(__('Duration (Days)'))
-                ->visible(fn ($livewire) => $livewire->data['type'] === 'leave')
-                ->numeric(),
-
+            ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+    
+            // حقول طلبات أخرى مثل القروض
             Forms\Components\TextInput::make('amount')
                 ->label(__('Amount'))
-                ->visible(fn ($livewire) => $livewire->data['type'] === 'loan')
+                ->visible(fn($livewire) => $livewire->data['type'] === 'loan')
                 ->numeric(),
-
-            Forms\Components\KeyValue::make('additional_data')
-                ->label(__('Additional Data'))
-                ->visible(fn ($livewire) => in_array($livewire->data['type'], ['compensation', 'transfer', 'overtime']))
-                ->keyLabel(__('Key'))
-                ->valueLabel(__('Value')),
-            Forms\Components\TextInput::make('leave_balance')
-                ->label(__('Leave Balance'))
-                ->default(fn ($record) => $record ? $record->employee->leave_balance : null)
-                ->disabled()
-                ->visible(fn ($livewire) => $livewire->data['type'] === 'leave')
-                ->columnSpan('full'),
         ]);
     }
+    
 
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('type')->label(__('Type')),
+                Tables\Columns\TextColumn::make('type')->label(__('Type'))
+                ->formatStateUsing(function ($state) {
+                    // بافتراض أن حقل type يحتفظ بقيمة مثل 'leave' أو 'loan' أو 'transfer' ...إلخ
+                    // نعيد ترجمة القيمة بناءً على مفتاح ترجمة مناسب
+                    return __($state.'');
+                }),
                 Tables\Columns\TextColumn::make('submittedBy.name')->label(__('Submitted By')),
                 Tables\Columns\TextColumn::make('employee.first_name')->label(__('Employee')),
-                Tables\Columns\TextColumn::make('status')->label(__('Status')),
+                Tables\Columns\TextColumn::make('status')->label(__('Status'))
+                ->formatStateUsing(function ($state) {
+                    return __($state.'');
+                })
+                // ->colors([
+                //     __('pending') => 'warning',  // أصفر أو برتقالي
+                //     __('approved') => 'success', // أخضر
+                //     __('rejected') => 'danger',  // أحمر
+                // ])
+                ->color(function ($state) {
+                    return match ($state) {
+                        'pending' => 'warning',
+                        'approved' => 'success',
+                        'rejected' => 'danger',
+                        default => null,
+                    };
+                })
+                ->sortable(),
                 Tables\Columns\TextColumn::make('current_approver_role')
                 ->label(__('Current Approver Role'))
                 ->formatStateUsing(fn($state) => ucfirst(str_replace('_', ' ', $state)))
@@ -136,7 +182,9 @@ class RequestResource extends Resource
                 //     ]),
                 Tables\Filters\SelectFilter::make('type')
                     ->label(__('Type'))
-                    ->options(\App\Models\RequestType::all()->pluck('name', 'key')),
+                    
+                    ->options(\App\Models\RequestType::all()->pluck('name', 'key')->map(fn($name) => __($name)) // ترجمة الأسماء (في حال كانت لديك مفاتيح ترجمة)
+                    ->toArray()),
 
                 Tables\Filters\SelectFilter::make('status')
                     ->label(__('Status'))
@@ -148,12 +196,36 @@ class RequestResource extends Resource
                     Tables\Filters\SelectFilter::make('current_approver_role')
                     ->label(__('Current Approver Role'))
                     ->options([
-                        'hr' => 'HR',
-                        'manager' => 'Manager',
-                        'general_manager' => 'General Manager',
+                        'hr' => __('HR'),
+                        'manager' => __('Manager'),
+                        'general_manager' => __('General Manager'),
                     ])
             ])
             ->actions([
+                // Tables\Actions\Action::make('do')
+                // ->label(__('اعتماد الإجازة'))
+                // ->icon('heroicon-o-check')
+                // ->color('success')
+                // ->action(function ($record) {
+                //     // تأكد من أن الطلب هو من نوع إجازة وأن هناك سجل إجازة مرتبط به
+                //     if ($record->type === 'leave' && $record->leave) {
+                //         $record->leave->update([
+                //             'approved' => true, // تحديث حالة الإجازة إلى "معتمدة"
+                //         ]);
+        
+                //         // يمكنك إرسال تنبيه (Notification) للمستخدم
+                //         Notification::make()
+                //             ->title('تم اعتماد الإجازة بنجاح')
+                //             ->success()
+                //             ->send();
+                //     } else {
+                //         // إذا لم يكن هذا الطلب من نوع إجازة أو لا توجد إجازة مرتبطة
+                //         Notification::make()
+                //             ->title('لا توجد إجازة مرتبطة بهذا الطلب')
+                //             ->danger()
+                //             ->send();
+                //     }
+                // }),
                 Tables\Actions\Action::make('approve')
                     ->label(__('Approve'))
                     ->action(fn ($record, array $data) => $record->approveRequest(auth()->user(), $data['comments']))

@@ -404,7 +404,26 @@
     "Loan": "القرض",
     "Loan Type": "نوع القرض",
     "Overtime Request": "طلب ساعات إضافية",
-    "Overtime Requests": "طلبات ساعات إضافية"
+    "Overtime Requests": "طلبات ساعات إضافية",
+    "System Settings": "إعدادات النظام",
+    "Settings": "الإعدادات",
+    "Sliders": "السلايدر",
+    "Slider": "السلايدر",
+    "Slides": "الشرائح",
+    "Slide": "الشريحة",
+    "Request Types": "أنواع الطلبات",
+ 
+    "Request Status": "حالة الطلب",
+ 
+    "Request Date": "تاريخ الطلب",
+   
+    "Updated By": "تحديث بواسطة",
+    "Current Approver Role": "دور الموافق الحالي",
+    "Remaining Levels": "المستويات المتبقية",
+    "leave": "إجازة",
+    "pending": "قيد الانتظار",
+    "approved": "معتمد",
+    "rejected": "مرفوض"
  
   
 }

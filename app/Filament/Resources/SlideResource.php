@@ -21,18 +21,29 @@ class SlideResource extends Resource
 
     // protected static ?string $navigationIcon = 'heroicon-o-photograph';
 
-    protected static ?string $navigationLabel = 'السلايدات';
-
-    protected static ?string $pluralModelLabel = 'السلايدات';
+ 
 
     protected static ?string $modelLabel = 'سلايد';
 
     protected static ?string $slug = 'slides';
 
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Slides');
+    }
+    
+    public static function getPluralLabel(): string
+    {
+        return __('Slides');
+    }
+    
     public static function getNavigationGroup(): ?string
     {
-        return __('الإعدادات');
+        return __('System Settings');
     }
+
+
 
     public $view_image2;
 

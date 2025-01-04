@@ -12,6 +12,34 @@ class RequestTypeResource extends Resource
 {
     protected static ?string $model = RequestType::class;
 
+    public static function getNavigationLabel(): string
+    {
+        return __('Request Types');
+    }
+
+    public static function getPluralLabel(): string
+    {
+        return __('Request Types');
+    }
+
+    public static function getLabel(): string
+    {
+        return __('Request Type');
+    }
+
+    public static function getSingularLabel(): string
+    {
+        return __('Request Type');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Request Management');
+    }
+
+    
+
+
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([

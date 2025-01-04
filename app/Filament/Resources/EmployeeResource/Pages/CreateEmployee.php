@@ -17,11 +17,14 @@ class CreateEmployee extends CreateRecord
 
     protected function afterCreate(): void
     {
-        // إرسال إشعار لجميع المستخدمين الذين لديهم دور مدير
-        $managers = User::whereIn('role', ['manager', 'general_manager', 'hr'])->get();
-        
-        foreach ($managers as $manager) {
-            $manager->notify(new NewEmployeeNotification($this->record));
-        }
+       // جلب المستخدمين الذين لديهم الأدوار المطلوبة عبر العلاقة مع جدول الأدوار
+    $managers = User::whereHas('role', function ($query) {
+        $query->whereIn('name', ['manager', 'general_manager', 'hr']); // الأدوار المطلوبة
+    })->get();
+
+    // إرسال الإشعارات
+    foreach ($managers as $manager) {
+        $manager->notify(new NewEmployeeNotification($this->record));
+    }
     }
 }

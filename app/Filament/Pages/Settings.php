@@ -8,10 +8,25 @@ use App\Models\Setting;
 class Settings extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-cog';
-    protected static ?string $navigationGroup = 'System Settings';
+    // protected static ?string $navigationGroup = 'System Settings';
     protected static string $view = 'filament.pages.settings';
 
     public $settings = [];
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Settings');
+    }
+    
+    public static function getPluralLabel(): string
+    {
+        return __('Settings');
+    }
+    
+    public static function getNavigationGroup(): ?string
+    {
+        return __('System Settings');
+    }
 
     public function mount()
     {
@@ -23,6 +38,7 @@ class Settings extends Page
             'coverages_enabled' => false,
             'show_attendance_log' => false,
             'force_update' => false,
+            'whatsapp_notifications' => false,
         ];
     
         $this->settings = array_merge($defaultSettings, $this->settings);
@@ -44,7 +60,7 @@ class Settings extends Page
         }
 
         Setting::updateOrCreate(['key' => $key], ['value' => $value]);
-    }
+    }   
     
 
         \Filament\Notifications\Notification::make()
@@ -64,6 +80,11 @@ class Settings extends Page
                     'external_source' => 'مصدر خارجي',
                 ])
                 ->default($this->settings['app_mode'] ?? 'normal'),
+
+            Forms\Components\Toggle::make('settings.whatsapp_notifications')
+                ->label('اشعارات واتساب')
+                ->default($this->settings['whatsapp_notifications']?? false)
+                ->reactive(),
 
                 Forms\Components\Toggle::make('settings.offline_mode')
                 ->label('امكانية التحضير Offline')
@@ -124,6 +145,7 @@ class Settings extends Page
             Forms\Components\TextInput::make('settings.whatsapp')
                 ->label('واتساب')
                 ->default($this->settings['whatsapp'] ?? ''),
+
         ];
     }
 }

@@ -35,7 +35,7 @@ class Employee extends Model
         'job_status',
         'health_insurance_status',
         'health_insurance_company',
-        'vacation_balance',
+       
         'social_security',
         'social_security_code',
         'qualification',
@@ -143,6 +143,10 @@ public function insuranceCompany()
 public function leaveBalances()
 {
     return $this->hasMany(LeaveBalance::class);
+}
+public function leaves()
+{
+    return $this->hasMany(Leave::class, 'employee_id');
 }
 
 

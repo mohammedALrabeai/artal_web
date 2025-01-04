@@ -24,6 +24,7 @@ class Request extends Model
         'additional_data',
         'required_documents',
         'target_location',
+        'leave_id',
     ];
 
     protected $casts = [
@@ -39,8 +40,14 @@ class Request extends Model
     // علاقة مع الموظف المرتبط بالطلب
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_id');
     }
+    public function leave()
+{
+    return $this->belongsTo(Leave::class, 'leave_id');
+}
+    
+    
 
     // علاقة مع الموافقات المرتبطة بالطلب
     // public function approvals()
@@ -127,7 +134,8 @@ public function approveRequest($approver, $comments = null)
     }
 
     // التحقق من الشروط الإضافية (مثال: رصيد الإجازات)
-    if ($this->type === 'leave' && $approvalFlow->conditions['min_balance'] ?? false) {
+ 
+    if ($this->type === 'leave' && isset($approvalFlow->conditions['min_balance']) && $approvalFlow->conditions['min_balance']) {
         $employee = $this->employee;
         if ($employee->leave_balance < $approvalFlow->conditions['min_balance']) {
             throw new \Exception(__('Insufficient leave balance for approval.'));
@@ -152,6 +160,12 @@ public function approveRequest($approver, $comments = null)
         // إذا انتهت جميع المستويات
         $this->current_approver_role = null;
         $this->status = 'approved';
+           // تحديث حالة الإجازة إذا كانت الموافقة نهائية
+           if ($this->type === 'leave' && $this->leave) {
+            $this->leave->update([
+                'approved' => true, // تحديث حالة الإجازة إلى "معتمدة"
+            ]);
+        }
     }
 
     $this->save();
@@ -175,9 +189,18 @@ public function approveRequest($approver, $comments = null)
 }
 
 
-
 public function rejectRequest($approver, $comments = null)
 {
+
+//     $request = Request::find(2); // افترض أن هذا هو الطلب
+//     $employee = $request->employee;
+    
+//     if ($employee) {
+//         $employee->notify(new RequestStatusNotification($request, 'rejected', auth()->user(), 'تم رفض الطلب.'));
+//     } else {
+//         \Log::error('Employee not found for the request.');
+//     }
+// return;
     // تحديث حالة الطلب إلى "مرفوض"
     $this->status = 'rejected';
     $this->current_approver_role = null; // لا مزيد من الموافقات بعد الرفض
@@ -191,11 +214,57 @@ public function rejectRequest($approver, $comments = null)
         'approved_at' => now(),
         'notes' =>  $comments,
     ]);
+    if (empty($this->employee->mobile_number)) {
+        \Log::warning('Employee does not have a mobile number.', [
+            'employee_id' => $this->employee->id,
+            'request_id' => $this->id,
+        ]);
+        return; // إنهاء العملية إذا لم يكن هناك رقم جوال
+    }
+    
+    \Log::info('About to send notification.', [
+        'employee_id' => $this->employee->id,
+        'status' => $this->status,
+    ]);
 
+
+    // التحقق من نوع الطلب (إجازة سنوية)
+    if ($this->type === 'leave' &&false) {    // يلزم تفاصيل عن نوع الاجازة
+        // الحصول على رصيد الإجازة السنوية
+        $leaveBalance = $this->employee->leaveBalances()->where('leave_type', 'annual')->first();
+
+        if ($leaveBalance) {
+            // تحديث الرصيد عند الرفض
+            $leaveBalance->update([
+                'balance' => $leaveBalance->balance + $this->duration, // إعادة الأيام المستخدمة
+                'used_balance' => $leaveBalance->used_balance - $this->duration,
+                'last_updated' => now(),
+            ]);
+
+            \Log::info('Leave balance updated successfully upon rejection.', [
+                'employee_id' => $this->employee->id,
+                'request_id' => $this->id,
+                'returned_days' => $this->duration,
+            ]);
+        } else {
+            \Log::error('Leave balance record not found for employee.', [
+                'employee_id' => $this->employee->id,
+                'request_id' => $this->id,
+            ]);
+        }
+    }
+
+
+ 
     // إشعار الموظف بالرفض
-    $this->employee->notify(
+    $this->employee()->notify(
         new RequestStatusNotification($this, 'rejected', $approver, $comments)
     );
+    \Log::info('Notification sent successfully.');
+
+//     $employee = Employee::find(1); // افترض أن الموظف يحمل ID = 1
+// $employee->notify(new RequestStatusNotification($this, 'rejected', $approver, $comments));
+
 }
 
 

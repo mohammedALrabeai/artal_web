@@ -25,6 +25,7 @@ class ApprovalFlow extends Model
     protected $casts = [
         'conditions' => 'array', // تحويل الشروط إلى JSON تلقائيًا
     ];
+    
 
     /**
      * العلاقة مع الطلبات.

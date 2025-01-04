@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\RequestResource\Pages;
 
 use App\Models\Role;
+use App\Models\Leave;
 use Filament\Actions;
 use App\Models\Policy;
 use App\Models\Employee;
@@ -51,15 +52,56 @@ class CreateRequest extends CreateRecord
                 if (!$employee) {
                     throw new \Exception(__('Employee not found.'));
                 }
-    
-                if ($employee->leave_balance < $data['duration']) {
+            
+                // الحصول على رصيد الإجازات السنوية من جدول leave_balances
+                $leaveBalance = $employee->leaveBalances()->where('leave_type', 'annual')->first();
+                   // احتساب المدة بناءً على تاريخ البداية والنهاية
+        $startDate = \Carbon\Carbon::parse($data['start_date']);
+        $endDate = \Carbon\Carbon::parse($data['end_date']);
+        $data['duration'] = $startDate->diffInDays($endDate) + 1; // +1 لإضافة اليوم الأول
+
+                if (!$leaveBalance) {
+                    // throw new \Exception(__('No leave balance record found for this employee.'));
+                }else{
+                    if($data['leave_type'] == 'annual'){
+                          // التحقق من أن رصيد الإجازات يكفي
+                if ($leaveBalance->calculateAnnualLeaveBalance() < $data['duration']) {
                     throw new \Exception(__('Insufficient leave balance.'));
                 }
-    
+                    $leaveBalance->update([
+                        'balance' => $leaveBalance->balance - $data['duration'],
+                        'used_balance' => $leaveBalance->used_balance + $data['duration'],
+                        'last_updated' => now(),
+                    ]);
+                }
+            }
+            
+              
+            
+                // التحقق من الحد الأقصى لمدة الإجازة
                 if (isset($conditions['max_duration']) && $data['duration'] > $conditions['max_duration']) {
                     throw new \Exception(__('Requested duration exceeds the maximum allowed.'));
                 }
+
+
+                $leave = Leave::create([
+                    'employee_id' => $data['employee_id'],
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'],
+                    'type' => $data['leave_type'],
+                    'reason' => $data['reason'],
+                    'aproved' => false,
+                ]);
+                $data['leave_id'] = $leave->id;
+            
+                // تحديث الرصيد في جدول leave_balances عند إنشاء الطلب
+                $leaveBalance->update([
+                    'balance' => $leaveBalance->balance - $data['duration'],
+                    'used_balance' => $leaveBalance->used_balance + $data['duration'],
+                    'last_updated' => now(),
+                ]);
                 break;
+            
     
             case 'loan': // طلب سلفة
                 if (isset($conditions['max_amount']) && $data['amount'] > $conditions['max_amount']) {
@@ -79,11 +121,25 @@ class CreateRequest extends CreateRecord
                 }
                 break;
     
-            case 'overtime': // طلب ساعات إضافية
-                if (isset($conditions['max_hours']) && $data['duration'] > $conditions['max_hours']) {
-                    throw new \Exception(__('Overtime hours exceed the maximum allowed.'));
-                }
-                break;
+                case 'overtime': // طلب ساعات إضافية
+                    $employee = Employee::find($data['employee_id']);
+                    $overtimeBalance = $employee->leaveBalances()->where('leave_type', 'overtime')->first();
+                
+                    if (!$overtimeBalance) {
+                        throw new \Exception(__('No overtime balance record found for this employee.'));
+                    }
+                
+                    if (isset($conditions['max_hours']) && $data['duration'] > $conditions['max_hours']) {
+                        throw new \Exception(__('Overtime hours exceed the maximum allowed.'));
+                    }
+                
+                    // تحديث الرصيد عند الموافقة على الساعات الإضافية
+                    $overtimeBalance->update([
+                        'balance' => $overtimeBalance->balance - $data['duration'],
+                        'used_balance' => $overtimeBalance->used_balance + $data['duration'],
+                        'last_updated' => now(),
+                    ]);
+                    break;
     
             default:
                 throw new \Exception(__('Invalid request type.'));

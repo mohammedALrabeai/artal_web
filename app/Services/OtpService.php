@@ -22,4 +22,27 @@ class OtpService
 
         return $response->ok();
     }
+    public function sendViaWhatsapp(string $phone, string $message): bool
+    {
+        if (empty($phone)) {
+            \Log::error('Phone number is missing or invalid.', ['phone' => $phone]);
+            return false;
+        }
+    
+        \Log::info('Sending WhatsApp message...', ['phone' => $phone, 'message' => $message]);
+    
+        $response = Http::asForm()->post($this->baseUrl . '?profile_id=' . $this->profileId, [
+            'recipient' => $phone,
+            'body' => $message,
+        ]);
+    
+        \Log::info('WhatsApp API Response', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+    
+        return $response->ok();
+    }
+    
+    
 }

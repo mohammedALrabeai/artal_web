@@ -18,9 +18,18 @@ class EditRequest extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+   
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        if ($this->type === 'leave' && $this->leave) {
+            $this->leave->update([
+                'start_date' => $data['leave']['start_date'],
+                'end_date' => $data['leave']['end_date'],
+                'type' => $data['leave']['type'],
+                'reason' => $data['leave']['reason'],
+            ]);
+        }
         $policy = Policy::where('policy_type', $data['type'])->first();
     
         if (!$policy) {

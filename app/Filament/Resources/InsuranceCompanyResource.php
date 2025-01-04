@@ -21,9 +21,23 @@ class InsuranceCompanyResource extends Resource
     protected static ?string $model = InsuranceCompany::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
-    protected static ?string $navigationGroup = 'الإعدادات';
-    protected static ?string $label = 'شركة التأمين';
-    protected static ?string $pluralLabel = 'شركات التأمين';
+    // protected static ?string $navigationGroup = 'الإعدادات';
+    // protected static ?string $label = 'شركة التأمين';
+    // protected static ?string $pluralLabel = 'شركات التأمين';
+    public static function getNavigationLabel(): string
+    {
+        return __('Insurance Companies');
+    }
+    
+    public static function getPluralLabel(): string
+    {
+        return __('Insurance Companies');
+    }
+    
+    public static function getNavigationGroup(): ?string
+    {
+        return __('System Settings');
+    }
 
     public static function form(Form $form): Form
     {
