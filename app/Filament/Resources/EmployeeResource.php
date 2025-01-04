@@ -2,48 +2,39 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-
-use Filament\Tables;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Filters\Filter;
-use App\Services\EmployeePdfService;
-use Filament\Forms\Components\Select;
-
-
-
-use Filament\Forms\Components\Repeater;
-
-
-
-
-use Filament\Forms\Components\TextInput;
-use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
-use App\Notifications\NewEmployeeNotification;
 use App\Filament\Resources\EmployeeResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
+use App\Models\Employee;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class EmployeeResource extends Resource
 {
     protected static ?string $model = Employee::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
+
     protected static ?int $navigationSort = -1;
 
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
     }
-
 
     public static function getNavigationLabel(): string
     {
@@ -89,8 +80,6 @@ class EmployeeResource extends Resource
                 }),
         ];
     }
-
-
 
     public static function form(Form $form): Form
     {
@@ -138,7 +127,6 @@ class EmployeeResource extends Resource
                         ->label(__('Sponsor Company'))
                         ->required(),
 
-
                     Forms\Components\Select::make('insurance_company_id')
                         ->label(__('Insurance Company'))
                         ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
@@ -168,7 +156,6 @@ class EmployeeResource extends Resource
                         ->displayFormat('Y-m-d')
                         ->placeholder(__('Select contract end date')),
 
-
                     Forms\Components\DatePicker::make('actual_start')
                         ->label(__('Actual Start'))
                         ->required(),
@@ -196,8 +183,6 @@ class EmployeeResource extends Resource
 
                     Forms\Components\TextInput::make('health_insurance_company')
                         ->label(__('Health Insurance Company')),
-
-                
 
                     Forms\Components\TextInput::make('social_security')
                         ->label(__('Social Security')),
@@ -271,7 +256,7 @@ class EmployeeResource extends Resource
                     Forms\Components\TextInput::make('linkedin')
                         ->label(__('LinkedIn')),
                 ]),
-                Repeater::make('leaveBalances')
+            Repeater::make('leaveBalances')
                 ->relationship('leaveBalances')
                 ->schema([
                     Select::make('leave_type')
@@ -299,7 +284,6 @@ class EmployeeResource extends Resource
                 ])
                 ->label('رصيد الإجازات')
                 ->columns(4), // تحديث عدد الأعمدة ليشمل الحقل الجديد
-            
 
             // Security
             Forms\Components\Fieldset::make(__('Security'))
@@ -324,8 +308,6 @@ class EmployeeResource extends Resource
         ]);
     }
 
-
-
     public static function table(Table $table): Table
     {
         return $table
@@ -333,9 +315,9 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Full Name'))
                     ->getStateUsing(function ($record) {
-                        return $record->first_name . ' ' .
-                            $record->father_name . ' ' .
-                            $record->grandfather_name . ' ' .
+                        return $record->first_name.' '.
+                            $record->father_name.' '.
+                            $record->grandfather_name.' '.
                             $record->family_name;
                     })
                     ->searchable()
@@ -363,16 +345,16 @@ class EmployeeResource extends Resource
                 //     })
                 //     ->default('0') // القيمة الافتراضية في حال لم يكن هناك رصيد
                 //     ->toggleable(isToggledHiddenByDefault: false),
-                    Tables\Columns\TextColumn::make('leaveBalances')
+                Tables\Columns\TextColumn::make('leaveBalances')
                     ->label('رصيد الإجازات السنوية')
                     ->getStateUsing(function ($record) {
                         // الحصول على الإجازة السنوية
                         $leaveBalance = $record->leaveBalances->where('leave_type', 'annual')->first();
-    
+
                         if ($leaveBalance) {
                             return $leaveBalance->calculateAnnualLeaveBalance();
                         }
-    
+
                         return 'غير متوفر';
                     })
                     ->sortable()
@@ -382,8 +364,7 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('family_name')
                     ->label(__('Family Name'))
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ,
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('birth_date')
                     ->label(__('Birth Date'))
@@ -437,7 +418,6 @@ class EmployeeResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-
                 Tables\Columns\TextColumn::make('actual_start')
                     ->label(__('Actual Start'))
                     ->searchable()
@@ -472,8 +452,6 @@ class EmployeeResource extends Resource
                     ->label(__('Health Insurance Company'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-
-               
 
                 Tables\Columns\TextColumn::make('social_security')
                     ->label(__('Social Security'))
@@ -574,11 +552,11 @@ class EmployeeResource extends Resource
                 // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
                 Filter::make('with_insurance')
                     ->label(__('بالتأمين'))
-                    ->query(fn($query) => $query->whereNotNull('insurance_company_id')),
+                    ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
 
                 Filter::make('without_insurance')
                     ->label(__('بدون تأمين'))
-                    ->query(fn($query) => $query->whereNull('insurance_company_id')),
+                    ->query(fn ($query) => $query->whereNull('insurance_company_id')),
 
                 // فلتر حسب شركات التأمين
                 SelectFilter::make('insurance_company_id')
@@ -588,17 +566,16 @@ class EmployeeResource extends Resource
             ])
             ->actions([
 
-
                 Action::make('viewMap')
                     ->label('عرض المسار')
                     ->color('primary')
                     ->icon('heroicon-o-map')
-                    ->url(fn($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
+                    ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
 
                 Tables\Actions\Action::make('view')
                     ->label(__('View'))
                     ->icon('heroicon-o-eye')
-                    ->url(fn($record) => static::getUrl('view', ['record' => $record->id]))
+                    ->url(fn ($record) => static::getUrl('view', ['record' => $record->id]))
                     ->openUrlInNewTab(false),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -606,6 +583,54 @@ class EmployeeResource extends Resource
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
                 ExportBulkAction::make(),
+                BulkAction::make('sendNotification')
+                    ->label('إرسال إشعار')
+                    ->form([
+                        Forms\Components\TextInput::make('title')
+                            ->label('العنوان')
+                            ->required()
+                            ->placeholder('أدخل عنوان الإشعار'),
+                        Forms\Components\Textarea::make('message')
+                            ->label('الموضوع')
+                            ->required()
+                            ->placeholder('أدخل موضوع الإشعار'),
+                    ])
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                        // استخدام السجلات لإرسال الإشعارات
+                        // جمع قائمة بالمعرفات (external_user_ids) من السجلات
+                        // جمع قائمة بالمعرفات (external_user_ids) كـ Strings
+                        $externalUserIds = $records->pluck('id')->filter()->map(fn ($id) => (string) $id)->toArray(); // تحويل إلى نصوص
+                        Log::info('External User IDs:', $externalUserIds);
+
+                        if (! empty($externalUserIds)) {
+                            // إعداد الهيدرز
+                            $headers = [
+                                'Authorization' => 'Basic '.env('ONESIGNAL_REST_API_KEY'),
+                                'Content-Type' => 'application/json; charset=utf-8',
+                            ];
+
+                            // إعداد بيانات الإشعار
+                            $payload = [
+                                'app_id' => env('ONESIGNAL_APP_ID'),
+                                'include_external_user_ids' => $externalUserIds,
+                                'headings' => ['en' => $data['title']],
+                                'contents' => ['en' => $data['message']],
+                            ];
+                            // إرسال الطلب
+                            $response = Http::withHeaders($headers)->post('https://onesignal.com/api/v1/notifications', $payload);
+
+                            // تسجيل الاستجابة
+                            Log::info('OneSignal Response:', [
+                                'external_user_ids' => $externalUserIds,
+                                'response' => $response->json(),
+                            ]);
+                        } else {
+                            Log::warning('No valid external_user_ids found for sending notifications.');
+                        }
+
+                    })
+                    ->requiresConfirmation()
+                    ->color('primary'),
                 // Tables\Actions\BulkAction::make('exportAll')
                 // ->label(__('Export All to PDF'))
                 // ->icon('heroicon-o-document-download')
@@ -637,6 +662,7 @@ class EmployeeResource extends Resource
 
         ];
     }
+
     public static function getRelations(): array
     {
         return [
@@ -656,6 +682,5 @@ class EmployeeResource extends Resource
     //         Widgets\ExpiringContracts::class,
     //     ];
     // }
-
 
 }
