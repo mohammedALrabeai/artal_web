@@ -24,10 +24,14 @@ class AttendanceExport implements FromView, WithEvents, WithStyles
 
     public function view(): View
     {
-        $employees = Employee::with(['attendances' => function ($query) {
-            $query->whereBetween('date', [$this->startDate, $this->endDate]);
-        }])->get();
-
+        $employees = Employee::with([
+            'attendances' => function ($query) {
+                $query->whereBetween('date', [$this->startDate, $this->endDate]);
+            },
+            'leaveBalances', // لجلب رصيد الإجازات
+            'currentZone', // لجلب موقع العمل الحالي
+        ])->get();
+    
         return view('exports.attendance', [
             'employees' => $employees,
             'startDate' => $this->startDate,
@@ -72,7 +76,7 @@ class AttendanceExport implements FromView, WithEvents, WithStyles
                 $highestRow = $sheet->getHighestRow();
 
                 for ($row = 2; $row <= $highestRow; $row++) {
-                    for ($columnIndex = 8; $columnIndex <= $highestColumnIndex; $columnIndex++) {
+                    for ($columnIndex = 1; $columnIndex <= $highestColumnIndex; $columnIndex++) {
                         $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex);
                         $cellValue = $sheet->getCell("$column$row")->getValue();
 

@@ -4,7 +4,10 @@
             <th>Employee Name</th>
             <th>National ID</th>
             <th>Mobile Number</th>
-            
+            <th>رصيد الغياب</th>
+            <th>رصيد الإجازات المرضية</th>
+            <th>موقع العمل</th>
+            <th>الراتب</th>
             <th>Present Count</th>
             <th>Absent Count</th>
             <th>Coverage Count</th>
@@ -29,26 +32,35 @@
                     ->where('status', 'present')
                     ->whereBetween('date', [$startDate, $endDate])
                     ->count();
-
+    
                 $absentCount = $employee->attendances
                     ->where('status', 'absent')
                     ->whereBetween('date', [$startDate, $endDate])
                     ->count();
-
+    
                 $coverageCount = $employee->attendances
                     ->where('status', 'coverage')
                     ->whereBetween('date', [$startDate, $endDate])
                     ->count();
-
+    
                 $leaveCount = $employee->attendances
                     ->where('status', 'leave')
                     ->whereBetween('date', [$startDate, $endDate])
                     ->count();
+    
+                $leaveBalance = $employee->leaveBalances->where('leave_type', 'annual')->first()->calculateAnnualLeaveBalance();
+                $sickLeaveBalance = $employee->leaveBalances->where('leave_type', 'sick')->sum('balance');
+                $currentZone = $employee->currentZone ? $employee->currentZone->name : 'غير محدد';
+                $salary = $employee->basic_salary + $employee->living_allowance + $employee->other_allowances;
             @endphp
             <tr>
                 <td>{{ $employee->first_name }} {{ $employee->family_name }}</td>
                 <td>{{ $employee->national_id }}</td>
                 <td>{{ $employee->mobile_number }}</td>
+                <td>{{ $leaveBalance }}</td>
+                <td>{{ $sickLeaveBalance }}</td>
+                <td>{{ $currentZone }}</td>
+                <td>{{ $salary }}</td>
                 <td>{{ $presentCount }}</td>
                 <td>{{ $absentCount }}</td>
                 <td>{{ $coverageCount }}</td>
@@ -70,4 +82,5 @@
             </tr>
         @endforeach
     </tbody>
+    
 </table>
