@@ -71,100 +71,107 @@ class AttachmentResource extends Resource
                 ->reactive(),
 
           
-                Forms\Components\Fieldset::make(__('Image'))
+                // Forms\Components\Fieldset::make(__('Image'))
+                // ->schema([
+                //     Forms\Components\FileUpload::make('image_url')
+                //     ->label(__('Content (Image)'))
+                //     ->image()
+                //     ->nullable()
+                //     ->disk('s3')
+                //     ->directory('attachments/images')
+                //     ->visibility('public'),
+                // ]
+                // )
+                // ->visible(fn (Get $get) => $get('type') === 'image'),
+
+                // Forms\Components\Fieldset::make(__('Video'))
+                // ->schema([
+                //     Forms\Components\FileUpload::make('video_url')
+                //     ->label(__('Content (Video)'))
+                //     ->disk('s3')
+                //     ->nullable()
+                //     ->directory('attachments/videos')
+                //     ->visibility('public')
+                //     ->acceptedFileTypes(['video/*']),
+                //     // ->preserveFilenames(),
+                // ])
+                // ->visible(fn (Get $get) => $get('type') === 'video'),
+
+                       Forms\Components\Textarea::make('content')
+                        ->label(__('Content (Text)'))
+                        ->default(''),
+
+                // Forms\Components\Fieldset::make(__('File'))
+                // ->schema([
+                //     Forms\Components\FileUpload::make('file_url')
+                //     ->label(__('Content (File)'))
+                //     ->disk('s3')
+                //     ->nullable()
+                //     ->directory('attachments/files')
+                //     ->visibility('public')
+                //     ->acceptedFileTypes(['application/*']),
+                //     // ->preserveFilenames(),
+                // ])
+                // ->visible(fn (Get $get) => $get('type') === 'file'),
+                
+                Forms\Components\Fieldset::make(__('Content'))
                 ->schema([
+                    // Forms\Components\Textarea::make('content')
+                    //     ->label(__('Content (Text)'))
+                    //     ->default(''),
+                        // ->nullable(),
+                        // ->visible(fn (Get $get) => $get('type') === 'text'),
+            
+                    // Forms\Components\TextInput::make('content')
+                    //     ->label(__('Content (Link)'))
+                    //     ->url()
+                    //     ->nullable()
+                    //     ->visible(fn (Get $get) => $get('type') === 'link'),
+            
                     Forms\Components\FileUpload::make('image_url')
                     ->label(__('Content (Image)'))
                     ->image()
                     ->nullable()
                     ->disk('s3')
                     ->directory('attachments/images')
-                    ->visibility('public'),
-                ]
-                )
-                ->visible(fn (Get $get) => $get('type') === 'image'),
-
-                Forms\Components\Fieldset::make(__('Video'))
-                ->schema([
-                    Forms\Components\FileUpload::make('video_url')
-                    ->label(__('Content (Video)'))
-                    ->disk('s3')
-                    ->nullable()
-                    ->directory('attachments/videos')
                     ->visibility('public')
-                    ->acceptedFileTypes(['video/*']),
-                    // ->preserveFilenames(),
-                ])
-                ->visible(fn (Get $get) => $get('type') === 'video'),
-                       Forms\Components\Textarea::make('content')
-                        ->label(__('Content (Text)'))
-                        ->default(''),
+                        ->visible(fn (Get $get) => $get('type') === 'image'),
+            
+                        Forms\Components\FileUpload::make('video_url')
+                        ->label(__('Content (Video)'))
+                        ->disk('s3')
+                        ->nullable()
+                        ->directory('attachments/videos')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['video/*'])
+                        ->visible(fn (Get $get) => $get('type') === 'video'),
 
-                Forms\Components\Fieldset::make(__('File'))
-                ->schema([
                     Forms\Components\FileUpload::make('file_url')
                     ->label(__('Content (File)'))
                     ->disk('s3')
                     ->nullable()
                     ->directory('attachments/files')
                     ->visibility('public')
-                    ->acceptedFileTypes(['application/*']),
-                    // ->preserveFilenames(),
+                    ->acceptedFileTypes(['application/*'])
+                     ->visible(fn (Get $get) => $get('type') === 'file'),
+            
+                    // Forms\Components\FileUpload::make('file_url')
+                    //     ->label(__('Content (File)'))
+                    //     ->disk('s3')
+                    //     ->nullable()
+                    //     ->directory('attachments/files')
+                    //     ->visibility('public')
+                    //     ->acceptedFileTypes([
+                    //         'application/pdf',
+                    //         'application/msword',
+                    //         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    //         'application/zip',
+                    //         'application/x-rar-compressed',
+                    //     ])
+                    //     ->preserveFilenames(),
+                    //     // ->visible(fn (Get $get) => $get('type') === 'file'),
                 ])
-                ->visible(fn (Get $get) => $get('type') === 'file'),
-                
-                // Forms\Components\Fieldset::make(__('Content'))
-                // ->schema([
-                //     // Forms\Components\Textarea::make('content')
-                //     //     ->label(__('Content (Text)'))
-                //     //     ->default(''),
-                //         // ->nullable(),
-                //         // ->visible(fn (Get $get) => $get('type') === 'text'),
-            
-                //     // Forms\Components\TextInput::make('content')
-                //     //     ->label(__('Content (Link)'))
-                //     //     ->url()
-                //     //     ->nullable()
-                //     //     ->visible(fn (Get $get) => $get('type') === 'link'),
-            
-                //     // Forms\Components\FileUpload::make('image_url')
-                //     //     ->label(__('Content (Image)'))
-                //     //     ->image()
-                //     //     ->nullable()
-                //     //     ->disk('s3')
-                //     //     ->directory('attachments/images')
-                //     //     ->visibility('public')
-                //     //     ->preserveFilenames()
-                //     //     ->visible(fn (Get $get) => $get('type') === 'image'),
-            
-                //     // Forms\Components\FileUpload::make('video_url')
-                //     //     ->label(__('Content (Video)'))
-                //     //     ->disk('s3')
-                //     //     ->nullable()
-                //     //     ->directory('attachments/videos')
-                //     //     ->visibility('public')
-                //     //     ->acceptedFileTypes(['video/*'])
-                //     //     ->preserveFilenames(),
-                //     //     // ->visible(fn (Get $get) => $get('type') === 'video'),
-            
-                //     // Forms\Components\FileUpload::make('file_url')
-                //     //     ->label(__('Content (File)'))
-                //     //     ->disk('s3')
-                //     //     ->nullable()
-                //     //     ->directory('attachments/files')
-                //     //     ->visibility('public')
-                //     //     ->acceptedFileTypes([
-                //     //         'application/pdf',
-                //     //         'application/msword',
-                //     //         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                //     //         'application/zip',
-                //     //         'application/x-rar-compressed',
-                //     //     ])
-                //     //     ->preserveFilenames(),
-                //     //     // ->visible(fn (Get $get) => $get('type') === 'file'),
-                // ])
-                // ->columns(1)
-                // ->visible(fn (Get $get) => $get('type') === 'text' || $get('type') === 'link'),
+                ->columns(1),
             
                 // Forms\Components\FileUpload::make('image_url')
                 // ->label(__('Content (Image)'))
