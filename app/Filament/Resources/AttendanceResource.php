@@ -201,8 +201,9 @@ public static function getNavigationGroup(): ?string
             Tables\Columns\TextColumn::make('check_out')
                 ->label(__('Check Out')),
     
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                 ->label(__('Status'))
+                ->badge()
                 ->getStateUsing(function ($record) {
                     return match ($record->status) {
                         'off' => __('Off'),
@@ -274,11 +275,14 @@ public static function getNavigationGroup(): ?string
             
                 SelectFilter::make('status')
     ->label(__('Status'))
-    ->options([
-        'present' => __('Present'),
-        'absent' => __('Absent'),
-        'leave' => __('On Leave'),
-        'coverage' => __('Coverage'),
+    ->options([ 
+    'off' => __('Off'),    // إضافة خيار عطلة
+    'present' => __('Present'),   // إضافة خيار الحضور
+    'coverage' => __('Coverage'), // إضافة خيار التغطية
+    'M'=>__('Morbid'),  // إضافة خيار مرضي Sick
+    'leave' => __('paid leave'),     // إضافة خيار الإجازة
+    'UV' => __('Unpaid leave'),
+    'absent' => __('Absent'),
     ]),
  // فلتر الحالة
 

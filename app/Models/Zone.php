@@ -50,5 +50,11 @@ public function project()
     return $this->belongsTo(Project::class);
 }
 
+public function attendances()
+{
+    return $this->hasMany(Attendance::class);
+}
+
+
 
 }

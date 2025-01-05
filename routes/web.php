@@ -1,12 +1,12 @@
 <?php
 
-use App\Models\EmployeeCoordinate;
+use App\Models\Employee;
 
-use App\Filament\Pages\EmployeeMap;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\EmployeeMapController;
-use App\Http\Controllers\FileUploadController2;
 use Illuminate\Http\Request; 
+use App\Models\EmployeeCoordinate;
+use App\Filament\Pages\EmployeeMap;
+use App\Services\EmployeePdfService;
+use App\Filament\Pages\EmployeePaths;
 
 Route::get('/', function () {
     return view('welcome');
@@ -15,15 +15,15 @@ Route::get('/', function () {
 
 
 
-use App\Filament\Pages\EmployeePaths;
+use App\Models\EmployeeProjectRecord;
 
 
 Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
 
-use App\Models\Employee;
-use App\Services\EmployeePdfService;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ExportController;
 
-use App\Models\EmployeeProjectRecord;
+use App\Http\Controllers\ReportController;
 
 
 Route::get('/employee-project-record/{id}/pdf', function ($id) {
@@ -75,17 +75,22 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 
 
 
-use App\Http\Controllers\ExportController;
+use App\Http\Controllers\S3TestController;
 
 Route::get('/export/attendance', [ExportController::class, 'exportAttendance'])->name('export.attendance');
 
+
+Route::get('/export-projects-zones-report', [ReportController::class, 'exportProjectsZonesReport'])
+    ->name('export.projects.zones.report')
+    ->middleware('signed');
 
 
 Route::get('/upload', [FileUploadController2::class, 'showForm'])->name('upload.form');
 Route::post('/upload', [FileUploadController2::class, 'uploadFile'])->name('upload.file');
 
 
-use App\Http\Controllers\S3TestController;
+use App\Http\Controllers\EmployeeMapController;
+use App\Http\Controllers\FileUploadController2;
 
 Route::get('/test-s3', [S3TestController::class, 'testS3']);
 
