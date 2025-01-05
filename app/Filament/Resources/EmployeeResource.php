@@ -322,6 +322,23 @@ class EmployeeResource extends Resource
                     })
                     ->searchable()
                     ->sortable(),
+                    Tables\Columns\TextColumn::make('current_zone')
+    ->label(__('Current Zone'))
+    ->getStateUsing(function ($record) {
+        $currentZone = $record->currentZone; // استدعاء العلاقة الحالية
+        return $currentZone ? $currentZone->name : __('Not Assigned');
+    })
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: false),
+    Tables\Columns\TextColumn::make('current_project')
+    ->label(__('Current Project'))
+    ->getStateUsing(function ($record) {
+        $currentProjectRecord = $record->currentProjectRecord; // استدعاء العلاقة الحالية
+        return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
+    })
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: false),
+
                 Tables\Columns\TextColumn::make('first_name')
                     ->label(__('First Name'))
                     ->searchable()

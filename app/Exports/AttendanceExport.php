@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Exports;
 
 use App\Models\Employee;
@@ -8,12 +7,13 @@ use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class AttendanceExport implements FromView, WithStyles, WithEvents
+class AttendanceExport implements FromView, WithEvents, WithStyles
 {
     public $startDate;
+
     public $endDate;
 
     public function __construct($startDate, $endDate)
@@ -105,12 +105,15 @@ class AttendanceExport implements FromView, WithStyles, WithEvents
                                 ],
                             ]);
                         }
+
                     }
                     // Add formula to count "absent" statuses
                     $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($highestColumnIndex + 1);
                     $startColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(11); // Column K
                     $endColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($highestColumnIndex);
                     $sheet->setCellValue("$lastColumn$row", "=COUNTIF($startColumn$row:$endColumn$row,\"absent\")");
+                    $absentColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($highestColumnIndex + 1);
+                    $coverageColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($highestColumnIndex + 2); // العمود الجديد
 
                     // Set background color of the new column cells to red
                     $sheet->getStyle("$lastColumn$row")->applyFromArray([
@@ -119,11 +122,29 @@ class AttendanceExport implements FromView, WithStyles, WithEvents
                             'startColor' => ['rgb' => 'FFCDD2'], // أحمر فاتح
                         ],
                     ]);
+
+                    // الغيابات
+                    $sheet->setCellValue("$absentColumn$row", "=COUNTIF($startColumn$row:$endColumn$row,\"absent\")");
+                    $sheet->getStyle("$absentColumn$row")->applyFromArray([
+                        'fill' => [
+                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => 'FFCDD2'], // أحمر فاتح
+                        ],
+                    ]);
+
+                    // التغطيات
+                    $sheet->setCellValue("$coverageColumn$row", "=COUNTIF($startColumn$row:$endColumn$row,\"coverage\")");
+                    $sheet->getStyle("$coverageColumn$row")->applyFromArray([
+                        'fill' => [
+                            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => 'BBDEFB'], // أزرق فاتح
+                        ],
+                    ]);
                 }
 
                 // Add header for the new column
-                $sheet->setCellValue($lastColumn . '1', 'غياب');
-                $sheet->getStyle($lastColumn . '1')->applyFromArray([
+                $sheet->setCellValue($lastColumn.'1', 'غياب');
+                $sheet->getStyle($lastColumn.'1')->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'size' => 16, // Larger font size
@@ -134,6 +155,72 @@ class AttendanceExport implements FromView, WithStyles, WithEvents
                         'startColor' => ['rgb' => 'FFCDD2'], // أحمر فاتح
                     ],
                 ]);
+
+                // حساب الغيابات (absent)
+
+                // رأس العمود للتغطيات
+                $sheet->setCellValue($coverageColumn.'1', 'تغطية');
+                $sheet->getStyle($coverageColumn.'1')->applyFromArray([
+                    'font' => [
+                        'bold' => true,
+                        'size' => 16, // Larger font size
+                        'color' => ['rgb' => 'FFFFFF'], // لون النص أبيض
+                    ],
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'BBDEFB'], // أزرق فاتح
+                    ],
+                ]);
+
+ // توسيع الأعمدة تلقائيًا
+ $highestColumn = $sheet->getHighestColumn();
+ $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
+
+                $lastDataColumnIndex = $highestColumnIndex + 1;
+$columnsData = [
+    ['title' => 'أوفOFF', 'color' => 'BBDEFB', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"OFF\")"],
+    ['title' => 'عمل P', 'color' => 'C8E6C9', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"P\")"],
+    ['title' => 'إضافي COV', 'color' => 'FFD54F', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"coverage\")"],
+    ['title' => 'مرضي M', 'color' => 'FFCDD2', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"M\")"],
+    ['title' => 'إجازة مدفوعة PV', 'color' => '4CAF50', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"PV\")"],
+    ['title' => 'إجازة غير مدفوعة UV', 'color' => 'FFB74D', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"UV\")"],
+    ['title' => 'غياب A', 'color' => 'E57373', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"absent\")"],
+    ['title' => 'الإجمالي Total', 'color' => '90A4AE', 'formula' => "=COUNTA($startColumn$row:$endColumn$row)"],
+    ['title' => 'المخالفات الإدارية Infract', 'color' => 'FFE0B2', 'formula' => ''],
+    ['title' => 'المخالفات المرورية', 'color' => 'FFE0B2', 'formula' => ''],
+    ['title' => 'مكافأة', 'color' => 'FFE082', 'formula' => ''],
+    ['title' => 'السلف adv', 'color' => 'FFCCBC', 'formula' => ''],
+    ['title' => 'خصم التأمينات GOSI', 'color' => 'B39DDB', 'formula' => ''],
+    ['title' => 'صافي الراتب Net salary', 'color' => 'B2FF59', 'formula' => ''],
+    ['title' => 'إجمالي رصيد الغياب', 'color' => 'FFCDD2', 'formula' => ''],
+    ['title' => 'إجمالي رصيد الإجازات المرضية', 'color' => 'FFCDD2', 'formula' => ''],
+];
+
+foreach ($columnsData as $key => $columnData) {
+    $currentColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($lastDataColumnIndex + $key);
+
+    // تعيين رأس العمود
+    $sheet->setCellValue("{$currentColumn}1", $columnData['title']);
+    $sheet->getStyle("{$currentColumn}1")->applyFromArray([
+        'font' => [
+            'bold' => true,
+            'size' => 14,
+            'color' => ['rgb' => 'FFFFFF'],
+        ],
+        'fill' => [
+            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+            'startColor' => ['rgb' => $columnData['color']],
+        ],
+    ]);
+
+    // تعبئة البيانات
+    for ($row = 2; $row <= $highestRow; $row++) {
+        if (!empty($columnData['formula'])) {
+            $sheet->setCellValue("{$currentColumn}{$row}", str_replace('$row', $row, $columnData['formula']));
+        }
+    }
+}
+
             },
         ];
     }

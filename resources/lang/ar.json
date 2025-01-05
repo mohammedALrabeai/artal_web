@@ -426,7 +426,10 @@
     "rejected": "مرفوض",
     "loan": "قرض",
     "overtime": "ساعات إضافية",
-    "resignation": "استقالة"
+    "resignation": "استقالة",
+    "Current Zone": "المنطقة الحالية",
+    "Current Project": "المشروع الحالي",
+    "Not Assigned": "غير معين"
  
   
 }

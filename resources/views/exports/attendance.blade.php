@@ -4,6 +4,7 @@
             <th>Employee Name</th>
             <th>National ID</th>
             <th>Mobile Number</th>
+            
             <th>Present Count</th>
             <th>Absent Count</th>
             <th>Coverage Count</th>

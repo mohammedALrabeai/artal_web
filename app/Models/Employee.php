@@ -150,6 +150,34 @@ public function leaves()
 }
 
 
+public function currentProjectRecord()
+{
+    return $this->hasOne(EmployeeProjectRecord::class, 'employee_id')
+        ->where(function ($query) {
+            $query->whereNull('end_date') // إذا كان تاريخ النهاية غير محدد
+                ->orWhere('end_date', '>=', now()); // أو يقع في المستقبل
+        })
+        ->latest('start_date'); // جلب أحدث سجل بناءً على تاريخ البداية
+}
+
+public function currentZone()
+{
+    return $this->hasOneThrough(
+        Zone::class, 
+        EmployeeProjectRecord::class, 
+        'employee_id', // المفتاح الأجنبي في جدول EmployeeProjectRecord
+        'id', // المفتاح الأساسي في جدول Zone
+        'id', // المفتاح الأساسي في جدول Employee
+        'zone_id' // المفتاح الأجنبي في جدول Zone
+    )
+    ->where(function ($query) {
+        $query->whereNull('end_date') // إذا كان تاريخ النهاية غير محدد
+            ->orWhere('end_date', '>=', now()); // أو يقع في المستقبل
+    })
+    ->latest('start_date'); // جلب أحدث سجل بناءً على تاريخ البداية
+}
+
+
 
 
 
