@@ -132,10 +132,14 @@ public static function getNavigationGroup(): ?string
                Forms\Components\Select::make('status')
                ->label(__('Status'))
                ->options([
-                   'present' => __('Present'),
-                   'absent' => __('Absent'),
-                   'leave' => __('On Leave'),
+                'off' => __('Off'),    // إضافة خيار عطلة
+                   'present' => __('Present'),   // إضافة خيار الحضور
                    'coverage' => __('Coverage'), // إضافة خيار التغطية
+                   'M'=>__('Morbid'),  // إضافة خيار مرضي Sick
+                   'leave' => __('paid leave'),     // إضافة خيار الإجازة
+                   'UV' => __('Unpaid leave'),
+                   'absent' => __('Absent'),
+              
                ])
                ->required(),
 
@@ -197,25 +201,28 @@ public static function getNavigationGroup(): ?string
             Tables\Columns\TextColumn::make('check_out')
                 ->label(__('Check Out')),
     
-            Tables\Columns\TextColumn::make('check_out_datetime')
-                ->label(__('Check Out Datetime'))
-                ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\BadgeColumn::make('status')
                 ->label(__('Status'))
                 ->getStateUsing(function ($record) {
                     return match ($record->status) {
+                        'off' => __('Off'),
                         'present' => __('Present'),
+                        'coverage' => __('Coverage'),
+                        'M' => __('Morbid'),
+                        'leave' => __('Paid Leave'),
+                        'UV' => __('Unpaid Leave'),
                         'absent' => __('Absent'),
-                        'leave' => __('On Leave'),
-                        'coverage' => __('Coverage'), // إضافة حالة التغطية
                         default => __('Unknown'),
                     };
                 })
                 ->colors([
-                    'success' => fn ($state) => $state === __('Present'),
-                    'danger' => fn ($state) => $state === __('Absent'),
-                    'warning' => fn ($state) => $state === __('On Leave'),
-                    'info' => fn ($state) => $state === __('Coverage'), // لون خاص بالتغطية
+                    'success' => fn ($state) => $state === __('Off'), // أخضر
+                    'primary' => fn ($state) => $state === __('Present'), // أزرق فاتح
+                    'warning' => fn ($state) => $state === __('Coverage'), // برتقالي
+                    'secondary' => fn ($state) => $state === __('Morbid'), // رمادي
+                    'blue-dark' => fn ($state) => $state === __('Paid Leave'), // أزرق غامق
+                    'orange-dark' => fn ($state) => $state === __('Unpaid Leave'), // برتقالي غامق
+                    'danger' => fn ($state) => $state === __('Absent'), // أحمر
                 ]),
 
                 Tables\Columns\TextColumn::make('work_hours')
