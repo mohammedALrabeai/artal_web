@@ -71,52 +71,110 @@ class AttachmentResource extends Resource
                 ->reactive(),
 
           
-        Forms\Components\Fieldset::make(__('Content'))
-        ->schema([
-            Forms\Components\Textarea::make('content')
-                ->label(__('Content (Text)'))
-                ->visible(fn (Get $get) => $get('type') === 'text'),
-
-            Forms\Components\TextInput::make('content')
-                ->label(__('Content (Link)'))
-                ->url()
-                ->visible(fn (Get $get) => $get('type') === 'link'),
-
-            Forms\Components\FileUpload::make('file_url')
-                ->label(__('Content (Image)'))
-                ->image()
-                ->disk('s3')
-                ->directory('attachments/images')
-                ->visibility('public')
-                ->preserveFilenames()
+                Forms\Components\Fieldset::make(__('Image'))
+                ->schema([
+                    Forms\Components\FileUpload::make('image_url')
+                    ->label(__('Content (Image)'))
+                    ->image()
+                    ->nullable()
+                    ->disk('s3')
+                    ->directory('attachments/images')
+                    ->visibility('public'),
+                ]
+                )
                 ->visible(fn (Get $get) => $get('type') === 'image'),
 
-            Forms\Components\FileUpload::make('file_url')
-                ->label(__('Content (Video)'))
-                ->disk('s3')
-                ->directory('attachments/videos')
-                ->visibility('public')
-                ->acceptedFileTypes(['video/*'])
-                ->preserveFilenames()
-                ->visible(fn (Get $get) => $get('type') === 'video'),
-
-            Forms\Components\FileUpload::make('file_url')
-                ->label(__('Content (File)'))
-                ->disk('s3')
-                ->directory('attachments/files')
-                ->visibility('public')
-                ->acceptedFileTypes([
-                    'application/pdf',
-                    'application/msword',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'application/zip',
-                    'application/x-rar-compressed',
+                Forms\Components\Fieldset::make(__('Video'))
+                ->schema([
+                    Forms\Components\FileUpload::make('video_url')
+                    ->label(__('Content (Video)'))
+                    ->disk('s3')
+                    ->nullable()
+                    ->directory('attachments/videos')
+                    ->visibility('public')
+                    ->acceptedFileTypes(['video/*']),
+                    // ->preserveFilenames(),
                 ])
-                ->preserveFilenames()
-                ->visible(fn (Get $get) => $get('type') === 'file'),
-        ])
-        ->columns(1),
+                ->visible(fn (Get $get) => $get('type') === 'video'),
+                       Forms\Components\Textarea::make('content')
+                        ->label(__('Content (Text)'))
+                        ->default(''),
 
+                Forms\Components\Fieldset::make(__('File'))
+                ->schema([
+                    Forms\Components\FileUpload::make('file_url')
+                    ->label(__('Content (File)'))
+                    ->disk('s3')
+                    ->nullable()
+                    ->directory('attachments/files')
+                    ->visibility('public')
+                    ->acceptedFileTypes(['application/*']),
+                    // ->preserveFilenames(),
+                ])
+                ->visible(fn (Get $get) => $get('type') === 'file'),
+                
+                // Forms\Components\Fieldset::make(__('Content'))
+                // ->schema([
+                //     // Forms\Components\Textarea::make('content')
+                //     //     ->label(__('Content (Text)'))
+                //     //     ->default(''),
+                //         // ->nullable(),
+                //         // ->visible(fn (Get $get) => $get('type') === 'text'),
+            
+                //     // Forms\Components\TextInput::make('content')
+                //     //     ->label(__('Content (Link)'))
+                //     //     ->url()
+                //     //     ->nullable()
+                //     //     ->visible(fn (Get $get) => $get('type') === 'link'),
+            
+                //     // Forms\Components\FileUpload::make('image_url')
+                //     //     ->label(__('Content (Image)'))
+                //     //     ->image()
+                //     //     ->nullable()
+                //     //     ->disk('s3')
+                //     //     ->directory('attachments/images')
+                //     //     ->visibility('public')
+                //     //     ->preserveFilenames()
+                //     //     ->visible(fn (Get $get) => $get('type') === 'image'),
+            
+                //     // Forms\Components\FileUpload::make('video_url')
+                //     //     ->label(__('Content (Video)'))
+                //     //     ->disk('s3')
+                //     //     ->nullable()
+                //     //     ->directory('attachments/videos')
+                //     //     ->visibility('public')
+                //     //     ->acceptedFileTypes(['video/*'])
+                //     //     ->preserveFilenames(),
+                //     //     // ->visible(fn (Get $get) => $get('type') === 'video'),
+            
+                //     // Forms\Components\FileUpload::make('file_url')
+                //     //     ->label(__('Content (File)'))
+                //     //     ->disk('s3')
+                //     //     ->nullable()
+                //     //     ->directory('attachments/files')
+                //     //     ->visibility('public')
+                //     //     ->acceptedFileTypes([
+                //     //         'application/pdf',
+                //     //         'application/msword',
+                //     //         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                //     //         'application/zip',
+                //     //         'application/x-rar-compressed',
+                //     //     ])
+                //     //     ->preserveFilenames(),
+                //     //     // ->visible(fn (Get $get) => $get('type') === 'file'),
+                // ])
+                // ->columns(1)
+                // ->visible(fn (Get $get) => $get('type') === 'text' || $get('type') === 'link'),
+            
+                // Forms\Components\FileUpload::make('image_url')
+                // ->label(__('Content (Image)'))
+                // ->image()
+              
+                // ->disk('s3')
+                // ->directory('attachments/images')
+                // ->visibility('public'),
+                // // ->preserveFilenames(),
+                // // ->visible(fn (Get $get) => $get('type') === 'image'),
         
             Forms\Components\DatePicker::make('expiry_date')
                 ->label(__('Expiry Date'))
@@ -148,43 +206,30 @@ class AttachmentResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('content')
-                    ->label(__('Content'))
-                    ->getStateUsing(function ($record) {
-                        $contentUrl = Storage::disk('s3')->url($record->content); // استرجاع رابط الملف من S3
-                        // dd($contentUrl);
-                        switch ($record->type) {
-                            case 'text':
-                            case 'link':
-                                return $record->content; // عرض النص أو الرابط مباشرة
-                            case 'image':
-                                return '<a href="'.$contentUrl.'" target="_blank"><img src="'.$contentUrl.'" width="50" style="border-radius: 5px;" /></a>';
-                            case 'video':
-                            case 'file':
-                                return '<a href="'.$contentUrl.'" target="_blank">'.__('Download File').'</a>';
-                            default:
-                                return '';
-                        }
-                    })
-                    ->html(),
-
-                // Tables\Columns\TextColumn::make('content')
-                //     ->label(__('Content'))
-                //     ->getStateUsing(function ($record) {
-                //         switch ($record->type) {
-                //             case 'text':
-                //             case 'link':
-                //                 return $record->content;
-                //             case 'image':
-                //                 return '<img src="' . asset($record->content) . '" width="50" />';
-                //             case 'video':
-                //             case 'file':
-                //                 return '<a href="' . asset($record->content) . '" target="_blank">' . __('Download') . '</a>';
-                //             default:
-                //                 return '';
-                //         }
-                //     })
-                //     ->html(), // لعرض الروابط أو الصور بصيغة HTML
+                    Tables\Columns\TextColumn::make('content')
+                    ->label(__('Content (Text/Link)'))
+                    ->getStateUsing(fn ($record) => $record->type === 'text' || $record->type === 'link' ? $record->content : null)
+                    ->html()
+                    
+                    ->toggleable(),
+                
+                    Tables\Columns\ImageColumn::make('image_url')
+                    ->label(__('Image URL'))
+                    ->toggleable()
+                    ->url(fn ($record) => $record->image_url, true),
+                
+                Tables\Columns\TextColumn::make('video_url')
+                    ->label(__('Video'))
+                    ->getStateUsing(fn ($record) => $record->video_url ? "<a href='{$record->video_url}' target='_blank'>".__('View Video')."</a>" : null)
+                    ->html()
+                    ->toggleable(),
+                
+                Tables\Columns\TextColumn::make('file_url')
+                    ->label(__('File'))
+                    ->getStateUsing(fn ($record) => $record->file_url ? "<a href='{$record->file_url}' target='_blank'>".__('Download File')."</a>" : null)
+                    ->html()
+                    ->toggleable(),
+                
 
                 Tables\Columns\TextColumn::make('expiry_date')
                     ->label(__('Expiry Date')),

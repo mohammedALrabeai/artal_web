@@ -127,8 +127,7 @@ public static function getNavigationGroup(): ?string
                 ->label(__('Check Out')),
             Forms\Components\DateTimePicker::make('check_out_datetime')
                 ->label(__('Check Out Datetime'))
-                ->required(false)
-               ,
+                ->required(false),
     
                Forms\Components\Select::make('status')
                ->label(__('Status'))

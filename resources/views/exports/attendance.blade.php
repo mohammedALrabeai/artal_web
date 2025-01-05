@@ -1,10 +1,10 @@
 <table>
     <thead>
         <tr>
-            <th>Employee Name</th>
-            <th>National ID</th>
+            <th>"الاسم Name"</th>
+            <th> رقم الهوية National ID</th>
             <th>Mobile Number</th>
-            <th>رصيد الغياب</th>
+            <th>رصيد الإجازات السنوية</th>
             <th>رصيد الإجازات المرضية</th>
             <th>موقع العمل</th>
             <th>الراتب</th>
