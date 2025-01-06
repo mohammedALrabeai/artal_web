@@ -14,6 +14,14 @@ export default defineConfig({
                 'app/Providers/Filament/**',
                 'app/Tables/Columns/**',
             ],
+            build: {
+                terserOptions: {
+                  compress: {
+                    drop_console: true,
+                  },
+                },
+                chunkSizeWarningLimit: 2000, // Increase chunk size limit if necessary
+              },
         }),
     ],
 })
