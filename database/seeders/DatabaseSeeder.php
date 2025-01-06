@@ -18,26 +18,12 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         if (RequestType::count() === 0) {
-       // إدخال الأنواع
-       $requestTypes = [
-        ['key' => 'leave', 'name' => 'Leave Request'],
-        ['key' => 'transfer', 'name' => 'Transfer Request'],
-        ['key' => 'compensation', 'name' => 'Compensation Request'],
-        ['key' => 'loan', 'name' => 'Loan Request'],
-        ['key' => 'overtime', 'name' => 'Overtime Request'],
-    ];
+            $this->call(RequestTypeSeeder::class);
+        }
 
-    foreach ($requestTypes as $type) {
-        RequestType::updateOrCreate(
-            ['key' => $type['key']],
-            ['name' => $type['name']]
-        );
-    }
-
-    // جلب المعرفات الفعلية للأنواع
+    // Fetch RequestType IDs
     $requestTypeIds = RequestType::pluck('id', 'key');
 
-    // إدخال السياسات
     $policies = [
         [
             'policy_name' => 'Annual Leave Policy',
@@ -99,14 +85,13 @@ class DatabaseSeeder extends Seeder
         }
     }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-    }
+      
+    
 
     $this->call([
+        RoleSeeder::class,
         RequestTypeSeeder::class,
+        UserSeeder::class,
         PolicySeeder::class,
         ApprovalFlowSeeder::class,
     ]);

@@ -16,7 +16,7 @@ class AdminNotificationController extends Controller
     // إرسال إشعار تجريبي لجميع المدراء
     public function sendTestNotificationToAllManagers()
     {
-        $managers = User::whereIn('role', ['manager', 'general_manager', 'hr'])->get();
+        $managers = User::where('role_id', '!=', 1)->get();
         $employee = Employee::first();
 
         $fullName = implode(' ', array_filter([
