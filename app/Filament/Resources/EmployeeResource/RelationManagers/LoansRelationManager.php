@@ -13,6 +13,7 @@ class LoansRelationManager extends RelationManager
 {
     protected static string $relationship = 'loans'; // العلاقة بين الموظفين والقروض
 
+    protected static ?string $title = 'القروض'; // عنوان الجدول
     // protected static ?string $recordTitleAttribute = 'amount'; // حقل عرض العنوان في الجدول
     public static function getRecordTitleAttribute(): ?string
 {

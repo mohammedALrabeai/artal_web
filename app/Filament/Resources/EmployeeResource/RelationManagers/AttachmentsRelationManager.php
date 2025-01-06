@@ -20,6 +20,10 @@ class AttachmentsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'type';
 
+    protected static ?string $title = 'المرفقات'; // عنوان الجدول
+
+
+
     public  function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([

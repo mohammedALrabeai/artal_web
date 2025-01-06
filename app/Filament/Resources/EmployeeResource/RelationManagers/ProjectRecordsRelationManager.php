@@ -15,6 +15,12 @@ class ProjectRecordsRelationManager extends RelationManager // تحديث الا
 
     protected static ?string $recordTitleAttribute = 'project.name';
 
+
+    protected static ?string $label = 'مواقع الموظف';
+
+    protected static ?string $title = 'موقع الموظف'; // عنوان الجدول
+
+
     public  function canCreate(): bool
 {
     return true; // تأكد من السماح بإضافة سجلات جديدة

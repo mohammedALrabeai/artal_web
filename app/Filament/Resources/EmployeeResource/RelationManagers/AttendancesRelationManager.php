@@ -13,6 +13,8 @@ class AttendancesRelationManager extends RelationManager
     protected static string $relationship = 'attendances'; // العلاقة مع الحضور والانصراف
 
     protected static ?string $recordTitleAttribute = 'date'; // العمود الذي يظهر في عنوان السجلات
+    protected static ?string $title = 'الحضور والانصراف'; // عنوان الجدول
+
 
     // تعريف النموذج
     public function form(Form $form): Form

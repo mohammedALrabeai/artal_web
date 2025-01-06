@@ -21,6 +21,22 @@ class DevicesRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'device_id'; // عنوان الجهاز في الجدول
 
+    
+  
+
+    protected static ?string $title = 'الاجهزة'; // عنوان الجدول
+
+    /**
+     * الحصول على عنوان الجدول بناءً على لغة لوحة التحكم
+     */
+  
+
+
+    
+
+
+
+
     public  function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([

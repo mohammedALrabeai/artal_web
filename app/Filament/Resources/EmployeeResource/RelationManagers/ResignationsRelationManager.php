@@ -14,6 +14,9 @@ class ResignationsRelationManager extends RelationManager
 {
     protected static string $relationship = 'resignations';
 
+    protected static ?string $title = 'الاستقالات'; // عنوان الجدول
+
+
     public function form(Form $form): Form
     {
         return $form
