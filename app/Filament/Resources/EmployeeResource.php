@@ -85,7 +85,8 @@ class EmployeeResource extends Resource
     {
         return $form->schema([
             // Personal Information
-            Forms\Components\Fieldset::make(__('Personal Information'))
+            Forms\Components\Wizard::make([
+            Forms\Components\Wizard\Step::make(__('Personal Information'))
                 ->schema([
                     Forms\Components\TextInput::make('first_name')
                         ->label(__('First Name'))
@@ -141,10 +142,12 @@ class EmployeeResource extends Resource
                     Forms\Components\TextInput::make('blood_type')
                         ->label(__('Blood Type'))
                         ->required(),
-                ]),
+                ])
+              
+                ->columns(2),
 
             // Job Information
-            Forms\Components\Fieldset::make(__('Job Information'))
+            Forms\Components\Wizard\Step::make(__('Job Information'))
                 ->schema([
                     Forms\Components\DatePicker::make('contract_start')
                         ->label(__('Contract Start'))
@@ -189,10 +192,10 @@ class EmployeeResource extends Resource
 
                     Forms\Components\TextInput::make('social_security_code')
                         ->label(__('Social Security Code')),
-                ]),
+                ]) ->columns(2),
 
             // Education
-            Forms\Components\Fieldset::make(__('Education'))
+            Forms\Components\Wizard\Step::make(__('Education'))
                 ->schema([
                     Forms\Components\TextInput::make('qualification')
                         ->label(__('Qualification'))
@@ -201,10 +204,10 @@ class EmployeeResource extends Resource
                     Forms\Components\TextInput::make('specialization')
                         ->label(__('Specialization'))
                         ->required(),
-                ]),
+                ]) ->columns(2),
 
             // Contact Information
-            Forms\Components\Fieldset::make(__('Contact Information'))
+            Forms\Components\Wizard\Step::make(__('Contact Information'))
                 ->schema([
                     Forms\Components\TextInput::make('mobile_number')
                         ->label(__('Mobile Number'))
@@ -216,10 +219,10 @@ class EmployeeResource extends Resource
                     Forms\Components\TextInput::make('email')
                         ->label(__('Email'))
                         ->email(),
-                ]),
+                ]) ->columns(2),
 
             // Address
-            Forms\Components\Fieldset::make(__('Address'))
+            Forms\Components\Wizard\Step::make(__('Address'))
                 ->schema([
                     Forms\Components\TextInput::make('region')
                         ->label(__('Region'))
@@ -242,10 +245,10 @@ class EmployeeResource extends Resource
 
                     Forms\Components\TextInput::make('postal_code')
                         ->label(__('Postal Code')),
-                ]),
+                ]) ->columns(2),
 
             // Social Media
-            Forms\Components\Fieldset::make(__('Social Media'))
+            Forms\Components\Wizard\Step::make(__('Social Media'))
                 ->schema([
                     Forms\Components\TextInput::make('facebook')
                         ->label(__('Facebook')),
@@ -255,7 +258,9 @@ class EmployeeResource extends Resource
 
                     Forms\Components\TextInput::make('linkedin')
                         ->label(__('LinkedIn')),
-                ]),
+                ]) ->columns(2),
+                Forms\Components\Wizard\Step::make(__('Leave Balances'))
+                ->schema([
             Repeater::make('leaveBalances')
                 ->relationship('leaveBalances')
                 ->schema([
@@ -284,9 +289,10 @@ class EmployeeResource extends Resource
                 ])
                 ->label('رصيد الإجازات')
                 ->columns(4), // تحديث عدد الأعمدة ليشمل الحقل الجديد
+            ]),
 
             // Security
-            Forms\Components\Fieldset::make(__('Security'))
+            Forms\Components\Wizard\Step::make(__('Security'))
                 ->schema([
                     Forms\Components\TextInput::make('password')
                         ->label(__('Password'))
@@ -298,14 +304,23 @@ class EmployeeResource extends Resource
                         ->options(User::all()->pluck('name', 'id'))
                         ->searchable()
                         ->nullable(),
-                ]),
-            Forms\Components\Toggle::make('status')
+                ])
+                ,
+           
+
+                ])
+                ->skippable(),
+
+                Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
                 ->onColor('success')
                 ->offColor('danger')
                 ->required(),
-
-        ]);
+                
+          
+        ])
+       
+        ->columns(1);
     }
 
     public static function table(Table $table): Table

@@ -79,28 +79,33 @@ class ZoneResource extends Resource
                 ->searchable()
                 ->required(),
     
-            Forms\Components\View::make('components.map-picker')
-                ->label(__('Pick Location')),
+           
     
             Forms\Components\TextInput::make('lat')
                 ->label(__('Latitude'))
                 ->required()
-                ->id('lat'),
+                ->id('lat')
+                ->default(fn ($record) => $record?->lat),
     
             Forms\Components\TextInput::make('longg')
                 ->label(__('Longitude'))
                 ->required()
-                ->id('longg'),
+                ->id('longg')
+                ->default(fn ($record) => $record?->longg),
     
             Forms\Components\TextInput::make('area')
-                ->label(__('Area'))
+                ->label(__('Range'))
                 ->required()
                 ->numeric(),
+
+             
     
             Forms\Components\TextInput::make('emp_no')
                 ->label(__('Number of Employees'))
                 ->numeric()
                 ->required(),
+                Forms\Components\View::make('components.map-picker')
+                ->label(__('Pick Location')),
     
             Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
