@@ -2,40 +2,40 @@
 deployment:
   tasks:
     - name: Change to Project Directory
-      command: cd artal
+      command: cd mygit.kayanaleqar.com
 
     - name: Pull Latest Changes
       command: |
-        cd artal && git pull origin main
+        cd mygit.kayanaleqar.com && git pull origin main
 
     - name: Install Composer Dependencies
       command: |
-        cd artal && composer install --no-dev --optimize-autoloader
+        cd mygit.kayanaleqar.com && composer install --no-dev --optimize-autoloader
 
     - name: Set Permissions
       command: |
-        cd artal && chmod -R 775 storage bootstrap/cache
-        cd artal && chown -R $USER:$USER storage bootstrap/cache
+        cd mygit.kayanaleqar.com && chmod -R 775 storage bootstrap/cache
+        cd mygit.kayanaleqar.com && chown -R $USER:$USER storage bootstrap/cache
 
     - name: Ensure .env Exists
       command: |
-        cd artal && if [ ! -f .env ]; then cp .env.example .env; fi
+        cd mygit.kayanaleqar.com && if [ ! -f .env ]; then cp .env.example .env; fi
 
     - name: Generate Application Key (if missing)
       command: |
-        cd artal && if ! grep -q "APP_KEY=" .env || [ "$(grep 'APP_KEY=' .env | cut -d '=' -f2)" = "" ]; then
+        cd mygit.kayanaleqar.com && if ! grep -q "APP_KEY=" .env || [ "$(grep 'APP_KEY=' .env | cut -d '=' -f2)" = "" ]; then
           php artisan key:generate --force
         fi
 
     - name: Run Migrations
-      command: cd artal && php artisan migrate --force
+      command: cd mygit.kayanaleqar.com && php artisan migrate --force
 
     - name: Clear Cache and Optimize
       command: |
-        cd artal && php artisan cache:clear
-        cd artal && php artisan config:clear
-        cd artal && php artisan config:cache
-        cd artal && php artisan route:cache
+        cd mygit.kayanaleqar.com && php artisan cache:clear
+        cd mygit.kayanaleqar.com && php artisan config:clear
+        cd mygit.kayanaleqar.com && php artisan config:cache
+        cd mygit.kayanaleqar.com && php artisan route:cache
 
     - name: Restart Queue Workers
-      command: cd artal && php artisan queue:restart
+      command: cd mygit.kayanaleqar.com && php artisan queue:restart
