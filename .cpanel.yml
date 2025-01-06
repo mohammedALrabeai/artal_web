@@ -1,38 +1,41 @@
 ---
 deployment:
   tasks:
+    - name: Change to Project Directory
+      command: cd artal
+
     - name: Pull Latest Changes
-      command: git pull origin main
+      command: |
+        cd artal && git pull origin main
 
     - name: Install Composer Dependencies
-      command: composer install --no-dev --optimize-autoloader
+      command: |
+        cd artal && composer install --no-dev --optimize-autoloader
 
     - name: Set Permissions
       command: |
-        chmod -R 775 storage bootstrap/cache
-        chown -R $USER:$USER storage bootstrap/cache
+        cd artal && chmod -R 775 storage bootstrap/cache
+        cd artal && chown -R $USER:$USER storage bootstrap/cache
 
     - name: Ensure .env Exists
       command: |
-        if [ ! -f .env ]; then
-          cp .env.example .env
-        fi
+        cd artal && if [ ! -f .env ]; then cp .env.example .env; fi
 
     - name: Generate Application Key (if missing)
       command: |
-        if ! grep -q "APP_KEY=" .env || [ "$(grep 'APP_KEY=' .env | cut -d '=' -f2)" = "" ]; then
+        cd artal && if ! grep -q "APP_KEY=" .env || [ "$(grep 'APP_KEY=' .env | cut -d '=' -f2)" = "" ]; then
           php artisan key:generate --force
         fi
 
     - name: Run Migrations
-      command: php artisan migrate --force
+      command: cd artal && php artisan migrate --force
 
     - name: Clear Cache and Optimize
       command: |
-        php artisan cache:clear
-        php artisan config:clear
-        php artisan config:cache
-        php artisan route:cache
+        cd artal && php artisan cache:clear
+        cd artal && php artisan config:clear
+        cd artal && php artisan config:cache
+        cd artal && php artisan route:cache
 
     - name: Restart Queue Workers
-      command: php artisan queue:restart
+      command: cd artal && php artisan queue:restart
