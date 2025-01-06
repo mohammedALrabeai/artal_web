@@ -6,7 +6,7 @@ use Filament\Actions;
 use Filament\Forms;
 
 use Illuminate\Support\Facades\URL;
-
+use Filament\Resources\Components\Tab;
 use Tables\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use App\Filament\Resources\EmployeeResource;
@@ -72,5 +72,26 @@ class ListEmployees extends ListRecords
 //         \App\Filament\Resources\EmployeeResource\Widgets\ExportEmployeesWidget::class,
 //     ];
 // }
+
+
+public function getTabs(): array
+{
+    return [
+        'all' => Tab::make(__('All Employees'))
+            ->modifyQueryUsing(function ($query) {
+                return $query; // عرض جميع الموظفين
+            }),
+
+        'with_insurance' => Tab::make(__('With Insurance'))
+            ->modifyQueryUsing(function ($query) {
+                return $query->whereNotNull('insurance_company_id'); // الموظفين مع التأمين
+            }),
+
+        'without_insurance' => Tab::make(__('Without Insurance'))
+            ->modifyQueryUsing(function ($query) {
+                return $query->whereNull('insurance_company_id'); // الموظفين بدون التأمين
+            }),
+    ];
+}
 
 }

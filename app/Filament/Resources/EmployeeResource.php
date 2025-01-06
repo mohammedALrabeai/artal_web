@@ -86,241 +86,237 @@ class EmployeeResource extends Resource
         return $form->schema([
             // Personal Information
             Forms\Components\Wizard::make([
-            Forms\Components\Wizard\Step::make(__('Personal Information'))
-                ->schema([
-                    Forms\Components\TextInput::make('first_name')
-                        ->label(__('First Name'))
-                        ->required(),
+                Forms\Components\Wizard\Step::make(__('Personal Information'))
+                    ->schema([
+                        Forms\Components\TextInput::make('first_name')
+                            ->label(__('First Name'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('father_name')
-                        ->label(__('Father Name'))
-                        ->required(),
+                        Forms\Components\TextInput::make('father_name')
+                            ->label(__('Father Name'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('grandfather_name')
-                        ->label(__('Grandfather Name'))
-                        ->required(),
+                        Forms\Components\TextInput::make('grandfather_name')
+                            ->label(__('Grandfather Name'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('family_name')
-                        ->label(__('Family Name'))
-                        ->required(),
+                        Forms\Components\TextInput::make('family_name')
+                            ->label(__('Family Name'))
+                            ->required(),
 
-                    Forms\Components\DatePicker::make('birth_date')
-                        ->label(__('Birth Date'))
-                        ->required(),
+                        Forms\Components\DatePicker::make('birth_date')
+                            ->label(__('Birth Date'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('national_id')
-                        ->label(__('National ID'))
-                        ->required(),
+                        Forms\Components\TextInput::make('national_id')
+                            ->label(__('National ID'))
+                            ->required(),
 
-                    Forms\Components\DatePicker::make('national_id_expiry')
-                        ->label(__('National ID Expiry'))
-                        ->required(),
+                        Forms\Components\DatePicker::make('national_id_expiry')
+                            ->label(__('National ID Expiry'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('nationality')
-                        ->label(__('Nationality'))
-                        ->required(),
+                        Forms\Components\TextInput::make('nationality')
+                            ->label(__('Nationality'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('bank_account')
-                        ->label(__('Bank Account'))
-                        ->required(),
+                        Forms\Components\TextInput::make('bank_account')
+                            ->label(__('Bank Account'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('sponsor_company')
-                        ->label(__('Sponsor Company'))
-                        ->required(),
+                        Forms\Components\TextInput::make('sponsor_company')
+                            ->label(__('Sponsor Company'))
+                            ->required(),
 
-                    Forms\Components\Select::make('insurance_company_id')
-                        ->label(__('Insurance Company'))
-                        ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
-                        ->options(function () {
-                            return \App\Models\InsuranceCompany::pluck('name', 'id')->prepend('لا توجد شركة تأمين', '');
-                        }) // إضافة خيار لتصفير القيمة
-                        ->placeholder('اختر شركة التأمين') // النص الافتراضي
-                        ->nullable() // السماح للحقل بأن يكون فارغًا
-                        ->searchable() // دعم البحث
-                        ->preload(), // تحميل البيانات مسبقًا
+                        Forms\Components\Select::make('insurance_company_id')
+                            ->label(__('Insurance Company'))
+                            ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
+                            ->options(function () {
+                                return \App\Models\InsuranceCompany::pluck('name', 'id')->prepend('لا توجد شركة تأمين', '');
+                            }) // إضافة خيار لتصفير القيمة
+                            ->placeholder('اختر شركة التأمين') // النص الافتراضي
+                            ->nullable() // السماح للحقل بأن يكون فارغًا
+                            ->searchable() // دعم البحث
+                            ->preload(), // تحميل البيانات مسبقًا
 
-                    Forms\Components\TextInput::make('blood_type')
-                        ->label(__('Blood Type'))
-                        ->required(),
-                ])
-              
-                ->columns(2),
+                        Forms\Components\TextInput::make('blood_type')
+                            ->label(__('Blood Type'))
+                            ->required(),
+                    ])
 
-            // Job Information
-            Forms\Components\Wizard\Step::make(__('Job Information'))
-                ->schema([
-                    Forms\Components\DatePicker::make('contract_start')
-                        ->label(__('Contract Start'))
-                        ->required(),
-                    Forms\Components\DatePicker::make('contract_end')
-                        ->label(__('Contract End'))
+                    ->columns(2),
 
-                        ->minDate(now()) // لضمان اختيار تاريخ مستقبلي
-                        ->displayFormat('Y-m-d')
-                        ->placeholder(__('Select contract end date')),
+                // Job Information
+                Forms\Components\Wizard\Step::make(__('Job Information'))
+                    ->schema([
+                        Forms\Components\DatePicker::make('contract_start')
+                            ->label(__('Contract Start'))
+                            ->required(),
+                        Forms\Components\DatePicker::make('contract_end')
+                            ->label(__('Contract End'))
 
-                    Forms\Components\DatePicker::make('actual_start')
-                        ->label(__('Actual Start'))
-                        ->required(),
+                            ->minDate(now()) // لضمان اختيار تاريخ مستقبلي
+                            ->displayFormat('Y-m-d')
+                            ->placeholder(__('Select contract end date')),
 
-                    Forms\Components\TextInput::make('basic_salary')
-                        ->label(__('Basic Salary'))
-                        ->numeric()
-                        ->required(),
+                        Forms\Components\DatePicker::make('actual_start')
+                            ->label(__('Actual Start'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('living_allowance')
-                        ->label(__('Living Allowance'))
-                        ->numeric(),
+                        Forms\Components\TextInput::make('basic_salary')
+                            ->label(__('Basic Salary'))
+                            ->numeric()
+                            ->required(),
 
-                    Forms\Components\TextInput::make('other_allowances')
-                        ->label(__('Other Allowances'))
-                        ->numeric(),
+                        Forms\Components\TextInput::make('living_allowance')
+                            ->label(__('Living Allowance'))
+                            ->numeric(),
 
-                    Forms\Components\TextInput::make('job_status')
-                        ->label(__('Job Status'))
-                        ->required(),
+                        Forms\Components\TextInput::make('other_allowances')
+                            ->label(__('Other Allowances'))
+                            ->numeric(),
 
-                    Forms\Components\TextInput::make('health_insurance_status')
-                        ->label(__('Health Insurance Status'))
-                        ->required(),
+                        Forms\Components\TextInput::make('job_status')
+                            ->label(__('Job Status'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('health_insurance_company')
-                        ->label(__('Health Insurance Company')),
+                        Forms\Components\TextInput::make('health_insurance_status')
+                            ->label(__('Health Insurance Status'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('social_security')
-                        ->label(__('Social Security')),
+                        Forms\Components\TextInput::make('health_insurance_company')
+                            ->label(__('Health Insurance Company')),
 
-                    Forms\Components\TextInput::make('social_security_code')
-                        ->label(__('Social Security Code')),
-                ]) ->columns(2),
+                        Forms\Components\TextInput::make('social_security')
+                            ->label(__('Social Security')),
 
-            // Education
-            Forms\Components\Wizard\Step::make(__('Education'))
-                ->schema([
-                    Forms\Components\TextInput::make('qualification')
-                        ->label(__('Qualification'))
-                        ->required(),
+                        Forms\Components\TextInput::make('social_security_code')
+                            ->label(__('Social Security Code')),
+                    ])->columns(2),
 
-                    Forms\Components\TextInput::make('specialization')
-                        ->label(__('Specialization'))
-                        ->required(),
-                ]) ->columns(2),
+                // Education
+                Forms\Components\Wizard\Step::make(__('Education'))
+                    ->schema([
+                        Forms\Components\TextInput::make('qualification')
+                            ->label(__('Qualification'))
+                            ->required(),
 
-            // Contact Information
-            Forms\Components\Wizard\Step::make(__('Contact Information'))
-                ->schema([
-                    Forms\Components\TextInput::make('mobile_number')
-                        ->label(__('Mobile Number'))
-                        ->required(),
+                        Forms\Components\TextInput::make('specialization')
+                            ->label(__('Specialization'))
+                            ->required(),
+                    ])->columns(2),
 
-                    Forms\Components\TextInput::make('phone_number')
-                        ->label(__('Phone Number')),
+                // Contact Information
+                Forms\Components\Wizard\Step::make(__('Contact Information'))
+                    ->schema([
+                        Forms\Components\TextInput::make('mobile_number')
+                            ->label(__('Mobile Number'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('email')
-                        ->label(__('Email'))
-                        ->email(),
-                ]) ->columns(2),
+                        Forms\Components\TextInput::make('phone_number')
+                            ->label(__('Phone Number')),
 
-            // Address
-            Forms\Components\Wizard\Step::make(__('Address'))
-                ->schema([
-                    Forms\Components\TextInput::make('region')
-                        ->label(__('Region'))
-                        ->required(),
+                        Forms\Components\TextInput::make('email')
+                            ->label(__('Email'))
+                            ->email(),
+                    ])->columns(2),
 
-                    Forms\Components\TextInput::make('city')
-                        ->label(__('City'))
-                        ->required(),
+                // Address
+                Forms\Components\Wizard\Step::make(__('Address'))
+                    ->schema([
+                        Forms\Components\TextInput::make('region')
+                            ->label(__('Region'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('street')
-                        ->label(__('Street'))
-                        ->required(),
+                        Forms\Components\TextInput::make('city')
+                            ->label(__('City'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('building_number')
-                        ->label(__('Building Number'))
-                        ->required(),
+                        Forms\Components\TextInput::make('street')
+                            ->label(__('Street'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('apartment_number')
-                        ->label(__('Apartment Number')),
+                        Forms\Components\TextInput::make('building_number')
+                            ->label(__('Building Number'))
+                            ->required(),
 
-                    Forms\Components\TextInput::make('postal_code')
-                        ->label(__('Postal Code')),
-                ]) ->columns(2),
+                        Forms\Components\TextInput::make('apartment_number')
+                            ->label(__('Apartment Number')),
 
-            // Social Media
-            Forms\Components\Wizard\Step::make(__('Social Media'))
-                ->schema([
-                    Forms\Components\TextInput::make('facebook')
-                        ->label(__('Facebook')),
+                        Forms\Components\TextInput::make('postal_code')
+                            ->label(__('Postal Code')),
+                    ])->columns(2),
 
-                    Forms\Components\TextInput::make('twitter')
-                        ->label(__('Twitter')),
+                // Social Media
+                Forms\Components\Wizard\Step::make(__('Social Media'))
+                    ->schema([
+                        Forms\Components\TextInput::make('facebook')
+                            ->label(__('Facebook')),
 
-                    Forms\Components\TextInput::make('linkedin')
-                        ->label(__('LinkedIn')),
-                ]) ->columns(2),
+                        Forms\Components\TextInput::make('twitter')
+                            ->label(__('Twitter')),
+
+                        Forms\Components\TextInput::make('linkedin')
+                            ->label(__('LinkedIn')),
+                    ])->columns(2),
                 Forms\Components\Wizard\Step::make(__('Leave Balances'))
-                ->schema([
-            Repeater::make('leaveBalances')
-                ->relationship('leaveBalances')
-                ->schema([
-                    Select::make('leave_type')
-                        ->label('نوع الإجازة')
-                        ->options([
-                            'annual' => 'سنوية',
-                            'sick' => 'مرضية',
-                            'other' => 'أخرى',
-                        ])
-                        ->required(),
-                    TextInput::make('annual_leave_days')
-                        ->label('عدد الأيام السنوية')
-                        ->numeric()
-                        ->required(), // الحقل الجديد
-                    TextInput::make('balance')
-                        ->label('الرصيد المتبقي')
-                        ->numeric()
-                        ->disabled(), // لا يمكن تحريره يدويًا
-                    TextInput::make('accrued_per_month')
-                        ->label('المستحق شهريًا')
-                        ->numeric(),
-                    TextInput::make('used_balance')
-                        ->label('المستخدم')
-                        ->numeric(),
-                ])
-                ->label('رصيد الإجازات')
-                ->columns(4), // تحديث عدد الأعمدة ليشمل الحقل الجديد
-            ]),
+                    ->schema([
+                        Repeater::make('leaveBalances')
+                            ->relationship('leaveBalances')
+                            ->schema([
+                                Select::make('leave_type')
+                                    ->label('نوع الإجازة')
+                                    ->options([
+                                        'annual' => 'سنوية',
+                                        'sick' => 'مرضية',
+                                        'other' => 'أخرى',
+                                    ])
+                                    ->required(),
+                                TextInput::make('annual_leave_days')
+                                    ->label('عدد الأيام السنوية')
+                                    ->numeric()
+                                    ->required(), // الحقل الجديد
+                                TextInput::make('balance')
+                                    ->label('الرصيد المتبقي')
+                                    ->numeric()
+                                    ->disabled(), // لا يمكن تحريره يدويًا
+                                TextInput::make('accrued_per_month')
+                                    ->label('المستحق شهريًا')
+                                    ->numeric(),
+                                TextInput::make('used_balance')
+                                    ->label('المستخدم')
+                                    ->numeric(),
+                            ])
+                            ->label('رصيد الإجازات')
+                            ->columns(4), // تحديث عدد الأعمدة ليشمل الحقل الجديد
+                    ]),
 
-            // Security
-            Forms\Components\Wizard\Step::make(__('Security'))
-                ->schema([
-                    Forms\Components\TextInput::make('password')
-                        ->label(__('Password'))
-                        ->password()
-                        ->required(),
+                // Security
+                Forms\Components\Wizard\Step::make(__('Security'))
+                    ->schema([
+                        Forms\Components\TextInput::make('password')
+                            ->label(__('Password'))
+                            ->password()
+                            ->required(),
 
-                    Forms\Components\Select::make('added_by')
-                        ->label(__('Added By'))
-                        ->options(User::all()->pluck('name', 'id'))
-                        ->searchable()
-                        ->nullable(),
-                ])
-                ,
-           
+                        Forms\Components\Select::make('added_by')
+                            ->label(__('Added By'))
+                            ->options(User::all()->pluck('name', 'id'))
+                            ->searchable()
+                            ->nullable(),
+                    ]),
 
-                ])
+            ])
                 ->skippable(),
 
-                Forms\Components\Toggle::make('status')
+            Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
                 ->onColor('success')
                 ->offColor('danger')
                 ->required(),
-                
-          
+
         ])
-       
-        ->columns(1);
+            ->columns(1);
     }
 
     public static function table(Table $table): Table
@@ -337,22 +333,24 @@ class EmployeeResource extends Resource
                     })
                     ->searchable()
                     ->sortable(),
-                    Tables\Columns\TextColumn::make('current_zone')
-    ->label(__('Current Zone'))
-    ->getStateUsing(function ($record) {
-        $currentZone = $record->currentZone; // استدعاء العلاقة الحالية
-        return $currentZone ? $currentZone->name : __('Not Assigned');
-    })
-    ->sortable()
-    ->toggleable(isToggledHiddenByDefault: false),
-    Tables\Columns\TextColumn::make('current_project')
-    ->label(__('Current Project'))
-    ->getStateUsing(function ($record) {
-        $currentProjectRecord = $record->currentProjectRecord; // استدعاء العلاقة الحالية
-        return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
-    })
-    ->sortable()
-    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('current_zone')
+                    ->label(__('Current Zone'))
+                    ->getStateUsing(function ($record) {
+                        $currentZone = $record->currentZone; // استدعاء العلاقة الحالية
+
+                        return $currentZone ? $currentZone->name : __('Not Assigned');
+                    })
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('current_project')
+                    ->label(__('Current Project'))
+                    ->getStateUsing(function ($record) {
+                        $currentProjectRecord = $record->currentProjectRecord; // استدعاء العلاقة الحالية
+
+                        return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
+                    })
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('first_name')
                     ->label(__('First Name'))
@@ -679,7 +677,8 @@ class EmployeeResource extends Resource
                 //         ->filename('all_employees.pdf')
                 //         ->pdf();
                 // }),
-            ]);
+            ])
+            ;
     }
 
     public static function getPages(): array
