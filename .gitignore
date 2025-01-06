@@ -1,6 +1,6 @@
 /vendor/
-# node_modules/
-# npm-debug.log
+node_modules/
+npm-debug.log
 yarn-error.log
 
 # Laravel 4 specific
