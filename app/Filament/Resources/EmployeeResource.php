@@ -119,16 +119,92 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('nationality')
                             ->label(__('Nationality'))
                             ->required(),
+                        Forms\Components\Select::make('job_title')
+                            ->label(__('Job Title'))
+                            ->options(
+                                collect(\App\Enums\JobTitle::cases())
+                                    ->mapWithKeys(fn ($jobTitle) => [$jobTitle->value => $jobTitle->label()])
+                                    ->toArray()
+                            )
+                            ->required()
+                            ->searchable(),
+
+                        Forms\Components\Select::make('bank_name')
+                            ->label(__('Bank Name'))
+                            ->options(
+                                collect(\App\Enums\Bank::cases())
+                                    ->mapWithKeys(fn ($bank) => [$bank->value => $bank->label()])
+                                    ->toArray()
+                            )
+                            ->required(),
 
                         Forms\Components\TextInput::make('bank_account')
                             ->label(__('Bank Account'))
                             ->required(),
 
-                        Forms\Components\TextInput::make('sponsor_company')
-                            ->label(__('Sponsor Company'))
-                            ->required(),
+                        Forms\Components\Select::make('blood_type')
+                            ->label(__('Blood Type'))
+                            ->options(
+                                collect(\App\Enums\BloodType::cases())
+                                    ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
+                                    ->toArray()
+                            )
+                            ->required()
+                            ->searchable(),
+                    ])
 
-                        Forms\Components\Select::make('insurance_company_id')
+                    ->columns(2),
+
+                // Social Insurance (Wizard)
+                Forms\Components\Wizard\Step::make(__('Social Insurance'))
+                    ->schema([
+                        Forms\Components\Select::make('insurance_type')
+                            ->label(__('Social Insurance Type'))
+                            ->options([
+                                '' => __('No Insurance'),
+                                'commercial_record' => __('Commercial Record'),
+                            ])
+                            ->reactive()
+                            ->afterStateUpdated(function (callable $set, $state) {
+                                if ($state === 'commercial_record') {
+                                    $set('insurance_company_id', null); // إعادة تعيين القيمة
+                                }
+                            }),
+
+                        // Forms\Components\Select::make('insurance_company_id')
+                        //     ->label(__('Insurance Company'))
+                        //     ->relationship('commercialRecord', 'entity_name')
+                        //     ->visible(fn ($get) => $get('insurance_type') === 'commercial_record')
+                        //     ->required(),
+                        Forms\Components\Select::make('commercial_record_id')
+                            ->label(__('Commercial Record'))
+                            ->relationship('commercialRecord', 'entity_name') // ربط العلاقة مع السجلات التجارية
+                            ->nullable()
+                            ->searchable()
+                            ->placeholder(__('Select Commercial Record'))
+                            ->preload(),
+
+             
+
+                        Forms\Components\TextInput::make('insurance_company_name')
+                            ->label(__('Insurance Company Name'))
+                            ->nullable()
+                            ->maxLength(255),
+
+
+                        Forms\Components\TextInput::make('insurance_number')
+                            ->label(__('Insurance Number'))
+                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+
+                        Forms\Components\DatePicker::make('insurance_start_date')
+                            ->label(__('Start Date'))
+                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+
+                        Forms\Components\DatePicker::make('insurance_end_date')
+                            ->label(__('End Date'))
+                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+
+                            Forms\Components\Select::make('insurance_company_id')
                             ->label(__('Insurance Company'))
                             ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
                             ->options(function () {
@@ -138,12 +214,16 @@ class EmployeeResource extends Resource
                             ->nullable() // السماح للحقل بأن يكون فارغًا
                             ->searchable() // دعم البحث
                             ->preload(), // تحميل البيانات مسبقًا
-
-                        Forms\Components\TextInput::make('blood_type')
-                            ->label(__('Blood Type'))
-                            ->required(),
+                        Forms\Components\Select::make('parent_insurance')
+                            ->label(__('Parents Insurance'))
+                            ->options(
+                                collect(\App\Enums\ParentInsurance::cases())
+                                    ->mapWithKeys(fn ($insurance) => [$insurance->value => $insurance->label()])
+                                    ->toArray()
+                            )
+                            ->nullable()
+                            ->searchable(),
                     ])
-
                     ->columns(2),
 
                 // Job Information
@@ -579,21 +659,109 @@ class EmployeeResource extends Resource
                     ->label(__('Added By'))
                     ->options(User::all()->pluck('name', 'id')),
 
-                // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
-                Filter::make('with_insurance')
-                    ->label(__('بالتأمين'))
-                    ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
+           // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
+           Filter::make('with_insurance')
+           ->label(__('With Insurance'))
+           ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
 
-                Filter::make('without_insurance')
-                    ->label(__('بدون تأمين'))
-                    ->query(fn ($query) => $query->whereNull('insurance_company_id')),
+       Filter::make('without_insurance')
+           ->label(__('Without Insurance'))
+           ->query(fn ($query) => $query->whereNull('insurance_company_id')),
 
-                // فلتر حسب شركات التأمين
-                SelectFilter::make('insurance_company_id')
-                    ->label(__('شركة التأمين'))
-                    ->relationship('insuranceCompany', 'name') // الربط مع جدول شركات التأمين
-                    ->placeholder(__('كل الشركات')), // الخيار الافتراضي
-            ])
+       // فلتر حسب شركات التأمين الطبي
+       SelectFilter::make('insurance_company_id')
+           ->label(__('Medical Insurance Company'))
+           ->relationship('insuranceCompany', 'name')
+           ->placeholder(__('All Companies'))
+           ->searchable(),
+
+       // فلتر حسب شركة السجل التجاري
+       SelectFilter::make('commercial_record_id')
+           ->label(__('Commercial Record'))
+           ->relationship('commercialRecord', 'entity_name')
+           ->placeholder(__('All Records'))
+           ->searchable(),
+
+       // فلتر حسب المسمى الوظيفي
+       SelectFilter::make('job_title')
+           ->label(__('Job Title'))
+           ->options(
+               collect(\App\Enums\JobTitle::cases())
+                   ->mapWithKeys(fn ($jobTitle) => [$jobTitle->value => $jobTitle->label()])
+                   ->toArray()
+           )
+           ->placeholder(__('All Job Titles'))
+           ->searchable(),
+
+       // فلتر حسب البنك
+       SelectFilter::make('bank_name')
+           ->label(__('Bank Name'))
+           ->options(
+               collect(\App\Enums\Bank::cases())
+                   ->mapWithKeys(fn ($bank) => [$bank->value => $bank->label()])
+                   ->toArray()
+           )
+           ->placeholder(__('All Banks'))
+           ->searchable(),
+
+       // فلتر حسب فصيلة الدم
+       SelectFilter::make('blood_type')
+           ->label(__('Blood Type'))
+           ->options(
+               collect(\App\Enums\BloodType::cases())
+                   ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
+                   ->toArray()
+           )
+           ->placeholder(__('All Blood Types'))
+           ->searchable(),
+
+       // فلتر حسب حالة التأمين الاجتماعي
+       Filter::make('with_social_insurance')
+           ->label(__('With Social Insurance'))
+           ->query(fn ($query) => $query->whereNotNull('insurance_number')),
+
+       Filter::make('without_social_insurance')
+           ->label(__('Without Social Insurance'))
+           ->query(fn ($query) => $query->whereNull('insurance_number')),
+
+       // فلتر حسب تأمين الوالدين
+       SelectFilter::make('parent_insurance')
+           ->label(__('Parents Insurance'))
+           ->options(
+               collect(\App\Enums\ParentInsurance::cases())
+                   ->mapWithKeys(fn ($insurance) => [$insurance->value => $insurance->label()])
+                   ->toArray()
+           )
+           ->placeholder(__('All Parents Insurance Options'))
+           ->searchable(),
+           Filter::make('contract_start')
+           ->label(__('Contract Started After'))
+           ->form([
+               Forms\Components\DatePicker::make('start_date')->label(__('Start Date')),
+           ])
+           ->query(fn ($query, array $data) => $query
+               ->when(!empty($data['start_date']), fn ($query) => $query->where('contract_start', '>=', $data['start_date']))),
+       
+       Filter::make('contract_end')
+           ->label(__('Contract Ends Before'))
+           ->form([
+               Forms\Components\DatePicker::make('end_date')->label(__('End Date')),
+           ])
+           ->query(fn ($query, array $data) => $query
+               ->when(!empty($data['end_date']), fn ($query) => $query->where('contract_end', '<=', $data['end_date']))),
+       
+       // فلتر حسب الراتب الأساسي
+       Filter::make('basic_salary')
+           ->label(__('Basic Salary Range'))
+           ->form([
+               Forms\Components\TextInput::make('min_salary')->label(__('Minimum Salary'))->numeric(),
+               Forms\Components\TextInput::make('max_salary')->label(__('Maximum Salary'))->numeric(),
+           ])
+           ->query(fn ($query, array $data) => $query
+               ->when($data['min_salary'], fn ($query, $min) => $query->where('basic_salary', '>=', $min))
+               ->when($data['max_salary'], fn ($query, $max) => $query->where('basic_salary', '<=', $max))),
+ 
+                    ])
             ->actions([
 
                 Action::make('viewMap')
@@ -677,8 +845,7 @@ class EmployeeResource extends Resource
                 //         ->filename('all_employees.pdf')
                 //         ->pdf();
                 // }),
-            ])
-            ;
+            ]);
     }
 
     public static function getPages(): array

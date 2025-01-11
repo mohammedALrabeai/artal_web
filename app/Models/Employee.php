@@ -60,7 +60,16 @@ class Employee extends Model
         'api_token',
         'leave_balance',
         'out_of_zone',
-        'insurance_company_id'
+        'insurance_company_id',
+        'parent_insurance', 'insurance_company_name',
+        'commercial_record_id',
+        'job_title',
+        'bank_name',
+        'insurance_type',
+   
+        'insurance_number',
+        'insurance_start_date',
+        'insurance_end_date',
     ];
     protected $casts = [
         'out_of_zone' => 'boolean',
@@ -175,6 +184,12 @@ public function currentZone()
             ->orWhere('end_date', '>=', now()); // أو يقع في المستقبل
     })
     ->latest('start_date'); // جلب أحدث سجل بناءً على تاريخ البداية
+}
+
+
+public function commercialRecord()
+{
+    return $this->belongsTo(CommercialRecord::class, 'commercial_record_id');
 }
 
 
