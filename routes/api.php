@@ -50,6 +50,14 @@ Route::middleware(['auth:employee'])->group(function () {
 
 
 
+use App\Http\Controllers\EmployeeNotificationController;
+
+Route::middleware('auth:employee')->get('/employee/notifications', [EmployeeNotificationController::class, 'getNotifications']);
+
+Route::middleware('auth:employee')->get('/employee/notifications/unread-count', [EmployeeNotificationController::class, 'getUnreadCount']);
+
+
+
 
 
 Route::middleware('auth:employee')->group(function () {

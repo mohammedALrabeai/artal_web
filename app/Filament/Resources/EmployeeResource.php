@@ -2,26 +2,28 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EmployeeResource\Pages;
-use App\Filament\Resources\EmployeeResource\RelationManagers;
-use App\Models\Employee;
-use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\User;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\BulkAction;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
+use App\Models\Employee;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Http;
+use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Log;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Models\EmployeeNotification;
+use Illuminate\Support\Facades\Http;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Repeater;
+use Filament\Tables\Actions\BulkAction;
+use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Filters\SelectFilter;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Filament\Resources\EmployeeResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\EmployeeResource\RelationManagers;
 
 class EmployeeResource extends Resource
 {
@@ -182,29 +184,24 @@ class EmployeeResource extends Resource
                             ->nullable()
                             ->searchable()
                             ->placeholder(__('Select Commercial Record'))
-                            ->preload(),
-
-             
+                            ->preload()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\TextInput::make('insurance_company_name')
                             ->label(__('Insurance Company Name'))
                             ->nullable()
-                            ->maxLength(255),
-
+                            ->maxLength(255)->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\TextInput::make('insurance_number')
-                            ->label(__('Insurance Number'))
-                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('Subscriber number'))
+                        ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_start_date')
-                            ->label(__('Start Date'))
-                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('Start Date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_end_date')
-                            ->label(__('End Date'))
-                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('End Date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
-                            Forms\Components\Select::make('insurance_company_id')
+                        Forms\Components\Select::make('insurance_company_id')
                             ->label(__('Insurance Company'))
                             ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
                             ->options(function () {
@@ -213,7 +210,7 @@ class EmployeeResource extends Resource
                             ->placeholder('اختر شركة التأمين') // النص الافتراضي
                             ->nullable() // السماح للحقل بأن يكون فارغًا
                             ->searchable() // دعم البحث
-                            ->preload(), // تحميل البيانات مسبقًا
+                            ->preload()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
                         Forms\Components\Select::make('parent_insurance')
                             ->label(__('Parents Insurance'))
                             ->options(
@@ -222,7 +219,7 @@ class EmployeeResource extends Resource
                                     ->toArray()
                             )
                             ->nullable()
-                            ->searchable(),
+                            ->searchable()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
                     ])
                     ->columns(2),
 
@@ -659,109 +656,109 @@ class EmployeeResource extends Resource
                     ->label(__('Added By'))
                     ->options(User::all()->pluck('name', 'id')),
 
-           // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
-           Filter::make('with_insurance')
-           ->label(__('With Insurance'))
-           ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
+                // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
+                Filter::make('with_insurance')
+                    ->label(__('With Insurance'))
+                    ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
 
-       Filter::make('without_insurance')
-           ->label(__('Without Insurance'))
-           ->query(fn ($query) => $query->whereNull('insurance_company_id')),
+                Filter::make('without_insurance')
+                    ->label(__('Without Insurance'))
+                    ->query(fn ($query) => $query->whereNull('insurance_company_id')),
 
-       // فلتر حسب شركات التأمين الطبي
-       SelectFilter::make('insurance_company_id')
-           ->label(__('Medical Insurance Company'))
-           ->relationship('insuranceCompany', 'name')
-           ->placeholder(__('All Companies'))
-           ->searchable(),
+                // فلتر حسب شركات التأمين الطبي
+                SelectFilter::make('insurance_company_id')
+                    ->label(__('Medical Insurance Company'))
+                    ->relationship('insuranceCompany', 'name')
+                    ->placeholder(__('All Companies'))
+                    ->searchable(),
 
-       // فلتر حسب شركة السجل التجاري
-       SelectFilter::make('commercial_record_id')
-           ->label(__('Commercial Record'))
-           ->relationship('commercialRecord', 'entity_name')
-           ->placeholder(__('All Records'))
-           ->searchable(),
+                // فلتر حسب شركة السجل التجاري
+                SelectFilter::make('commercial_record_id')
+                    ->label(__('Commercial Record'))
+                    ->relationship('commercialRecord', 'entity_name')
+                    ->placeholder(__('All Records'))
+                    ->searchable(),
 
-       // فلتر حسب المسمى الوظيفي
-       SelectFilter::make('job_title')
-           ->label(__('Job Title'))
-           ->options(
-               collect(\App\Enums\JobTitle::cases())
-                   ->mapWithKeys(fn ($jobTitle) => [$jobTitle->value => $jobTitle->label()])
-                   ->toArray()
-           )
-           ->placeholder(__('All Job Titles'))
-           ->searchable(),
+                // فلتر حسب المسمى الوظيفي
+                SelectFilter::make('job_title')
+                    ->label(__('Job Title'))
+                    ->options(
+                        collect(\App\Enums\JobTitle::cases())
+                            ->mapWithKeys(fn ($jobTitle) => [$jobTitle->value => $jobTitle->label()])
+                            ->toArray()
+                    )
+                    ->placeholder(__('All Job Titles'))
+                    ->searchable(),
 
-       // فلتر حسب البنك
-       SelectFilter::make('bank_name')
-           ->label(__('Bank Name'))
-           ->options(
-               collect(\App\Enums\Bank::cases())
-                   ->mapWithKeys(fn ($bank) => [$bank->value => $bank->label()])
-                   ->toArray()
-           )
-           ->placeholder(__('All Banks'))
-           ->searchable(),
+                // فلتر حسب البنك
+                SelectFilter::make('bank_name')
+                    ->label(__('Bank Name'))
+                    ->options(
+                        collect(\App\Enums\Bank::cases())
+                            ->mapWithKeys(fn ($bank) => [$bank->value => $bank->label()])
+                            ->toArray()
+                    )
+                    ->placeholder(__('All Banks'))
+                    ->searchable(),
 
-       // فلتر حسب فصيلة الدم
-       SelectFilter::make('blood_type')
-           ->label(__('Blood Type'))
-           ->options(
-               collect(\App\Enums\BloodType::cases())
-                   ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
-                   ->toArray()
-           )
-           ->placeholder(__('All Blood Types'))
-           ->searchable(),
+                // فلتر حسب فصيلة الدم
+                SelectFilter::make('blood_type')
+                    ->label(__('Blood Type'))
+                    ->options(
+                        collect(\App\Enums\BloodType::cases())
+                            ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
+                            ->toArray()
+                    )
+                    ->placeholder(__('All Blood Types'))
+                    ->searchable(),
 
-       // فلتر حسب حالة التأمين الاجتماعي
-       Filter::make('with_social_insurance')
-           ->label(__('With Social Insurance'))
-           ->query(fn ($query) => $query->whereNotNull('insurance_number')),
+                // فلتر حسب حالة التأمين الاجتماعي
+                Filter::make('with_social_insurance')
+                    ->label(__('With Social Insurance'))
+                    ->query(fn ($query) => $query->whereNotNull('insurance_number')),
 
-       Filter::make('without_social_insurance')
-           ->label(__('Without Social Insurance'))
-           ->query(fn ($query) => $query->whereNull('insurance_number')),
+                Filter::make('without_social_insurance')
+                    ->label(__('Without Social Insurance'))
+                    ->query(fn ($query) => $query->whereNull('insurance_number')),
 
-       // فلتر حسب تأمين الوالدين
-       SelectFilter::make('parent_insurance')
-           ->label(__('Parents Insurance'))
-           ->options(
-               collect(\App\Enums\ParentInsurance::cases())
-                   ->mapWithKeys(fn ($insurance) => [$insurance->value => $insurance->label()])
-                   ->toArray()
-           )
-           ->placeholder(__('All Parents Insurance Options'))
-           ->searchable(),
-           Filter::make('contract_start')
-           ->label(__('Contract Started After'))
-           ->form([
-               Forms\Components\DatePicker::make('start_date')->label(__('Start Date')),
-           ])
-           ->query(fn ($query, array $data) => $query
-               ->when(!empty($data['start_date']), fn ($query) => $query->where('contract_start', '>=', $data['start_date']))),
-       
-       Filter::make('contract_end')
-           ->label(__('Contract Ends Before'))
-           ->form([
-               Forms\Components\DatePicker::make('end_date')->label(__('End Date')),
-           ])
-           ->query(fn ($query, array $data) => $query
-               ->when(!empty($data['end_date']), fn ($query) => $query->where('contract_end', '<=', $data['end_date']))),
-       
-       // فلتر حسب الراتب الأساسي
-       Filter::make('basic_salary')
-           ->label(__('Basic Salary Range'))
-           ->form([
-               Forms\Components\TextInput::make('min_salary')->label(__('Minimum Salary'))->numeric(),
-               Forms\Components\TextInput::make('max_salary')->label(__('Maximum Salary'))->numeric(),
-           ])
-           ->query(fn ($query, array $data) => $query
-               ->when($data['min_salary'], fn ($query, $min) => $query->where('basic_salary', '>=', $min))
-               ->when($data['max_salary'], fn ($query, $max) => $query->where('basic_salary', '<=', $max))),
- 
+                // فلتر حسب تأمين الوالدين
+                SelectFilter::make('parent_insurance')
+                    ->label(__('Parents Insurance'))
+                    ->options(
+                        collect(\App\Enums\ParentInsurance::cases())
+                            ->mapWithKeys(fn ($insurance) => [$insurance->value => $insurance->label()])
+                            ->toArray()
+                    )
+                    ->placeholder(__('All Parents Insurance Options'))
+                    ->searchable(),
+                Filter::make('contract_start')
+                    ->label(__('Contract Started After'))
+                    ->form([
+                        Forms\Components\DatePicker::make('start_date')->label(__('Start Date')),
                     ])
+                    ->query(fn ($query, array $data) => $query
+                        ->when(! empty($data['start_date']), fn ($query) => $query->where('contract_start', '>=', $data['start_date']))),
+
+                Filter::make('contract_end')
+                    ->label(__('Contract Ends Before'))
+                    ->form([
+                        Forms\Components\DatePicker::make('end_date')->label(__('End Date')),
+                    ])
+                    ->query(fn ($query, array $data) => $query
+                        ->when(! empty($data['end_date']), fn ($query) => $query->where('contract_end', '<=', $data['end_date']))),
+
+                // فلتر حسب الراتب الأساسي
+                Filter::make('basic_salary')
+                    ->label(__('Basic Salary Range'))
+                    ->form([
+                        Forms\Components\TextInput::make('min_salary')->label(__('Minimum Salary'))->numeric(),
+                        Forms\Components\TextInput::make('max_salary')->label(__('Maximum Salary'))->numeric(),
+                    ])
+                    ->query(fn ($query, array $data) => $query
+                        ->when($data['min_salary'], fn ($query, $min) => $query->where('basic_salary', '>=', $min))
+                        ->when($data['max_salary'], fn ($query, $max) => $query->where('basic_salary', '<=', $max))),
+
+            ])
             ->actions([
 
                 Action::make('viewMap')
@@ -782,53 +779,141 @@ class EmployeeResource extends Resource
                 Tables\Actions\DeleteBulkAction::make(),
                 ExportBulkAction::make(),
                 BulkAction::make('sendNotification')
-                    ->label('إرسال إشعار')
-                    ->form([
-                        Forms\Components\TextInput::make('title')
-                            ->label('العنوان')
-                            ->required()
-                            ->placeholder('أدخل عنوان الإشعار'),
-                        Forms\Components\Textarea::make('message')
-                            ->label('الموضوع')
-                            ->required()
-                            ->placeholder('أدخل موضوع الإشعار'),
-                    ])
-                    ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
-                        // استخدام السجلات لإرسال الإشعارات
-                        // جمع قائمة بالمعرفات (external_user_ids) من السجلات
-                        // جمع قائمة بالمعرفات (external_user_ids) كـ Strings
-                        $externalUserIds = $records->pluck('id')->filter()->map(fn ($id) => (string) $id)->toArray(); // تحويل إلى نصوص
-                        Log::info('External User IDs:', $externalUserIds);
-
-                        if (! empty($externalUserIds)) {
-                            // إعداد الهيدرز
-                            $headers = [
-                                'Authorization' => 'Basic '.env('ONESIGNAL_REST_API_KEY'),
-                                'Content-Type' => 'application/json; charset=utf-8',
-                            ];
-
-                            // إعداد بيانات الإشعار
-                            $payload = [
-                                'app_id' => env('ONESIGNAL_APP_ID'),
-                                'include_external_user_ids' => $externalUserIds,
-                                'headings' => ['en' => $data['title']],
-                                'contents' => ['en' => $data['message']],
-                            ];
-                            // إرسال الطلب
-                            $response = Http::withHeaders($headers)->post('https://onesignal.com/api/v1/notifications', $payload);
-
-                            // تسجيل الاستجابة
-                            Log::info('OneSignal Response:', [
-                                'external_user_ids' => $externalUserIds,
-                                'response' => $response->json(),
-                            ]);
-                        } else {
-                            Log::warning('No valid external_user_ids found for sending notifications.');
+                ->label('إرسال إشعار')
+                ->form([
+                    Forms\Components\TextInput::make('title')
+                        ->label('العنوان')
+                        ->required()
+                        ->placeholder('أدخل عنوان الإشعار'),
+                    Forms\Components\Textarea::make('message')
+                        ->label('الموضوع')
+                        ->required()
+                        ->placeholder('أدخل موضوع الإشعار'),
+                    Forms\Components\Select::make('type')
+                        ->label('نوع الإشعار')
+                        ->options([
+                            'general' => 'تعميم',
+                            'notification' => 'إخطار',
+                            'warning' => 'إنذار',
+                            'violation' => 'مخالفة',
+                            'summons' => 'استدعاء',
+                            'other' => 'أخرى',
+                        ])
+                        ->required()
+                        ->placeholder('اختر نوع الإشعار'),
+                    Forms\Components\FileUpload::make('attachment')
+                        ->label('المرفقات')
+                        ->disk('s3')
+                        ->visibility('public')
+                        ->directory('notifications/attachments')
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif']) // قبول الصور فقط
+                        ->placeholder('أرفق صورة إذا لزم الأمر'),
+                        Forms\Components\Checkbox::make('send_via_whatsapp')
+                        ->label('إرسال عبر WhatsApp')
+                        ->default(false),
+                ])
+                ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                    // جمع قائمة بالمعرفات (external_user_ids) كـ Strings
+                    $externalUserIds = $records->pluck('id')->filter()->map(fn ($id) => (string) $id)->toArray();
+                    Log::info('External User IDs:', $externalUserIds);
+            
+                    if (! empty($externalUserIds)) {
+                        // إعداد الهيدرز
+                        $headers = [
+                            'Authorization' => 'Basic '.env('ONESIGNAL_REST_API_KEY'),
+                            'Content-Type' => 'application/json; charset=utf-8',
+                        ];
+            
+                        // إعداد بيانات الإشعار
+                        $payload = [
+                            'app_id' => env('ONESIGNAL_APP_ID'),
+                            'include_external_user_ids' => $externalUserIds,
+                            'headings' => ['en' => $data['title']],
+                            'contents' => ['en' => $data['message']],
+                            'data' => [
+                                'type' => $data['type'],
+                            ],
+                        ];
+            
+                        // إضافة المرفق إذا كان صورة
+                        if (!empty($data['attachment'])) {
+                            // $attachmentUrl = asset('storage/' . $data['attachment']); // تحويل المسار إلى URL
+                           $attachmentUrl = Storage::disk('s3')->url($data['attachment']); // تحويل المسار إلى URL
+                            $payload['big_picture'] = $attachmentUrl; // حقل الصورة في OneSignal
+                            $payload['data']['attachment_url'] = $attachmentUrl; // تخزين المسار في البيانات
+                      
+                    //   dd($attachmentUrl);
                         }
+            
+                        // إرسال الطلب
+                        $response = Http::withHeaders($headers)->post('https://onesignal.com/api/v1/notifications', $payload);
+            
+                        // تسجيل الاستجابة
+                        Log::info('OneSignal Response:', [
+                            'external_user_ids' => $externalUserIds,
+                            'response' => $response->json(),
+                        ]);
+                    } else {
+                        Log::warning('No valid external_user_ids found for sending notifications.');
+                    }
 
-                    })
-                    ->requiresConfirmation()
-                    ->color('primary'),
+                    foreach ($records as $employee) {
+                        // إعداد المرفق URL
+                        $attachmentUrl = !empty($data['attachment']) ? Storage::disk('s3')->url($data['attachment']) : null;
+                    
+                        // حفظ الإشعار في قاعدة البيانات
+                        \App\Models\EmployeeNotification::create([
+                            'employee_id' => $employee->id,
+                            'type' => $data['type'],
+                            'title' => $data['title'],
+                            'message' => $data['message'],
+                            'attachment' => $attachmentUrl,
+                            'sent_via_whatsapp' => $data['send_via_whatsapp'],
+                        ]);
+                    
+                        // إرسال الإشعار عبر WhatsApp إذا تم تحديد الخيار
+                        if ($data['send_via_whatsapp']) {
+                            $phone = $employee->mobile_number;
+                            if ($phone) {
+                                $imageBase64 = null;
+                    
+                                if (!empty($data['attachment'])) {
+                                    $imagePath = $data['attachment'];
+                    
+                                    if (Storage::disk('s3')->exists($imagePath)) {
+                                        $imageContent = Storage::disk('s3')->get($imagePath);
+                                        $tempFilePath = tempnam(sys_get_temp_dir(), 's3_image_');
+                                        file_put_contents($tempFilePath, $imageContent);
+                                        $mimeType = mime_content_type($tempFilePath);
+                    
+                                        if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif'])) {
+                                            $imageBase64 = base64_encode($imageContent);
+                                        }
+                    
+                                        unlink($tempFilePath);
+                                    }
+                                }
+                    
+                                // إرسال الرسالة عبر WhatsApp
+                                $otpService = new \App\Services\OtpService();
+                                $otpService->sendViaWhatsappWithImage(
+                                    $phone,
+                                    $data['type'],
+                                    $data['title'],
+                                    $data['message'],
+                                    $imageBase64 ?? null
+                                );
+                            }
+                        }
+                    }
+                    
+
+                    
+                })
+                ->requiresConfirmation()
+                ->color('primary'),
+            
+            
                 // Tables\Actions\BulkAction::make('exportAll')
                 // ->label(__('Export All to PDF'))
                 // ->icon('heroicon-o-document-download')
