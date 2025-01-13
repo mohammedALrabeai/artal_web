@@ -182,11 +182,11 @@ class AttendanceExport implements FromView, WithEvents, WithStyles
 
                 $lastDataColumnIndex = $highestColumnIndex + 1;
 $columnsData = [
-    ['title' => 'أوفOFF', 'color' => 'BBDEFB', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"OFF\")"],
-    ['title' => 'عمل P', 'color' => 'C8E6C9', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"P\")"],
+    ['title' => 'أوفOFF', 'color' => 'BBDEFB', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"off\")"],
+    ['title' => 'عمل P', 'color' => 'C8E6C9', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"present\")"],
     ['title' => 'إضافي COV', 'color' => 'FFD54F', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"coverage\")"],
     ['title' => 'مرضي M', 'color' => 'FFCDD2', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"M\")"],
-    ['title' => 'إجازة مدفوعة PV', 'color' => '4CAF50', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"PV\")"],
+    ['title' => 'إجازة مدفوعة PV', 'color' => '4CAF50', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"leave\")"],
     ['title' => 'إجازة غير مدفوعة UV', 'color' => 'FFB74D', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"UV\")"],
     ['title' => 'غياب A', 'color' => 'E57373', 'formula' => "=COUNTIF($startColumn$row:$endColumn$row,\"absent\")"],
     ['title' => 'الإجمالي Total', 'color' => '90A4AE', 'formula' => "=COUNTA($startColumn$row:$endColumn$row)"],

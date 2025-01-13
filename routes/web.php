@@ -7,6 +7,10 @@ use App\Models\EmployeeCoordinate;
 use App\Filament\Pages\EmployeeMap;
 use App\Services\EmployeePdfService;
 use App\Filament\Pages\EmployeePaths;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ExportController;
+
+use App\Http\Controllers\ReportController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,10 +24,7 @@ use App\Models\EmployeeProjectRecord;
 
 Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ExportController;
 
-use App\Http\Controllers\ReportController;
 
 
 Route::get('/employee-project-record/{id}/pdf', function ($id) {
