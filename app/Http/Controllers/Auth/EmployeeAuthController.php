@@ -274,4 +274,34 @@ public function updatePlayerId(Request $request)
 }
 
 
+public function changePassword(Request $request)
+    {
+     
+
+    
+        $employee = auth()->user();
+    
+        $request->validate([
+            'old_password' => 'required',
+            'new_password' => 'required|min:6|confirmed', // تأكيد كلمة المرور الجديدة
+        ]);
+        if (!$employee) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // التحقق من كلمة المرور القديمة
+        if (!($request->old_password== $employee->password)) {
+            return response()->json(['message' => 'Old password is incorrect'], 400);
+        }
+
+        // تحديث كلمة المرور
+        $employee->update([
+            'password' => $request->new_password,
+        ]);
+
+        return response()->json(['message' => 'Password changed successfully'], 200);
+    }
+
+
+
 }

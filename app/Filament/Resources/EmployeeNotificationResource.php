@@ -26,12 +26,12 @@ class EmployeeNotificationResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Notifications');
+        return __('Employee Notifications');
     }
 
     public static function getPluralLabel(): string
     {
-        return __('Notifications');
+        return __('Employee Notifications');
     }
 
     public static function getNavigationGroup(): ?string
@@ -84,6 +84,15 @@ class EmployeeNotificationResource extends Resource
                 Tables\Columns\TextColumn::make('title')
                     ->label(__('Title'))
                     ->searchable(),
+                Tables\Columns\TextColumn::make('message')
+                    ->label(__('Message'))
+                    ->toggleable()
+                    ->searchable()
+                ,
+                    Tables\Columns\ImageColumn::make('attachment')
+                    ->label(__('Image URL'))
+                    ->toggleable()
+                    ->url(fn ($record) => $record->image_url, true),
                     Tables\Columns\IconColumn::make('is_read')
                     ->label(__('Read'))
                     ->boolean()

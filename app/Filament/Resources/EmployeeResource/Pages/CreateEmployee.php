@@ -6,6 +6,7 @@ use App\Filament\Resources\EmployeeResource;
 use Filament\Resources\Pages\CreateRecord;
 use App\Notifications\NewEmployeeNotification;
 use App\Models\User;
+use App\Services\OtpService;
 
 class CreateEmployee extends CreateRecord
 {
@@ -26,5 +27,33 @@ class CreateEmployee extends CreateRecord
     foreach ($managers as $manager) {
         $manager->notify(new NewEmployeeNotification($this->record));
     }
+try {
+    $otpService = new OtpService();
+    $employee = $this->record; // جلب بيانات الموظف المرتبطة
+
+    // طباعة بيانات الموظف في السجلات
+    \Log::info('Employee Data:', [
+        'id' => $employee->id,
+        'name' => $employee->name(),
+        'email' => $employee->email,
+        'phone' => $employee->phone,
+    ]);
+
+    $message ="";
+
+    $message = "مرحباً {$employee->name()},\n\n";
+    $message .= "تم تسجيلك في النظام بنجاح. بيانات الدخول الخاصة بك هي:\n";
+    $message .= "اسم المستخدم: {$employee->mobile_number}\n";
+    $message .= "كلمة المرور: {$employee->password}\n\n";
+    $message .= "الرجاء تغيير كلمة المرور عند تسجيل الدخول لأول مرة.\n";
+    $message .= "شكراً.";
+    $otpService->sendOtp($employee->mobile_number, $message);
+} catch (\Exception $e) {
+    \Log::error('Error sending OTP message.', [
+        'exception' => $e,
+    ]);
+}
+
+
     }
 }

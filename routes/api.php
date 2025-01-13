@@ -31,6 +31,9 @@ Route::post('/employee/verify-otp', [EmployeeAuthController::class, 'verifyOtp']
 Route::post('employee/check-device-approval', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'checkDeviceApproval']);
 Route::middleware('auth:employee')->get('/me', [EmployeeAuthController::class, 'getEmployeeByToken']);
 
+
+Route::middleware('auth:employee')->post('/employee/change-password', [EmployeeAuthController::class, 'changePassword']);
+
 Route::middleware('auth:employee')->post('/update-player-id', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'updatePlayerId']);
 
 
