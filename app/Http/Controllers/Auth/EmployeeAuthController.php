@@ -238,13 +238,15 @@ public function checkDeviceApproval(Request $request)
 
 public function getEmployeeByToken(Request $request)
 {
-    $token = $request->header('Authorization');
+    // $token = $request->header('Authorization');
 
-    if (!$token) {
-        return response()->json(['message' => 'Token not provided'], 400);
-    }
+    // if (!$token) {
+    //     return response()->json(['message' => 'Token not provided'], 400);
+    // }
+    $employee = auth()->user();
 
-    $employee = Employee::where('api_token', $token)->first();
+ 
+    // $employee = Employee::where('api_token', $token)->first();
 
     if (!$employee) {
         return response()->json(['message' => 'Invalid token'], 401);
