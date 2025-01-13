@@ -45,5 +45,29 @@ class EmployeeNotificationController extends Controller
         'unread_count' => $unreadCount,
     ]);
 }
+
+
+public function markAsRead($id)
+    {
+        $employee = Auth::user(); // جلب المستخدم بناءً على التوكن
+
+        if (!$employee) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // العثور على الإشعار والتحقق من أنه يخص الموظف
+        $notification = EmployeeNotification::where('id', $id)
+            ->where('employee_id', $employee->id)
+            ->first();
+
+        if (!$notification) {
+            return response()->json(['message' => 'Notification not found or unauthorized'], 404);
+        }
+
+        // تحديث حالة الإشعار إلى "تم قراءته"
+        $notification->update(['is_read' => true]);
+
+        return response()->json(['message' => 'Notification marked as read successfully']);
+    }
  
 }

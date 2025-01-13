@@ -58,6 +58,9 @@ Route::middleware('auth:employee')->get('/employee/notifications/unread-count', 
 
 
 
+Route::middleware('auth:employee')->patch('/employee/notifications/{id}/mark-as-read', [EmployeeNotificationController::class, 'markAsRead']);
+
+
 
 
 Route::middleware('auth:employee')->group(function () {
