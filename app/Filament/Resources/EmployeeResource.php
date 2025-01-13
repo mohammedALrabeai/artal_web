@@ -418,6 +418,7 @@ class EmployeeResource extends Resource
                         return $currentZone ? $currentZone->name : __('Not Assigned');
                     })
                     ->sortable()
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('current_project')
                     ->label(__('Current Project'))
@@ -427,11 +428,13 @@ class EmployeeResource extends Resource
                         return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
                     })
                     ->sortable()
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('first_name')
                     ->label(__('First Name'))
                     ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('father_name')
@@ -486,11 +489,13 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('national_id_expiry')
                     ->label(__('National ID Expiry'))
                     ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('nationality')
                     ->label(__('Nationality'))
                     ->searchable()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('bank_account')
@@ -498,10 +503,60 @@ class EmployeeResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('sponsor_company')
-                    ->label(__('Sponsor Company'))
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('sponsor_company')
+                //     ->label(__('Sponsor Company'))
+                //     ->searchable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('parent_insurance')
+    ->label(__('Parents Insurance'))
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('insurance_company_name')
+    ->label(__('Insurance Company Name'))
+    ->searchable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('commercialRecord.entity_name')
+    ->label(__('Commercial Record'))
+    ->sortable()
+    ->searchable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('job_title')
+    ->label(__('Job Title'))
+    ->sortable()
+    ->searchable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('bank_name')
+    ->label(__('Bank Name'))
+    ->sortable()
+    ->searchable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('insurance_type')
+    ->label(__('Social Insurance Type'))
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('insurance_number')
+    ->label(__('Insurance Number'))
+    ->searchable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('insurance_start_date')
+    ->label(__('Insurance Start Date'))
+    ->date('Y-m-d')
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
+Tables\Columns\TextColumn::make('insurance_end_date')
+    ->label(__('Insurance End Date'))
+    ->date('Y-m-d')
+    ->sortable()
+    ->toggleable(isToggledHiddenByDefault: true),
+
 
                 Tables\Columns\TextColumn::make('insuranceCompany.name')
                     ->label(__('Insurance Company'))

@@ -50,12 +50,38 @@ class RequestResource extends Resource
                 ->reactive(),
     
             // اختيار الموظف
+            // Forms\Components\Select::make('employee_id')
+            //     ->label(__('Employee'))
+            //     ->options(Employee::all()->pluck('first_name', 'id'))
+            //     ->searchable()
+            //     ->nullable()
+            //     ->required(),
             Forms\Components\Select::make('employee_id')
-                ->label(__('Employee'))
-                ->options(Employee::all()->pluck('first_name', 'id'))
-                ->searchable()
-                ->nullable()
-                ->required(),
+            ->label(__('Employee'))
+            ->searchable()
+            ->placeholder(__('Search for an employee...'))
+           
+            ->getSearchResultsUsing(function (string $search) {
+                return \App\Models\Employee::query()
+                    ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
+                    ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
+                    ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
+                    ->limit(50)
+                    ->get()
+                    ->mapWithKeys(function ($employee) {
+                        return [
+                            $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"
+                        ]; // عرض الاسم الأول، العائلة، والمعرف
+                    });
+            })
+            ->getOptionLabelUsing(function ($value) {
+                $employee = \App\Models\Employee::find($value);
+                return $employee
+                    ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
+                    : null;
+            })
+            ->preload()
+            ->required(),
     
             // المقدم
             Forms\Components\Select::make('submitted_by')

@@ -84,12 +84,12 @@ public function getTabs(): array
 
         'with_insurance' => Tab::make(__('With Insurance'))
             ->modifyQueryUsing(function ($query) {
-                return $query->whereNotNull('insurance_company_id'); // الموظفين مع التأمين
+                return $query->whereNotNull('commercial_record_id'); // الموظفين مع التأمين
             }),
 
         'without_insurance' => Tab::make(__('Without Insurance'))
             ->modifyQueryUsing(function ($query) {
-                return $query->whereNull('insurance_company_id'); // الموظفين بدون التأمين
+                return $query->whereNull('commercial_record_id'); // الموظفين بدون التأمين
             }),
     ];
 }
