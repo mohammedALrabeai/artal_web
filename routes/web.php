@@ -3,7 +3,7 @@
 use App\Models\Employee;
 
 use Illuminate\Http\Request; 
-use AttendanceExportController;
+
 use App\Models\EmployeeCoordinate;
 use App\Filament\Pages\EmployeeMap;
 use App\Services\EmployeePdfService;
@@ -11,6 +11,11 @@ use App\Filament\Pages\EmployeePaths;
 use App\Models\EmployeeProjectRecord;
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\S3TestController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FileUploadController2;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\attendance\AttendanceExport2Controller;
 
 Route::get('/', function () {
     return view('welcome');
@@ -19,7 +24,7 @@ Route::get('/', function () {
 
 
 
-use App\Http\Controllers\ReportController;
+
 
 
 Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
@@ -76,12 +81,12 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 
 
 
-use App\Http\Controllers\S3TestController;
+
 
 Route::get('/export/attendance', [ExportController::class, 'exportAttendance'])->name('export.attendance');
 
 
-use App\Http\Controllers\attendance\AttendanceExport2Controller;
+
 Route::get('/export-attendance', [AttendanceExport2Controller::class, 'export2'])->name('export.attendance2');
 
 
@@ -95,7 +100,7 @@ Route::get('/upload', [FileUploadController2::class, 'showForm'])->name('upload.
 Route::post('/upload', [FileUploadController2::class, 'uploadFile'])->name('upload.file');
 
 
-use App\Http\Controllers\FileUploadController2;
+
 
 
 Route::get('/test-s3', [S3TestController::class, 'testS3']);
