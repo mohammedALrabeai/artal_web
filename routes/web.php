@@ -3,14 +3,14 @@
 use App\Models\Employee;
 
 use Illuminate\Http\Request; 
+use AttendanceExportController;
 use App\Models\EmployeeCoordinate;
 use App\Filament\Pages\EmployeeMap;
 use App\Services\EmployeePdfService;
 use App\Filament\Pages\EmployeePaths;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ExportController;
+use App\Models\EmployeeProjectRecord;
 
-use App\Http\Controllers\ReportController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
@@ -19,7 +19,7 @@ Route::get('/', function () {
 
 
 
-use App\Models\EmployeeProjectRecord;
+use App\Http\Controllers\ReportController;
 
 
 Route::get('/generate-pdf', [App\Http\Controllers\PdfController::class, 'generatePdf']);
@@ -81,6 +81,11 @@ use App\Http\Controllers\S3TestController;
 Route::get('/export/attendance', [ExportController::class, 'exportAttendance'])->name('export.attendance');
 
 
+use App\Http\Controllers\attendance\AttendanceExport2Controller;
+Route::get('/export-attendance', [AttendanceExport2Controller::class, 'export2'])->name('export.attendance2');
+
+
+
 Route::get('/export-projects-zones-report', [ReportController::class, 'exportProjectsZonesReport'])
     ->name('export.projects.zones.report')
     ->middleware('signed');
@@ -90,8 +95,8 @@ Route::get('/upload', [FileUploadController2::class, 'showForm'])->name('upload.
 Route::post('/upload', [FileUploadController2::class, 'uploadFile'])->name('upload.file');
 
 
-use App\Http\Controllers\EmployeeMapController;
 use App\Http\Controllers\FileUploadController2;
+
 
 Route::get('/test-s3', [S3TestController::class, 'testS3']);
 

@@ -3,11 +3,15 @@
 namespace App\Filament\Resources;
 
 use Filament\Forms;
+use App\Models\Role;
 use Filament\Tables;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\RequestType;
 use App\Models\ApprovalFlow;
 use Filament\Resources\Resource;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,23 +48,32 @@ class ApprovalFlowResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('request_type')
-                ->label('نوع الطلب')
-                ->required()
-                ->maxLength(255),
-            Forms\Components\TextInput::make('approval_level')
-                ->label('مستوى الموافقة')
-                ->numeric()
-                ->required(),
-            Forms\Components\TextInput::make('approver_role')
-                ->label('دور المراجع')
-                ->required()
-                ->maxLength(255),
-                Forms\Components\KeyValue::make('conditions')
-                ->label(__('Conditions'))
-                ->keyLabel(__('Key'))
-                ->valueLabel(__('Value'))
-                ->nullable(),
+                // نوع الطلب
+            Select::make('request_type')
+            ->label(__('Request Type'))
+            ->options(RequestType::pluck('name', 'key')) // جلب الأنواع من جدول `request_types`
+            ->searchable()
+            ->required(),
+
+        // مستوى الموافقة
+        Forms\Components\TextInput::make('approval_level')
+            ->label(__('Approval Level'))
+            ->numeric()
+            ->required(),
+
+        // دور المراجع
+        Select::make('approver_role')
+            ->label(__('Approver Role'))
+            ->options(Role::pluck('name', 'name')) // جلب الأدوار من جدول `roles`
+            ->searchable()
+            ->required(),
+
+        // الشروط
+        KeyValue::make('conditions')
+            ->label(__('Conditions'))
+            ->keyLabel(__('Key'))
+            ->valueLabel(__('Value'))
+            ->nullable(),
             ]);
     }
 

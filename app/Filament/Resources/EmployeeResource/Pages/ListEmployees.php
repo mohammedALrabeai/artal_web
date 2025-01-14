@@ -46,6 +46,30 @@ class ListEmployees extends ListRecords
 
                 return redirect($url);
             }),
+
+            Actions\Action::make('exportAttendance2')
+    ->label('Export Attendance2')
+    ->form([
+        Forms\Components\DatePicker::make('start_date')
+            ->label('Start Date')
+            ->required(),
+        Forms\Components\DatePicker::make('end_date')
+            ->label('End Date')
+            ->required(),
+    ])
+    ->action(function (array $data) {
+        $url = URL::temporarySignedRoute(
+            'export.attendance2',
+            now()->addMinutes(5),
+            [
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'],
+            ]
+        );
+
+        return redirect($url);
+    }),
+
             // Actions\Action::make('exportAll')
             // ->label(__('Export All'))
             // ->icon('heroicon-o-arrow-down-tray') // اختيار أيقونة مناسبة
