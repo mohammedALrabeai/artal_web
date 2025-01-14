@@ -56,6 +56,30 @@ class AttendanceExport2Controller extends Controller
             $currentDate = strtotime('+1 day', $currentDate);
         }
 
+        // Adding new columns
+        $columnsData = [
+            ['title' => 'أوفOFF', 'color' => 'BBDEFB', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"off")'],
+            ['title' => 'عمل P', 'color' => 'C8E6C9', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"present")'],
+            ['title' => 'إضافي COV', 'color' => 'FFD54F', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"coverage")'],
+            ['title' => 'مرضي M', 'color' => 'FFCDD2', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"M")'],
+            ['title' => 'إجازة مدفوعة PV', 'color' => '4CAF50', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"leave")'],
+            ['title' => 'إجازة غير مدفوعة UV', 'color' => 'FFB74D', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"UV")'],
+            ['title' => 'غياب A', 'color' => 'E57373', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"absent")'],
+            ['title' => 'الإجمالي Total', 'color' => '90A4AE', 'formula' => '=COUNTA($startColumn$row:$endColumn$row)'],
+            ['title' => 'المخالفات الإدارية Infract', 'color' => 'FFE0B2', 'formula' => ''],
+            ['title' => 'المخالفات المرورية', 'color' => 'FFE0B2', 'formula' => ''],
+            ['title' => 'مكافأة', 'color' => 'FFE082', 'formula' => ''],
+            ['title' => 'السلف adv', 'color' => 'FFCCBC', 'formula' => ''],
+            ['title' => 'خصم التأمينات GOSI', 'color' => 'B39DDB', 'formula' => ''],
+            ['title' => 'صافي الراتب Net salary', 'color' => 'B2FF59', 'formula' => ''],
+            ['title' => 'إجمالي رصيد الغياب', 'color' => 'FFCDD2', 'formula' => ''],
+            ['title' => 'إجمالي رصيد الإجازات المرضية', 'color' => 'FFCDD2', 'formula' => ''],
+        ];
+
+        foreach ($columnsData as $column) {
+            $headers[] = $column['title'];
+        }
+
         // وضع الرؤوس في الصف الأول
         $columnIndex = 1;
         foreach ($headers as $header) {
@@ -98,6 +122,24 @@ class AttendanceExport2Controller extends Controller
             $sheet->mergeCells("G{$startRow}:G{$endRow}");
             $sheet->mergeCells("H{$startRow}:H{$endRow}");
 
+            // دمج الخلايا للأعمدة الجديدة
+            $columnIndex = 10 + ($endDateTimestamp - strtotime($startDate)) / (60 * 60 * 24) + 1;
+            foreach ($columnsData as $column) {
+                $sheet->mergeCellsByColumnAndRow($columnIndex, $startRow, $columnIndex, $endRow);
+                $sheet->setCellValueByColumnAndRow($columnIndex, $startRow, $column['title']);
+                $sheet->getStyleByColumnAndRow($columnIndex, $startRow)->applyFromArray([
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => $column['color']],
+                    ],
+                    'font' => [
+                        'bold' => true,
+                        'color' => ['rgb' => 'FFFFFF'],
+                    ],
+                ]);
+                $columnIndex++;
+            }
+
             // تعبئة البيانات الأساسية
             $sheet->setCellValue("A{$startRow}", $sequence++); // تسلسل
             $sheet->setCellValue("B{$startRow}", $employee->employee_id); // الرقم الوظيفي
@@ -109,9 +151,10 @@ class AttendanceExport2Controller extends Controller
             $sheet->setCellValue("H{$startRow}", $salary); // الراتب
 
             // إدخال العمود HRS
-            $sheet->setCellValue("I{$startRow}", 'COV');
+   
+            $sheet->setCellValue("I{$startRow}", 'NOR');
             $sheet->setCellValue("I" . ($startRow + 1), 'HUR');
-            $sheet->setCellValue("I" . ($startRow + 2), 'NOR');
+            $sheet->setCellValue("I" . ($startRow + 2), 'COV');
 
             // إضافة بيانات الحضور لكل تاريخ
             $currentDate = strtotime($startDate);
@@ -125,11 +168,21 @@ class AttendanceExport2Controller extends Controller
                 $status = $attendance ? $attendance->status : 'N/A';
 
                 // إدراج البيانات المكدسة
-                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex, $coverage);
+                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex,$status );
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
-                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $status);
+                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverage);
 
                 $currentDate = strtotime('+1 day', $currentDate);
+                $columnIndex++;
+            }
+
+            // Adding formulas to the new columns
+            $columnIndex = 10 + ($endDateTimestamp - strtotime($startDate)) / (60 * 60 * 24) + 1;
+            foreach ($columnsData as $column) {
+                $startColumn = chr(65 + 9); // Column 'J'
+                $endColumn = chr(65 + 9 + ($endDateTimestamp - strtotime($startDate)) / (60 * 60 * 24));
+                $formula = str_replace(['$startColumn', '$endColumn', '$row'], [$startColumn, $endColumn, $startRow], $column['formula']);
+                $sheet->setCellValueByColumnAndRow($columnIndex, $startRow, $formula);
                 $columnIndex++;
             }
 
