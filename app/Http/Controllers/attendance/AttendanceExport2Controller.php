@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AttendanceExport2Controller extends Controller
 {
@@ -52,7 +53,9 @@ class AttendanceExport2Controller extends Controller
         $endDateTimestamp = strtotime($endDate);
 
         while ($currentDate <= $endDateTimestamp) {
-            $headers[] = date('Y-m-d', $currentDate);
+            $date = date('Y-m-d', $currentDate);
+            $dayName = date('l', $currentDate); // Get the day name
+            $headers[] = "{$date}\n{$dayName}";
             $currentDate = strtotime('+1 day', $currentDate);
         }
 
@@ -98,14 +101,20 @@ class AttendanceExport2Controller extends Controller
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
             ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
         ]);
 
         // إضافة بيانات الموظفين
         $rowIndex = 2;
         $sequence = 1; // تسلسل الأرقام
+        $rowColors = ['F5F5F5', 'E0E0E0']; // Alternating row colors
         foreach ($employees as $employee) {
             $startRow = $rowIndex; // بداية الصف للموظف
             $endRow = $rowIndex + 2; // نهاية الصف للموظف (ثلاثة صفوف)
+            $rowColor = $rowColors[($sequence - 1) % 2]; // Alternating color
 
             $annualLeaveBalance = $employee->leaveBalances->where('leave_type', 'annual')->sum('balance');
             $sickLeaveBalance = $employee->leaveBalances->where('leave_type', 'sick')->sum('balance');
@@ -122,6 +131,18 @@ class AttendanceExport2Controller extends Controller
             $sheet->mergeCells("G{$startRow}:G{$endRow}");
             $sheet->mergeCells("H{$startRow}:H{$endRow}");
 
+            // Apply row color and center alignment
+            $sheet->getStyle("A{$startRow}:H{$endRow}")->applyFromArray([
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => $rowColor],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+
             // دمج الخلايا للأعمدة الجديدة
             $columnIndex = 10 + ($endDateTimestamp - strtotime($startDate)) / (60 * 60 * 24) + 1;
             foreach ($columnsData as $column) {
@@ -135,6 +156,10 @@ class AttendanceExport2Controller extends Controller
                     'font' => [
                         'bold' => true,
                         'color' => ['rgb' => 'FFFFFF'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
                     ],
                 ]);
                 $columnIndex++;

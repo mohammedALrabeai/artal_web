@@ -160,6 +160,7 @@ public function checkInCoverage(Request $request)
         'check_in' => Carbon::now('Asia/Riyadh')->toTimeString(),
         'check_in_datetime' => $currentDateTime,
         'status' => 'coverage',
+        'is_coverage' => true,
         'notes' => $request->input('notes'),
     ]);
   
