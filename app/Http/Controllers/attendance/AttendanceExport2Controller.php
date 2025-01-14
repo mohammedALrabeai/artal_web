@@ -186,16 +186,32 @@ class AttendanceExport2Controller extends Controller
             $columnIndex = 10; // التواريخ تبدأ بعد HRS
             while ($currentDate <= $endDateTimestamp) {
                 $date = date('Y-m-d', $currentDate);
+               
 
-                $attendance = $employee->attendances->firstWhere('date', $date);
-                $coverage = $attendance ? ($attendance->is_coverage ? 'COV' : '') : '';
-                $workHours = $attendance ? $attendance->work_hours : '';
-                $status = $attendance ? $attendance->status : 'N/A';
+                // جلب جميع سجلات الحضور لليوم
+                $dailyAttendances = $employee->attendances->where('date', $date);
+            
+                // تحديد التغطية والحالة الأساسية وساعات العمل
+                $coverage = $dailyAttendances->firstWhere('is_coverage', true); // تغطية اليوم
+                $statusAttendance = $dailyAttendances->firstWhere('is_coverage', false); // الحضور الأساسي
+            
+                $coverageStatus = $coverage ? $coverage->status : ''; // حالة التغطية
+                $status = $statusAttendance ? $statusAttendance->status : 'N/A'; // حالة الحضور الأساسي
+                $workHours = $dailyAttendances->sum('work_hours'); // مجموع ساعات العمل
 
-                // إدراج البيانات المكدسة
-                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex,$status );
-                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
-                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverage);
+                // $attendance = $employee->attendances->firstWhere('date', $date);
+                // $coverage = $attendance ? ($attendance->is_coverage ? 'COV' : '') : '';
+                // $workHours = $attendance ? $attendance->work_hours : '';
+                // $status = $attendance ? $attendance->status : 'N/A';
+  // إدراج البيانات في الأعمدة
+  $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex, $status);
+  $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
+  $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverageStatus);
+
+                // // إدراج البيانات المكدسة
+                // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex,$status );
+                // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
+                // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverage);
 
                 $currentDate = strtotime('+1 day', $currentDate);
                 $columnIndex++;
