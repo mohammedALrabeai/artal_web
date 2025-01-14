@@ -68,3 +68,7 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 ## Note for me
 
 ## docker exec -it laravel_app bash
+
+لتشغيل الكرون جب 
+nohup /usr/local/bin/php /home/artalsys/public_html/artisan queue:work --daemon --sleep=3 --tries=3 >> /home/artalsys/public_html/storage/logs/worker.log 2>&1 &
+
