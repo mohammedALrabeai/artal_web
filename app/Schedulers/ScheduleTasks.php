@@ -15,7 +15,8 @@ class ScheduleTasks
      */
     public static function configure(Schedule $schedule)
     {
-        // جدولة تنفيذ Job كل ساعة
-        $schedule->job(new ProcessAttendanceJob())->hourly();
+        // جدولة تنفيذ Job كل ساعة everyMinute
+        // $schedule->job(new ProcessAttendanceJob())->hourly();
+        $schedule->job(new ProcessAttendanceJob())->everyMinute();
     }
 }
