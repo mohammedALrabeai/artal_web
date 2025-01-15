@@ -165,6 +165,10 @@ public function approveRequest($approver, $comments = null)
             $this->leave->update([
                 'approved' => true, // تحديث حالة الإجازة إلى "معتمدة"
             ]);
+            // انشاء سجل الاجازة في جدول التحضير
+            $this->makeLeaveAttendance();
+
+
         }
     }
 
@@ -183,7 +187,7 @@ public function approveRequest($approver, $comments = null)
     // إشعار الموظف إذا كانت الموافقة النهائية
     if ($this->status === 'approved') {
         $this->employee->notify(
-            new RequestStatusNotification($this, 'approved', $approver)
+            new RequestStatusNotification($this, 'approved', $approver, $comments)
         );
     }
 }
@@ -265,6 +269,95 @@ public function rejectRequest($approver, $comments = null)
 //     $employee = Employee::find(1); // افترض أن الموظف يحمل ID = 1
 // $employee->notify(new RequestStatusNotification($this, 'rejected', $approver, $comments));
 
+}
+
+public function makeLeaveAttendance()
+{
+    // التحقق من وجود الإجازة
+    if (!$this->leave) {
+        \Log::error('Leave record not found for this request.', [
+            'request_id' => $this->id,
+        ]);
+        return;
+    }
+
+    // جلب تواريخ البداية والنهاية
+    $startDate = \Carbon\Carbon::parse($this->leave->start_date);
+    $endDate = \Carbon\Carbon::parse($this->leave->end_date);
+
+    // التحقق من الموظف
+    if (!$this->employee) {
+        \Log::error('Employee not found for this request.', [
+            'request_id' => $this->id,
+        ]);
+        return;
+    }
+
+    // جلب سجل المشروع الحالي للموظف
+    $projectRecord = $this->employee->currentProjectRecord;
+
+    if (!$projectRecord || !$projectRecord->zone || !$projectRecord->shift) {
+        \Log::error('Project record, zone, or shift not found for employee.', [
+            'employee_id' => $this->employee->id,
+            'request_id' => $this->id,
+        ]);
+        return;
+    }
+
+    // جلب المنطقة والوردية من سجل المشروع
+    $zoneId = $projectRecord->zone_id;
+    $shiftId = $projectRecord->shift_id;
+
+    // التحقق من تواريخ البداية والنهاية
+    if (!$startDate || !$endDate) {
+        \Log::error('Invalid start or end date for leave.', [
+            'leave_id' => $this->leave->id,
+        ]);
+        return;
+    }
+
+    // إنشاء السجلات في جدول التحضيرات لكل يوم ضمن فترة الإجازة
+    $currentDate = $startDate->copy();
+    while ($currentDate->lte($endDate)) {
+        try {
+            // التحقق مما إذا كان اليوم يوم عمل
+            $isWorkingDay = $projectRecord->isWorkingDay();
+            if (!$isWorkingDay) {
+                \Log::info('Skipping non-working day.', [
+                    'employee_id' => $this->employee->id,
+                    'date' => $currentDate->toDateString(),
+                ]);
+                $currentDate->addDay();
+                continue;
+            }
+
+            // إنشاء سجل الحضور
+            \App\Models\Attendance::firstOrCreate(
+                ['employee_id' => $this->employee_id, 'date' => $currentDate->toDateString()],
+                [
+                    'zone_id' => $zoneId,
+                    'shift_id' => $shiftId,
+                    'ismorning'=>true,
+                    'status' => 'leave', // حالة الحضور "إجازة"
+                    'notes' => 'Leave: '.$this->leave->id.' - request ID: '.$this->id.': ' . $this->leave->type.' - ' . $this->leave->reason.' - ' . $this->leave->start_date . ' - ' . $this->leave->end_date, // ملاحظات
+                    // 'request_id' => $this->id, // ربط بالسجل الخاص بالطلب
+                ]
+            );
+            \Log::info('Attendance record created for leave.', [
+                'employee_id' => $this->employee_id,
+                'date' => $currentDate->toDateString(),
+                'status' => 'leave',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create attendance record.', [
+                'employee_id' => $this->employee_id,
+                'date' => $currentDate->toDateString(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $currentDate->addDay(); // الانتقال إلى اليوم التالي
+    }
 }
 
 

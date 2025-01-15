@@ -17,6 +17,7 @@ class CreateRequest extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $data['submitted_by'] = auth()->id();
         // التحقق من وجود سياسة مرتبطة بنوع الطلب
         $policy = Policy::where('policy_type', $data['type'])->first();
         if (!$policy) {
@@ -66,7 +67,7 @@ class CreateRequest extends CreateRecord
                     if($data['leave_type'] == 'annual'){
                           // التحقق من أن رصيد الإجازات يكفي
                 if ($leaveBalance->calculateAnnualLeaveBalance() < $data['duration']) {
-                    throw new \Exception(__('Insufficient leave balance.'));
+                    throw new \Exception(__('Insufficient leave balance.'.$leaveBalance->calculateAnnualLeaveBalance().' '.$data['duration']));
                 }
                     $leaveBalance->update([
                         'balance' => $leaveBalance->balance - $data['duration'],

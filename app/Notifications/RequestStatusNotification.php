@@ -51,10 +51,19 @@ class RequestStatusNotification extends Notification implements ShouldQueue
 
     public function toWhatsapp($notifiable)
     {
-        return "تم رفض طلبك:\n" .
+        $statusMessage = $this->status === 'approved' 
+            ? "تمت الموافقة على طلبك" 
+            : "تم رفض طلبك";
+    
+        $commentsMessage = $this->comments 
+            ? "السبب: {$this->comments}" 
+            : "لا توجد تعليقات إضافية.";
+    
+        return "{$statusMessage}:\n" .
                "رقم الطلب: {$this->request->id}\n" .
                "نوع الطلب: {$this->request->type}\n" .
-               "السبب: {$this->comments}\n" .
+               "{$commentsMessage}\n" .
                "شكراً لاستخدام نظامنا.";
     }
+    
 }

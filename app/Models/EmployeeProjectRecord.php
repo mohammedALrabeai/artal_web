@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class EmployeeProjectRecord extends Model
 {
@@ -45,6 +46,8 @@ public function shift()
 
 public function isWorkingDay()
 {
+
+   
     // استرجاع المنطقة المرتبطة بالسجل
     $zone = $this->zone;
 
@@ -67,7 +70,8 @@ public function isWorkingDay()
     $cycleLength = $workingDays + $offDays;
 
     // تاريخ البداية
-    $startDate = Carbon::parse($this->start_date);
+    // $startDate = Carbon::parse($this->start_date);
+    $startDate = Carbon::parse($this->shift->start_date);
 
     // عدد الأيام منذ تاريخ البداية
     $daysSinceStart = $startDate->diffInDays(Carbon::today());

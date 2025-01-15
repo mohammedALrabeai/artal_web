@@ -87,6 +87,8 @@ class RequestResource extends Resource
             Forms\Components\Select::make('submitted_by')
                 ->label(__('Submitted By'))
                 ->options(User::all()->pluck('name', 'id'))
+                ->default(auth()->id())
+                ->disabled()
                 ->searchable()
                 ->required(),
     
