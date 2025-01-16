@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
+   // الحذف اللين
     use HasFactory;
 
     protected $table = 'notifications';
@@ -30,4 +31,11 @@ class Notification extends Model
     {
         return $this->morphTo();
     }
+
+
+    //    // منع الحذف الدائم
+    //    public function delete()
+    //    {
+    //        throw new \Exception('Notifications cannot be deleted.');
+    //    }
 }

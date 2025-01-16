@@ -24,8 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\ProcessAttendanceCommand::class,
     ])
     ->withSchedule(function (Schedule $schedule) {
-        // جدولة الـCommand للعمل كل ساعة
-        $schedule->command('attendance:process')->hourly(); 
+        // جدولة الـCommand للعمل كل ساعة    
+        $schedule->command('attendance:process')->everyFifteenMinutes(); 
+
+        // $schedule->command('attendance:process')->hourly(); 
         // $schedule->command('attendance:process')->everyMinute(); 
     })
     ->withExceptions(function (Exceptions $exceptions) {

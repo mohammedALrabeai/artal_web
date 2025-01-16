@@ -26,8 +26,12 @@ class ProcessAttendanceCommand extends Command
      */
     public function handle()
     {
+        try {
         // استدعاء الـJob
         ProcessAttendanceJob::dispatch();
         $this->info('Attendance processing job dispatched successfully.');
+    } catch (\Exception $e) {
+        $this->error('Error processing attendance: ' . $e->getMessage());
+    }
     }
 }

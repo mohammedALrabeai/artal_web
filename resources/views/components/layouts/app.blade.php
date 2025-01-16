@@ -12,7 +12,7 @@
         </style>
 
         @filamentStyles
-        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet">
     </head>
     <body class="antialiased">
         {{ $slot }}
