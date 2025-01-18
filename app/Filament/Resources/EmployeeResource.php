@@ -408,7 +408,7 @@ class EmployeeResource extends Resource
                             $record->grandfather_name.' '.
                             $record->family_name;
                     })
-                    ->searchable()
+                    // ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('current_zone')
                     ->label(__('Current Zone'))
@@ -418,7 +418,7 @@ class EmployeeResource extends Resource
                         return $currentZone ? $currentZone->name : __('Not Assigned');
                     })
                     ->sortable()
-                    ->searchable()
+                    // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('current_project')
                     ->label(__('Current Project'))
@@ -428,7 +428,7 @@ class EmployeeResource extends Resource
                         return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
                     })
                     ->sortable()
-                    ->searchable()
+                    // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('first_name')
