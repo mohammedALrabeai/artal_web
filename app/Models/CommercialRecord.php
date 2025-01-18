@@ -24,6 +24,7 @@ class CommercialRecord extends Model
         'remaining_days',
         'vat',
         'parent_company_id',
+        'insurance_company_id'
     ];
 
     // علاقة مع الشركة الأم
@@ -66,5 +67,11 @@ class CommercialRecord extends Model
 {
     return $this->hasMany(Employee::class, 'commercial_record_id');
 }
+
+public function insuranceCompany()
+{
+    return $this->belongsTo(InsuranceCompany::class, 'insurance_company_id');
+}
+
 
 }

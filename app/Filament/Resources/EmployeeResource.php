@@ -158,13 +158,13 @@ class EmployeeResource extends Resource
                     ->columns(2),
 
                 // Social Insurance (Wizard)
-                Forms\Components\Wizard\Step::make(__('Social Insurance'))
+                Forms\Components\Wizard\Step::make(__('COSI Information'))
                     ->schema([
                         Forms\Components\Select::make('insurance_type')
                             ->label(__('Social Insurance Type'))
                             ->options([
                                 '' => __('No Insurance'),
-                                'commercial_record' => __('Commercial Record'),
+                                'commercial_record' => __('Social Insurance Subscriber'),
                             ])
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state) {
@@ -172,6 +172,7 @@ class EmployeeResource extends Resource
                                     $set('insurance_company_id', null); // إعادة تعيين القيمة
                                 }
                             }),
+
 
                         // Forms\Components\Select::make('insurance_company_id')
                         //     ->label(__('Insurance Company'))
@@ -181,25 +182,25 @@ class EmployeeResource extends Resource
                         Forms\Components\Select::make('commercial_record_id')
                             ->label(__('Commercial Record'))
                             ->relationship('commercialRecord', 'entity_name') // ربط العلاقة مع السجلات التجارية
-                            ->nullable()
+                            ->required()
                             ->searchable()
                             ->placeholder(__('Select Commercial Record'))
                             ->preload()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
-                        Forms\Components\TextInput::make('insurance_company_name')
-                            ->label(__('Insurance Company Name'))
-                            ->nullable()
-                            ->maxLength(255)->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                        // Forms\Components\TextInput::make('insurance_company_name')
+                        //     ->label(__('Insurance Company Name'))
+                        //     ->nullable()
+                        //     ->maxLength(255)->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\TextInput::make('insurance_number')
                             ->label(__('Subscriber number'))
                         ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_start_date')
-                            ->label(__('Start Date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('Insurance registration date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_end_date')
-                            ->label(__('End Date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('Date of exclusion from insurance'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\Select::make('insurance_company_id')
                             ->label(__('Insurance Company'))
@@ -257,18 +258,18 @@ class EmployeeResource extends Resource
                             ->label(__('Job Status'))
                             ->required(),
 
-                        Forms\Components\TextInput::make('health_insurance_status')
-                            ->label(__('Health Insurance Status'))
-                            ->required(),
+                        // Forms\Components\TextInput::make('health_insurance_status')
+                        //     ->label(__('Health Insurance Status'))
+                        //     ->required(),
 
-                        Forms\Components\TextInput::make('health_insurance_company')
-                            ->label(__('Health Insurance Company')),
+                        // Forms\Components\TextInput::make('health_insurance_company')
+                        //     ->label(__('Health Insurance Company')),
 
-                        Forms\Components\TextInput::make('social_security')
-                            ->label(__('Social Security')),
+                        // Forms\Components\TextInput::make('social_security')
+                        //     ->label(__('Social Security')),
 
-                        Forms\Components\TextInput::make('social_security_code')
-                            ->label(__('Social Security Code')),
+                        // Forms\Components\TextInput::make('social_security_code')
+                        //     ->label(__('Social Security Code')),
                     ])->columns(2),
 
                 // Education

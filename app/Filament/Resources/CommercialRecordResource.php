@@ -98,6 +98,13 @@ class CommercialRecordResource extends Resource
                 Forms\Components\TextInput::make('tax_authority_number')
                     ->label(__('Tax Authority Number'))
                     ->nullable(),
+                    Forms\Components\Select::make('insurance_company_id')
+    ->label(__('Insurance Company'))
+    ->relationship('insuranceCompany', 'name')
+    ->required()
+    ->preload()
+    ->searchable(),
+
 
                 Forms\Components\Select::make('parent_company_id')
                     ->label(__('Parent Company'))
@@ -123,6 +130,7 @@ class CommercialRecordResource extends Resource
                 Tables\Columns\TextColumn::make('city')
                     ->label(__('City'))
                     ->sortable(),
+                    
 
                 Tables\Columns\TextColumn::make('entity_type')
                     ->label(__('Entity Type')),
@@ -149,6 +157,12 @@ class CommercialRecordResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                    Tables\Columns\TextColumn::make('insuranceCompany.name')
+    ->label(__('Insurance Company'))
+    ->sortable()
+    ->searchable(),
+
             ])
             ->filters([
 

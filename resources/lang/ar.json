@@ -397,8 +397,8 @@
     "Approval Flow": "سير العمل",
     "Policy": "السياسة",
     "Policies": "السياسات",
-    "Insurance Company": "شركة التأمين",
-    "Insurance Companies": "شركات التأمين",
+  
+    "Insurance Companies": "شركات التأمين الطبي",
     "Loan Request": "طلب قرض",
     "Loan Requests": "طلبات القروض",
     "Loan": "القرض",
@@ -448,7 +448,7 @@
     "City": "المدينة",
     "Entity Type": "نوع الكيان",
     "Capital": "رأس المال",
-    "Insurance Number": "رقم المنشأة بالتأمينات",
+    "Insurance Number": "رقم اشتراك المنشأة",
     "Labour Office Number": "رقم المنشأة في مكتب العمل",
     "Expiry Date (Gregorian)": "تاريخ انتهاء السجل (ميلادي)",
     "Tax Authority Number": "رقم المنشأة بالزكاة والضريبة والجمارك ",
@@ -515,11 +515,14 @@
     "AB-": "AB-",
     "Job Title": "المسمى الوظيفي",
 
-    "Social Insurance Type": "نوع التأمين الاجتماعي",
+    "Social Insurance Type": "الاشتراك في المؤسسة العامة للتامينات الاجتماعية",
     "Insurance Company": "شركة التأمين الاجتماعي",
+    "Insurance registration date": "تاريخ التسجيل في التأمينات",
+    "Date of exclusion from insurance": "تاريخ الاستبعاد من التأمين",
 
     "Parents Insurance": "تأمين الوالدين",
-    "No Insurance": "بدون تأمين",
+    "No Insurance": "بدون تأمينات اجتماعية",
+    "Social Insurance Subscriber": "مشترك في التأمين الاجتماعي",
 
     "Developer": "مطور",
     "Designer": "مصمم",

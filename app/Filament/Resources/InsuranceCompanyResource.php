@@ -36,7 +36,7 @@ class InsuranceCompanyResource extends Resource
     
     public static function getNavigationGroup(): ?string
     {
-        return __('System Settings');
+        return __('Business & License Management');
     }
 
     public static function form(Form $form): Form
