@@ -8,6 +8,7 @@ use Filament\Actions;
 use App\Models\Policy;
 use App\Models\Employee;
 use App\Models\ApprovalFlow;
+use App\Services\NotificationService;
 use Filament\Resources\Pages\CreateRecord;
 use App\Filament\Resources\RequestResource;
 
@@ -101,6 +102,19 @@ class CreateRequest extends CreateRecord
                     'used_balance' => $leaveBalance->used_balance + $data['duration'],
                     'last_updated' => now(),
                 ]);
+
+                $notificationService = new NotificationService;
+                $notificationService->sendNotification(
+                    [ 'hr','manager'], // الأدوار المستهدفة
+                    'طلب اجازة', // عنوان الإشعار
+                    'يرجى مراجعة طلب الاجازة', // نص الإشعار
+                    [
+                        // $notificationService->createAction('View Bank', "/admin/banks/{$this->record->id}", 'heroicon-s-eye'),
+                        $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
+                    ]
+                );
+
+
                 break;
             
     
