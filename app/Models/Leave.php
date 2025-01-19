@@ -24,8 +24,8 @@ class Leave extends Model
     }
 
     public function request()
-{
-    return $this->hasOne(Request::class, 'leave_id');
-}
+    {
+        return $this->hasOne(Request::class, 'leave_id');
+    }
 
 }

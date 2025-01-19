@@ -43,9 +43,10 @@ class Request extends Model
         return $this->belongsTo(Employee::class, 'employee_id');
     }
     public function leave()
-{
-    return $this->belongsTo(Leave::class, 'leave_id');
-}
+    {
+        return $this->belongsTo(Leave::class, 'leave_id');
+    }
+    
     
     
 

@@ -10,6 +10,7 @@ use App\Models\Employee;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\RequestResource\Pages;
 use App\Filament\Resources\RequestResource\RelationManagers;
 
@@ -40,6 +41,13 @@ class RequestResource extends Resource
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([
+
+            Forms\Components\Tabs::make('Tabs')
+    ->tabs([
+
+        Forms\Components\Tabs\Tab::make('Request')
+        ->label(__('Request'))
+            ->schema([
             // اختيار نوع الطلب
             Forms\Components\Select::make('type')
                 ->label(__('Type'))
@@ -95,31 +103,40 @@ class RequestResource extends Resource
             // وصف الطلب
             Forms\Components\Textarea::make('description')
                 ->label(__('Description')),
+
+        ])
+        ->columns(2),
     
             // الحقول الديناميكية بناءً على نوع الطلب
             // إذا كان نوع الطلب "إجازة"
-            Forms\Components\Group::make([
+            Forms\Components\Tabs\Tab::make('Leave Details')
+            ->label(__('Leave Details'))
+            ->schema([
+                // تاريخ البداية
                 Forms\Components\DatePicker::make('start_date')
                     ->label(__('Start Date'))
                     ->required()
                     ->reactive()
-                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
-                
+                    ->visible(fn ($get) => $get('type') === 'leave'),
+            
+                // تاريخ النهاية
                 Forms\Components\DatePicker::make('end_date')
                     ->label(__('End Date'))
                     ->required()
                     ->reactive()
-                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
-    
+                    ->visible(fn ($get) => $get('type') === 'leave'),
+            
+                // المدة
                 Forms\Components\TextInput::make('duration')
                     ->label(__('Duration (Days)'))
                     ->numeric()
-                    ->disabled() // يتم حساب المدة بناءً على تاريخ البداية والنهاية
-                    ->default(fn ($livewire) => $livewire->data['start_date'] && $livewire->data['end_date']
-        ? \Carbon\Carbon::parse($livewire->data['start_date'])->diffInDays(\Carbon\Carbon::parse($livewire->data['end_date'])) + 1
-        : null)
-                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
-    
+                    ->disabled(false)
+                    ->default(fn ($get) => $get('start_date') && $get('end_date')
+                        ? \Carbon\Carbon::parse($get('start_date'))->diffInDays(\Carbon\Carbon::parse($get('end_date'))) + 1
+                        : null)
+                    ->visible(fn ($get) => $get('type') === 'leave'),
+            
+                // نوع الإجازة
                 Forms\Components\Select::make('leave_type')
                     ->label(__('Leave Type'))
                     ->options([
@@ -128,22 +145,34 @@ class RequestResource extends Resource
                         'unpaid' => __('Unpaid Leave'),
                     ])
                     ->required()
-                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
-    
+                    ->visible(fn ($get) => $get('type') === 'leave'),
+            
+                // السبب
                 Forms\Components\Textarea::make('reason')
                     ->label(__('Reason'))
                     ->nullable()
-                    ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
-            ])->columns(1)
-
-            ->visible(fn($livewire) => $livewire->data['type'] === 'leave'),
+                    ->visible(fn ($get) => $get('type') === 'leave'),
+            ])->columns(2)
+            ->visible(fn ($get) => $get('type') === 'leave'),
+            
     
+            Forms\Components\Tabs\Tab::make('Loan Details')
+            ->label(__('Loan Details'))
+            ->schema([
             // حقول طلبات أخرى مثل القروض
             Forms\Components\TextInput::make('amount')
-                ->label(__('Amount'))
-                ->visible(fn($livewire) => $livewire->data['type'] === 'loan')
-                ->numeric(),
-        ]);
+            ->label(__('Amount'))
+            ->visible(fn($livewire, $get) => $get('type') === 'loan')
+            ->numeric(),
+            ])
+            ->columns(2)
+            ->visible(fn($livewire, $get) => $get('type') === 'loan'),
+
+            ])
+            // ->columns(1)
+            ->persistTabInQueryString()
+        
+        ])->columns(1);
     }
     
 
@@ -151,56 +180,100 @@ class RequestResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('type')->label(__('Type'))
-                ->formatStateUsing(function ($state) {
-                    // بافتراض أن حقل type يحتفظ بقيمة مثل 'leave' أو 'loan' أو 'transfer' ...إلخ
-                    // نعيد ترجمة القيمة بناءً على مفتاح ترجمة مناسب
-                    return __($state.'');
+                Tables\Columns\TextColumn::make('type')
+                ->label(__('Type'))
+                ->formatStateUsing(fn ($state) => __($state)),
+            Tables\Columns\TextColumn::make('submittedBy.name')
+                ->label(__('Submitted By'))
+                ->searchable(), // تمكين البحث
+            Tables\Columns\TextColumn::make('employee.first_name')
+                ->label(__('Employee'))
+                ->formatStateUsing(fn ($state, $record) => "{$record->employee->first_name} {$record->employee->family_name}")
+                ->searchable(), // تمكين البحث
+            Tables\Columns\TextColumn::make('status')
+                ->label(__('Status'))
+                ->formatStateUsing(fn ($state) => __($state))
+                ->color(fn ($state) => match ($state) {
+                    'pending' => 'warning',
+                    'approved' => 'success',
+                    'rejected' => 'danger',
+                    default => null,
                 }),
-                Tables\Columns\TextColumn::make('submittedBy.name')->label(__('Submitted By')),
-                Tables\Columns\TextColumn::make('employee.first_name')->label(__('Employee')),
-                Tables\Columns\TextColumn::make('status')->label(__('Status'))
-                ->formatStateUsing(function ($state) {
-                    return __($state.'');
-                })
-                // ->colors([
-                //     __('pending') => 'warning',  // أصفر أو برتقالي
-                //     __('approved') => 'success', // أخضر
-                //     __('rejected') => 'danger',  // أحمر
-                // ])
-                ->color(function ($state) {
-                    return match ($state) {
-                        'pending' => 'warning',
-                        'approved' => 'success',
-                        'rejected' => 'danger',
-                        default => null,
-                    };
-                })
-                ->sortable(),
-                Tables\Columns\TextColumn::make('current_approver_role')
+            Tables\Columns\TextColumn::make('current_approver_role')
                 ->label(__('Current Approver Role'))
-                ->formatStateUsing(fn($state) => ucfirst(str_replace('_', ' ', $state)))
+                ->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state))),
+            Tables\Columns\TextColumn::make('duration')
+                ->label(__('Duration (Days)'))
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('amount')
+                ->label(__('Amount'))
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('additional_data')
+                ->label(__('Additional Data'))
+                ->formatStateUsing(fn ($state) => $state ? json_encode($state) : '-')
+                ->toggleable(isToggledHiddenByDefault: true),
+
+
+                Tables\Columns\TextColumn::make('approvalFlows')
+                ->label(__('Remaining Levels'))
+                ->formatStateUsing(function ($record) {
+                    // جلب جميع المستويات المرتبطة بالطلب
+                    $approvalFlows = $record->approvalFlows;
+            
+                    // جلب أعلى مستوى تم الموافقة عليه
+                    $approvedLevels = $record->approvals
+                        ->where('status', 'approved')
+                        ->pluck('approval_level')
+                        ->toArray();
+             
+                    // تحديد المستويات المتبقية بناءً على `approval_level`
+                    $remainingFlows = $approvalFlows
+                        ->filter(fn ($flow) => !in_array($flow->approval_level, $approvedLevels))
+                        ->map(fn ($flow) => __(':role (Level :level)', [
+                            'role' => $flow->approver_role,
+                            'level' => $flow->approval_level,
+                        ]));
+            
+                    return $remainingFlows->isEmpty() ? __('No remaining approvals') : $remainingFlows->join(', ');
+                })
                 ->sortable(),
-
-                Tables\Columns\TextColumn::make('duration')->label(__('Duration (Days)'))
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('amount')->label(__('Amount'))
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('additional_data')
-                    ->label(__('Additional Data'))
-                    ->formatStateUsing(fn ($state) => $state ? json_encode($state) : '-')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                    Tables\Columns\TextColumn::make('approvalFlows')
-                        ->label(__('Remaining Levels'))
-                        ->formatStateUsing(fn($record) => $record->approvalFlows
-                            ->where('approval_level', '>', $record->approvals->max('approval_level'))
-                            ->map(fn($flow) => __(':role (Level :level)', ['role' => $flow->approver_role, 'level' => $flow->approval_level]))
-                            ->join(', '))
-                        ->sortable(),
+            
 
             ])
             ->filters([
+
+                  // طلباتي
+                  Tables\Filters\Filter::make('my_requests')
+                  ->label(__('My Requests'))
+                  ->query(function (Builder $query) {
+                      return $query->where('submitted_by', auth()->id());
+                  })
+                  ->toggle(),
+              
+
+        // حسب الموظف
+        Tables\Filters\SelectFilter::make('employee_id')
+            ->label(__('Employee'))
+            ->options(Employee::all()->pluck('first_name', 'id'))
+            ->searchable(),
+
+        // حسب النوع
+        Tables\Filters\SelectFilter::make('type')
+            ->label(__('Type'))
+            ->options(\App\Models\RequestType::pluck('name', 'key')->map(fn ($name) => __($name))),
+
+        // حسب الحالة
+        Tables\Filters\SelectFilter::make('status')
+            ->label(__('Status'))
+            ->options([
+                'pending' => __('Pending'),
+                'approved' => __('Approved'),
+                'rejected' => __('Rejected'),
+            ]),
+
+        // حسب تاريخ الإنشاء
+        // Tables\Filters\DateFilter::make('created_at')
+        //     ->label(__('Created At')),
                 // Tables\Filters\SelectFilter::make('type')
                 //     ->label(__('Type'))
                 //     ->options([
@@ -278,7 +351,7 @@ class RequestResource extends Resource
                     ])
                     ->requiresConfirmation()
                     ->hidden(fn ($record) => $record->status !== 'pending'),
-                // Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

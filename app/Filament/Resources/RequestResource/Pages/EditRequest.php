@@ -18,18 +18,32 @@ class EditRequest extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        if ($this->record->type === 'leave' && $this->record->leave) {
+            $leave = $this->record->leave;
+    
+            // تحميل بيانات الإجازة
+            $data['start_date'] = $leave->start_date;
+            $data['end_date'] = $leave->end_date;
+            $data['leave_type'] = $leave->type;
+            $data['reason'] = $leave->reason;
+        }
+    
+        return $data;
+    }
+    
+    
+
+
    
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        if ($this->type === 'leave' && $this->leave) {
-            $this->leave->update([
-                'start_date' => $data['leave']['start_date'],
-                'end_date' => $data['leave']['end_date'],
-                'type' => $data['leave']['type'],
-                'reason' => $data['leave']['reason'],
-            ]);
-        }
+        // معالجة الطلب من النوع "إجازة"
+    if ($data['type'] === 'leave') {
+     
+    }
         $policy = Policy::where('policy_type', $data['type'])->first();
     
         if (!$policy) {
@@ -49,12 +63,32 @@ class EditRequest extends EditRecord
                 if (!$employee) {
                     throw new \Exception(__('Employee not found.'));
                 }
-                if ($employee->leave_balance < $data['duration']) {
-                    throw new \Exception(__('Insufficient leave balance.'));
-                }
+                // if ($employee->leave_balance < $data['duration']) {
+                //     throw new \Exception(__('Insufficient leave balance.'));
+                // }
                 if (isset($conditions['max_duration']) && $data['duration'] > $conditions['max_duration']) {
                     throw new \Exception(__('Requested duration exceeds the maximum allowed.'));
                 }
+                if ($this->record->leave) {
+                    // تحديث بيانات الإجازة الموجودة
+                    $this->record->leave->update([
+                        'start_date' => $data['start_date'],
+                        'end_date' => $data['end_date'],
+                        'type' => $data['leave_type'],
+                        'reason' => $data['reason'],
+                    ]);
+                } else {
+                    // إنشاء سجل جديد للإجازة وربطه بالطلب
+                    $leave = \App\Models\Leave::create([
+                        'employee_id' => $data['employee_id'],
+                        'start_date' => $data['start_date'],
+                        'end_date' => $data['end_date'],
+                        'type' => $data['leave_type'],
+                        'reason' => $data['reason'],
+                    ]);
+                    $data['leave_id'] = $leave->id; // تحديث `leave_id` في الطلب
+                }
+
                 break;
     
             case 'loan':
