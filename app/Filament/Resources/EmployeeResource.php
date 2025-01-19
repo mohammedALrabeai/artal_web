@@ -357,7 +357,8 @@ class EmployeeResource extends Resource
                                 TextInput::make('balance')
                                     ->label('الرصيد المتبقي')
                                     ->numeric()
-                                    ->disabled(), // لا يمكن تحريره يدويًا
+                                    // ->disabled()
+                                    , // لا يمكن تحريره يدويًا
                                 TextInput::make('accrued_per_month')
                                     ->label('المستحق شهريًا')
                                     ->numeric(),
