@@ -9,4 +9,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateApprovalFlow extends CreateRecord
 {
     protected static string $resource = ApprovalFlowResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

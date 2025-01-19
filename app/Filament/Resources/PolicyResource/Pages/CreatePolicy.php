@@ -9,4 +9,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreatePolicy extends CreateRecord
 {
     protected static string $resource = PolicyResource::class;
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

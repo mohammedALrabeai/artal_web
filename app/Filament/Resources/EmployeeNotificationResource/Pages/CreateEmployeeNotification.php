@@ -9,4 +9,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateEmployeeNotification extends CreateRecord
 {
     protected static string $resource = EmployeeNotificationResource::class;
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

@@ -9,4 +9,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateLoan extends CreateRecord
 {
     protected static string $resource = LoanResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

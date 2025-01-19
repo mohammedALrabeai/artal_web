@@ -42,7 +42,7 @@ class ShiftResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Zone & Shift Management');
+        return __('Zone & Project Management');
     }
 
     public static function form(Form $form): Form
