@@ -14,6 +14,7 @@ use Filament\Resources\Pages\ListRecords;
 use App\Filament\Resources\EmployeeResource;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
+use Illuminate\Support\Facades\Log;
 // use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 
 
@@ -44,7 +45,8 @@ class ListEmployees extends ListRecords
                 // طباعة الأعمدة والقيم
                 foreach ($rows as $sheet) {
                     foreach ($sheet as $row) {
-                        logger()->info('Row Data:', $row); // تسجيل البيانات في السجلات
+                        Log::info('Row Data:', $row);
+                        // logger()->info('Row Data:', $row); // تسجيل البيانات في السجلات
                     }
                 }
 
