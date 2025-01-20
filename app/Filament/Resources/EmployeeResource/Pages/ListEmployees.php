@@ -27,17 +27,17 @@ class ListEmployees extends ListRecords
         return [
             Actions\CreateAction::make(),
             Actions\Action::make('importEmployees')
-            ->label('Import Employees')
+            ->label(__('Import Employees'))
             ->form([
                 Forms\Components\FileUpload::make('employee_file')
-                    ->label('Upload Excel File')
+                    ->label(__('Upload Excel File'))
                     ->disk('public') // تأكد من إعداد المسار
                     ->directory('uploads') // مسار حفظ الملف
                     ->preserveFilenames()
                     ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']) // ملفات Excel فقط
                     ->required(),
                     Forms\Components\Checkbox::make('use_ids_from_file')
-                    ->label('Use IDs from file')
+                    ->label(__('Use IDs from file'))
                     ->default(false),
             ])
             ->action(function (array $data) {
@@ -51,8 +51,8 @@ class ListEmployees extends ListRecords
                 \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\EmployeesImport($useIdsFromFile), $filePath);
 
                 Notification::make()
-            ->title("success")
-            ->body("تم تحليل البيانات وعرضها في السجل (log)!")
+            ->title(__('success'))
+            ->body(__('تم تحليل البيانات وعرضها في السجل (log)!'))
             ->success();
                 // Filament::notify('success', 'تم تحليل البيانات وعرضها في السجل (log)!');
             })
@@ -82,13 +82,13 @@ class ListEmployees extends ListRecords
             // }),
 
             Actions\Action::make('exportAttendance2')
-    ->label('Export Attendance')
+    ->label(__('Export Attendance'))
     ->form([
         Forms\Components\DatePicker::make('start_date')
-            ->label('Start Date')
+            ->label(__('Start Date'))
             ->required(),
         Forms\Components\DatePicker::make('end_date')
-            ->label('End Date')
+            ->label(__('End Date'))
             ->required(),
     ])
     ->action(function (array $data) {

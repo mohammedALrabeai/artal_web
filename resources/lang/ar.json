@@ -565,8 +565,10 @@
     "Leave Details": "تفاصيل الإجازة",
     "Loan Details": "تفاصيل القرض",
 
-    "All Records": "كل السجلات"
-
- 
-  
+    "All Records": "كل السجلات",
+    "Import Employees": "استيراد الموظفين",
+    "Upload Excel File": "تحميل ملف Excel",
+    "Use IDs from file": "استخدام المعرفات من الملف",
+    "success": "نجاح",
+    "Export Attendance": "تصدير الحضور"
 }
