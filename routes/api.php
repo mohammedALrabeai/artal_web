@@ -15,8 +15,7 @@ use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminNotificationController;
-
-
+use App\Services\AttendanceService;
 
 
 
@@ -202,9 +201,10 @@ Route::post('/optimize-project', function (Request $request) {
     }
 });
 
-
-
-
+Route::get('/process-attendance', function (AttendanceService $attendanceService) {
+    $attendanceService->processAttendance();
+    return response()->json(['message' => 'Attendance processing started']);
+});
 
 
 

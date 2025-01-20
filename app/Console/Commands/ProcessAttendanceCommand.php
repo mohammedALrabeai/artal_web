@@ -28,6 +28,8 @@ class ProcessAttendanceCommand extends Command
     {
         try {
         // استدعاء الـJob
+
+        app(\App\Services\AttendanceService::class)->processAttendance();
         ProcessAttendanceJob::dispatch();
         $this->info('Attendance processing job dispatched successfully.');
     } catch (\Exception $e) {
