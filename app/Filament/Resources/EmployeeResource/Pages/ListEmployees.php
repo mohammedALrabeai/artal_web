@@ -33,15 +33,28 @@ class ListEmployees extends ListRecords
                     ->label('Upload Excel File')
                     ->disk('public') // تأكد من إعداد المسار
                     ->directory('uploads') // مسار حفظ الملف
+                    ->preserveFilenames()
                     ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']) // ملفات Excel فقط
                     ->required(),
             ])
             ->action(function (array $data) {
                 $filePath = storage_path('app/public/' . $data['employee_file']);
+                //    dd($filePath);
+                // التحقق من مسار الملف
+                    if (!file_exists($filePath)) {
+                        dd("الملف غير موجود في المسار المحدد!");
+                        Notification::make()
+                        ->title("danger")
+                        ->body("الملف غير موجود في المسار المحدد!")
+                        ->danger();
+                        // Filament::notify('danger', 'الملف غير موجود في المسار المحدد: ' . $filePath);
+                        return;
+                    }
+                Log::info('File Path: '. $filePath);
 
                 // استيراد البيانات من الملف باستخدام Laravel Excel
                 $rows = \Maatwebsite\Excel\Facades\Excel::toArray(null, $filePath);
-
+dd($rows);
                 // طباعة الأعمدة والقيم
                 foreach ($rows as $sheet) {
                     foreach ($sheet as $row) {
