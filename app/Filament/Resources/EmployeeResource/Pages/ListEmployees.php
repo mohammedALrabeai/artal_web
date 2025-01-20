@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\EmployeeResource\Pages;
 
-use Filament\Actions;
 use Filament\Forms;
+use Filament\Actions;
 
+use Tables\Actions\Action;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\URL;
 use Filament\Resources\Components\Tab;
-use Tables\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use App\Filament\Resources\EmployeeResource;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
@@ -23,32 +25,62 @@ class ListEmployees extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
-            ExportAction::make(),
-            Actions\Action::make('exportAttendance')
-            ->label('Export Attendance')
+            Actions\Action::make('importEmployees')
+            ->label('Import Employees')
             ->form([
-                Forms\Components\DatePicker::make('start_date')
-                    ->label('Start Date')
-                    ->required(),
-                Forms\Components\DatePicker::make('end_date')
-                    ->label('End Date')
+                Forms\Components\FileUpload::make('employee_file')
+                    ->label('Upload Excel File')
+                    ->disk('public') // تأكد من إعداد المسار
+                    ->directory('uploads') // مسار حفظ الملف
+                    ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']) // ملفات Excel فقط
                     ->required(),
             ])
             ->action(function (array $data) {
-                $url = URL::temporarySignedRoute(
-                    'export.attendance',
-                    now()->addMinutes(5),
-                    [
-                        'start_date' => $data['start_date'],
-                        'end_date' => $data['end_date'],
-                    ]
-                );
+                $filePath = storage_path('app/public/' . $data['employee_file']);
 
-                return redirect($url);
-            }),
+                // استيراد البيانات من الملف باستخدام Laravel Excel
+                $rows = \Maatwebsite\Excel\Facades\Excel::toArray(null, $filePath);
+
+                // طباعة الأعمدة والقيم
+                foreach ($rows as $sheet) {
+                    foreach ($sheet as $row) {
+                        logger()->info('Row Data:', $row); // تسجيل البيانات في السجلات
+                    }
+                }
+
+                Notification::make()
+            ->title("success")
+            ->body("تم تحليل البيانات وعرضها في السجل (log)!")
+            ->success();
+                // Filament::notify('success', 'تم تحليل البيانات وعرضها في السجل (log)!');
+            })
+            ->color('success'),
+            ExportAction::make(),
+            // Actions\Action::make('exportAttendance')
+            // ->label('Export Attendance')
+            // ->form([
+            //     Forms\Components\DatePicker::make('start_date')
+            //         ->label('Start Date')
+            //         ->required(),
+            //     Forms\Components\DatePicker::make('end_date')
+            //         ->label('End Date')
+            //         ->required(),
+            // ])
+            // ->action(function (array $data) {
+            //     $url = URL::temporarySignedRoute(
+            //         'export.attendance',
+            //         now()->addMinutes(5),
+            //         [
+            //             'start_date' => $data['start_date'],
+            //             'end_date' => $data['end_date'],
+            //         ]
+            //     );
+
+            //     return redirect($url);
+            // }),
 
             Actions\Action::make('exportAttendance2')
-    ->label('Export Attendance2')
+    ->label('Export Attendance')
     ->form([
         Forms\Components\DatePicker::make('start_date')
             ->label('Start Date')
