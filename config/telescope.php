@@ -173,7 +173,7 @@ return [
         //     'level' => 'error',
         // ],
         Watchers\LogWatcher::class => [
-            'enabled' => true, // تأكد من أن المراقب مفعل
+            'enabled' => env('TELESCOPE_LOG_WATCHER', true), // تأكد من أن المراقب مفعل
             'level' => 'debug', // تسجيل جميع مستويات السجلات
         ],
 

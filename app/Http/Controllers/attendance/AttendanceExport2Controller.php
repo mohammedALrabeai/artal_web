@@ -220,8 +220,8 @@ class AttendanceExport2Controller extends Controller
             // Adding formulas to the new columns
             $columnIndex = 10 + ($endDateTimestamp - strtotime($startDate)) / (60 * 60 * 24) + 1;
             foreach ($columnsData as $column) {
-                $startColumn = chr(65 + 9); // Column 'J'
-                $endColumn = chr(65 + 9 + ($endDateTimestamp - strtotime($startDate)) / (60 * 60 * 24));
+                $startColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(10); // Column 'J'
+                $endColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 1);
                 $formula = str_replace(['$startColumn', '$endColumn', '$row'], [$startColumn, $endColumn, $startRow], $column['formula']);
                 $sheet->setCellValueByColumnAndRow($columnIndex, $startRow, $formula);
                 $columnIndex++;
