@@ -52,18 +52,28 @@ return [
 
     'channels' => [
 
+        // 'stack' => [
+        //     'driver' => 'stack',
+        //     'channels' => explode(',', env('LOG_STACK', 'single')),
+        //     'ignore_exceptions' => false,
+        // ],
         'stack' => [
-            'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
-            'ignore_exceptions' => false,
-        ],
+    'driver' => 'stack',
+    'channels' => ['single'], // استخدم 'single' إذا كنت تسجل في ملف واحد
+    'ignore_exceptions' => false,
+],
 
+        // 'single' => [
+        //     'driver' => 'single',
+        //     'path' => storage_path('logs/laravel.log'),
+        //     'level' => env('LOG_LEVEL', 'debug'),
+        //     'replace_placeholders' => true,
+        // ],
         'single' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/laravel.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'replace_placeholders' => true,
-        ],
+    'driver' => 'single',
+    'path' => storage_path('logs/laravel.log'),
+    'level' => 'debug', // تأكد أن المستوى يسمح بتسجيل جميع السجلات
+],
 
         'daily' => [
             'driver' => 'daily',
