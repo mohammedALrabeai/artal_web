@@ -24,6 +24,7 @@ use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use App\Filament\Resources\EmployeeResource\Pages;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
+use Filament\Forms\Components\Tabs\Tab;
 
 class EmployeeResource extends Resource
 {
@@ -402,6 +403,9 @@ class EmployeeResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label(__('ID'))
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Full Name'))
                     ->getStateUsing(function ($record) {

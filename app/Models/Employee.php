@@ -15,6 +15,7 @@ class Employee extends Model
     
 
     protected $fillable = [
+        'id',
         'first_name',
         'father_name',
         'grandfather_name',

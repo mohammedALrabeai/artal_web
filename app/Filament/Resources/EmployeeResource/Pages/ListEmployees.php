@@ -36,32 +36,19 @@ class ListEmployees extends ListRecords
                     ->preserveFilenames()
                     ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']) // ملفات Excel فقط
                     ->required(),
+                    Forms\Components\Checkbox::make('use_ids_from_file')
+                    ->label('Use IDs from file')
+                    ->default(false),
             ])
             ->action(function (array $data) {
-                $filePath = storage_path('app/public/' . $data['employee_file']);
-                //    dd($filePath);
-                // التحقق من مسار الملف
-                    if (!file_exists($filePath)) {
-                        dd("الملف غير موجود في المسار المحدد!");
-                        Notification::make()
-                        ->title("danger")
-                        ->body("الملف غير موجود في المسار المحدد!")
-                        ->danger();
-                        // Filament::notify('danger', 'الملف غير موجود في المسار المحدد: ' . $filePath);
-                        return;
-                    }
-                Log::info('File Path: '. $filePath);
-
-                // استيراد البيانات من الملف باستخدام Laravel Excel
-                $rows = \Maatwebsite\Excel\Facades\Excel::toArray(null, $filePath);
-dd($rows);
-                // طباعة الأعمدة والقيم
-                foreach ($rows as $sheet) {
-                    foreach ($sheet as $row) {
-                        Log::info('Row Data:', $row);
-                        // logger()->info('Row Data:', $row); // تسجيل البيانات في السجلات
-                    }
+                $filePath = storage_path('app/public/uploads/' . basename($data['employee_file']));
+                $useIdsFromFile = $data['use_ids_from_file'];
+                if (!file_exists($filePath)) {
+                    Filament::notify('danger', 'الملف غير موجود: ' . $filePath);
+                    return;
                 }
+
+                \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\EmployeesImport($useIdsFromFile), $filePath);
 
                 Notification::make()
             ->title("success")
