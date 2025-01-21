@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Http\Controllers\attendance;
 
@@ -69,6 +69,7 @@ class AttendanceExport2Controller extends Controller
             ['title' => 'إجازة غير مدفوعة UV', 'color' => 'FFB74D', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"UV")'],
             ['title' => 'غياب A', 'color' => 'E57373', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"absent")'],
             ['title' => 'الإجمالي Total', 'color' => '90A4AE', 'formula' => '=COUNTA($startColumn$row:$endColumn$row)'],
+            ['title' => 'إجمالي الساعات', 'color' => 'B39DDB', 'formula' => '=SUM($startColumn$row:$endColumn$row)'], // العمود الجديد
             ['title' => 'المخالفات الإدارية Infract', 'color' => 'FFE0B2', 'formula' => ''],
             ['title' => 'المخالفات المرورية', 'color' => 'FFE0B2', 'formula' => ''],
             ['title' => 'مكافأة', 'color' => 'FFE082', 'formula' => ''],
@@ -176,7 +177,7 @@ class AttendanceExport2Controller extends Controller
             $sheet->setCellValue("H{$startRow}", $salary); // الراتب
 
             // إدخال العمود HRS
-   
+
             $sheet->setCellValue("I{$startRow}", 'NOR');
             $sheet->setCellValue("I" . ($startRow + 1), 'HUR');
             $sheet->setCellValue("I" . ($startRow + 2), 'COV');
@@ -186,15 +187,15 @@ class AttendanceExport2Controller extends Controller
             $columnIndex = 10; // التواريخ تبدأ بعد HRS
             while ($currentDate <= $endDateTimestamp) {
                 $date = date('Y-m-d', $currentDate);
-               
+
 
                 // جلب جميع سجلات الحضور لليوم
                 $dailyAttendances = $employee->attendances->where('date', $date);
-            
+
                 // تحديد التغطية والحالة الأساسية وساعات العمل
                 $coverage = $dailyAttendances->firstWhere('is_coverage', true); // تغطية اليوم
                 $statusAttendance = $dailyAttendances->firstWhere('is_coverage', false); // الحضور الأساسي
-            
+
                 $coverageStatus = $coverage ? $coverage->status : ''; // حالة التغطية
                 $status = $statusAttendance ? $statusAttendance->status : 'N/A'; // حالة الحضور الأساسي
                 $workHours = $dailyAttendances->sum('work_hours'); // مجموع ساعات العمل
@@ -203,10 +204,10 @@ class AttendanceExport2Controller extends Controller
                 // $coverage = $attendance ? ($attendance->is_coverage ? 'COV' : '') : '';
                 // $workHours = $attendance ? $attendance->work_hours : '';
                 // $status = $attendance ? $attendance->status : 'N/A';
-  // إدراج البيانات في الأعمدة
-  $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex, $status);
-  $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
-  $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverageStatus);
+                // إدراج البيانات في الأعمدة
+                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex, $status);
+                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
+                $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverageStatus);
 
                 // // إدراج البيانات المكدسة
                 // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex,$status );
@@ -222,7 +223,20 @@ class AttendanceExport2Controller extends Controller
             foreach ($columnsData as $column) {
                 $startColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(10); // Column 'J'
                 $endColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 1);
-                $formula = str_replace(['$startColumn', '$endColumn', '$row'], [$startColumn, $endColumn, $startRow], $column['formula']);
+                // $formula = str_replace(['$startColumn', '$endColumn', '$row'], [$startColumn, $endColumn, $startRow], $column['formula']);
+                // استبدال الصيغة
+                if ($column['title'] === 'الإجمالي Total') {
+                    $offCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 7); // عمود أوف
+                    $pCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 6);  // عمود P
+                    $covCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 5); // عمود COV
+                    $mCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 4);   // عمود M
+                    $pvCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 3);  // عمود PV
+                    $absentCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 1); // عمود الغياب
+
+                    $formula = "=SUM({$offCell}{$startRow}, {$pCell}{$startRow}, {$covCell}{$startRow}, {$mCell}{$startRow}, {$pvCell}{$startRow}) - {$absentCell}{$startRow}";
+                } else {
+                    $formula = str_replace(['$startColumn', '$endColumn', '$row'], [$startColumn, $endColumn, $startRow], $column['formula']);
+                }
                 $sheet->setCellValueByColumnAndRow($columnIndex, $startRow, $formula);
                 $columnIndex++;
             }
