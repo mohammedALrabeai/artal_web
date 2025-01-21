@@ -52,12 +52,19 @@ class AttendanceService
                 $lastEntryTime = $morningStart->copy()->addMinutes($shift->last_entry_time);
                 
                 // التحقق من النتائج
-                dd(   [
-                    'morning_start' => $morningStart,
-                    'early_entry_time' => $earlyEntryTime,
-                    'last_entry_time' => $lastEntryTime,
-                    'current_time' => Carbon::now('Asia/Riyadh'),
-                ]);
+                // dd(   [
+                //     'morning_start' => $morningStart,
+                //     'early_entry_time' => $earlyEntryTime,
+                //     'last_entry_time' => $lastEntryTime,
+                //     'current_time' => Carbon::now('Asia/Riyadh'),
+                // ]);
+                  // عرض الأوقات المحسوبة للتأكد
+            Log::info('Calculated Times', [
+                'morning_start' => $morningStart,
+                'early_entry_time' => $earlyEntryTime,
+                'last_entry_time' => $lastEntryTime,
+                'current_time' => $now,
+            ]);
                 // التحقق إذا تم تحضير الموظف مسبقاً
                 $attendanceExists = Attendance::where('employee_id', $record->employee_id)
                     ->whereDate('date', $now->toDateString())
