@@ -26,7 +26,7 @@ class AttendanceService
                 // التأكد إذا كان اليوم يوم عمل
                 if (!$record->isWorkingDay()) {
                     Log::info('Not a working day', ['employee_id' => $record->employee_id]);
-                   
+
                     $this->markAttendance($record, 'off');
                     continue; // الانتقال إلى الموظف التالي
                 }
@@ -38,9 +38,13 @@ class AttendanceService
                     continue; // إذا لم تكن هناك وردية، تجاوز الموظف
                 }
 
+
                 $now = Carbon::now();
-                $earlyEntryTime = Carbon::parse($shift->early_entry_time);
-                $lastEntryTime = Carbon::parse($shift->last_entry_time);
+
+                // حساب الأوقات بناءً على وقت بداية الصباح
+                $morningStart = Carbon::createFromTimeString($shift->morning_start); // وقت بداية الصباح
+                $earlyEntryTime = $morningStart->copy()->addSeconds(Carbon::createFromTimeString($shift->early_entry_time)->secondsSinceMidnight()); // وقت الدخول المبكر
+                $lastEntryTime = $morningStart->copy()->addSeconds(Carbon::createFromTimeString($shift->last_entry_time)->secondsSinceMidnight()); // وقت آخر دخول مسموح
 
                 // التحقق إذا تم تحضير الموظف مسبقاً
                 $attendanceExists = Attendance::where('employee_id', $record->employee_id)
@@ -51,7 +55,6 @@ class AttendanceService
                     Log::info('Attendance already exists', ['employee_id' => $record->employee_id]);
                     continue; // إذا تم التحضير، تجاوز الموظف
                 }
-
                 // إذا الوقت الحالي ضمن فترة الورديّة
                 if ($now->between($earlyEntryTime, $lastEntryTime)) {
                     Log::info('Within shift time', ['employee_id' => $record->employee_id]);
@@ -68,41 +71,40 @@ class AttendanceService
         }
     }
 
-/**
- * تسجيل الحضور أو الغياب
- */
-private function markAttendance(EmployeeProjectRecord $record, $status)
-{
-    // التحقق من وجود سجل بالفعل لنفس الموظف في نفس اليوم والحالة
-    $existingAttendance = Attendance::where('employee_id', $record->employee_id)
-        ->whereDate('date', Carbon::today())
-        ->where('status', $status)
-        ->exists();
+    /**
+     * تسجيل الحضور أو الغياب
+     */
+    private function markAttendance(EmployeeProjectRecord $record, $status)
+    {
+        // التحقق من وجود سجل بالفعل لنفس الموظف في نفس اليوم والحالة
+        $existingAttendance = Attendance::where('employee_id', $record->employee_id)
+            ->whereDate('date', Carbon::today())
+            ->where('status', $status)
+            ->exists();
 
-    if ($existingAttendance) {
-        Log::info('Attendance already recorded', [
+        if ($existingAttendance) {
+            Log::info('Attendance already recorded', [
+                'employee_id' => $record->employee_id,
+                'status' => $status,
+            ]);
+            return; // لا تقم بتسجيل سجل جديد
+        }
+
+        // إذا لم يكن هناك سجل موجود، قم بإنشاء سجل جديد
+        Attendance::create([
+            'employee_id' => $record->employee_id,
+            'zone_id' => $record->zone_id,
+            'shift_id' => $record->shift_id,
+            'date' => Carbon::today(),
+            'status' => $status,
+            'check_in' => null,
+            'check_out' => null,
+            'notes' => $status === 'off' ? 'Day off' : ($status === 'absent' ? 'Absent' : null),
+        ]);
+
+        Log::info('Attendance marked', [
             'employee_id' => $record->employee_id,
             'status' => $status,
         ]);
-        return; // لا تقم بتسجيل سجل جديد
     }
-
-    // إذا لم يكن هناك سجل موجود، قم بإنشاء سجل جديد
-    Attendance::create([
-        'employee_id' => $record->employee_id,
-        'zone_id' => $record->zone_id,
-        'shift_id' => $record->shift_id,
-        'date' => Carbon::today(),
-        'status' => $status,
-        'check_in' => null,
-        'check_out' => null,
-        'notes' => $status === 'off' ? 'Day off' : ($status === 'absent' ? 'Absent' : null),
-    ]);
-
-    Log::info('Attendance marked', [
-        'employee_id' => $record->employee_id,
-        'status' => $status,
-    ]);
-}
-
 }

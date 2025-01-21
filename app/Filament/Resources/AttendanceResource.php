@@ -268,7 +268,16 @@ public static function getNavigationGroup(): ?string
                 ]),
 
                 Tables\Columns\BooleanColumn::make('is_coverage')
-                    ->label(__('Coverage Request')),   
+                    ->label(__('Coverage Request')),  
+                    
+                    Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
         ])
         ->filters([
          
