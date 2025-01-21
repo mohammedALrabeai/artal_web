@@ -225,7 +225,15 @@ class AttendanceExport2Controller extends Controller
                 $endColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 1);
                 // $formula = str_replace(['$startColumn', '$endColumn', '$row'], [$startColumn, $endColumn, $startRow], $column['formula']);
                 // استبدال الصيغة
-                if ($column['title'] === 'الإجمالي Total') {
+                if ($column['title'] === 'إضافي COV') {
+                    $thirdRow = $rowIndex + 2; // السطر الثالث لكل موظف
+                    $formula = "=COUNTIF({$startColumn}{$thirdRow}:{$endColumn}{$thirdRow}, \"coverage\")";
+                } elseif($column['title'] === 'إجمالي الساعات'){
+                    $nextRow = $rowIndex + 1; // احسب الصف الثاني خارج النص
+                    $formula = "=SUM({$startColumn}{$nextRow}:{$endColumn}{$nextRow})"; 
+
+                }elseif
+                 ($column['title'] === 'الإجمالي Total') {
                     $offCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 7); // عمود أوف
                     $pCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 6);  // عمود P
                     $covCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 5); // عمود COV
