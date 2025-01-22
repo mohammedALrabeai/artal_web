@@ -45,8 +45,14 @@ class LeaveBalance extends Model
         // عدد الأيام بين تاريخ البدء واليوم الحالي
         $daysWorked = $startDate->diffInDays($currentDate);
     
-        // عدد أيام السنة (365 يومًا)
-        $daysInYear = 365;
+    // حساب عدد الأيام المسجلة بحالة إجازة مدفوعة أو غير مدفوعة
+    $leaveDays = Attendance::where('employee_id', $this->employee_id)
+        ->whereDate('date', '>=', $startDate)
+        ->whereIn('status', ['leave', 'UV']) // الحالات المعنية
+        ->count();
+
+    // عدد أيام السنة ناقص أيام الإجازات المسجلة
+    $daysInYear = 365 - $leaveDays;
     
         // حساب الرصيد السنوي بناءً على عدد الأيام التي عملها الموظف
         $calculatedBalance = ($annualLeaveDays / $daysInYear) * $daysWorked;
@@ -55,7 +61,7 @@ class LeaveBalance extends Model
         $remainingBalance = $calculatedBalance - $this->used_balance;
     
         // إرجاع القيمة كعدد صحيح
-    return max((int) floor($remainingBalance), 0);// التأكد من أن الرصيد لا يكون سالبًا
+    return max(intval($remainingBalance), 0);// التأكد من أن الرصيد لا يكون سالبًا
     }
     
 }
