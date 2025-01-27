@@ -28,6 +28,15 @@ class Attachment extends Model
     {
         return $this->belongsTo(Employee::class);
     }
+    public function exclusion()
+{
+    return $this->belongsTo(Exclusion::class);
+}
+public function request()
+{
+    return $this->belongsTo(\App\Models\Request::class);
+}
+
 
     // العلاقة مع المستخدم الذي أضاف الوثيقة
     public function addedBy()

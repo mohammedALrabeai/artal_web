@@ -2,29 +2,27 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Filters\Filter;
-use Illuminate\Support\Facades\Log;
-use App\Models\EmployeeNotification;
-use Illuminate\Support\Facades\Http;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Repeater;
-use Filament\Tables\Actions\BulkAction;
-use Illuminate\Support\Facades\Storage;
-use Filament\Forms\Components\TextInput;
-use Filament\Tables\Filters\SelectFilter;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use App\Filament\Resources\EmployeeResource\Pages;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
-use Filament\Forms\Components\Tabs\Tab;
+use App\Models\Employee;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class EmployeeResource extends Resource
 {
@@ -174,7 +172,6 @@ class EmployeeResource extends Resource
                                 }
                             }),
 
-
                         // Forms\Components\Select::make('insurance_company_id')
                         //     ->label(__('Insurance Company'))
                         //     ->relationship('commercialRecord', 'entity_name')
@@ -195,7 +192,7 @@ class EmployeeResource extends Resource
 
                         Forms\Components\TextInput::make('insurance_number')
                             ->label(__('Subscriber number'))
-                        ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_start_date')
                             ->label(__('Insurance registration date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
@@ -204,7 +201,7 @@ class EmployeeResource extends Resource
                             ->label(__('Date of exclusion from insurance'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\Select::make('insurance_company_id')
-                            ->label(__('Insurance Company'))
+                            ->label(__('Insurance Company M'))
                             ->relationship('insuranceCompany', 'name') // ربط العلاقة مع جدول شركات التأمين
                             ->options(function () {
                                 return \App\Models\InsuranceCompany::pluck('name', 'id')->prepend('لا توجد شركة تأمين', '');
@@ -228,15 +225,26 @@ class EmployeeResource extends Resource
                 // Job Information
                 Forms\Components\Wizard\Step::make(__('Job Information'))
                     ->schema([
+                        Forms\Components\Select::make('contract_type')
+                            ->label(__('Contract Type'))
+                            ->reactive()
+                            ->options([
+                                'limited' => __('Limited'),
+                                'unlimited' => __('Unlimited'),
+                            ])
+                            // ->default(fn ($record) => $record && $record->contract_end ? __('Limited') : __('Unlimited'))
+                            ->required(),
+
                         Forms\Components\DatePicker::make('contract_start')
                             ->label(__('Contract Start'))
                             ->required(),
+
                         Forms\Components\DatePicker::make('contract_end')
                             ->label(__('Contract End'))
-
                             ->minDate(now()) // لضمان اختيار تاريخ مستقبلي
                             ->displayFormat('Y-m-d')
-                            ->placeholder(__('Select contract end date')),
+                            ->placeholder(__('Select contract end date'))
+                            ->visible(fn ($get) => $get('contract_type') === 'limited'),
 
                         Forms\Components\DatePicker::make('actual_start')
                             ->label(__('Actual Start'))
@@ -257,7 +265,7 @@ class EmployeeResource extends Resource
 
                         Forms\Components\TextInput::make('job_status')
                             ->label(__('Job Status'))
-                            ->required(),
+                            ,
 
                         // Forms\Components\TextInput::make('health_insurance_status')
                         //     ->label(__('Health Insurance Status'))
@@ -342,6 +350,8 @@ class EmployeeResource extends Resource
                     ->schema([
                         Repeater::make('leaveBalances')
                             ->relationship('leaveBalances')
+                            // ->defaultItems(1)
+                            // ->required()
                             ->schema([
                                 Select::make('leave_type')
                                     ->label('نوع الإجازة')
@@ -358,8 +368,8 @@ class EmployeeResource extends Resource
                                 TextInput::make('balance')
                                     ->label('الرصيد المتبقي')
                                     ->numeric()
-                                    // ->disabled()
-                                    , // لا يمكن تحريره يدويًا
+                                // ->disabled()
+                                , // لا يمكن تحريره يدويًا
                                 TextInput::make('accrued_per_month')
                                     ->label('المستحق شهريًا')
                                     ->numeric(),
@@ -382,7 +392,9 @@ class EmployeeResource extends Resource
                         Forms\Components\Select::make('added_by')
                             ->label(__('Added By'))
                             ->options(User::all()->pluck('name', 'id'))
+                            ->default(auth()->user()->id)
                             ->searchable()
+                            ->disabled()
                             ->nullable(),
                     ]),
 
@@ -514,55 +526,54 @@ class EmployeeResource extends Resource
                 //     ->searchable()
                 //     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('parent_insurance')
-    ->label(__('Parents Insurance'))
-    ->sortable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label(__('Parents Insurance'))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('insurance_company_name')
-    ->label(__('Insurance Company Name'))
-    ->searchable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('insurance_company_name')
+                    ->label(__('Insurance Company Name'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('commercialRecord.entity_name')
-    ->label(__('Commercial Record'))
-    ->sortable()
-    ->searchable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('commercialRecord.entity_name')
+                    ->label(__('Commercial Record'))
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('job_title')
-    ->label(__('Job Title'))
-    ->sortable()
-    ->searchable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('job_title')
+                    ->label(__('Job Title'))
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('bank_name')
-    ->label(__('Bank Name'))
-    ->sortable()
-    ->searchable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('bank_name')
+                    ->label(__('Bank Name'))
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('insurance_type')
-    ->label(__('Social Insurance Type'))
-    ->sortable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('insurance_type')
+                    ->label(__('Social Insurance Type'))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('insurance_number')
-    ->label(__('Insurance Number'))
-    ->searchable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('insurance_number')
+                    ->label(__('Insurance Number'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('insurance_start_date')
-    ->label(__('Insurance Start Date'))
-    ->date('Y-m-d')
-    ->sortable()
-    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('insurance_start_date')
+                    ->label(__('Insurance Start Date'))
+                    ->date('Y-m-d')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-Tables\Columns\TextColumn::make('insurance_end_date')
-    ->label(__('Insurance End Date'))
-    ->date('Y-m-d')
-    ->sortable()
-    ->toggleable(isToggledHiddenByDefault: true),
-
+                Tables\Columns\TextColumn::make('insurance_end_date')
+                    ->label(__('Insurance End Date'))
+                    ->date('Y-m-d')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('insuranceCompany.name')
                     ->label(__('Insurance Company'))
@@ -611,10 +622,10 @@ Tables\Columns\TextColumn::make('insurance_end_date')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('health_insurance_status')
-                    ->label(__('Health Insurance Status'))
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('health_insurance_status')
+                //     ->label(__('Health Insurance Status'))
+                //     ->searchable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('health_insurance_company')
                     ->label(__('Health Insurance Company'))
@@ -840,141 +851,138 @@ Tables\Columns\TextColumn::make('insurance_end_date')
                 Tables\Actions\DeleteBulkAction::make(),
                 ExportBulkAction::make(),
                 BulkAction::make('sendNotification')
-                ->label('إرسال إشعار')
-                ->form([
-                    Forms\Components\TextInput::make('title')
-                        ->label('العنوان')
-                        ->required()
-                        ->placeholder('أدخل عنوان الإشعار'),
-                    Forms\Components\Textarea::make('message')
-                        ->label('الموضوع')
-                        ->required()
-                        ->placeholder('أدخل موضوع الإشعار'),
-                    Forms\Components\Select::make('type')
-                        ->label('نوع الإشعار')
-                        ->options([
-                            'general' => 'تعميم',
-                            'notification' => 'إخطار',
-                            'warning' => 'إنذار',
-                            'violation' => 'مخالفة',
-                            'summons' => 'استدعاء',
-                            'other' => 'أخرى',
-                        ])
-                        ->required()
-                        ->placeholder('اختر نوع الإشعار'),
-                    Forms\Components\FileUpload::make('attachment')
-                        ->label('المرفقات')
-                        ->disk('s3')
-                        ->visibility('public')
-                        ->directory('notifications/attachments')
-                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif']) // قبول الصور فقط
-                        ->placeholder('أرفق صورة إذا لزم الأمر'),
+                    ->label('إرسال إشعار')
+                    ->form([
+                        Forms\Components\TextInput::make('title')
+                            ->label('العنوان')
+                            ->required()
+                            ->placeholder('أدخل عنوان الإشعار'),
+                        Forms\Components\Textarea::make('message')
+                            ->label('الموضوع')
+                            ->required()
+                            ->placeholder('أدخل موضوع الإشعار'),
+                        Forms\Components\Select::make('type')
+                            ->label('نوع الإشعار')
+                            ->options([
+                                'general' => 'تعميم',
+                                'notification' => 'إخطار',
+                                'warning' => 'إنذار',
+                                'violation' => 'مخالفة',
+                                'summons' => 'استدعاء',
+                                'other' => 'أخرى',
+                            ])
+                            ->required()
+                            ->placeholder('اختر نوع الإشعار'),
+                        Forms\Components\FileUpload::make('attachment')
+                            ->label('المرفقات')
+                            ->disk('s3')
+                            ->visibility('public')
+                            ->directory('notifications/attachments')
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif']) // قبول الصور فقط
+                            ->placeholder('أرفق صورة إذا لزم الأمر'),
                         Forms\Components\Checkbox::make('send_via_whatsapp')
-                        ->label('إرسال عبر WhatsApp')
-                        ->default(false),
-                ])
-                ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
-                    // جمع قائمة بالمعرفات (external_user_ids) كـ Strings
-                    $externalUserIds = $records->pluck('id')->filter()->map(fn ($id) => (string) $id)->toArray();
-                    Log::info('External User IDs:', $externalUserIds);
-            
-                    if (! empty($externalUserIds)) {
-                        // إعداد الهيدرز
-                        $headers = [
-                            'Authorization' => 'Basic '.env('ONESIGNAL_REST_API_KEY'),
-                            'Content-Type' => 'application/json; charset=utf-8',
-                        ];
-            
-                        // إعداد بيانات الإشعار
-                        $payload = [
-                            'app_id' => env('ONESIGNAL_APP_ID'),
-                            'include_external_user_ids' => $externalUserIds,
-                            'headings' => ['en' => $data['title']],
-                            'contents' => ['en' => $data['message']],
-                            'data' => [
-                                'type' => $data['type'],
-                            ],
-                        ];
-            
-                        // إضافة المرفق إذا كان صورة
-                        if (!empty($data['attachment'])) {
-                            // $attachmentUrl = asset('storage/' . $data['attachment']); // تحويل المسار إلى URL
-                           $attachmentUrl = Storage::disk('s3')->url($data['attachment']); // تحويل المسار إلى URL
-                            $payload['big_picture'] = $attachmentUrl; // حقل الصورة في OneSignal
-                            $payload['data']['attachment_url'] = $attachmentUrl; // تخزين المسار في البيانات
-                      
-                    //   dd($attachmentUrl);
-                        }
-            
-                        // إرسال الطلب
-                        $response = Http::withHeaders($headers)->post('https://onesignal.com/api/v1/notifications', $payload);
-            
-                        // تسجيل الاستجابة
-                        Log::info('OneSignal Response:', [
-                            'external_user_ids' => $externalUserIds,
-                            'response' => $response->json(),
-                        ]);
-                    } else {
-                        Log::warning('No valid external_user_ids found for sending notifications.');
-                    }
+                            ->label('إرسال عبر WhatsApp')
+                            ->default(false),
+                    ])
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
+                        // جمع قائمة بالمعرفات (external_user_ids) كـ Strings
+                        $externalUserIds = $records->pluck('id')->filter()->map(fn ($id) => (string) $id)->toArray();
+                        Log::info('External User IDs:', $externalUserIds);
 
-                    foreach ($records as $employee) {
-                        // إعداد المرفق URL
-                        $attachmentUrl = !empty($data['attachment']) ? Storage::disk('s3')->url($data['attachment']) : null;
-                    
-                        // حفظ الإشعار في قاعدة البيانات
-                        \App\Models\EmployeeNotification::create([
-                            'employee_id' => $employee->id,
-                            'type' => $data['type'],
-                            'title' => $data['title'],
-                            'message' => $data['message'],
-                            'attachment' => $attachmentUrl,
-                            'sent_via_whatsapp' => $data['send_via_whatsapp'],
-                        ]);
-                    
-                        // إرسال الإشعار عبر WhatsApp إذا تم تحديد الخيار
-                        if ($data['send_via_whatsapp']) {
-                            $phone = $employee->mobile_number;
-                            if ($phone) {
-                                $imageBase64 = null;
-                    
-                                if (!empty($data['attachment'])) {
-                                    $imagePath = $data['attachment'];
-                    
-                                    if (Storage::disk('s3')->exists($imagePath)) {
-                                        $imageContent = Storage::disk('s3')->get($imagePath);
-                                        $tempFilePath = tempnam(sys_get_temp_dir(), 's3_image_');
-                                        file_put_contents($tempFilePath, $imageContent);
-                                        $mimeType = mime_content_type($tempFilePath);
-                    
-                                        if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif'])) {
-                                            $imageBase64 = base64_encode($imageContent);
+                        if (! empty($externalUserIds)) {
+                            // إعداد الهيدرز
+                            $headers = [
+                                'Authorization' => 'Basic '.env('ONESIGNAL_REST_API_KEY'),
+                                'Content-Type' => 'application/json; charset=utf-8',
+                            ];
+
+                            // إعداد بيانات الإشعار
+                            $payload = [
+                                'app_id' => env('ONESIGNAL_APP_ID'),
+                                'include_external_user_ids' => $externalUserIds,
+                                'headings' => ['en' => $data['title']],
+                                'contents' => ['en' => $data['message']],
+                                'data' => [
+                                    'type' => $data['type'],
+                                ],
+                            ];
+
+                            // إضافة المرفق إذا كان صورة
+                            if (! empty($data['attachment'])) {
+                                // $attachmentUrl = asset('storage/' . $data['attachment']); // تحويل المسار إلى URL
+                                $attachmentUrl = Storage::disk('s3')->url($data['attachment']); // تحويل المسار إلى URL
+                                $payload['big_picture'] = $attachmentUrl; // حقل الصورة في OneSignal
+                                $payload['data']['attachment_url'] = $attachmentUrl; // تخزين المسار في البيانات
+
+                                //   dd($attachmentUrl);
+                            }
+
+                            // إرسال الطلب
+                            $response = Http::withHeaders($headers)->post('https://onesignal.com/api/v1/notifications', $payload);
+
+                            // تسجيل الاستجابة
+                            Log::info('OneSignal Response:', [
+                                'external_user_ids' => $externalUserIds,
+                                'response' => $response->json(),
+                            ]);
+                        } else {
+                            Log::warning('No valid external_user_ids found for sending notifications.');
+                        }
+
+                        foreach ($records as $employee) {
+                            // إعداد المرفق URL
+                            $attachmentUrl = ! empty($data['attachment']) ? Storage::disk('s3')->url($data['attachment']) : null;
+
+                            // حفظ الإشعار في قاعدة البيانات
+                            \App\Models\EmployeeNotification::create([
+                                'employee_id' => $employee->id,
+                                'type' => $data['type'],
+                                'title' => $data['title'],
+                                'message' => $data['message'],
+                                'attachment' => $attachmentUrl,
+                                'sent_via_whatsapp' => $data['send_via_whatsapp'],
+                            ]);
+
+                            // إرسال الإشعار عبر WhatsApp إذا تم تحديد الخيار
+                            if ($data['send_via_whatsapp']) {
+                                $phone = $employee->mobile_number;
+                                if ($phone) {
+                                    $imageBase64 = null;
+
+                                    if (! empty($data['attachment'])) {
+                                        $imagePath = $data['attachment'];
+
+                                        if (Storage::disk('s3')->exists($imagePath)) {
+                                            $imageContent = Storage::disk('s3')->get($imagePath);
+                                            $tempFilePath = tempnam(sys_get_temp_dir(), 's3_image_');
+                                            file_put_contents($tempFilePath, $imageContent);
+                                            $mimeType = mime_content_type($tempFilePath);
+
+                                            if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif'])) {
+                                                $imageBase64 = base64_encode($imageContent);
+                                            }
+
+                                            unlink($tempFilePath);
                                         }
-                    
-                                        unlink($tempFilePath);
                                     }
+
+                                    // إرسال الرسالة عبر WhatsApp
+                                    $otpService = new \App\Services\OtpService;
+                                    $otpService->sendViaWhatsappWithImage(
+                                        $phone,
+                                        $data['type'],
+                                        $data['title'],
+                                        $data['message'],
+                                        $imageBase64 ?? null
+                                    );
                                 }
-                    
-                                // إرسال الرسالة عبر WhatsApp
-                                $otpService = new \App\Services\OtpService();
-                                $otpService->sendViaWhatsappWithImage(
-                                    $phone,
-                                    $data['type'],
-                                    $data['title'],
-                                    $data['message'],
-                                    $imageBase64 ?? null
-                                );
                             }
                         }
-                    }
-                    
 
-                    
-                })
-                ->requiresConfirmation()
-                ->color('primary'),
-            
-            
+                    })
+                    ->requiresConfirmation()
+                    ->color('primary'),
+
                 // Tables\Actions\BulkAction::make('exportAll')
                 // ->label(__('Export All to PDF'))
                 // ->icon('heroicon-o-document-download')

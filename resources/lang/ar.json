@@ -517,6 +517,7 @@
 
     "Social Insurance Type": "الاشتراك في المؤسسة العامة للتامينات الاجتماعية",
     "Insurance Company": "شركة التأمين الاجتماعي",
+    "Insurance Company M": "شركة التأمين الطبي",
     "Insurance registration date": "تاريخ التسجيل في التأمينات",
     "Date of exclusion from insurance": "تاريخ الاستبعاد من التأمين",
 
@@ -570,5 +571,23 @@
     "Upload Excel File": "تحميل ملف Excel",
     "Use IDs from file": "استخدام المعرفات من الملف",
     "success": "نجاح",
+
+    "Exclusion": "الاستبعاد",
+    "Exclusions": "الاستبعادات",
+    "Exclusion Type": "نوع الاستبعاد",
+    "Exclusion Date": "تاريخ الاستبعاد",
+  
+    "Termination": "إنهاء خدمة",
+    "Retirement": "تقاعد",
+    "Exclusion Details": "تفاصيل الاستبعاد",
+    "Exclusion Reason": "سبب الاستبعاد",
+    "Exclusion Request": "طلب الاستبعاد",
+    "Limited": "محدود",
+    "Unlimited": "غير محدود",
+    "Unassigned Employees": "الموظفين غير المعينين",
+   "Assigned Employees": "الموظفين المعينين",
+
+    "At least one attachment is required.": "يجب إضافة مرفق واحد على الأقل.",
+    "You can upload a maximum of 5 attachments.": "يمكنك تحميل ما يصل إلى 5 مرفقات.",
     "Export Attendance": "تصدير الحضور"
 }

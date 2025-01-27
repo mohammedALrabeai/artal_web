@@ -29,6 +29,17 @@ class EditRequest extends EditRecord
             $data['leave_type'] = $leave->type;
             $data['reason'] = $leave->reason;
         }
+
+        if ($this->record->type === 'exclusion' && $this->record->exclusion) {
+            $exclusion = $this->record->exclusion;
+    
+            // تحميل بيانات الاستبعاد
+            $data['exclusion_type'] = $exclusion->type;
+            $data['exclusion_date'] = $exclusion->exclusion_date;
+            $data['exclusion_reason'] = $exclusion->reason;
+            $data['exclusion_attachment'] = $exclusion->attachment;
+            $data['exclusion_notes'] = $exclusion->notes;
+        }
     
         return $data;
     }
@@ -90,6 +101,48 @@ class EditRequest extends EditRecord
                 }
 
                 break;
+
+
+                case 'exclusion':
+                    if ($this->record->exclusion) {
+                        // تحديث بيانات الاستبعاد
+                        $this->record->exclusion->update([
+                            'type' => $data['exclusion_type'],
+                            'exclusion_date' => $data['exclusion_date'],
+                            'reason' => $data['exclusion_reason'],
+                            'notes' => $data['exclusion_notes'] ?? null,
+                        ]);
+                
+                        // تحديث أو إضافة المرفقات
+                        foreach ($data['attachments'] as $attachment) {
+                            $this->record->exclusion->attachments()->create([
+                                'file_url' => $attachment['file_url'],
+                                'added_by' => auth()->id(),
+                            ]);
+                        }
+                    } else {
+                        // إنشاء استبعاد جديد
+                        $exclusion = \App\Models\Exclusion::create([
+                            'employee_id' => $data['employee_id'],
+                            'type' => $data['exclusion_type'],
+                            'exclusion_date' => $data['exclusion_date'],
+                            'reason' => $data['exclusion_reason'],
+                            'notes' => $data['exclusion_notes'] ?? null,
+                        ]);
+                
+                        // إضافة المرفقات
+                        foreach ($data['attachments'] as $attachment) {
+                            $exclusion->attachments()->create([
+                                'file_url' => $attachment['file_url'],
+                                'added_by' => auth()->id(),
+                            ]);
+                        }
+                
+                        $data['exclusion_id'] = $exclusion->id;
+                    }
+                    break;
+        
+        
     
             case 'loan':
                 if (isset($conditions['max_amount']) && $data['amount'] > $conditions['max_amount']) {

@@ -20,10 +20,14 @@ class CreateRequest extends CreateRecord
     {
         $data['submitted_by'] = auth()->id();
         // التحقق من وجود سياسة مرتبطة بنوع الطلب
-        $policy = Policy::where('policy_type', $data['type'])->first();
-        if (!$policy) {
-            throw new \Exception(__('No policy defined for this request type.'));
-        }
+       // استثناء أنواع الطلبات التي لا تحتاج إلى سياسة
+    $excludedTypes = ['exclusion']; // أضف هنا الأنواع التي لا تتطلب سياسة
+    if (in_array($data['type'], $excludedTypes)) {
+        return $data; // تجاوز التحقق من السياسات
+    }
+
+    // جلب السياسة المرتبطة بنوع الطلب
+    $policy = Policy::where('policy_type', $data['type'])->first();
 
         // تحويل الشروط إلى مصفوفة إذا كانت نصًا
         $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
@@ -139,6 +143,43 @@ class CreateRequest extends CreateRecord
                     ]
                 );
                 break;
+
+
+                case 'exclusion': // طلب استبعاد
+                    $employee = Employee::find($data['employee_id']);
+                    if (!$employee) {
+                        throw new \Exception(__('Employee not found.'));
+                    }
+                
+                    // التحقق من سياسة الاستبعاد إذا كانت موجودة
+                    if (!isset($conditions['allowed_exclusions']) || !in_array($data['exclusion_type'], $conditions['allowed_exclusions'])) {
+                        throw new \Exception(__('This exclusion type is not allowed.'));
+                    }
+                
+                    // إنشاء سجل استبعاد
+                    $exclusion = \App\Models\Exclusion::create([
+                        'employee_id' => $data['employee_id'],
+                        'type' => $data['exclusion_type'],
+                        'exclusion_date' => $data['exclusion_date'],
+                        'reason' => $data['exclusion_reason'],
+                        'attachment' => $data['exclusion_attachment'] ?? null,
+                        'notes' => $data['exclusion_notes'] ?? null,
+                    ]);
+                
+                    $data['exclusion_id'] = $exclusion->id; // ربط الطلب بسجل الاستبعاد
+                
+                    // إرسال إشعار للأدوار المستهدفة
+                    $notificationService = new NotificationService;
+                    $notificationService->sendNotification(
+                        ['hr', 'manager', 'general_manager'], // الأدوار المستهدفة
+                        'طلب استبعاد', // عنوان الإشعار
+                        'يرجى مراجعة طلب الاستبعاد للموظف ' . $employee->first_name . ' ' . $employee->family_name, // نص الإشعار
+                        [
+                            $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
+                        ]
+                    );
+                    break;
+                
 
             case 'compensation': // طلب تعويض
                 if (!isset($data['additional_data']['documentation'])) {

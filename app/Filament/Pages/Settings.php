@@ -118,6 +118,12 @@ class Settings extends Page
                 ->numeric()
                 ->default($this->settings['coordinate_sync_distance'] ?? 100),
 
+                //
+                Forms\Components\TextInput::make('settings.attendance_duration')
+                ->label(' مدة التحضير (بالدقائق) لاحتساب حالة التاخير')
+                ->numeric()
+                ->default($this->settings['attendance_duration'] ?? 15),
+
             Forms\Components\TextInput::make('settings.latest_android_version')
                 ->label('آخر نسخة للأندرويد')
                 ->numeric()

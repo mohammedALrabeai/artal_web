@@ -46,6 +46,32 @@ class Request extends Model
     {
         return $this->belongsTo(Leave::class, 'leave_id');
     }
+    public function exclusion()
+    {
+        return $this->hasOne(\App\Models\Exclusion::class);
+    }
+
+    // public function attachments()
+    // {
+    //     return $this->hasManyThrough(
+    //         \App\Models\Attachment::class,
+    //         \App\Models\Exclusion::class,
+    //         'request_id', // المفتاح الأجنبي في جدول الاستبعادات
+    //         'exclusion_id', // المفتاح الأجنبي في جدول المرفقات
+    //         'id', // المفتاح الأساسي في جدول الطلبات
+    //         'id'  // المفتاح الأساسي في جدول الاستبعادات
+    //     );
+    // }
+
+    public function attachments()
+    {
+        return $this->hasMany(\App\Models\Attachment::class, 'request_id');
+    }
+    
+
+    
+
+
     
     
     

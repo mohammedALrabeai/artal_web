@@ -56,10 +56,10 @@ class LeaveBalance extends Model
     
         // حساب الرصيد السنوي بناءً على عدد الأيام التي عملها الموظف
         $calculatedBalance = ($annualLeaveDays / $daysInYear) * $daysWorked;
-    
+        
         // الرصيد المتبقي بعد استهلاك الإجازات
         $remainingBalance = $calculatedBalance - $this->used_balance;
-    
+        
         // إرجاع القيمة كعدد صحيح
     return max(intval($remainingBalance), 0);// التأكد من أن الرصيد لا يكون سالبًا
     }

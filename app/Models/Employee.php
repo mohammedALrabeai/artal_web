@@ -34,7 +34,7 @@ class Employee extends Model
         'living_allowance',
         'other_allowances',
         'job_status',
-        'health_insurance_status',
+        // 'health_insurance_status',
         'health_insurance_company',
        
         'social_security',
@@ -71,6 +71,8 @@ class Employee extends Model
         'insurance_number',
         'insurance_start_date',
         'insurance_end_date',
+
+        'contract_type'
     ];
     protected $casts = [
         'out_of_zone' => 'boolean',
@@ -139,6 +141,14 @@ public function resignations()
 {
     return $this->hasMany(Resignation::class);
 }
+
+
+
+public function exclusions()
+{
+    return $this->hasMany(Exclusion::class);
+}
+
 public function fullAddress()
 {
     return $this->region . ' - ' . $this->city . ' - ' . $this->street . ' - ' . $this->building_number . ' - ' . $this->apartment_number;
