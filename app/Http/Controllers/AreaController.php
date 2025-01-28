@@ -12,6 +12,52 @@ use Exception;
 
 class AreaController extends Controller
 {
+
+    public function getAssignedEmployeesForShifts()
+{
+    // تعيين التوقيت إلى توقيت الرياض
+    $currentTime = Carbon::now('Asia/Riyadh');
+
+    $areas = Area::with(['projects.zones.shifts.employees'])->get();
+
+    $data = $areas->map(function ($area) {
+        return [
+            'id' => $area->id,
+            'name' => $area->name,
+            'projects' => $area->projects->map(function ($project) {
+                return [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'emp_no' => $project->emp_no,
+                    'zones' => $project->zones->map(function ($zone) {
+                        $shifts = $zone->shifts->map(function ($shift) {
+                            // حساب عدد الموظفين المسندين لهذه الوردية
+                            $assignedEmployeesCount = $shift->employees->count();
+
+                            return [
+                                'id' => $shift->id,
+                                'name' => $shift->name,
+                                'type' => $shift->morning_start ? 'morning' : 'evening',
+                                'assigned_employees_count' => $assignedEmployeesCount,
+                                'emp_no' => $shift->emp_no,
+                            ];
+                        });
+
+                        return [
+                            'id' => $zone->id,
+                            'name' => $zone->name,
+                            'emp_no' => $zone->emp_no,
+                            'shifts' => $shifts,
+                        ];
+                    }),
+                ];
+            }),
+        ];
+    });
+
+    return response()->json($data);
+}
+
     public function getAreasWithDetails()
     {
         // تعيين التوقيت إلى توقيت الرياض

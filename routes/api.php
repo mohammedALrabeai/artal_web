@@ -154,7 +154,7 @@ Route::post('/test-broadcast', function () {
 
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
 
-
+Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 
 

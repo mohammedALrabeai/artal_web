@@ -121,6 +121,25 @@ class EmployeeAuthController extends Controller
     if (!$employee) {
         return response()->json(['message' => 'Employee not found'], 404);
     }
+        // اذا كان رقم جوال وكود تحقق الخاص بالفحص المتاجر 
+        if ($employee->mobile_number == '966571718153' && $request->otp == 253770) {
+            $device = EmployeeDevice::where('device_id', "rtfc")
+            ->where('employee_id', $employee->id)->first();
+           
+                // تسجيل الدخول
+                // $apiToken = Str::random(60);
+                // $employee->update(['api_token' => $apiToken]);
+
+                $apiToken = $employee->api_token;
+        
+                return response()->json([
+                    'message' => 'Login successful',
+                    'token' => $apiToken,
+                    'employee' => $employee,
+                    'new_device_registered' => false,
+                ]);
+            
+        }
 
     // التحقق من كود OTP
     $cachedOtp = cache()->get("otp:{$employee->id}");
@@ -133,6 +152,8 @@ class EmployeeAuthController extends Controller
 
     // معالجة الجهاز
     $deviceId = $request->device_id;
+
+
 
     // البحث عن الجهاز
     $device = EmployeeDevice::where('device_id', $deviceId)
