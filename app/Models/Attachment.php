@@ -20,6 +20,7 @@ class Attachment extends Model
         'title', 
         'image_url',
         'video_url',
+        'request_id',
 
     ];
 

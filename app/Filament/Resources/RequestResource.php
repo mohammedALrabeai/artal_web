@@ -2,16 +2,17 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use App\Models\User;
+use Filament\Tables;
+use App\Models\Policy;
+use App\Models\Request;
+use App\Models\Employee;
+use Filament\Resources\Resource;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\RequestResource\Pages;
 use App\Filament\Resources\RequestResource\RelationManagers;
-use App\Models\Employee;
-use App\Models\Request;
-use App\Models\User;
-use Filament\Forms;
-use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Illuminate\Database\Eloquent\Builder;
 
 class RequestResource extends Resource
 {
@@ -88,6 +89,7 @@ class RequestResource extends Resource
                                         : null;
                                 })
                                 ->preload()
+                                ->reactive()
                                 ->required(),
 
                             // المقدم
@@ -211,6 +213,84 @@ class RequestResource extends Resource
                         ])
                         ->columns(2)
                         ->visible(fn ($livewire, $get) => $get('type') === 'loan'),
+                      
+                        Forms\Components\Tabs\Tab::make(__('Attachments'))
+                        ->schema([
+                            Forms\Components\Repeater::make('attachments')
+                                ->label(__('Attachments'))
+                                // ->relationship('attachments') // الربط مع العلاقة في موديل Request
+                                ->schema([
+                                    Forms\Components\TextInput::make('title')
+                                        ->label(__('Title'))
+                                        ->required(),
+                                    
+                                    Forms\Components\Select::make('type')
+                                        ->label(__('Type'))
+                                        ->options([
+                                            'text' => __('Text'),
+                                            'link' => __('Link'),
+                                            'image' => __('Image'),
+                                            'video' => __('Video'),
+                                            'file' => __('File'),
+                                        ])
+                                        ->required()
+                                        ->reactive(),
+            
+                                    Forms\Components\Textarea::make('content')
+                                        ->label(__('Content (Text)'))
+                                        ->nullable()
+                                        ->visible(fn ($get) => $get('type') === 'text'),
+            
+                                    Forms\Components\TextInput::make('content')
+                                        ->label(__('Content (Link)'))
+                                        ->nullable()
+                                        ->visible(fn ($get) => $get('type') === 'link')
+                                        ->url(),
+            
+                                    Forms\Components\FileUpload::make('image_url')
+                                        ->label(__('Content (Image)'))
+                                        ->nullable()
+                                        ->disk('s3')
+                                        ->directory('attachments/images')
+                                        ->visibility('public')
+                                        ->visible(fn ($get) => $get('type') === 'image'),
+            
+                                    Forms\Components\FileUpload::make('video_url')
+                                        ->label(__('Content (Video)'))
+                                        ->nullable()
+                                        ->disk('s3')
+                                        ->directory('attachments/videos')
+                                        ->visibility('public')
+                                        ->acceptedFileTypes(['video/*'])
+                                        ->visible(fn ($get) => $get('type') === 'video'),
+            
+                                    Forms\Components\FileUpload::make('file_url')
+                                        ->label(__('Content (File)'))
+                                        ->nullable()
+                                        ->disk('s3')
+                                        ->directory('attachments/files')
+                                        ->visibility('public')
+                                        ->acceptedFileTypes(['application/*'])
+                                        ->visible(fn ($get) => $get('type') === 'file'),
+            
+                                    Forms\Components\DatePicker::make('expiry_date')
+                                        ->label(__('Expiry Date'))
+                                        ->nullable(),
+            
+                                    Forms\Components\Textarea::make('notes')
+                                        ->label(__('Notes'))
+                                        ->nullable(),
+
+                                        Forms\Components\Hidden::make('related_employee_id') // الحقل المخفي
+                                        ->default(fn ($get) => $get('employee_id')), // أخذ القيمة من حقل اختيار الموظف
+                               
+                                ])
+                                ->columns(2) // تقسيم الأعمدة داخل كل عنصر في Repeater
+                           
+                                ->minItems(0) // يمكن أن يكون بدون مرفقات
+                                ->maxItems(10), // الحد الأقصى للمرفقات
+                                ])
+                                ->columns(1),
 
                 ])
             // ->columns(1)
@@ -218,6 +298,7 @@ class RequestResource extends Resource
 
         ])->columns(1);
     }
+   
 
     public static function table(Tables\Table $table): Tables\Table
     {

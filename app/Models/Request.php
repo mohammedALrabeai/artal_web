@@ -65,8 +65,11 @@ class Request extends Model
 
     public function attachments()
     {
+        // dd('Attachments relationship called');
         return $this->hasMany(\App\Models\Attachment::class, 'request_id');
     }
+
+
     
 
     

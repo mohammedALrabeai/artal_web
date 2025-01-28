@@ -19,15 +19,18 @@ class CreateRequest extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['submitted_by'] = auth()->id();
+
+        // if (!isset($data['attachments'])) {
+        //     throw new \Exception(__('Attachments data is missing.'));
+        // }
         // التحقق من وجود سياسة مرتبطة بنوع الطلب
        // استثناء أنواع الطلبات التي لا تحتاج إلى سياسة
-    $excludedTypes = ['exclusion']; // أضف هنا الأنواع التي لا تتطلب سياسة
-    if (in_array($data['type'], $excludedTypes)) {
-        return $data; // تجاوز التحقق من السياسات
-    }
+       $policy = Policy::where('policy_type', $data['type'])->first();
+       if (!$policy) {
+           throw new \Exception(__('No policy defined for this request type.'));
+       }
 
-    // جلب السياسة المرتبطة بنوع الطلب
-    $policy = Policy::where('policy_type', $data['type'])->first();
+
 
         // تحويل الشروط إلى مصفوفة إذا كانت نصًا
         $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
@@ -146,16 +149,22 @@ class CreateRequest extends CreateRecord
 
 
                 case 'exclusion': // طلب استبعاد
+                
                     $employee = Employee::find($data['employee_id']);
                     if (!$employee) {
                         throw new \Exception(__('Employee not found.'));
                     }
                 
                     // التحقق من سياسة الاستبعاد إذا كانت موجودة
-                    if (!isset($conditions['allowed_exclusions']) || !in_array($data['exclusion_type'], $conditions['allowed_exclusions'])) {
-                        throw new \Exception(__('This exclusion type is not allowed.'));
+                    if (!isset($conditions['allowed_exclusions'])) {
+                        throw new \Exception(__('Allowed exclusions are not defined in the policy.'));
+                    }
+                    
+                    if (!in_array(strtolower($data['exclusion_type']), array_map('strtolower', $conditions['allowed_exclusions']))) {
+                        throw new \Exception(__('The selected exclusion type (:type) is not allowed.', ['type' => $data['exclusion_type']]));
                     }
                 
+                    try{
                     // إنشاء سجل استبعاد
                     $exclusion = \App\Models\Exclusion::create([
                         'employee_id' => $data['employee_id'],
@@ -171,13 +180,17 @@ class CreateRequest extends CreateRecord
                     // إرسال إشعار للأدوار المستهدفة
                     $notificationService = new NotificationService;
                     $notificationService->sendNotification(
-                        ['hr', 'manager', 'general_manager'], // الأدوار المستهدفة
+                        ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
                         'طلب استبعاد', // عنوان الإشعار
                         'يرجى مراجعة طلب الاستبعاد للموظف ' . $employee->first_name . ' ' . $employee->family_name, // نص الإشعار
                         [
                             $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
                         ]
                     );
+
+                } catch (\Exception $e) {
+                    dd($e->getMessage());
+                }
                     break;
                 
 
@@ -217,6 +230,68 @@ class CreateRequest extends CreateRecord
                 throw new \Exception(__('Invalid request type.'));
         }
 
+
+        // dd($data); 
+
         return $data;
     }
+
+    // protected function mutateFormDataBeforeSave(array $data): array
+    // {
+    //     // dd($data);
+    //     if (isset($data['attachments'])) {
+    //         foreach ($data['attachments'] as $attachment) {
+    //             $this->record->attachments()->create([
+    //                 'title' => $attachment['title'],
+    //                 'type' => $attachment['type'],
+    //                 'content' => $attachment['content'] ?? null,
+    //                 'file_url' => $attachment['file_url'] ?? null,
+    //                 'image_url' => $attachment['image_url'] ?? null,
+    //                 'video_url' => $attachment['video_url'] ?? null,
+    //                 'expiry_date' => $attachment['expiry_date'] ?? null,
+    //                 'notes' => $attachment['notes'] ?? null,
+    //                 'employee_id' => $data['employee_id'], // استخدام employee_id المرتبط بالطلب
+    //                 'added_by' => auth()->id(),
+    //             ]);
+    //         }
+    //     }
+    
+    //     return $data;
+    // }
+
+//     protected function mutateFormDataBeforeSave(array $data): array
+// {
+//     if (isset($data['attachments'])) {
+//         foreach ($data['attachments'] as &$attachment) {
+//             if (!isset($attachment['employee_id'])) {
+//                 $attachment['employee_id'] = $data['related_employee_id']; // تمرير employee_id إذا لم يكن موجودًا
+//             }
+//         }
+//     }
+
+//     return $data;
+// }
+
+protected function afterSave(): void
+{
+    $attachments = $this->data['attachments'] ?? [];
+
+    foreach ($attachments as $attachment) {
+        if (empty($attachment['file_url']) || empty($attachment['title'])) {
+            throw new \Exception(__('File URL and title are required for attachments.'));
+        }
+
+        \App\Models\Attachment::create([
+            'title' => $attachment['title'],
+            'type' => $attachment['type'],
+            'file_url' => $attachment['file_url'],
+            'employee_id' => $this->record->employee_id,
+            'request_id' => $this->record->id,
+            'added_by' => auth()->id(),
+        ]);
+    }
+}
+
+
+    
 }
