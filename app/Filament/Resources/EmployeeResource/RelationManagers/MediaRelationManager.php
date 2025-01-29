@@ -63,24 +63,22 @@ class MediaRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()->using(function (array $data, string $model): Model {
-                    // dump($data['media']);
                     $pathToFile =  storage_path('app/public/' . $data['media']);
                     return  $this->getOwnerRecord()->addMedia($pathToFile)
-                    // ->withCustomProperties(['name' => 'wweraw'])
                     ->usingName($data['name'])
                     ->preservingOriginal()
                     ->toMediaCollection();
                 }),
-                Tables\Actions\AttachAction::make(),
+                // Tables\Actions\AttachAction::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DetachAction::make(),
+                // Tables\Actions\DetachAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DetachBulkAction::make(),
+                    // Tables\Actions\DetachBulkAction::make(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
