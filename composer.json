@@ -24,6 +24,7 @@
         "pxlrbt/filament-excel": "^2.3",
         "setasign/fpdf": "^1.8",
         "spatie/laravel-activitylog": "^4.9",
+        "spatie/laravel-medialibrary": "^11.12",
         "tecnickcom/tcpdf": "^6.7"
     },
     "require-dev": {

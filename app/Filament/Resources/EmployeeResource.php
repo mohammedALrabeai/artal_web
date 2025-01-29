@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\ContractType;
+use App\Enums\InsuranceType;
 use App\Filament\Resources\EmployeeResource\Pages;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
 use App\Models\Employee;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -161,10 +164,7 @@ class EmployeeResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('insurance_type')
                             ->label(__('Social Insurance Type'))
-                            ->options([
-                                '' => __('No Insurance'),
-                                'commercial_record' => __('Social Insurance Subscriber'),
-                            ])
+                            ->options(InsuranceType::options())
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state) {
                                 if ($state === 'commercial_record') {
@@ -228,11 +228,7 @@ class EmployeeResource extends Resource
                         Forms\Components\Select::make('contract_type')
                             ->label(__('Contract Type'))
                             ->reactive()
-                            ->options([
-                                'limited' => __('Limited'),
-                                'unlimited' => __('Unlimited'),
-                            ])
-                            // ->default(fn ($record) => $record && $record->contract_end ? __('Limited') : __('Unlimited'))
+                            ->options(ContractType::options()) 
                             ->required(),
 
                         Forms\Components\DatePicker::make('contract_start')
@@ -832,7 +828,7 @@ class EmployeeResource extends Resource
 
             ])
             ->actions([
-
+                Tables\Actions\BulkActionGroup::make([
                 Action::make('viewMap')
                     ->label('عرض المسار')
                     ->color('primary')
@@ -846,6 +842,7 @@ class EmployeeResource extends Resource
                     ->openUrlInNewTab(false),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                ])
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
@@ -1023,7 +1020,8 @@ class EmployeeResource extends Resource
             RelationManagers\AttendancesRelationManager::class,
             RelationManagers\DevicesRelationManager::class,
             RelationManagers\LoansRelationManager::class,
-            RelationManagers\ResignationsRelationManager::class,
+            RelationManagers\ResignationsRelationManager::class, 
+             RelationManagers\MediaRelationManager::class,
 
         ];
     }

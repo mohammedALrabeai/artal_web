@@ -3,15 +3,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 
 
-class Employee extends Model
+class Employee extends Model implements HasMedia
 {
-    use HasFactory,Notifiable, LogsActivity;
+   
+    use HasFactory,Notifiable, LogsActivity,InteractsWithMedia;
     
 
     protected $fillable = [
@@ -25,7 +29,6 @@ class Employee extends Model
         'national_id_expiry',
         'nationality',
         'bank_account',
-        'sponsor_company',
         'blood_type',
         'contract_start',
         'contract_end',
@@ -34,9 +37,7 @@ class Employee extends Model
         'living_allowance',
         'other_allowances',
         'job_status',
-        // 'health_insurance_status',
         'health_insurance_company',
-       
         'social_security',
         'social_security_code',
         'qualification',
@@ -67,11 +68,9 @@ class Employee extends Model
         'job_title',
         'bank_name',
         'insurance_type',
-   
         'insurance_number',
         'insurance_start_date',
         'insurance_end_date',
-
         'contract_type'
     ];
     protected $casts = [
@@ -232,5 +231,10 @@ public function getActivitylogOptions(): LogOptions
         ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
         ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
 }
+// public function media():MorphMany 
+// {
+//     return $this->morphMany(\Spatie\MediaLibrary\MediaCollections\Models\Media::class, 'model');
+// }
+
 
 }

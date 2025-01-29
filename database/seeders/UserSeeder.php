@@ -29,7 +29,7 @@ class UserSeeder extends Seeder
             'role_id' => 3
         ]);
         User::factory()->create([
-            'name' => 'general_manager',
+            'name' => 'general manager',
             'email' => 'general_manager@demo.com',
             'role_id' => 4
         ]);

@@ -3,8 +3,8 @@
            use Illuminate\Database\Seeder;
             use App\Models\Policy;
             
-            class PolicySeeder extends Seeder
-            {
+class PolicySeeder extends Seeder
+{
                 public function run()
                 {
                     // سياسة الإجازات السنوية
