@@ -3,15 +3,18 @@
 namespace App\Filament\Resources\EmployeeResource\RelationManagers;
 
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Forms\Get;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Filament\Forms\Components\FileUpload;
+
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Get;
-use Illuminate\Database\Eloquent\Model;
+use Filament\Resources\RelationManagers\RelationManager;
 
 class MediaRelationManager extends RelationManager
 {
@@ -21,12 +24,14 @@ class MediaRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                FileUpload::make('media') // File input for media
-                    ->label('Media File')
-                    ->required()
-                    ->directory('employees') // Save files to 'storage/employees'
-                    ->visibility('public') // Ensure public access
-                    ->columnSpanFull(), // Full width in the form
+                FileUpload::make('media') // Ensure the key name matches the backend
+                ->label('Media File')
+                ->required()
+                ->disk('s3')
+                ->directory('employees')
+                ->visibility('public')
+                ->preserveFilenames()
+                ->columnSpanFull(),
 
                     Forms\Components\TextInput::make('name')
                     ->label(__('Name'))
@@ -62,15 +67,28 @@ class MediaRelationManager extends RelationManager
                 // Add filters if necessary
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()->using(function (array $data, string $model): Model {
-                    $pathToFile =  storage_path('app/public/' . $data['media']);
-                    return  $this->getOwnerRecord()->addMedia($pathToFile)
-                    ->usingName($data['name'])
-                    ->preservingOriginal()
-                    ->toMediaCollection();
+                Tables\Actions\CreateAction::make()
+                ->using(function (array $data) {
+                    // Get the owning model (e.g., Employee)
+                    $employee = $this->getOwnerRecord();
+
+                    if (!isset($data['media']) || empty($data['media'])) {
+                        throw new \Exception('No media file provided.');
+                    }
+
+                    // Ensure file exists in S3 before adding to Media Library
+                    $filePath = $data['media'];
+                    if (!Storage::disk('s3')->exists($filePath)) {
+                        throw new \Exception('The file does not exist on S3.');
+                    }
+
+                    // Add media to Spatie Media Library
+                    return $employee
+                        ->addMediaFromDisk($filePath, 's3') // Use 'addMediaFromDisk'
+                        ->usingName($data['name']) // Assign custom name
+                        ->toMediaCollection(); // Save to default media collection
                 }),
-                // Tables\Actions\AttachAction::make(),
-            ])
+        ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 // Tables\Actions\DetachAction::make(),

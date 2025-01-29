@@ -69,15 +69,7 @@ class Request extends Model
         return $this->hasMany(\App\Models\Attachment::class, 'request_id');
     }
 
-
-    
-
-    
-
-
-    
-    
-    
+ 
 
     // علاقة مع الموافقات المرتبطة بالطلب
     // public function approvals()

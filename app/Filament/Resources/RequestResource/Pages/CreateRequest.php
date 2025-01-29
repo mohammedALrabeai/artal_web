@@ -16,6 +16,8 @@ class CreateRequest extends CreateRecord
 {
     protected static string $resource = RequestResource::class;
 
+    public $selectedEmployeeId;
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['submitted_by'] = auth()->id();
@@ -231,7 +233,17 @@ class CreateRequest extends CreateRecord
         }
 
 
-        // dd($data); 
+        if (!isset($data['employee_id'])) {
+            throw new \Exception(__('Employee ID is required.'));
+        }
+    
+        if (isset($data['attachments'])) {
+            foreach ($data['attachments'] as &$attachment) {
+                if (!isset($attachment['employee_id'])) {
+                    $attachment['employee_id'] = $data['employee_id']; // تأكد من تمرير employee_id
+                }
+            }
+        }
 
         return $data;
     }
@@ -274,23 +286,15 @@ class CreateRequest extends CreateRecord
 
 protected function afterSave(): void
 {
-    $attachments = $this->data['attachments'] ?? [];
-
-    foreach ($attachments as $attachment) {
-        if (empty($attachment['file_url']) || empty($attachment['title'])) {
-            throw new \Exception(__('File URL and title are required for attachments.'));
+    foreach ($this->record->attachments as $attachment) {
+        if (!$attachment->employee_id) {
+            $attachment->update(['employee_id' => $this->record->employee_id]);
         }
-
-        \App\Models\Attachment::create([
-            'title' => $attachment['title'],
-            'type' => $attachment['type'],
-            'file_url' => $attachment['file_url'],
-            'employee_id' => $this->record->employee_id,
-            'request_id' => $this->record->id,
-            'added_by' => auth()->id(),
-        ]);
     }
 }
+
+
+
 
 
     

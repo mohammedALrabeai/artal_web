@@ -18,6 +18,8 @@ class RequestResource extends Resource
 {
     protected static ?string $model = Request::class;
 
+    public $selectedEmployeeId;
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
@@ -88,8 +90,14 @@ class RequestResource extends Resource
                                         ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
                                         : null;
                                 })
+                                ->reactive() // ✅ يجعل الحقل ديناميكيًا
+                                ->afterStateUpdated(function ($state, callable $set, $livewire) {
+                                    \Log::info('Employee selected:', ['employee_id' => $state]); // ✅ التحقق من القيمة في الـ Log
+                                    $livewire->selectedEmployeeId = $state; // ✅ تحديث `selectedEmployeeId` في Livewire
+                                    $set('selectedEmployeeId', $state); // ✅ تحديث داخل النموذج
+                                })
                                 ->preload()
-                                ->reactive()
+
                                 ->required(),
 
                             // المقدم
@@ -215,82 +223,109 @@ class RequestResource extends Resource
                         ->visible(fn ($livewire, $get) => $get('type') === 'loan'),
                       
                         Forms\Components\Tabs\Tab::make(__('Attachments'))
-                        ->schema([
-                            Forms\Components\Repeater::make('attachments')
-                                ->label(__('Attachments'))
-                                // ->relationship('attachments') // الربط مع العلاقة في موديل Request
-                                ->schema([
-                                    Forms\Components\TextInput::make('title')
-                                        ->label(__('Title'))
-                                        ->required(),
-                                    
-                                    Forms\Components\Select::make('type')
-                                        ->label(__('Type'))
-                                        ->options([
-                                            'text' => __('Text'),
-                                            'link' => __('Link'),
-                                            'image' => __('Image'),
-                                            'video' => __('Video'),
-                                            'file' => __('File'),
-                                        ])
-                                        ->required()
-                                        ->reactive(),
-            
-                                    Forms\Components\Textarea::make('content')
-                                        ->label(__('Content (Text)'))
-                                        ->nullable()
-                                        ->visible(fn ($get) => $get('type') === 'text'),
-            
-                                    Forms\Components\TextInput::make('content')
-                                        ->label(__('Content (Link)'))
-                                        ->nullable()
-                                        ->visible(fn ($get) => $get('type') === 'link')
-                                        ->url(),
-            
-                                    Forms\Components\FileUpload::make('image_url')
-                                        ->label(__('Content (Image)'))
-                                        ->nullable()
-                                        ->disk('s3')
-                                        ->directory('attachments/images')
-                                        ->visibility('public')
-                                        ->visible(fn ($get) => $get('type') === 'image'),
-            
-                                    Forms\Components\FileUpload::make('video_url')
-                                        ->label(__('Content (Video)'))
-                                        ->nullable()
-                                        ->disk('s3')
-                                        ->directory('attachments/videos')
-                                        ->visibility('public')
-                                        ->acceptedFileTypes(['video/*'])
-                                        ->visible(fn ($get) => $get('type') === 'video'),
-            
-                                    Forms\Components\FileUpload::make('file_url')
-                                        ->label(__('Content (File)'))
-                                        ->nullable()
-                                        ->disk('s3')
-                                        ->directory('attachments/files')
-                                        ->visibility('public')
-                                        ->acceptedFileTypes(['application/*'])
-                                        ->visible(fn ($get) => $get('type') === 'file'),
-            
-                                    Forms\Components\DatePicker::make('expiry_date')
-                                        ->label(__('Expiry Date'))
-                                        ->nullable(),
-            
-                                    Forms\Components\Textarea::make('notes')
-                                        ->label(__('Notes'))
-                                        ->nullable(),
+            ->schema([
+                Forms\Components\Repeater::make('attachments')
+                    ->label(__('Attachments'))
+                    ->relationship('attachments') // الربط بالعلاقة في موديل Request
+                    ->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->label(__('Title'))
+                            ->required(),
+                        
+                        Forms\Components\Select::make('type')
+                            ->label(__('Type'))
+                            ->options([
+                                'text' => __('Text'),
+                                'link' => __('Link'),
+                                'image' => __('Image'),
+                                'video' => __('Video'),
+                                'file' => __('File'),
+                            ])
+                            ->required()
+                            ->reactive(),
 
-                                        Forms\Components\Hidden::make('related_employee_id') // الحقل المخفي
-                                        ->default(fn ($get) => $get('employee_id')), // أخذ القيمة من حقل اختيار الموظف
-                               
-                                ])
-                                ->columns(2) // تقسيم الأعمدة داخل كل عنصر في Repeater
-                           
-                                ->minItems(0) // يمكن أن يكون بدون مرفقات
-                                ->maxItems(10), // الحد الأقصى للمرفقات
-                                ])
-                                ->columns(1),
+                        Forms\Components\Textarea::make('content')
+                            ->label(__('Content (Text)'))
+                            ->nullable()
+                            ->visible(fn ($get) => $get('type') === 'text'),
+
+                        Forms\Components\TextInput::make('content')
+                            ->label(__('Content (Link)'))
+                            ->nullable()
+                            ->visible(fn ($get) => $get('type') === 'link')
+                            ->url(),
+
+                        Forms\Components\FileUpload::make('image_url')
+                            ->label(__('Content (Image)'))
+                            ->nullable()
+                            ->disk('s3')
+                            ->directory('attachments/images')
+                            ->visibility('public')
+                            ->visible(fn ($get) => $get('type') === 'image'),
+
+                        Forms\Components\FileUpload::make('video_url')
+                            ->label(__('Content (Video)'))
+                            ->nullable()
+                            ->disk('s3')
+                            ->directory('attachments/videos')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['video/*'])
+                            ->visible(fn ($get) => $get('type') === 'video'),
+
+                        Forms\Components\FileUpload::make('file_url')
+                            ->label(__('Content (File)'))
+                            ->nullable()
+                            ->disk('s3')
+                            ->directory('attachments/files')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['application/*'])
+                            ->visible(fn ($get) => $get('type') === 'file'),
+
+                        Forms\Components\DatePicker::make('expiry_date')
+                            ->label(__('Expiry Date'))
+                            ->nullable(),
+
+                        Forms\Components\Textarea::make('notes')
+                            ->label(__('Notes'))
+                            ->nullable(),
+
+                        // ✅ **إضافة حقل مخفي لتمرير employee_id تلقائيًا**
+                        Forms\Components\Select::make('employee_id')
+                        ->label(__('Employee'))
+                        ->searchable()
+                        ->placeholder(__('Search for an employee...'))
+                        ->getSearchResultsUsing(function (string $search) {
+                            return \App\Models\Employee::query()
+                                ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
+                                ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
+                                ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
+                                ->limit(50)
+                                ->get()
+                                ->mapWithKeys(function ($employee) {
+                                    return [
+                                        $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
+                                    ]; // عرض الاسم الأول، العائلة، والمعرف
+                                });
+                        })
+                        ->getOptionLabelUsing(function ($value) {
+                            $employee = \App\Models\Employee::find($value);
+
+                            return $employee
+                                ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
+                                : null;
+                        })
+        
+                        ->preload()
+
+                        ->required(), // ✅ إخفاؤه فقط إذا لم يتم اختيار موظف
+                    // تمرير `employee_id` إلى كل مرفق
+                    ])
+                    ->columns(2) 
+                    ->minItems(0) 
+                    ->maxItems(10), 
+            ])
+            ->columns(1)
+            ->visible(fn ($get) => !empty($get('employee_id'))),
 
                 ])
             // ->columns(1)
