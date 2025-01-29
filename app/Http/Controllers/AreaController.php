@@ -24,19 +24,19 @@ class AreaController extends Controller
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projects->map(function ($project) {
+                'projects' => $area->projects->map(function ($project) { // ← نمرر $project هنا
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
                         'emp_no' => $project->emp_no,
-                        'zones' => $project->zones->map(function ($zone) {
-                            $shifts = $zone->shifts->map(function ($shift) {
+                        'zones' => $project->zones->map(function ($zone) use ($project) { // ← نمرر $project هنا
+                            $shifts = $zone->shifts->map(function ($shift) use ($zone, $project) { // ← ثم نمرر $project هنا أيضًا
                                 // حساب عدد الموظفين المسندين إلى هذه الوردية بناءً على السجلات في EmployeeProjectRecord
                                 $assignedEmployeesCount = \App\Models\EmployeeProjectRecord::where('shift_id', $shift->id)
-                                    ->where('zone_id', $zone->id)
-                                    ->where('project_id', $zone->project_id) // تأكد من أن المشروع مطابق
-                                    ->where('status', 'active') // تصفية الموظفين النشطين فقط
-                                    ->count();
+                                ->where('zone_id', $zone->id)
+                                ->where('project_id', $project->id)
+                                ->where('status', 1) // ✅ تعديل هذا الجزء ليبحث عن 1 بدلاً من 'active'
+                                ->count();
     
                                 return [
                                     'id' => $shift->id,
@@ -61,6 +61,8 @@ class AreaController extends Controller
     
         return response()->json($data);
     }
+    
+    
     
 
     public function getAreasWithDetails()
