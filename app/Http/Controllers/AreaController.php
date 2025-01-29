@@ -14,49 +14,54 @@ class AreaController extends Controller
 {
 
     public function getAssignedEmployeesForShifts()
-{
-    // تعيين التوقيت إلى توقيت الرياض
-    $currentTime = Carbon::now('Asia/Riyadh');
-
-    $areas = Area::with(['projects.zones.shifts.employees'])->get();
-
-    $data = $areas->map(function ($area) {
-        return [
-            'id' => $area->id,
-            'name' => $area->name,
-            'projects' => $area->projects->map(function ($project) {
-                return [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'emp_no' => $project->emp_no,
-                    'zones' => $project->zones->map(function ($zone) {
-                        $shifts = $zone->shifts->map(function ($shift) {
-                            // حساب عدد الموظفين المسندين لهذه الوردية
-                            $assignedEmployeesCount = $shift->employees->count();
-
+    {
+        // تعيين التوقيت إلى توقيت الرياض
+        $currentTime = Carbon::now('Asia/Riyadh');
+    
+        $areas = Area::with(['projects.zones.shifts'])->get();
+    
+        $data = $areas->map(function ($area) {
+            return [
+                'id' => $area->id,
+                'name' => $area->name,
+                'projects' => $area->projects->map(function ($project) {
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'emp_no' => $project->emp_no,
+                        'zones' => $project->zones->map(function ($zone) {
+                            $shifts = $zone->shifts->map(function ($shift) {
+                                // حساب عدد الموظفين المسندين إلى هذه الوردية بناءً على السجلات في EmployeeProjectRecord
+                                $assignedEmployeesCount = \App\Models\EmployeeProjectRecord::where('shift_id', $shift->id)
+                                    ->where('zone_id', $zone->id)
+                                    ->where('project_id', $zone->project_id) // تأكد من أن المشروع مطابق
+                                    ->where('status', 'active') // تصفية الموظفين النشطين فقط
+                                    ->count();
+    
+                                return [
+                                    'id' => $shift->id,
+                                    'name' => $shift->name,
+                                    'type' => $shift->morning_start ? 'morning' : 'evening',
+                                    'assigned_employees_count' => $assignedEmployeesCount,
+                                    'emp_no' => $shift->emp_no,
+                                ];
+                            });
+    
                             return [
-                                'id' => $shift->id,
-                                'name' => $shift->name,
-                                'type' => $shift->morning_start ? 'morning' : 'evening',
-                                'assigned_employees_count' => $assignedEmployeesCount,
-                                'emp_no' => $shift->emp_no,
+                                'id' => $zone->id,
+                                'name' => $zone->name,
+                                'emp_no' => $zone->emp_no,
+                                'shifts' => $shifts,
                             ];
-                        });
-
-                        return [
-                            'id' => $zone->id,
-                            'name' => $zone->name,
-                            'emp_no' => $zone->emp_no,
-                            'shifts' => $shifts,
-                        ];
-                    }),
-                ];
-            }),
-        ];
-    });
-
-    return response()->json($data);
-}
+                        }),
+                    ];
+                }),
+            ];
+        });
+    
+        return response()->json($data);
+    }
+    
 
     public function getAreasWithDetails()
     {

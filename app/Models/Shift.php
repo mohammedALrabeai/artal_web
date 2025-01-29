@@ -101,6 +101,7 @@ class Shift extends Model
 
 
 
+
      public function isWorkingDay()
 {
     // استرجاع المنطقة المرتبطة بالوردية
