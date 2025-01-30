@@ -90,7 +90,7 @@ class ApprovalsRelationManager extends RelationManager
                     ->query(fn (Builder $query) => $query->where('approver_id', auth()->id())),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                // Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
