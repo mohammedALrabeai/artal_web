@@ -2,186 +2,181 @@
 
 namespace App\Filament\Resources;
 
-
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Shift;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use App\Models\Attendance;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Filament\Tables\Filters\Filter;
-use Filament\Forms\Components\Select;
-
-use Filament\Tables\Columns\BadgeColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Enums\CoverageReason;
 use App\Filament\Resources\AttendanceResource\Pages;
+use App\Models\ApprovalFlow;
+use App\Models\Attendance;
+use App\Models\Coverage;
+use App\Models\Request;
+use App\Models\Role;
+use App\Models\Shift;
+use Filament\Forms;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use App\Filament\Resources\AttendanceResource\RelationManagers;
-
 
 class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        return static::getModel()::count();
+    }
 
-   public static function getNavigationLabel(): string
-{
-    return __('Attendances');
-}
+    public static function getNavigationLabel(): string
+    {
+        return __('Attendances');
+    }
 
-public static function getPluralLabel(): string
-{
-    return __('Attendances');
-}
+    public static function getPluralLabel(): string
+    {
+        return __('Attendances');
+    }
 
-public static function getNavigationGroup(): ?string
-{
-    return __('Employee Management');
-}
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Employee Management');
+    }
 
-
-
-    
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\Select::make('employee_id')
-            ->label(__('Employee'))
-            ->searchable()
-            ->placeholder(__('Search for an employee...'))
-           
-            ->getSearchResultsUsing(function (string $search) {
-                return \App\Models\Employee::query()
-                    ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                    ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                    ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                    ->limit(50)
-                    ->get()
-                    ->mapWithKeys(function ($employee) {
-                        return [
-                            $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"
-                        ]; // عرض الاسم الأول، العائلة، والمعرف
-                    });
-            })
-            ->getOptionLabelUsing(function ($value) {
-                $employee = \App\Models\Employee::find($value);
-                return $employee
-                    ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                    : null;
-            })
-            ->preload()
-            ->required(),
-    
+                ->label(__('Employee'))
+                ->searchable()
+                ->placeholder(__('Search for an employee...'))
+                ->getSearchResultsUsing(function (string $search) {
+                    return \App\Models\Employee::query()
+                        ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
+                        ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
+                        ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
+                        ->limit(50)
+                        ->get()
+                        ->mapWithKeys(function ($employee) {
+                            return [
+                                $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
+                            ]; // عرض الاسم الأول، العائلة، والمعرف
+                        });
+                })
+                ->getOptionLabelUsing(function ($value) {
+                    $employee = \App\Models\Employee::find($value);
+
+                    return $employee
+                        ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
+                        : null;
+                })
+                ->preload()
+                ->required(),
+
             Forms\Components\DatePicker::make('date')
                 ->label(__('Date'))
                 ->required(),
-    
-                // Forms\Components\Select::make('zone_id')
-                // ->label(__('Zone'))
-                // ->options(\App\Models\Zone::all()->pluck('name', 'id'))
-                // ->searchable()
-                // ->required(),
-                // Forms\Components\Select::make('shift_id')
-                // ->label(__('Shift'))
-                // ->relationship('shift', 'name')
-                // ->required(),
-                
-                 // اختيار الموقع
-        Select::make('zone_id')
-        ->label(__('Zone'))
-         ->options(\App\Models\Zone::all()->pluck('name', 'id'))
 
-        // ->options(function (callable $get) {
-        //     $projectId = $get('project_id');
-        //     if (!$projectId) {
-        //         return [];
-        //     }
-        //     return \App\Models\Zone::where('project_id', $projectId)->pluck('name', 'id');
-        // })
-        ->searchable()
-        ->required()
-        ->reactive()
-        ->afterStateUpdated(function (callable $set) {
-            $set('shift_id', null); // إعادة تعيين اختيار الوردية عند تغيير الموقع
-        }),
+            // Forms\Components\Select::make('zone_id')
+            // ->label(__('Zone'))
+            // ->options(\App\Models\Zone::all()->pluck('name', 'id'))
+            // ->searchable()
+            // ->required(),
+            // Forms\Components\Select::make('shift_id')
+            // ->label(__('Shift'))
+            // ->relationship('shift', 'name')
+            // ->required(),
 
-    // اختيار الوردية
-    Select::make('shift_id')
-        ->label(__('Shift'))
-        ->options(function (callable $get) {
-            $zoneId = $get('zone_id');
-            if (!$zoneId) {
-                return [];
-            }
-            return \App\Models\Shift::where('zone_id', $zoneId)->pluck('name', 'id');
-        })
-        ->searchable()
-        ->required(),
-        Forms\Components\Select::make('ismorning')
-        ->label(__('Time of Day')) // يمكن تغيير النص حسب الحاجة
-        ->options([
-            true => __('Morning'),  // صباحًا
-            false => __('Evening'), // مساءً
-        ])
-        ->nullable() // للسماح بالقيمة الافتراضية null
-        ->default(null) // إذا كنت تريد قيمة افتراضية
-        ->required(),
-    
+            // اختيار الموقع
+            Select::make('zone_id')
+                ->label(__('Zone'))
+                ->options(\App\Models\Zone::all()->pluck('name', 'id'))
+
+            // ->options(function (callable $get) {
+            //     $projectId = $get('project_id');
+            //     if (!$projectId) {
+            //         return [];
+            //     }
+            //     return \App\Models\Zone::where('project_id', $projectId)->pluck('name', 'id');
+            // })
+                ->searchable()
+                ->required()
+                ->reactive()
+                ->afterStateUpdated(function (callable $set) {
+                    $set('shift_id', null); // إعادة تعيين اختيار الوردية عند تغيير الموقع
+                }),
+
+            // اختيار الوردية
+            Select::make('shift_id')
+                ->label(__('Shift'))
+                ->options(function (callable $get) {
+                    $zoneId = $get('zone_id');
+                    if (! $zoneId) {
+                        return [];
+                    }
+
+                    return \App\Models\Shift::where('zone_id', $zoneId)->pluck('name', 'id');
+                })
+                ->searchable()
+                ->required(),
+            Forms\Components\Select::make('ismorning')
+                ->label(__('Time of Day')) // يمكن تغيير النص حسب الحاجة
+                ->options([
+                    true => __('Morning'),  // صباحًا
+                    false => __('Evening'), // مساءً
+                ])
+                ->nullable() // للسماح بالقيمة الافتراضية null
+                ->default(null) // إذا كنت تريد قيمة افتراضية
+                ->required(),
+
             Forms\Components\TimePicker::make('check_in')
                 ->label(__('Check In')),
             Forms\Components\DateTimePicker::make('check_in_datetime')
                 ->label(__('Check In Datetime'))
-                ->required(false)
-            ,
+                ->required(false),
             Forms\Components\TimePicker::make('check_out')
                 ->label(__('Check Out')),
             Forms\Components\DateTimePicker::make('check_out_datetime')
                 ->label(__('Check Out Datetime'))
                 ->required(false),
-    
-               Forms\Components\Select::make('status')
-               ->label(__('Status'))
-               ->options([
-                'off' => __('Off'),    // إضافة خيار عطلة
-                   'present' => __('Present'),   // إضافة خيار الحضور
-                   'coverage' => __('Coverage'), // إضافة خيار التغطية
-                   'M'=>__('Morbid'),  // إضافة خيار مرضي Sick
-                   'leave' => __('paid leave'),     // إضافة خيار الإجازة
-                   'UV' => __('Unpaid leave'),
-                   'absent' => __('Absent'),
-              
-               ])
-               ->required(),
 
-                   // ساعات العمل
+            Forms\Components\Select::make('status')
+                ->label(__('Status'))
+                ->options([
+                    'off' => __('Off'),    // إضافة خيار عطلة
+                    'present' => __('Present'),   // إضافة خيار الحضور
+                    'coverage' => __('Coverage'), // إضافة خيار التغطية
+                    'M' => __('Morbid'),  // إضافة خيار مرضي Sick
+                    'leave' => __('paid leave'),     // إضافة خيار الإجازة
+                    'UV' => __('Unpaid leave'),
+                    'absent' => __('Absent'),
+
+                ])
+                ->required(),
+
+            // ساعات العمل
             Forms\Components\TextInput::make('work_hours')
-            ->label(__('Work Hours'))
-            ->numeric()
-            ->required(false),
+                ->label(__('Work Hours'))
+                ->numeric()
+                ->required(false),
 
-        // ملاحظات الموظف
-        Forms\Components\Textarea::make('notes')
-            ->label(__('Notes'))
-            ->rows(3),
+            // ملاحظات الموظف
+            Forms\Components\Textarea::make('notes')
+                ->label(__('Notes'))
+                ->rows(3),
 
-        // تسجيل ما إذا كان الموظف متأخرًا أم لا
-        Forms\Components\Checkbox::make('is_late')
-            ->label(__('Is Late')),
+            // تسجيل ما إذا كان الموظف متأخرًا أم لا
+            Forms\Components\Checkbox::make('is_late')
+                ->label(__('Is Late')),
 
             Forms\Components\Toggle::make('is_coverage')
-            ->label(__('Coverage Request')),
+                ->label(__('Coverage Request')),
         ]);
     }
-    
 
     public static function table(Table $table): Table
     {
@@ -189,38 +184,38 @@ public static function getNavigationGroup(): ?string
             Tables\Columns\TextColumn::make('employee.first_name')
                 ->label(__('Employee'))
                 ->searchable(),
-    
+
             Tables\Columns\TextColumn::make('date')
                 ->label(__('Date'))
                 ->sortable(),
-    
-                Tables\Columns\TextColumn::make('zone.name')
+
+            Tables\Columns\TextColumn::make('zone.name')
                 ->label(__('Zone'))
                 ->searchable(),
-                Tables\Columns\TextColumn::make('shift.name')
+            Tables\Columns\TextColumn::make('shift.name')
                 ->label(__('Shift'))
                 ->searchable(),
-                Tables\Columns\TextColumn::make('ismorning')
+            Tables\Columns\TextColumn::make('ismorning')
                 ->label(__('Time of Day'))
                 ->formatStateUsing(function ($state) {
                     if (is_null($state)) {
                         return __(''); // عرض فارغ إذا كانت القيمة null
                     }
+
                     return $state ? __('Morning') : __('Evening'); // صباحي أو مسائي
                 }),
-            
-    
+
             Tables\Columns\TextColumn::make('check_in')
                 ->label(__('Check In')),
-    
+
             Tables\Columns\TextColumn::make('check_in_datetime')
                 ->label(__('Check In Datetime'))
                 ->toggleable(isToggledHiddenByDefault: true),
-    
+
             Tables\Columns\TextColumn::make('check_out')
                 ->label(__('Check Out')),
-    
-                Tables\Columns\TextColumn::make('status')
+
+            Tables\Columns\TextColumn::make('status')
                 ->label(__('Status'))
                 ->badge()
                 ->getStateUsing(function ($record) {
@@ -245,20 +240,20 @@ public static function getNavigationGroup(): ?string
                     'danger' => fn ($state) => $state === __('Absent'), // أحمر
                 ]),
 
-                Tables\Columns\TextColumn::make('work_hours')
+            Tables\Columns\TextColumn::make('work_hours')
                 ->label(__('Work Hours')),
 
             Tables\Columns\TextColumn::make('notes')
                 ->label(__('Notes')),
 
-                Tables\Columns\BadgeColumn::make('is_late')
+            Tables\Columns\BadgeColumn::make('is_late')
                 ->label(__('Is Late'))
                 ->getStateUsing(fn ($record) => $record->is_late ? __('Yes') : __('No'))
                 ->colors([
                     'danger' => fn ($state) => $state === __('Yes'),
-                    'success' => fn ($state) => $state === __('No')
+                    'success' => fn ($state) => $state === __('No'),
                 ]),
-                Tables\Columns\BadgeColumn::make('approval_status')
+            Tables\Columns\BadgeColumn::make('approval_status')
                 ->label(__('Approval Status'))
                 ->formatStateUsing(fn (string $state): string => ucfirst($state)) // تنسيق النص
                 ->colors([
@@ -267,129 +262,160 @@ public static function getNavigationGroup(): ?string
                     'rejected' => 'danger',
                 ]),
 
-                Tables\Columns\BooleanColumn::make('is_coverage')
-                    ->label(__('Coverage Request')),  
-                    
-                    Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\BooleanColumn::make('is_coverage')
+                ->label(__('Coverage Request')),
+
+            Tables\Columns\TextColumn::make('created_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            Tables\Columns\TextColumn::make('updated_at')
+                ->dateTime()
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
         ])
-        ->filters([
-         
+            ->filters([
+
                 Tables\Filters\Filter::make('present_status')
-                ->query(fn (Builder $query) => $query->where('status', 'present'))
-                ->label(__('Present')),
+                    ->query(fn (Builder $query) => $query->where('status', 'present'))
+                    ->label(__('Present')),
 
                 SelectFilter::make('shift_id')
-                ->label('Shift')
-                ->options(Shift::all()->pluck('name', 'id')->toArray()),
-              
-              
+                    ->label('Shift')
+                    ->options(Shift::all()->pluck('name', 'id')->toArray()),
+
                 SelectFilter::make('ismorning')
-                ->options([
-                    true => 'صباح',
-                    false => 'مساء',
-                ]),
-            
-            
-            
-            
-            
-            
+                    ->options([
+                        true => 'صباح',
+                        false => 'مساء',
+                    ]),
+
                 SelectFilter::make('status')
-    ->label(__('Status'))
-    ->options([ 
-    'off' => __('Off'),    // إضافة خيار عطلة
-    'present' => __('Present'),   // إضافة خيار الحضور
-    'coverage' => __('Coverage'), // إضافة خيار التغطية
-    'M'=>__('Morbid'),  // إضافة خيار مرضي Sick
-    'leave' => __('paid leave'),     // إضافة خيار الإجازة
-    'UV' => __('Unpaid leave'),
-    'absent' => __('Absent'),
-    ]),
- // فلتر الحالة
+                    ->label(__('Status'))
+                    ->options([
+                            'off' => __('Off'),    // إضافة خيار عطلة
+                            'present' => __('Present'),   // إضافة خيار الحضور
+                            'coverage' => __('Coverage'), // إضافة خيار التغطية
+                            'M' => __('Morbid'),  // إضافة خيار مرضي Sick
+                            'leave' => __('paid leave'),     // إضافة خيار الإجازة
+                            'UV' => __('Unpaid leave'),
+                            'absent' => __('Absent'),
+                    ]),
+                // فلتر الحالة
 
+                // فلتر الموظف
+                SelectFilter::make('employee_id')
+                    ->label(__('Employee'))
+                    ->options(\App\Models\Employee::query()->pluck('first_name', 'id')->toArray())
+                    ->searchable(),
 
-// فلتر الموظف
-SelectFilter::make('employee_id')
-    ->label(__('Employee'))
-    ->options(\App\Models\Employee::query()->pluck('first_name', 'id')->toArray())
-    ->searchable(),
+                // فلتر المنطقة
+                SelectFilter::make('zone_id')
+                    ->label(__('Zone'))
+                    ->options(\App\Models\Zone::query()->pluck('name', 'id')->toArray())
+                    ->searchable(),
 
+                // فلتر التاريخ
+                Filter::make('date_range')
+                    ->label(__('Date Range'))
+                    ->form([
+                        Forms\Components\DatePicker::make('from')->label(__('From')),
+                        Forms\Components\DatePicker::make('to')->label(__('To')),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, $data) {
+                        if (! empty($data['from'])) {
+                            $query->where('date', '>=', $data['from']);
+                        }
+                        if (! empty($data['to'])) {
+                            $query->where('date', '<=', $data['to']);
+                        }
+                    }),
 
-
-
-// فلتر المنطقة
-SelectFilter::make('zone_id')
-    ->label(__('Zone'))
-    ->options(\App\Models\Zone::query()->pluck('name', 'id')->toArray())
-    ->searchable(),
-
-
-
-
-// فلتر التاريخ
-Filter::make('date_range')
-    ->label(__('Date Range'))
-    ->form([
-        Forms\Components\DatePicker::make('from')->label(__('From')),
-        Forms\Components\DatePicker::make('to')->label(__('To')),
-    ])
-    ->query(function (\Illuminate\Database\Eloquent\Builder $query, $data) {
-        if (!empty($data['from'])) {
-            $query->where('date', '>=', $data['from']);
-        }
-        if (!empty($data['to'])) {
-            $query->where('date', '<=', $data['to']);
-        }
-    }),
-
-
-        ])
+            ])
             ->actions([
-
                 Tables\Actions\Action::make('Approve')
-                ->label(__('Approve'))
-                ->form([
-                    Forms\Components\Select::make('absent_employee_id')
-                        ->label(__('Select Absent Employee'))
-                        ->options(\App\Models\Employee::pluck('first_name', 'id')) // جلب قائمة الموظفين
-                        ->searchable() // إضافة خاصية البحث في القائمة
-                        ->required(),
-                ])
-                ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // إظهار الزر فقط عند status = coverage
-                ->action(function ($record, array $data) {
-                    // تحديث حالة الطلب إلى "موافق عليه"
-                    $record->update(['approval_status' => 'approved']);
-            
-                    // إضافة سجل في جدول التغطيات
-                    $coverage =  \App\Models\Coverage::create([
-                        'employee_id' => $record->employee_id, // معرف الموظف الذي قام بالتغطية
-                        'absent_employee_id' => $data['absent_employee_id'], // معرف الموظف الغائب
-                        'zone_id' => $record->zone_id, // استنتاج معرف الزون من السجل
-                        'date' => $record->date, // استنتاج التاريخ من السجل
-                        'status' => 'completed',
-                        'added_by' => auth()->id(), // المستخدم الحالي هو من وافق
-                    ]);
-            
-                    // تحديث معرف التغطية في الحضور
-                    $record->update(['coverage_id' => $coverage->id]);
-                })
-                ->modalHeading(__('Approve Coverage'))
-                ->modalSubmitActionLabel(__('Approve'))
-                ->modalCancelActionLabel(__('Cancel')),
-            
-            
-            Tables\Actions\Action::make('Reject')
-                ->label(__('Reject'))
-                ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // الشرط لإظهار الزر
-                ->action(fn ($record) => $record->update(['approval_status' => 'rejected'])),
-             
+                    ->label(__('Approve'))
+                    ->form([
+                        // اختيار سبب التغطية
+                        Forms\Components\Select::make('coverage_reason')
+                            ->label(__('Coverage Reason'))
+                            ->options(CoverageReason::labels())
+                            ->required()
+                            ->reactive(),
+
+                        // اختيار الموظف البديل إذا كان السبب يتطلب ذلك
+                        Forms\Components\Select::make('absent_employee_id')
+                            ->label(__('Select Replacement Employee'))
+                            ->options(\App\Models\Employee::pluck('first_name', 'id'))
+                            ->searchable()
+                            ->required(fn ($get) => CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement() ?? false)
+                            ->hidden(fn ($get) => ! CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement()),
+
+                        // ملاحظات إضافية
+                        Forms\Components\Textarea::make('notes')
+                            ->label(__('Notes'))
+                            ->nullable(),
+                    ])
+                    ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending')
+                    ->action(function ($record, array $data) {
+                        $reasonEnum = CoverageReason::tryFrom($data['coverage_reason']);
+
+                        // تحديث حالة الطلب إلى "موافق عليه"
+                        $record->update(['approval_status' => 'approved']);
+
+                        // إنشاء سجل التغطية
+                        $coverage = Coverage::create([
+                            'employee_id' => $record->employee_id, // الموظف الأساسي
+                            'absent_employee_id' => $data['absent_employee_id'] ?? null, // الموظف البديل (إذا كان مطلوبًا)
+                            'zone_id' => $record->zone_id,
+                            'date' => $record->date,
+                            'status' => 'completed',
+                            'added_by' => auth()->id(), // الحساب الحالي
+                            'reason' => $data['coverage_reason'],
+                            'notes' => $data['notes'],
+                        ]);
+
+                        // تحديث معرف التغطية في الحضور
+                        $record->update(['coverage_id' => $coverage->id]);
+
+                        // التحقق من سلسلة الموافقات المرتبطة بنوع الطلب
+                        $approvalFlow = ApprovalFlow::where('request_type', 'coverage')
+                            ->orderBy('approval_level', 'asc')
+                            ->first();
+                        if (! $approvalFlow) {
+                            throw new \Exception(__('No approval flow defined for this request type.'));
+                        }
+
+                        // تخزين الدور الأول في `current_approver_role`
+                        $role = Role::where('name', $approvalFlow->approver_role)->first();
+                        if (! $role) {
+                            throw new \Exception(__('Role not found for the approver in the approval flow.'));
+                        }
+                        // $data['current_approver_role'] = $role->name;
+
+                        // **إنشاء طلب جديد تلقائيًا من نوع "التغطية"**
+                        Request::create([
+                            'type' => 'coverage',
+                            'submitted_by' => auth()->id(), // المستخدم الحالي هو مقدم الطلب
+                            'employee_id' => $record->employee_id, // الموظف الذي يحتاج التغطية
+                           'current_approver_role' => $role->name, // الدور الحالي
+                            'description' => __('Coverage request for :employee', ['employee' => $record->employee->first_name]),
+                            'additional_data' => json_encode([
+                                'coverage_reason' => $data['coverage_reason'],
+                                'notes' => $data['notes'],
+                            ]),
+                            'status' => 'pending', // الطلب يبدأ بحالة "قيد الانتظار"
+                        ]);
+                    })
+                    ->modalHeading(__('Approve Coverage'))
+                    ->modalSubmitActionLabel(__('Approve'))
+                    ->modalCancelActionLabel(__('Cancel')),
+
+                Tables\Actions\Action::make('Reject')
+                    ->label(__('Reject'))
+                    ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // الشرط لإظهار الزر
+                    ->action(fn ($record) => $record->update(['approval_status' => 'rejected'])),
+
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

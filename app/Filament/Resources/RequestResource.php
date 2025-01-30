@@ -358,12 +358,16 @@ class RequestResource extends Resource
                         'rejected' => 'danger',
                         default => null,
                     }),
+                 
                 Tables\Columns\TextColumn::make('current_approver_role')
                     ->label(__('Current Approver Role'))
                     ->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state))),
                 Tables\Columns\TextColumn::make('duration')
                     ->label(__('Duration (Days)'))
                     ->toggleable(isToggledHiddenByDefault: true),
+                    Tables\Columns\TextColumn::make('description')
+                    ->label(__('Description'))
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Amount'))
                     ->toggleable(isToggledHiddenByDefault: true),
