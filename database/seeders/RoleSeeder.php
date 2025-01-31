@@ -2,15 +2,16 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
 {
     public function run()
     {
-        Role::create(['name' => 'user', 'level' => 1]);
-        Role::create(['name' => 'hr', 'level' => 2]);
-        Role::create(['name' => 'manager', 'level' => 3]);
-        Role::create(['name' => 'general_manager', 'level' => 4]);
+        // Create roles using Spatie's Role model
+        Role::create(['name' => 'user']);
+        Role::create(['name' => 'hr']);
+        Role::create(['name' => 'manager']);
+        Role::create(['name' => 'general_manager']);
     }
 }
