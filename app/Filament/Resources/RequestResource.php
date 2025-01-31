@@ -254,10 +254,10 @@ class RequestResource extends Resource
                             ->nullable()
                             ->visible(fn ($get) => $get('type') === 'link')
                             ->url(),
-
+                            // Forms\Components\TextInput::make('image_url')
                         Forms\Components\FileUpload::make('image_url')
                             ->label(__('Content (Image)'))
-                            ->nullable()
+                            // ->nullable()
                             ->disk('s3')
                             ->directory('attachments/images')
                             ->visibility('public')
@@ -290,34 +290,34 @@ class RequestResource extends Resource
                             ->nullable(),
 
                         // ✅ **إضافة حقل مخفي لتمرير employee_id تلقائيًا**
-                        Forms\Components\Select::make('employee_id')
-                        ->label(__('Employee'))
-                        ->searchable()
-                        ->placeholder(__('Search for an employee...'))
-                        ->getSearchResultsUsing(function (string $search) {
-                            return \App\Models\Employee::query()
-                                ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                                ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                                ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                                ->limit(50)
-                                ->get()
-                                ->mapWithKeys(function ($employee) {
-                                    return [
-                                        $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
-                                    ]; // عرض الاسم الأول، العائلة، والمعرف
-                                });
-                        })
-                        ->getOptionLabelUsing(function ($value) {
-                            $employee = \App\Models\Employee::find($value);
+                        // Forms\Components\Select::make('employee_id')
+                        // ->label(__('Employee'))
+                        // ->searchable()
+                        // ->placeholder(__('Search for an employee...'))
+                        // ->getSearchResultsUsing(function (string $search) {
+                        //     return \App\Models\Employee::query()
+                        //         ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
+                        //         ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
+                        //         ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
+                        //         ->limit(50)
+                        //         ->get()
+                        //         ->mapWithKeys(function ($employee) {
+                        //             return [
+                        //                 $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
+                        //             ]; // عرض الاسم الأول، العائلة، والمعرف
+                        //         });
+                        // })
+                        // ->getOptionLabelUsing(function ($value) {
+                        //     $employee = \App\Models\Employee::find($value);
 
-                            return $employee
-                                ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                                : null;
-                        })
+                        //     return $employee
+                        //         ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
+                        //         : null;
+                        // })
         
-                        ->preload()
+                        // ->preload()
 
-                        ->required(), // ✅ إخفاؤه فقط إذا لم يتم اختيار موظف
+                        // ->required(), // ✅ إخفاؤه فقط إذا لم يتم اختيار موظف
                     // تمرير `employee_id` إلى كل مرفق
                     ])
                     ->columns(2) 
@@ -325,7 +325,7 @@ class RequestResource extends Resource
                     ->maxItems(10), 
             ])
             ->columns(1)
-            ->visible(fn ($get) => !empty($get('employee_id'))),
+            // ->visible(fn ($get) => !empty($get('employee_id'))),
 
                 ])
             // ->columns(1)

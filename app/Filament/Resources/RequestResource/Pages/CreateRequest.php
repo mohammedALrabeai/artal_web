@@ -286,6 +286,27 @@ class CreateRequest extends CreateRecord
 
 protected function afterSave(): void
 {
+   
+    
+        // // Handle media separately if needed
+        // if (!empty($data['media'])) {
+        //     $employee = $this->getOwnerRecord();
+        //     $filePath =  $this->data['media'];
+    
+        //     // Ensure file exists on S3 before saving
+        //     if (\Storage::disk('s3')->exists($filePath)) {
+        //         $media = $employee
+        //             ->addMediaFromDisk($filePath, 's3')
+        //             ->toMediaCollection();
+        //         $data['media'] = $media->id; // Store media ID or URL
+        //     } else {
+        //         throw new \Exception('The uploaded file does not exist on S3.');
+        //     }
+        // }
+        // $this->record->attachments()->create($data);
+    
+      
+  
     foreach ($this->record->attachments as $attachment) {
         if (!$attachment->employee_id) {
             $attachment->update(['employee_id' => $this->record->employee_id]);

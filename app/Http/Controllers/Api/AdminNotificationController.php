@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Filament\Resources\EmployeeResource;
 use App\Http\Controllers\Controller;
+use App\Models\Attachment;
 use Filament\Facades\Filament;
 use App\Models\User;
 use App\Models\Employee;
@@ -16,49 +17,58 @@ class AdminNotificationController extends Controller
     // إرسال إشعار تجريبي لجميع المدراء
     public function sendTestNotificationToAllManagers()
     {
-        $managers = User::where('role_id', '!=', 1)->get();
-        $employee = Employee::first();
+        // $managers = User::where('role_id', '!=', 1)->get();
+        // $employee = Employee::first();
 
-        $fullName = implode(' ', array_filter([
-            $employee->first_name,
-            $employee->father_name,
-            $employee->grandfather_name,
-            $employee->family_name
-        ]));
+        // $fullName = implode(' ', array_filter([
+        //     $employee->first_name,
+        //     $employee->father_name,
+        //     $employee->grandfather_name,
+        //     $employee->family_name
+        // ]));
         
-        if (!$employee) {
-            return response()->json(['message' => 'لا يوجد موظفين في النظام'], 404);
-        }
+        // if (!$employee) {
+        //     return response()->json(['message' => 'لا يوجد موظفين في النظام'], 404);
+        // }
 
-        foreach ($managers as $manager) {
-            // $manager->notify(new NewEmployeeNotification($employee));
+        // foreach ($managers as $manager) {
+        //     // $manager->notify(new NewEmployeeNotification($employee));
 
-            Notification::make()
-            ->title('موظف جديد')
-            ->body( "تم إضافة موظف جديد: {$fullName}")
-            ->info()
-            ->viewData(['employee' => $employee])
-            ->actions([
-                Action::make('view')
-                    ->button()
-                    ->url(EmployeeResource::getUrl('view', ['record' => $employee->id]), shouldOpenInNewTab: false),
-                Action::make('undo')
-                    ->color('gray')->close(),
-            ])
-            ->persistent()
-            ->sendToDatabase($manager, isEventDispatched: true)
-            ->broadcast($manager);
+        //     Notification::make()
+        //     ->title('موظف جديد')
+        //     ->body( "تم إضافة موظف جديد: {$fullName}")
+        //     ->info()
+        //     ->viewData(['employee' => $employee])
+        //     ->actions([
+        //         Action::make('view')
+        //             ->button()
+        //             ->url(EmployeeResource::getUrl('view', ['record' => $employee->id]), shouldOpenInNewTab: false),
+        //         Action::make('undo')
+        //             ->color('gray')->close(),
+        //     ])
+        //     ->persistent()
+        //     ->sendToDatabase($manager, isEventDispatched: true)
+        //     ->broadcast($manager);
            
-        }
+        // }
 
-        return response()->json([
-            'message' => 'تم إرسال إشعار تجريبي لجميع المدراء',
-            'managers_count' => $managers->count(),
-            'employee' => $employee,
-            'managers' => $managers
-        ]);
-//wwe
-//raew
+        // return response()->json([
+        //     'message' => 'تم إرسال إشعار تجريبي لجميع المدراء',
+        //     'managers_count' => $managers->count(),
+        //     'employee' => $employee,
+        //     'managers' => $managers
+        // ]);
+        $employeeId = 3;
+
+        $employee = Employee::with(['attachments', 'requestAttachments'])->find($employeeId);
+
+        if (!$employee) {
+            return response()->json(['message' => 'Employee not found'], 404);
+        }
+    
+        return response()->json($employee->allAttachments());
+        
+
 
     }
 

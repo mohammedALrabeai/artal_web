@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Notifications\RequestStatusNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Request extends Model
 {
@@ -14,7 +15,6 @@ class Request extends Model
         'type',
         'submitted_by',
         'employee_id',
-        // 'current_approver_id',
         'current_approver_role',
         'status',
         'description',
@@ -51,31 +51,7 @@ class Request extends Model
         return $this->hasOne(\App\Models\Exclusion::class);
     }
 
-    // public function attachments()
-    // {
-    //     return $this->hasManyThrough(
-    //         \App\Models\Attachment::class,
-    //         \App\Models\Exclusion::class,
-    //         'request_id', // المفتاح الأجنبي في جدول الاستبعادات
-    //         'exclusion_id', // المفتاح الأجنبي في جدول المرفقات
-    //         'id', // المفتاح الأساسي في جدول الطلبات
-    //         'id'  // المفتاح الأساسي في جدول الاستبعادات
-    //     );
-    // }
-
-    public function attachments()
-    {
-        // dd('Attachments relationship called');
-        return $this->hasMany(\App\Models\Attachment::class, 'request_id');
-    }
-
- 
-
-    // علاقة مع الموافقات المرتبطة بالطلب
-    // public function approvals()
-    // {
-    //     return $this->hasMany(RequestApproval::class);
-    // }
+  
     public function approvals()
 {
     return $this->hasMany(RequestApproval::class)
@@ -218,16 +194,6 @@ public function approveRequest($approver, $comments = null)
 public function rejectRequest($approver, $comments = null)
 {
 
-//     $request = Request::find(2); // افترض أن هذا هو الطلب
-//     $employee = $request->employee;
-    
-//     if ($employee) {
-//         $employee->notify(new RequestStatusNotification($request, 'rejected', auth()->user(), 'تم رفض الطلب.'));
-//     } else {
-//         \Log::error('Employee not found for the request.');
-//     }
-// return;
-    // تحديث حالة الطلب إلى "مرفوض"
     $this->status = 'rejected';
     $this->current_approver_role = null; // لا مزيد من الموافقات بعد الرفض
     $this->save();
@@ -288,8 +254,6 @@ public function rejectRequest($approver, $comments = null)
     );
     \Log::info('Notification sent successfully.');
 
-//     $employee = Employee::find(1); // افترض أن الموظف يحمل ID = 1
-// $employee->notify(new RequestStatusNotification($this, 'rejected', $approver, $comments));
 
 }
 
@@ -382,6 +346,11 @@ public function makeLeaveAttendance()
     }
 }
 
+
+public function attachments(): MorphMany
+{
+    return $this->morphMany(Attachment::class, 'model');
+}
 
 
 }

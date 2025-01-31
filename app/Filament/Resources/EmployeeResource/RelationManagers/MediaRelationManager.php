@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EmployeeResource\RelationManagers;
 
+use App\Forms\Components\ImageField;
 use Filament\Forms;
 use Filament\Tables;
 use Filament\Forms\Get;
@@ -20,6 +21,8 @@ class MediaRelationManager extends RelationManager
 {
     protected static string $relationship = 'media';
 
+   
+
     public function form(Form $form): Form
     {
         return $form
@@ -31,7 +34,12 @@ class MediaRelationManager extends RelationManager
                 ->directory('employees')
                 ->visibility('public')
                 ->preserveFilenames()
+                ->multiple()
                 ->columnSpanFull(),
+                // ImageField::make('media')
+                // ->label('Media File')
+                // ->required()
+                // ->columnSpanFull(),
 
                     Forms\Components\TextInput::make('name')
                     ->label(__('Name'))
@@ -53,6 +61,10 @@ class MediaRelationManager extends RelationManager
                 ->label('file_name')
                 ->sortable()
                 ->searchable(),
+                 Tables\Columns\ImageColumn::make('original_url') // Display the file name
+                ->label('original_url')
+                ->sortable()
+                ->searchable(),
             Tables\Columns\TextColumn::make('size') // File size
                 ->label('Size')
                 ->formatStateUsing(fn ($state) => round($state / 1024, 2) . ' KB'),
@@ -68,7 +80,8 @@ class MediaRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                ->using(function (array $data) {
+                ->using(function (array $data ) {
+                    // dump($data['media']);
                     // Get the owning model (e.g., Employee)
                     $employee = $this->getOwnerRecord();
 

@@ -225,7 +225,7 @@ class AttachmentResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('employee.first_name')
+                Tables\Columns\TextColumn::make('model.first_name')
                     ->label(__('Employee'))
                     ->searchable(),
 

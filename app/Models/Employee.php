@@ -3,19 +3,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
+use Illuminate\Support\Collection;
 
-
-
-class Employee extends Model implements HasMedia
+class Employee extends Model 
 {
    
-    use HasFactory,Notifiable, LogsActivity,InteractsWithMedia;
+    use HasFactory,Notifiable, LogsActivity;
     
 
     protected $fillable = [
@@ -98,29 +96,16 @@ public function projects()
         ->withPivot('start_date', 'end_date', 'status');
 }
 
-// public function projectRecords()
-// {
-//     return $this->hasMany(EmployeeProjectRecord::class);
-// }
+
 public function projectRecords()
 {
     return $this->hasMany(EmployeeProjectRecord::class, 'employee_id');
-}
-
-public function attachments(){
-    return $this->hasMany(Attachment::class);
 }
 
 public function attendances()
 {
     return $this->hasMany(Attendance::class);
 }
-// public function attendances()
-// {
-//     return $this->hasMany(Attendance::class, 'employee_id');
-// }
-
-
 public function devices()
 {
     return $this->hasMany(EmployeeDevice::class);
@@ -202,22 +187,26 @@ public function commercialRecord()
     return $this->belongsTo(CommercialRecord::class, 'commercial_record_id');
 }
 
+public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'model');
+    }
 
+  
+    public function requests()
+    {
+        return $this->hasMany(Request::class);
+    }
+    public function requestAttachments(): HasManyThrough
+    {
+        return $this->hasManyThrough(Attachment::class, Request::class);
+    }
 
+    public function allAttachments(): Collection
+    {
+        return $this->attachments->merge($this->requestAttachments);
+    }
 
-
-
-
-
-
-
-
-
-// // تفعيل تسجيل التغييرات
-// protected static $logAttributes = ['*']; // تسجيل جميع الحقول
-// protected static $logOnlyDirty = true; // تسجيل الحقول التي تغيرت فقط
-// protected static $submitEmptyLogs = false; // عدم تسجيل التعديلات الفارغة
-// protected static $logName = 'employee'; // اسم الـ log
 
 public function getDescriptionForEvent(string $eventName): string
 {
@@ -231,10 +220,4 @@ public function getActivitylogOptions(): LogOptions
         ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
         ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
 }
-// public function media():MorphMany 
-// {
-//     return $this->morphMany(\Spatie\MediaLibrary\MediaCollections\Models\Media::class, 'model');
-// }
-
-
 }

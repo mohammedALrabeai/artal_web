@@ -4,6 +4,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+
 
 class Attachment extends Model
 {
@@ -21,22 +23,16 @@ class Attachment extends Model
         'image_url',
         'video_url',
         'request_id',
-
+        'model_type',
+        'model_id',
     ];
 
-    // العلاقة مع الموظف
-    public function employee()
-    {
-        return $this->belongsTo(Employee::class);
-    }
+ 
     public function exclusion()
 {
     return $this->belongsTo(Exclusion::class);
 }
-public function request()
-{
-    return $this->belongsTo(\App\Models\Request::class);
-}
+
 
 
     // العلاقة مع المستخدم الذي أضاف الوثيقة
@@ -44,13 +40,6 @@ public function request()
     {
         return $this->belongsTo(User::class, 'added_by');
     }
-
-//     public function getContentUrlAttribute()
-// {
-//     return $this->type !== 'text' && $this->type !== 'link'
-//         ? Storage::disk('s3')->url($this->content)
-//         : $this->content;
-// }
 
 public function getContentUrlAttribute()
 {
@@ -69,11 +58,7 @@ public function getContentUrlAttribute()
     }
 }
 
-public function getImageUrlAttribute($value)
-{
-   //  return $value ? asset('storage/' . $value) : null;
-    return $value ? Storage::disk('s3')->url($value) : null;
-}
+
 
 public function getVideoUrlAttribute($value)
 {
@@ -107,10 +92,8 @@ public function getContentDisplayAttribute()
 }
 
 
-// public function getFileUrlAttribute($value)
-// {
-//     return $value ? Storage::disk('s3')->url($value) : null;
-// }
-
-
+public function model(): MorphTo
+    {
+        return $this->morphTo();
+    }
 }
