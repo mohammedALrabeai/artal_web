@@ -1,17 +1,14 @@
 <?php
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role as SpatieRole;
 
-class Role extends Model
+class Role extends SpatieRole
 {
-    use HasFactory;
-
-    protected $fillable = ['name', 'level'];
-
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
+    protected $fillable = [
+        'name',
+        'level',  // مستوى الدور
+        'priority', // أهمية الدور
+        'guard_name',
+    ];
 }

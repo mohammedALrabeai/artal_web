@@ -586,6 +586,32 @@
     "Unlimited": "غير محدود",
     "Unassigned Employees": "الموظفين غير المعينين",
    "Assigned Employees": "الموظفين المعينين",
+   "Approve": "الموافقة",
+    "Reject": "رفض",
+ 
+    "Coverage Reason": "سبب التغطية",
+    "Select Replacement Employee": "اختر الموظف البديل",
+
+
+
+    "Submit": "إرسال",
+  
+
+    "Off": "إجازة",
+
+    "Paid Leave": "إجازة مدفوعة",
+    "Unpaid Leave": "إجازة غير مدفوعة",
+  
+    "Training or Course": "التدريب أو الدورة",
+    "Shortage in Staff": "نقص في الموظفين",
+    "Employee Absent": "غياب موظف",
+    "Emergency Leave": "إجازة طارئة",
+    "Unknown": "غير معروف",
+
+    "Search for an employee...": "ابحث عن موظف...",
+    "Pending Approvals": "الموافقات المعلقة",
+    "Replacement Required": "مطلوب بديل",
+    "Replacement Not Required": "لا يتطلب بديل",
 
     "At least one attachment is required.": "يجب إضافة مرفق واحد على الأقل.",
     "You can upload a maximum of 5 attachments.": "يمكنك تحميل ما يصل إلى 5 مرفقات.",

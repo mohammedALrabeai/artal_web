@@ -9,6 +9,7 @@
         "aws/aws-sdk-php": "^3.336",
         "berkayk/onesignal-laravel": "^2.1",
         "bezhansalleh/filament-language-switch": "*",
+        "bezhansalleh/filament-shield": "^3.3",
         "cheesegrits/filament-google-maps": "^3.0",
         "consoletvs/charts": "^6.7",
         "filament/filament": "^3.2",

@@ -114,7 +114,7 @@ public function approveRequest($approver, $comments = null)
     // التحقق مما إذا كان المسؤول قد وافق مسبقًا
     $existingApproval = $this->approvals()
         ->where('approver_id', $approver->id)
-        ->where('approver_role', $approver->role)
+        ->where('approver_role', $approver->role->name)
         ->where('status', 'approved')
         ->first();
 
@@ -146,10 +146,13 @@ public function approveRequest($approver, $comments = null)
     }
 
     // جلب المستوى التالي من سلسلة الموافقات
-    $currentRole = $this->current_approver_role;
-    $nextApprovalFlow = Role::where('level', '>', Role::where('name', $currentRole)->first()->level)
-        ->orderBy('level', 'asc')
+    $currentApprovalLevel = $approvalFlow->approval_level;
+
+    $nextApprovalFlow = $this->approvalFlows()
+        ->where('approval_level', '>', $currentApprovalLevel)
+        ->orderBy('approval_level', 'asc')
         ->first();
+    
 
     if ($nextApprovalFlow) {
         // إذا كان هناك مستوى موافقة آخر

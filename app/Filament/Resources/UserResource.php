@@ -60,10 +60,11 @@ class UserResource extends Resource
                 ->label(__('Phone')) // Translation
                 ->tel(),
 
-                Forms\Components\Select::make('role_id')
-                ->label(__('Role'))
-                ->relationship('role', 'name') // ربط الحقل مع جدول roles
-                ->required(),
+                Forms\Components\Select::make('roles')
+                ->relationship('roles', 'name')
+                ->multiple()
+                ->preload()
+                ->searchable(),
 
             Forms\Components\TextInput::make('password')
                 ->label(__('Password')) // Translation
@@ -92,22 +93,22 @@ class UserResource extends Resource
                     ->label(__('Phone'))
                     ->searchable(),
                   
-                    Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
-                    ->label(__('Role'))
-                    ->sortable()
-                    ->color(function ($state) {
-                        return match ($state) {
-                            'Manager' => 'primary',
-                            'General Manager' => 'success',
-                            'HR' => 'danger',
-                            default => 'secondary',
-                        };
-                    }),
+                    // Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
+                    // ->label(__('Role'))
+                    // ->sortable()
+                    // ->color(function ($state) {
+                    //     return match ($state) {
+                    //         'Manager' => 'primary',
+                    //         'General Manager' => 'success',
+                    //         'HR' => 'danger',
+                    //         default => 'secondary',
+                    //     };
+                    // }),
             ])
             ->filters([
-                SelectFilter::make('role_id')
-                ->label(__('Role'))
-                ->relationship('role', 'name'), // فلترة باستخدام العلاقة
+                // SelectFilter::make('role_id')
+                // ->label(__('Role'))
+                // ->relationship('role', 'name'), // فلترة باستخدام العلاقة
 
                 TernaryFilter::make('email_verified_at')
                     ->label(__('Verified Email'))
