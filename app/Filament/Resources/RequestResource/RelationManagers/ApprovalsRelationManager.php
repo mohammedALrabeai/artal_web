@@ -103,13 +103,13 @@ class ApprovalsRelationManager extends RelationManager
             ]);
     }
 
-    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
-    {
-        return in_array(auth()->user()->role->name, ['hr', 'manager', 'general_manager']);
-    }
+    // public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    // {
+    //     return in_array(auth()->user()->role->name, ['hr', 'manager', 'general_manager']);
+    // }
 
-    public function canEditForRecord(Model $record): bool
-    {
-        return auth()->user()->id === $record->approver_id && $record->status === 'pending';
-    }
+    // public function canEditForRecord(Model $record): bool
+    // {
+    //     return auth()->user()->id === $record->approver_id && $record->status === 'pending';
+    // }
 }
