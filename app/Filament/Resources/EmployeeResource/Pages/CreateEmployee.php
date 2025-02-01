@@ -46,6 +46,8 @@ try {
     $message .= "اسم المستخدم: {$employee->mobile_number}\n";
     $message .= "كلمة المرور: {$employee->password}\n\n";
     $message .= "الرجاء تغيير كلمة المرور عند تسجيل الدخول لأول مرة.\n";
+    $message .= "لتحميل التطبيق، يرجى النقر على الرابط التالي:\n";
+    $message .= "🔗 https://artalsys.com/api/download-apk/artal_app.apk\n\n";
     $message .= "شكراً.";
     $otpService->sendOtp($employee->mobile_number, $message);
 } catch (\Exception $e) {
