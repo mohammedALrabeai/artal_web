@@ -92,6 +92,11 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->label(__('Phone'))
                     ->searchable(),
+                    Tables\Columns\TextColumn::make('roles.name')
+                    ->label('الأدوار')
+                    ->badge()
+                    ->sortable()
+                    ->searchable(),
                   
                     // Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
                     // ->label(__('Role'))

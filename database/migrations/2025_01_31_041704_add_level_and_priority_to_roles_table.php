@@ -14,9 +14,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::table('roles', function (Blueprint $table) {
-            $table->dropColumn('level');
-            $table->dropColumn('priority');
-        });
+        // Schema::table('roles', function (Blueprint $table) {
+        //     $table->dropColumn('level');
+        //     $table->dropColumn('priority');
+        // });
     }
 };

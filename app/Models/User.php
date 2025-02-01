@@ -3,17 +3,21 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Filament\Panel;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
    
-    use HasApiTokens, HasFactory, Notifiable,HasRoles;
+    use HasApiTokens, HasFactory, Notifiable,HasRoles,HasPanelShield;
 
     /**
      * The attributes that are mass assignable.
@@ -65,5 +69,26 @@ class User extends Authenticatable
 // {
 //     return $this->belongsTo(Role::class);
 // }
+// public function roles()
+// {
+//     return $this->belongsToMany(Role::class);
+// }
 
+
+    // ✅ **علاقة المستخدم بالأدوار عبر Spatie**
+    // public function roles()
+    // {
+    //     return $this->belongsToMany(\Spatie\Permission\Models\Role::class, 'model_has_roles', 'model_id', 'role_id')
+    //         ->where('model_type', self::class);
+    // }
+
+    // ✅ **تمكين Filament Shield عبر Spatie Laravel Permissions**
+     // ✅ **علاقة المستخدم بالأدوار عبر Spatie**
+  
+ 
+     // ✅ **تمكين Filament Shield عبر Spatie Laravel Permissions**
+     public function canAccessPanel(Panel $panel): bool
+     {
+         return $this->hasPermissionTo('access-filament');
+     }
 }
