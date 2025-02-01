@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources\EmployeeResource\Pages;
 
-use App\Filament\Resources\EmployeeResource;
-use Filament\Resources\Pages\CreateRecord;
-use App\Notifications\NewEmployeeNotification;
 use App\Models\User;
 use App\Services\OtpService;
+use App\Services\NotificationService;
+use Filament\Resources\Pages\CreateRecord;
+use App\Filament\Resources\EmployeeResource;
+use App\Notifications\NewEmployeeNotification;
 
 class CreateEmployee extends CreateRecord
 {
@@ -18,15 +19,16 @@ class CreateEmployee extends CreateRecord
 
     protected function afterCreate(): void
     {
-       // جلب المستخدمين الذين لديهم الأدوار المطلوبة عبر العلاقة مع جدول الأدوار
-    // $managers = User::whereHas('role', function ($query) {
-    //     $query->whereIn('name', ['manager', 'general_manager', 'hr']); // الأدوار المطلوبة
-    // })->get();
-
-    // // إرسال الإشعارات
-    // foreach ($managers as $manager) {
-    //     $manager->notify(new NewEmployeeNotification($this->record));
-    // }
+        $notificationService = new NotificationService;
+        $notificationService->sendNotification(
+            ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
+            'اضافة موظف جديد', // عنوان الإشعار
+            'تم اضافة موظف جديد بنجاح!', // نص الإشعار
+            [
+                $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$this->record->id}/view", 'heroicon-s-eye'),
+                $notificationService->createAction('عرض قائمة الموظفين', '/admin/banks', 'heroicon-s-eye'),
+            ]
+        );
 try {
     $otpService = new OtpService();
     $employee = $this->record; // جلب بيانات الموظف المرتبطة
