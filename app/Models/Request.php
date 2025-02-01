@@ -97,19 +97,18 @@ public function approveRequest($approver, $comments = null)
     if ($this->status !== 'pending') {
         throw new \Exception(__('This request cannot be approved as it is already :status.', ['status' => $this->status]));
     }
-    \Log::info('Approver Role:', ['user_role' => $approver->role]);
+    \Log::info('Approver Roles:', ['user_roles' => $approver->getRoleNames()]);
     \Log::info('Request Current Approver Role:', ['current_approver_role' => $this->current_approver_role]);
-    
-    // التحقق من أن المسؤول الحالي لديه نفس الدور المطلوب
-    $approverRoleName = $approver->role->name;
 
-    // التحقق من أن المسؤول الحالي لديه نفس الدور المطلوب
-    if (strtolower($approverRoleName) !== strtolower($this->current_approver_role)) {
-        throw new \Exception(__('You are not authorized to approve this request. Your role: :role, Required role: :required_role', [
-            'role' => $approverRoleName,
-            'required_role' => $this->current_approver_role,
-        ]));
-    }
+   // 🔹 التأكد من أن المستخدم لديه أحد الأدوار المطلوبة
+   $approverRoles = $approver->getRoleNames()->toArray(); // الحصول على جميع الأدوار كـ array
+
+   if (!in_array(strtolower($this->current_approver_role), array_map('strtolower', $approverRoles))) {
+    throw new \Exception(__('You are not authorized to approve this request. Your roles: :roles, Required role: :required_role', [
+        'roles' => implode(', ', $approverRoles),
+        'required_role' => $this->current_approver_role,
+    ]));
+}
 
     // التحقق مما إذا كان المسؤول قد وافق مسبقًا
     $existingApproval = $this->approvals()

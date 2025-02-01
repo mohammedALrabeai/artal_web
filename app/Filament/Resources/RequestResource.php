@@ -403,7 +403,8 @@ class RequestResource extends Resource
 
                         return $remainingFlows->isEmpty() ? __('No remaining approvals') : $remainingFlows->join(', ');
                     })
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
             ])
             ->filters([

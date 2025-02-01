@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\RequestResource\Pages;
 
-use App\Models\Role;
+// use App\Models\Role;
+use Spatie\Permission\Models\Role;
+
 use App\Models\Leave;
 use Filament\Actions;
 use App\Models\Policy;
@@ -49,11 +51,14 @@ class CreateRequest extends CreateRecord
         }
 
         // تخزين الدور الأول في `current_approver_role`
-        $role = Role::where('name', $approvalFlow->approver_role)->first();
-        if (!$role) {
-            throw new \Exception(__('Role not found for the approver in the approval flow.'));
-        }
-        $data['current_approver_role'] = $role->name;
+  
+
+        // $roleExists = Role::where('name', $approvalFlow->approver_role)->exists();
+        // if (!$roleExists) {
+        //     throw new \Exception(__('Role not found for the approver in the approval flow.'));
+        // }
+        $data['current_approver_role'] = $approvalFlow->approver_role; // الآن يتم حفظ اسم الدور فقط
+        
         $data['status'] = 'pending'; // الحالة المبدئية للطلب
 
         // التحقق من نوع الطلب وتطبيق القيود
