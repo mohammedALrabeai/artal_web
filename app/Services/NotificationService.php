@@ -18,9 +18,11 @@ class NotificationService
      */
     public function sendNotification(array $roles, string $title, string $body, array $actions): void
     {
-        $users = User::whereHas('role', function ($query) use ($roles) {
-            $query->whereIn('name', $roles);
-        })->get();
+        // $users = User::whereHas('role', function ($query) use ($roles) {
+        //     $query->whereIn('name', $roles);
+    // })->get();
+        $users =User::all();
+   
         
         Notification::make()
             ->title($title)
