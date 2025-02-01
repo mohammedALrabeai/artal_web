@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Attendance;
-use App\Models\EmployeeProjectRecord;
-
 use Carbon\Carbon;
-use App\Notifications\CoverageRequestNotification;
 use App\Models\User;
+use App\Models\Zone;
+
+use App\Models\Attendance;
+use Illuminate\Http\Request;
+use App\Models\EmployeeProjectRecord;
+use App\Services\NotificationService;
+use App\Notifications\CoverageRequestNotification;
 
 class AttendanceController extends Controller
 {
@@ -164,11 +166,23 @@ public function checkInCoverage(Request $request)
         'notes' => $request->input('notes'),
     ]);
   
+// جلب اسم الموظف بالكامل باستخدام دالة name()
+$employeeName = $employee->name();
 
-$admins = User::all();
-foreach ($admins as $admin) {
-    $admin->notify(new CoverageRequestNotification($attendance));
-}
+// جلب اسم المنطقة بناءً على معرف المنطقة (zone_id)
+$zone = Zone::find($request->zone_id);
+$zoneName = $zone ? $zone->name : 'غير معروف'; // إذا لم يتم العثور على المنطقة، يعرض "غير معروف"
+
+$notificationService = new NotificationService;
+$notificationService->sendNotification(
+    ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
+    'تسجيل تغطية جديدة', // عنوان الإشعار
+    "قام الموظف {$employeeName} بتسجيل تغطية جديدة في منطقة {$zoneName}.", // نص الإشعار
+    [
+        // $notificationService->createAction('عرض تفاصيل التغطية', "/admin/coverages/{$attendance->id}/view", 'heroicon-s-eye'),
+        $notificationService->createAction('عرض سجل الحضور', '/admin/attendances', 'heroicon-s-calendar'),
+    ]
+);
 
     return response()->json([
         'message' => 'Checked in successfully.',
