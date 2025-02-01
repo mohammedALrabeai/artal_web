@@ -23,6 +23,8 @@ use App\Services\AttendanceService;
 
 
 
+Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
+Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
 
 
 Route::post('/employee/login', [EmployeeAuthController::class, 'login']);
@@ -250,3 +252,9 @@ Route::prefix('admin')->group(function () {
     Route::get('/notifications/managers', [AdminNotificationController::class, 'getManagersWithNotifications']);
     Route::delete('/notifications/all', [AdminNotificationController::class, 'deleteAllNotifications']);
 });
+
+
+
+
+
+
