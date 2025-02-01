@@ -97,7 +97,7 @@ class UserResource extends Resource
                     ->badge()
                     ->sortable()
                     ->searchable(),
-                  
+                   
                     // Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
                     // ->label(__('Role'))
                     // ->sortable()
