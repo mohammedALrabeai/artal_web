@@ -112,10 +112,10 @@ public function approveRequest($approver, $comments = null)
 
     // التحقق مما إذا كان المسؤول قد وافق مسبقًا
     $existingApproval = $this->approvals()
-        ->where('approver_id', $approver->id)
-        ->where('approver_role', $approver->role->name)
-        ->where('status', 'approved')
-        ->first();
+    ->where('approver_id', $approver->id)
+    ->whereIn('approver_role', $approverRoles) // ✅ الآن نبحث عن أي من الأدوار التي يملكها المستخدم
+    ->where('status', 'approved')
+    ->first();
 
     if ($existingApproval) {
         throw new \Exception(__('You have already approved this request.'));
@@ -170,6 +170,8 @@ public function approveRequest($approver, $comments = null)
 
 
         }
+
+     
     }
 
     $this->save();
@@ -177,7 +179,7 @@ public function approveRequest($approver, $comments = null)
     // تسجيل الموافقة
     $this->approvals()->create([
         'approver_id' => $approver->id,
-        'approver_role' => $approverRoleName, // تخزين اسم الدور
+        'approver_role' => $this->current_approver_role, // تخزين اسم الدور
         'status' => 'approved',
         'approved_at' => now(),
         'notes' => $comments,

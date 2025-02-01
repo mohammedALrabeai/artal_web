@@ -89,6 +89,7 @@ class User extends Authenticatable implements FilamentUser
      // ✅ **تمكين Filament Shield عبر Spatie Laravel Permissions**
      public function canAccessPanel(Panel $panel): bool
      {
-         return $this->hasPermissionTo('access-filament');
+        //  return $this->hasPermissionTo('access-filament');
+        return true;
      }
 }

@@ -360,6 +360,20 @@ class AttendanceResource extends Resource
                     ->action(function ($record, array $data) {
                         $reasonEnum = CoverageReason::tryFrom($data['coverage_reason']);
 
+                              // التحقق من سلسلة الموافقات المرتبطة بنوع الطلب
+                              $approvalFlow = ApprovalFlow::where('request_type', 'coverage')
+                              ->orderBy('approval_level', 'asc')
+                              ->first();
+                          if (!$approvalFlow) {
+                              throw new \Exception(__('No approval flow defined for this request type.'));
+                          }
+      
+                              // تخزين الدور الأول في `current_approver_role`
+                            //   $role = Role::where('name', $approvalFlow->approver_role)->first();
+                            //   if (! $role) {
+                            //       throw new \Exception(__('Role not found for the approver in the approval flow.'));
+                            //   }
+
                         // تحديث حالة الطلب إلى "موافق عليه"
                         $record->update(['approval_status' => 'approved']);
 
@@ -369,7 +383,7 @@ class AttendanceResource extends Resource
                             'absent_employee_id' => $data['absent_employee_id'] ?? null, // الموظف البديل (إذا كان مطلوبًا)
                             'zone_id' => $record->zone_id,
                             'date' => $record->date,
-                            'status' => 'completed',
+                            'status' => 'pending',
                             'added_by' => auth()->id(), // الحساب الحالي
                             'reason' => $data['coverage_reason'],
                             'notes' => $data['notes'],
@@ -378,19 +392,7 @@ class AttendanceResource extends Resource
                         // تحديث معرف التغطية في الحضور
                         $record->update(['coverage_id' => $coverage->id]);
 
-                        // التحقق من سلسلة الموافقات المرتبطة بنوع الطلب
-                        $approvalFlow = ApprovalFlow::where('request_type', 'coverage')
-                            ->orderBy('approval_level', 'asc')
-                            ->first();
-                        if (! $approvalFlow) {
-                            throw new \Exception(__('No approval flow defined for this request type.'));
-                        }
-
-                        // تخزين الدور الأول في `current_approver_role`
-                        $role = Role::where('name', $approvalFlow->approver_role)->first();
-                        if (! $role) {
-                            throw new \Exception(__('Role not found for the approver in the approval flow.'));
-                        }
+                  
                         // $data['current_approver_role'] = $role->name;
 
                         // **إنشاء طلب جديد تلقائيًا من نوع "التغطية"**
@@ -398,7 +400,7 @@ class AttendanceResource extends Resource
                             'type' => 'coverage',
                             'submitted_by' => auth()->id(), // المستخدم الحالي هو مقدم الطلب
                             'employee_id' => $record->employee_id, // الموظف الذي يحتاج التغطية
-                           'current_approver_role' => $role->name, // الدور الحالي
+                           'current_approver_role' => $approvalFlow->approver_role, // الدور الحالي
                             'description' => __('Coverage request for :employee', ['employee' => $record->employee->first_name]),
                             'additional_data' => json_encode([
                                 'coverage_reason' => $data['coverage_reason'],
