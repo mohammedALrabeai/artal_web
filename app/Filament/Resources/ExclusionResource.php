@@ -20,6 +20,29 @@ class ExclusionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+
+    protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Exclusion');
+    }
+    
+    public static function getPluralLabel(): string
+    {
+        return __('Exclusions');
+    }
+    
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Employee Management');
+    }
+ 
+
     public static function form(Form $form): Form
     {
         return $form
