@@ -443,7 +443,7 @@ class EmployeeResource extends Resource
                     })
                     ->sortable()
                     // ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('current_project')
                     ->label(__('Current Project'))
                     ->getStateUsing(function ($record) {
@@ -493,7 +493,7 @@ class EmployeeResource extends Resource
                     })
                     ->sortable()
                     ->default('غير متوفر')
-                    ->toggleable(isToggledHiddenByDefault: false), // إذا لم يكن هناك رصيد
+                    ->toggleable(isToggledHiddenByDefault: true), // إذا لم يكن هناك رصيد
 
                 Tables\Columns\TextColumn::make('family_name')
                     ->label(__('Family Name'))
@@ -508,10 +508,12 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('national_id')
                     ->label(__('National ID'))
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
                     Tables\Columns\TextColumn::make('marital_status')
                     ->label(__('Marital Status'))
-                    ->formatStateUsing(fn ($state) => $state ? MaritalStatus::from($state)->label() : '-')
+                    ->formatStateUsing(fn ($state) => 
+                        $state ? MaritalStatus::fromArabic($state)?->label() ?? '-' : '-'
+                    )
                     ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -551,7 +553,7 @@ class EmployeeResource extends Resource
                     ->label(__('Commercial Record'))
                     ->sortable()
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('job_title')
                     ->label(__('Job Title'))

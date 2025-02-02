@@ -8,6 +8,17 @@ enum MaritalStatus: string
     case DIVORCED = 'divorced';
     case WIDOWED = 'widowed';
 
+    public static function fromArabic(string $value): ?self
+    {
+        return match ($value) {
+            'أعزب' => self::SINGLE,
+            'متزوج' => self::MARRIED,
+            'مطلق' => self::DIVORCED,
+            'أرمل' => self::WIDOWED,
+            default => null, // تجنب الخطأ إذا كانت القيمة غير متوقعة
+        };
+    }
+
     public function label(): string
     {
         return match($this) {
