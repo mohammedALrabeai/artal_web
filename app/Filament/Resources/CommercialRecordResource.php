@@ -145,7 +145,7 @@ class CommercialRecordResource extends Resource
     
                     Tables\Columns\TextColumn::make('expiry_date_gregorian')
                     ->label(__('Expiry Date (Gregorian)'))
-                    ->dateTime()
+                    ->date() // يعرض التاريخ فقط بدون الوقت
                     ->sortable()
               
                     ->toggleable(),
@@ -175,7 +175,7 @@ class CommercialRecordResource extends Resource
 
                     Tables\Columns\TextColumn::make('expiry_date_hijri')
                     ->label(__('Expiry Date (Hijri)')) // نهاية السجل التجاري (هجري)
-                    ->dateTime()
+                    ->date() // يعرض التاريخ فقط بدون الوقت
                     ->toggleable(isToggledHiddenByDefault: true),
 
                     Tables\Columns\TextColumn::make('insuranceCompany.name')
