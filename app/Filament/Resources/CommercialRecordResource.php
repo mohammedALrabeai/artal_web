@@ -143,19 +143,39 @@ class CommercialRecordResource extends Resource
                     ->label(__('Unified Number (700)')) // الرقم الموحد
                     ->toggleable(),
     
-                Tables\Columns\TextColumn::make('expiry_date_hijri')
-                    ->label(__('Expiry Date (Hijri)')) // نهاية السجل التجاري (هجري)
+                    Tables\Columns\TextColumn::make('expiry_date_gregorian')
+                    ->label(__('Expiry Date (Gregorian)'))
                     ->dateTime()
+                    ->sortable()
+              
                     ->toggleable(),
+
+                    Tables\Columns\TextColumn::make('days_remaining')
+    ->label(__('Days Remaining'))
+    ->state(function ($record) {
+        $expiryDate = $record->expiry_date_gregorian;
+        if (!$expiryDate) {
+            return __('N/A'); // في حالة عدم توفر تاريخ
+        }
+
+        $remainingDays = intval(now()->diffInDays($expiryDate, false)); // حساب الفرق كعدد صحيح
+        return $remainingDays;
+    })
+    ->badge()
+    ->sortable()
+    ->color(fn ($record) => match (true) {
+        $record->expiry_date_gregorian && now()->diffInDays($record->expiry_date_gregorian, false) <= 0 => 'danger', // أحمر عند انتهاء الصلاحية
+        $record->expiry_date_gregorian && now()->diffInDays($record->expiry_date_gregorian, false) <= 30 => 'warning', // برتقالي عند أقل من شهر
+        default => 'success', // أخضر افتراضيًا
+    }),
 
                 Tables\Columns\TextColumn::make('parentCompany.entity_name')
                     ->label(__('Parent Company'))
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('expiry_date_gregorian')
-                    ->label(__('Expiry Date (Gregorian)'))
+                    Tables\Columns\TextColumn::make('expiry_date_hijri')
+                    ->label(__('Expiry Date (Hijri)')) // نهاية السجل التجاري (هجري)
                     ->dateTime()
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                     Tables\Columns\TextColumn::make('insuranceCompany.name')
