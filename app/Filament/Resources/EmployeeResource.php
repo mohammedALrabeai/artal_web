@@ -2,30 +2,31 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use App\Models\User;
+use Filament\Tables;
+use App\Models\Employee;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
 use App\Enums\ContractType;
 use App\Enums\InsuranceType;
-use App\Filament\Resources\EmployeeResource\Pages;
-use App\Filament\Resources\EmployeeResource\RelationManagers;
-use App\Models\Employee;
-use App\Models\User;
-use Filament\Forms;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use App\Enums\MaritalStatus;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Table;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Repeater;
+use Filament\Tables\Actions\BulkAction;
 use Illuminate\Support\Facades\Storage;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
+use Filament\Tables\Filters\SelectFilter;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Filament\Resources\EmployeeResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\EmployeeResource\RelationManagers;
 
 class EmployeeResource extends Resource
 {
@@ -123,6 +124,15 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('nationality')
                             ->label(__('Nationality'))
                             ->required(),
+                            Forms\Components\Select::make('marital_status')
+            ->label(__('Marital Status')) // استخدام الترجمة
+            ->options(collect(MaritalStatus::cases())->mapWithKeys(fn ($status) => [
+                $status->value => $status->label()
+            ]))
+            ->nullable()
+            ->searchable()
+            ->preload()
+            ->columnSpanFull(),
                         Forms\Components\Select::make('job_title')
                             ->label(__('Job Title'))
                             ->options(
@@ -497,6 +507,12 @@ class EmployeeResource extends Resource
 
                 Tables\Columns\TextColumn::make('national_id')
                     ->label(__('National ID'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    Tables\Columns\TextColumn::make('marital_status')
+                    ->label(__('Marital Status'))
+                    ->formatStateUsing(fn ($state) => $state ? MaritalStatus::from($state)->label() : '-')
+                    ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 

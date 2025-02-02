@@ -35,6 +35,7 @@ class Employee extends Model
         'living_allowance',
         'other_allowances',
         'job_status',
+        'marital_status',
         'health_insurance_company',
         'social_security',
         'social_security_code',

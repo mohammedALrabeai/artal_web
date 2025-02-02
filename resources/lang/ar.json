@@ -539,7 +539,11 @@
     "AlInma Bank": "مصرف الإنماء",
     "Bank AlJazira": "بنك الجزيرة",
 
-
+    "marital_status.single": "أعزب",
+    "marital_status.married": "متزوج",
+    "marital_status.divorced": "مطلق",
+    "marital_status.widowed": "أرمل",
+    "Marital Status": "الحالة الاجتماعية",
 
     "Covered": "مشمول",
     "Not Covered": "غير مشمول",
