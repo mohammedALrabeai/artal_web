@@ -20,10 +20,10 @@
     "Pattern": "النمط",
     "Latitude": "خط العرض",
     "Longitude": "خط الطول",
-    "Area": "المنطقة",
-    "Number of Employees": "عدد الموظفين",
+
     "Active": "نشط",
-    "Range": "نطاق",
+  
+    "Range (meter)": "النطاق (متر)",
     "Manage Zones": "إدارة المناطق",
     "Zone": "المنطقة",
     "Type": "النوع",
@@ -37,6 +37,7 @@
     "Last Time Out (Minutes)": "آخر وقت للخروج (بالدقائق)",
     "Start Date": "تاريخ البدء",
     "Number of Employees": "عدد الموظفين",
+    "Number of Employees (All shifts included)": "عدد الموظفين (شامل جميع الورديات)",
     "Active": "نشط",
     "Inactive": "غير نشط",
     "Morning": "صباحي",
@@ -425,6 +426,7 @@
     "approved": "معتمد",
     "rejected": "مرفوض",
     "loan": "قرض",
+    "Rotate Employee": "تدوير الموظف",
     "overtime": "ساعات إضافية",
     "resignation": "استقالة",
     "Current Zone": "المنطقة الحالية",
@@ -527,10 +529,18 @@
 
     "Developer": "مطور",
     "Designer": "مصمم",
-
-    "AlRajhi": "الراجحي",
-    "Riyad Bank": "بنك الرياض",
+    "AlRajhi": "بنك الراجحي",
     "National Commercial Bank": "البنك الأهلي التجاري",
+    "SABB": "بنك ساب",
+    "Saudi French Bank": "البنك السعودي الفرنسي",
+    "Arab National Bank": "البنك العربي",
+    "Riyad Bank": "بنك الرياض",
+    "AlBilad Bank": "بنك البلاد",
+    "AlInma Bank": "مصرف الإنماء",
+    "Bank AlJazira": "بنك الجزيرة",
+
+
+
     "Covered": "مشمول",
     "Not Covered": "غير مشمول",
     "Without Description": "بدون وصف",

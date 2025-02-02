@@ -6,8 +6,10 @@ enum CoverageReason: string
 {
     case SHORTAGE = 'shortage';
     case ABSENT_EMPLOYEE = 'absent_employee';
+    case ROTATION = 'rotation';
     case EMERGENCY = 'emergency';
     case TRAINING = 'training';
+
 
     /**
      * إرجاع قائمة الأسباب لاستخدامها في الفورم
@@ -17,6 +19,7 @@ enum CoverageReason: string
         return [
             self::SHORTAGE->value => __('Shortage in Staff'),
             self::ABSENT_EMPLOYEE->value => __('Employee Absent'),
+            self::ROTATION->value => __('Rotate Employee'),
             self::EMERGENCY->value => __('Emergency Leave'),
             self::TRAINING->value => __('Training or Course'),
         ];
@@ -28,7 +31,8 @@ enum CoverageReason: string
     public function requiresReplacement(): bool
     {
         return match ($this) {
-            self::ABSENT_EMPLOYEE, self::EMERGENCY => true,
+            self::ABSENT_EMPLOYEE,self::ROTATION, self::EMERGENCY => true,
+            
             default => false,
         };
     }

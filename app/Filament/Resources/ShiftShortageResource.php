@@ -25,6 +25,8 @@ class ShiftShortageResource extends Resource
     {
         return $table
         ->columns([
+            Tables\Columns\TextColumn::make('zone.project.area.name')->label('المنطقة'),
+            Tables\Columns\TextColumn::make('zone.project.name')->label('المشروع'),
             Tables\Columns\TextColumn::make('zone.name')->label('الموقع'),
             Tables\Columns\TextColumn::make('name')->label('الوردية'),
             Tables\Columns\TextColumn::make('emp_no')->label('الموظفين المطلوبين'),

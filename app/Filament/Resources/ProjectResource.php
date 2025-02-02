@@ -69,7 +69,7 @@ class ProjectResource extends Resource
                 Forms\Components\DatePicker::make('end_date')
                     ->label(__('End Date')), // إضافة تسمية مترجمة
                 Forms\Components\TextInput::make('emp_no')
-                    ->label(__('Number of Employees')) // التسمية موجودة بالفعل
+                    ->label(__('Number of Employees (All shifts included)')) // التسمية موجودة بالفعل
                     ->numeric()
                     ->required(),
             ]);

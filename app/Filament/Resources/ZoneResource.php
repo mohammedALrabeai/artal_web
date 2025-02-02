@@ -94,7 +94,7 @@ class ZoneResource extends Resource
                 ->default(fn ($record) => $record?->longg),
     
             Forms\Components\TextInput::make('area')
-                ->label(__('Range'))
+                ->label(__('Range (meter)'))
                 ->required()
                 ->numeric(),
 
@@ -104,12 +104,13 @@ class ZoneResource extends Resource
                 ->label(__('Number of Employees'))
                 ->numeric()
                 ->required(),
+                Forms\Components\Toggle::make('status')
+                ->label(__('Active'))
+                ->default(true),
                 Forms\Components\View::make('components.map-picker')
                 ->label(__('Pick Location')),
     
-            Forms\Components\Toggle::make('status')
-                ->label(__('Active'))
-                ->default(true),
+          
         ]);
     }
     
@@ -140,7 +141,7 @@ class ZoneResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('area')
-                    ->label(__('Range')),
+                    ->label(__('Range (meter)')),
 
                 Tables\Columns\TextColumn::make('emp_no')
                     ->label(__('Number of Employees')),

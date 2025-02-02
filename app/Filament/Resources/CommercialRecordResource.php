@@ -99,7 +99,7 @@ class CommercialRecordResource extends Resource
                     ->label(__('Tax Authority Number'))
                     ->nullable(),
                     Forms\Components\Select::make('insurance_company_id')
-    ->label(__('Insurance Company'))
+    ->label(__('Insurance Company M'))
     ->relationship('insuranceCompany', 'name')
     ->required()
     ->preload()
@@ -159,7 +159,7 @@ class CommercialRecordResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                     Tables\Columns\TextColumn::make('insuranceCompany.name')
-    ->label(__('Insurance Company'))
+    ->label(__('Insurance Company M'))
     ->sortable()
     ->searchable(),
 

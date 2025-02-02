@@ -7,12 +7,13 @@ namespace App\Imports;
 use Carbon\Carbon;
 use App\Models\Employee;
 use GeniusTS\HijriDate\Hijri;
+use App\Models\CommercialRecord;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Filament\Notifications\Notification;
+use GeniusTS\HijriDate\Date as HijriDate;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use GeniusTS\HijriDate\Date as HijriDate;
 
 class EmployeesImport implements ToCollection
 {
@@ -47,6 +48,8 @@ class EmployeesImport implements ToCollection
         'المباشرة' => 'actual_start',
         'المؤهل' => 'qualification',
         'مكان الميلاد' => 'birth_place',
+        'الشركة' => 'company_name', // العمود الذي يحتوي على اسم الشركة
+        'رقم المشترك' => 'insurance_number', // العمود الذي يحتوي على رقم المشترك
     ];
 
     public function collection(Collection $rows)
@@ -85,6 +88,21 @@ class EmployeesImport implements ToCollection
 
                 $employeeData[$modelField] = $value;
             }
+
+
+               // البحث عن الشركة وإسناد `commercial_record_id`
+               if (!empty($employeeData['company_name'])) {
+                $company = CommercialRecord::where('entity_name', $employeeData['company_name'])->first();
+                $employeeData['commercial_record_id'] = $company ? $company->id : null;
+            } else {
+                $employeeData['commercial_record_id'] = null;
+            }
+              // إزالة حقل `company_name` بعد استخدامه
+              unset($employeeData['company_name']);
+
+                 // إضافة `insurance_number`
+            $employeeData['insurance_number'] = $employeeData['insurance_number'] ?? null;
+
 
             // تعيين region و city من مكان الميلاد
             $birthPlace = $employeeData['birth_place'] ?? null;

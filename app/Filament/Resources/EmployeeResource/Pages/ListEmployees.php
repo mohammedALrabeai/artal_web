@@ -150,15 +150,26 @@ public function getTabs(): array
             ->modifyQueryUsing(function ($query) {
                 return $query->whereNull('commercial_record_id'); // الموظفين بدون التأمين
             }),
-            'unassigned_employees' => Tab::make(__('Unassigned Employees'))
-            ->modifyQueryUsing(function ($query) {
-                return $query->whereDoesntHave('zones'); // الموظفين غير المسندين إلى أي موقع
-            }),
+        //     'unassigned_employees' => Tab::make(__('Unassigned Employees'))
+        //     ->modifyQueryUsing(function ($query) {
+        //         return $query->whereDoesntHave('zones'); // الموظفين غير المسندين إلى أي موقع
+        //     }),
 
-        'assigned_employees' => Tab::make(__('Assigned Employees'))
-            ->modifyQueryUsing(function ($query) {
-                return $query->whereHas('zones'); // الموظفين المسندين إلى مواقع
-            }),
+        // 'assigned_employees' => Tab::make(__('Assigned Employees'))
+        //     ->modifyQueryUsing(function ($query) {
+        //         return $query->whereHas('zones'); // الموظفين المسندين إلى مواقع
+        //     }),
+        'unassigned_employees' => Tab::make(__('Unassigned Employees'))
+        ->modifyQueryUsing(function ($query) {
+            // استخدام علاقة currentZone للتأكد من عدم وجود سجل تعيين نشط
+            return $query->whereDoesntHave('currentZone');
+        }),
+
+    'assigned_employees' => Tab::make(__('Assigned Employees'))
+        ->modifyQueryUsing(function ($query) {
+            // استخدام علاقة currentZone للتأكد من وجود سجل تعيين نشط
+            return $query->whereHas('currentZone');
+        }),
     ];
 }
 
