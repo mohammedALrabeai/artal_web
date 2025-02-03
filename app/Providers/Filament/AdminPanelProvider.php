@@ -29,7 +29,8 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             // ->profile(EditProfile::class)
-            ->profile()
+            ->profile(isSimple: false)
+            // ->passwordReset()
             ->brandName('ارتال') // تخصيص اسم اللوحة
             ->brandLogo(asset('images/icon.png')) // إضافة شعار مخصص
             ->favicon(asset('images/favicon.png')) // أيقونة المتصفح
