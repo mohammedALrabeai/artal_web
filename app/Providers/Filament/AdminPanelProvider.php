@@ -3,16 +3,17 @@
 namespace App\Providers\Filament;
 
 use Filament\Pages;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Panel;
 use Filament\Widgets;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
+use App\Filament\Pages\Auth\EditProfile;
 use Filament\Http\Middleware\Authenticate;
 use App\Filament\Widgets\NotificationsWidget;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -27,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
+            // ->profile(EditProfile::class)
+            ->profile()
             ->brandName('ارتال') // تخصيص اسم اللوحة
             ->brandLogo(asset('images/icon.png')) // إضافة شعار مخصص
             ->favicon(asset('images/favicon.png')) // أيقونة المتصفح

@@ -113,6 +113,13 @@ public function approveRequest($approver, $comments = null)
     \Log::info('Approver Roles:', ['user_roles' => $approver->getRoleNames()]);
     \Log::info('Request Current Approver Role:', ['current_approver_role' => $this->current_approver_role]);
 
+   // 🔹 جلب جميع الأدوار التي لها صلاحية الموافقة على هذا الطلب من `approval_flows`
+   $approvalLevels = $this->approvalFlows()->orderBy('approval_level', 'asc')->get();
+
+   // 🔹 استخراج جميع الأدوار المتاحة للموافقة على هذا الطلب
+   $validApproverRoles = $approvalLevels->pluck('approver_role')->toArray();
+
+
    // 🔹 التأكد من أن المستخدم لديه أحد الأدوار المطلوبة
    $approverRoles = $approver->getRoleNames()->toArray(); // الحصول على جميع الأدوار كـ array
 
