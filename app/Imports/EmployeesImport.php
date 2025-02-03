@@ -19,10 +19,14 @@ class EmployeesImport implements ToCollection
 {
 
     private $useIdsFromFile;
+    private $addedBy = null;
 
-    public function __construct($useIdsFromFile = false)
+    public function __construct($useIdsFromFile = false, $addedBy = null)
     {
         $this->useIdsFromFile = $useIdsFromFile;
+        $this->addedBy = $addedBy;
+        // dd($this->addedBy);
+
     }
     protected $columnMap = [
         'id' => 'id',
@@ -220,6 +224,7 @@ class EmployeesImport implements ToCollection
                 ];
                 continue; // تخطي الصف في حال وجود أخطاء
             }
+            $employeeData['added_by'] = $this->addedBy;
 
             unset($employeeData['full_name']); // إزالة الحقل المؤقت
                // إذا كان التوليد التلقائي للمعرفات مفعّلًا

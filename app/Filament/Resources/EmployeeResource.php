@@ -109,6 +109,10 @@ class EmployeeResource extends Resource
                             ->label(__('Family Name'))
                             ->required(),
 
+                        Forms\Components\TextInput::make('english_name')
+                            ->label(__('Full English Name'))
+                            ->nullable(),
+
                         Forms\Components\DatePicker::make('birth_date')
                             ->label(__('Birth Date'))
                             ->required(),
@@ -471,7 +475,19 @@ class EmployeeResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                // Tables\Columns\TextColumn::make('leaveBalances_sum_balance')
+              
+                Tables\Columns\TextColumn::make('family_name')
+                    ->label(__('Family Name'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('english_name')
+                    ->label(__('English Name'))
+                    ->searchable()
+                   
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                      // Tables\Columns\TextColumn::make('leaveBalances_sum_balance')
                 //     ->label('إجمالي رصيد الإجازات')
                 //     ->sortable()
                 //     ->getStateUsing(function ($record) {
@@ -480,25 +496,21 @@ class EmployeeResource extends Resource
                 //     ->default('0') // القيمة الافتراضية في حال لم يكن هناك رصيد
                 //     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('leaveBalances')
-                    ->label('رصيد الإجازات السنوية')
-                    ->getStateUsing(function ($record) {
-                        // الحصول على الإجازة السنوية
-                        $leaveBalance = $record->leaveBalances->where('leave_type', 'annual')->first();
+                ->label('رصيد الإجازات السنوية')
+                ->getStateUsing(function ($record) {
+                    // الحصول على الإجازة السنوية
+                    $leaveBalance = $record->leaveBalances->where('leave_type', 'annual')->first();
 
-                        if ($leaveBalance) {
-                            return $leaveBalance->calculateAnnualLeaveBalance();
-                        }
+                    if ($leaveBalance) {
+                        return $leaveBalance->calculateAnnualLeaveBalance();
+                    }
 
-                        return 'غير متوفر';
-                    })
-                    ->sortable()
-                    ->default('غير متوفر')
-                    ->toggleable(isToggledHiddenByDefault: true), // إذا لم يكن هناك رصيد
+                    return 'غير متوفر';
+                })
+                ->sortable()
+                ->default('غير متوفر')
+                ->toggleable(isToggledHiddenByDefault: true), // إذا لم يكن هناك رصيد
 
-                Tables\Columns\TextColumn::make('family_name')
-                    ->label(__('Family Name'))
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('birth_date')
                     ->label(__('Birth Date'))
@@ -727,7 +739,7 @@ class EmployeeResource extends Resource
                     ->label(__('Password'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('added_by.name')
+                Tables\Columns\TextColumn::make('addedBy.name')
                     ->label(__('Added By'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -736,6 +748,7 @@ class EmployeeResource extends Resource
                     ->sortable(),
 
             ])
+           ->paginationPageOptions([10, 25, 50, 100])
 
             ->filters([
                 SelectFilter::make('added_by')

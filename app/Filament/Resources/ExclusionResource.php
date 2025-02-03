@@ -18,7 +18,7 @@ class ExclusionResource extends Resource
 {
     protected static ?string $model = Exclusion::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'fluentui-document-dismiss-16-o';
 
 
     protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم

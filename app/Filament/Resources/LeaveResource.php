@@ -25,7 +25,7 @@ class LeaveResource extends Resource
 protected static ?int $navigationSort = 2; 
 
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'fluentui-document-edit-24-o';
     public static function getNavigationLabel(): string
     {
         return __('Leaves');

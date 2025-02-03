@@ -49,7 +49,7 @@ class ListEmployees extends ListRecords
                     return;
                 }
 
-                \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\EmployeesImport($useIdsFromFile), $filePath);
+                \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\EmployeesImport($useIdsFromFile, auth()->user()->id), $filePath);
 
                 Notification::make()
             ->title(__('success'))

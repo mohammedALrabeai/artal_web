@@ -18,6 +18,8 @@ class RequestResource extends Resource
 {
     protected static ?string $model = Request::class;
 
+    protected static ?string $navigationIcon = 'fas-file-pen';
+
     public $selectedEmployeeId;
 
     public static function getNavigationBadge(): ?string

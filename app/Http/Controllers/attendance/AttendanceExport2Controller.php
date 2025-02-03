@@ -168,7 +168,7 @@ class AttendanceExport2Controller extends Controller
 
             // تعبئة البيانات الأساسية
             $sheet->setCellValue("A{$startRow}", $sequence++); // تسلسل
-            $sheet->setCellValue("B{$startRow}", $employee->employee_id); // الرقم الوظيفي
+            $sheet->setCellValue("B{$startRow}", $employee->id); // الرقم الوظيفي
             $sheet->setCellValue("C{$startRow}", $employee->name()); // الاسم
             $sheet->setCellValue("D{$startRow}", $employee->national_id); // رقم الهوية
             $sheet->setCellValue("E{$startRow}", $annualLeaveBalance); // رصيد الغياب

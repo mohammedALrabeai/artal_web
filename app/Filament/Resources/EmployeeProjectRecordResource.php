@@ -30,6 +30,8 @@ use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 class EmployeeProjectRecordResource extends Resource
 {
     protected static ?string $model = EmployeeProjectRecord::class;
+    // navigation icon
+    protected static ?string $navigationIcon = 'fluentui-globe-person-20-o';
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();

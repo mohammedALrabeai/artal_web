@@ -103,7 +103,7 @@ class ZoneResource extends Resource
               
     
             Forms\Components\TextInput::make('emp_no')
-                ->label(__('Number of Employees'))
+                ->label(__('Number of Employees in one shift'))
                 ->numeric()
                 ->required(),
                 Forms\Components\Toggle::make('status')

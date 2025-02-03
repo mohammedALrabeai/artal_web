@@ -560,8 +560,9 @@
     "comments_required_message": "يجب إضافة تعليق قبل الموافقة على هذا الطلب.",
     "no_policy_defined": "لا توجد سياسة محددة لهذا النوع من الطلبات.",
     "no_policy_defined_message": "لا يمكن معالجة هذا الطلب لأنه لا توجد سياسة معتمدة لهذا النوع من الطلبات.",
-
+"Number of Employees in one shift": "عدد الموظفين في الوردية الواحدة",
     "Covered": "مشمول",
+    "Area": "المنطقة",
     "Not Covered": "غير مشمول",
     "Without Description": "بدون وصف",
  

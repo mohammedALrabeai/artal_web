@@ -84,10 +84,10 @@ class ProjectResource extends Resource
                     Tables\Columns\TextColumn::make('name')
                         ->searchable()
                         ->label(__('Name')), // إضافة تسمية مترجمة
-                    Tables\Columns\TextColumn::make('area_id')
+                    Tables\Columns\TextColumn::make('area.name')
                         ->numeric()
                         ->sortable()
-                        ->label(__('Area ID')), // إضافة تسمية مترجمة
+                        ->label(__('Area')), // إضافة تسمية مترجمة
                     Tables\Columns\TextColumn::make('start_date')
                         ->date()
                         ->sortable()

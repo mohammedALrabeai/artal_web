@@ -22,6 +22,7 @@ class Employee extends Model
         'father_name',
         'grandfather_name',
         'family_name',
+        'english_name',
         'birth_date',
         'national_id',
         'national_id_expiry',

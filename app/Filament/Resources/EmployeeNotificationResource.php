@@ -17,7 +17,7 @@ class EmployeeNotificationResource extends Resource
 {
     protected static ?string $model = EmployeeNotification::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-bell';
+    protected static ?string $navigationIcon = 'solar-notification-unread-lines-line-duotone';
 
     public static function getNavigationBadge(): ?string
     {
