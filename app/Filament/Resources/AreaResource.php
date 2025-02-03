@@ -17,8 +17,9 @@ use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 class AreaResource extends Resource
 {
     protected static ?string $model = Area::class;
+    protected static ?int $navigationSort = -11; 
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-map';
 
     public static function getNavigationBadge(): ?string
 {

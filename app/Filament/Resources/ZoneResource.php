@@ -30,6 +30,7 @@ use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 class ZoneResource extends Resource
 {
     protected static ?string $model = Zone::class;
+    protected static ?int $navigationSort = -9; 
 
     public static function getNavigationBadge(): ?string
 {
@@ -37,7 +38,7 @@ class ZoneResource extends Resource
 }
 
 
-    // protected static ?string $navigationIcon = 'heroicon-o-location-marker'; // أيقونة المورد
+    protected static ?string $navigationIcon = 'heroicon-o-map-pin'; // أيقونة المورد
 
     public static function getNavigationLabel(): string
     {

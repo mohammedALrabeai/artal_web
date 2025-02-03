@@ -22,8 +22,10 @@ use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 class ShiftResource extends Resource
 {
     protected static ?string $model = Shift::class;
+    protected static ?int $navigationSort = -8; 
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
+
     public static function getNavigationBadge(): ?string
 {
     return static::getModel()::count();

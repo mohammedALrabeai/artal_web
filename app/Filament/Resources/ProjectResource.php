@@ -17,6 +17,7 @@ use App\Filament\Resources\ProjectResource\RelationManagers;
 class ProjectResource extends Resource
 {
     protected static ?string $model = Project::class;
+    protected static ?int $navigationSort = -10; 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
