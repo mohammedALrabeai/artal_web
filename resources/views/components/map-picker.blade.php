@@ -1,4 +1,4 @@
-<div>
+{{-- <div>
     <div id="map" style="height: 400px; width: 100%; margin-bottom: 1rem;"></div>
 </div>
 
@@ -59,4 +59,81 @@
             marker.setLatLng([storedLat, storedLong]);
         }
     });
+</script> --}}
+
+@props([
+    'lat' => '',
+    'longg' => '',
+])
+
+<div wire:ignore>
+    
+    <!-- نستخدم hidden inputs لتمرير قيم الإحداثيات -->
+    <input type="hidden" id="lat" name="lat" value="{{ $lat }}">
+    <input type="hidden" id="longg" name="longg" value="{{ $longg }}">
+    <div id="map" style="height: 400px; width: 100%;"></div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function initMap() {
+        let latInput = document.getElementById("lat");
+        let lngInput = document.getElementById("longg");
+
+        // قراءة القيم المخزنة من المدخلات، وإذا كانت فارغة نستخدم قيمة افتراضية
+        let savedLat = parseFloat(latInput.value);
+        let savedLng = parseFloat(lngInput.value);
+
+        let initialPosition = {
+            lat: !isNaN(savedLat) ? savedLat : 24.713612,
+            lng: !isNaN(savedLng) ? savedLng : 46.675298
+        };
+
+        let map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 12,
+            center: initialPosition
+        });
+
+        let marker = new google.maps.Marker({
+            position: initialPosition,
+            map: map,
+            draggable: true
+        });
+
+        function updateLatLng(lat, lng) {
+            // تحديث المدخلات مع القيمة الكاملة (دون استخدام toFixed)
+            latInput.value = lat;
+            lngInput.value = lng;
+
+             // إطلاق حدث input لتحديث حالة Livewire (والـ AlpineJS إذا كان مستخدمًا)
+             latInput.dispatchEvent(new Event('input'));
+            lngInput.dispatchEvent(new Event('input'));
+
+
+            // إرسال القيمة إلى Livewire لتحديث المتغيرات
+            if (window.Livewire) {
+                Livewire.emit('updateLatLng', lat, lng);
+            }
+        }
+
+        // عند سحب المؤشر
+        marker.addListener('dragend', function (event) {
+            updateLatLng(event.latLng.lat(), event.latLng.lng());
+        });
+
+        // عند النقر على الخريطة
+        map.addListener('click', function (event) {
+            marker.setPosition(event.latLng);
+            updateLatLng(event.latLng.lat(), event.latLng.lng());
+        });
+    }
+
+    // تأكد من أن الدالة متاحة عالميًا
+    window.initMap = initMap;
+    let script = document.createElement("script");
+    script.src = "https://maps.googleapis.com/maps/api/js?key={{ config('services.google_maps.api_key') }}&callback=initMap";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+});
 </script>

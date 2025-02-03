@@ -80,25 +80,26 @@ class ZoneResource extends Resource
                 ->required(),
     
            
-    
-            Forms\Components\TextInput::make('lat')
+                Forms\Components\TextInput::make('lat')
                 ->label(__('Latitude'))
                 ->required()
-                ->id('lat')
-                ->default(fn ($record) => $record?->lat),
-    
+                ->default(fn ($record) => $record?->lat)
+                ->id('lat'),
+            
             Forms\Components\TextInput::make('longg')
                 ->label(__('Longitude'))
                 ->required()
-                ->id('longg')
-                ->default(fn ($record) => $record?->longg),
+                ->default(fn ($record) => $record?->longg)
+                ->id('longg'),
+
+                
     
             Forms\Components\TextInput::make('area')
                 ->label(__('Range (meter)'))
                 ->required()
                 ->numeric(),
 
-             
+              
     
             Forms\Components\TextInput::make('emp_no')
                 ->label(__('Number of Employees'))
@@ -108,7 +109,8 @@ class ZoneResource extends Resource
                 ->label(__('Active'))
                 ->default(true),
                 Forms\Components\View::make('components.map-picker')
-                ->label(__('Pick Location')),
+                ->label(__('Pick Location'))
+                ->columnSpanFull(),
     
           
         ]);
