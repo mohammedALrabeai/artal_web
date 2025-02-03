@@ -28,6 +28,7 @@
         "pusher/pusher-php-server": "^7.2",
         "pxlrbt/filament-excel": "^2.3",
         "setasign/fpdf": "^1.8",
+        "shuvroroy/filament-spatie-laravel-backup": "^2.2",
         "spatie/laravel-activitylog": "^4.9",
         "spatie/laravel-medialibrary": "^11.12",
         "tecnickcom/tcpdf": "^6.7"
