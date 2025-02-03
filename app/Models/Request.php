@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use App\Notifications\RequestStatusNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Filament\Notifications\Notification;
+
+use Illuminate\Validation\ValidationException;
 
 class Request extends Model
 {
@@ -95,8 +98,18 @@ public function approveRequest($approver, $comments = null)
 {
     // التحقق من أن حالة الطلب تسمح بالموافقة
     if ($this->status !== 'pending') {
-        throw new \Exception(__('This request cannot be approved as it is already :status.', ['status' => $this->status]));
-    }
+        Notification::make()
+        ->title(__('approval_error'))
+        ->body(__('approval_status', [
+            'status' => $this->status
+        ]))
+        ->danger()
+        ->send();
+    
+    throw ValidationException::withMessages([
+        'approval_status' => __('This request cannot be approved as it is already :status.', ['status' => $this->status]),
+    ]);
+        }
     \Log::info('Approver Roles:', ['user_roles' => $approver->getRoleNames()]);
     \Log::info('Request Current Approver Role:', ['current_approver_role' => $this->current_approver_role]);
 
@@ -104,10 +117,23 @@ public function approveRequest($approver, $comments = null)
    $approverRoles = $approver->getRoleNames()->toArray(); // الحصول على جميع الأدوار كـ array
 
    if (!in_array(strtolower($this->current_approver_role), array_map('strtolower', $approverRoles))) {
-    throw new \Exception(__('You are not authorized to approve this request. Your roles: :roles, Required role: :required_role', [
+    Notification::make()
+    ->title(__('unauthorized_approval'))
+    ->body(__('approver_roles', [
         'roles' => implode(', ', $approverRoles),
-        'required_role' => $this->current_approver_role,
-    ]));
+        'required_role' => $this->current_approver_role
+    ]))
+    ->danger()
+    ->send();
+
+   
+    throw ValidationException::withMessages([
+        'current_approver_role' => 'You are not authorized to approve this request. Your roles: ' . implode(', ', $approverRoles) . ', Required role: ' . $this->current_approver_role,
+    ]);
+    // throw new \Exception(__('You are not authorized to approve this request. Your roles: :roles, Required role: :required_role', [
+    //     'roles' => implode(', ', $approverRoles),
+    //     'required_role' => $this->current_approver_role,
+    // ]));
 }
 
     // التحقق مما إذا كان المسؤول قد وافق مسبقًا
@@ -118,8 +144,16 @@ public function approveRequest($approver, $comments = null)
     ->first();
 
     if ($existingApproval) {
-        throw new \Exception(__('You have already approved this request.'));
-    }
+        Notification::make()
+        ->title(__('approval_error'))
+        ->body(__('already_approved'))
+        ->danger()
+        ->send();
+    
+    throw ValidationException::withMessages([
+        'approval_status' => __('already_approved_message'),
+    ]);
+        }
 
     // التحقق من سلسلة الموافقات
     $approvalFlow = $this->approvalFlows
@@ -127,21 +161,51 @@ public function approveRequest($approver, $comments = null)
         ->first();
 
     if (!$approvalFlow) {
-        throw new \Exception(__('Approval flow is not properly configured for this request type.'));
-    }
+        Notification::make()
+        ->title(__('approval_error'))
+        ->body(__('approval_flow_not_configured'))
+        ->danger()
+        ->send();
+    
+    throw ValidationException::withMessages([
+        'approval_status' => __('approval_flow_not_configured_message'),
+    ]);
+        }
 
     // التحقق من الشروط الإضافية (مثال: رصيد الإجازات)
  
     if ($this->type === 'leave' && isset($approvalFlow->conditions['min_balance']) && $approvalFlow->conditions['min_balance']) {
         $employee = $this->employee;
         if ($employee->leave_balance < $approvalFlow->conditions['min_balance']) {
-            throw new \Exception(__('Insufficient leave balance for approval.'));
+            Notification::make()
+            ->title(__('approval_error'))
+            ->body(__('insufficient_leave_balance', [
+                'required_balance' => $approvalFlow->conditions['min_balance'],
+                'current_balance' => $employee->leave_balance
+            ]))
+            ->danger()
+            ->send();
+
+        throw ValidationException::withMessages([
+            'leave_balance' => __('insufficient_leave_balance_message', [
+                'required_balance' => $approvalFlow->conditions['min_balance'],
+                'current_balance' => $employee->leave_balance
+            ]),
+        ]);
         }
     }
 
     // التحقق من البيانات المطلوبة (مثال: التعليقات)
     if ($approvalFlow->conditions['requires_comments'] ?? false && empty($comments)) {
-        throw new \Exception(__('Comments are required for this approval.'));
+        Notification::make()
+        ->title(__('approval_error'))
+        ->body(__('comments_required'))
+        ->danger()
+        ->send();
+
+    throw ValidationException::withMessages([
+        'comments' => __('comments_required_message'),
+    ]);
     }
 
     // جلب المستوى التالي من سلسلة الموافقات

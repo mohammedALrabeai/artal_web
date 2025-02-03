@@ -13,6 +13,9 @@ use App\Models\ApprovalFlow;
 use App\Services\NotificationService;
 use Filament\Resources\Pages\CreateRecord;
 use App\Filament\Resources\RequestResource;
+use Filament\Notifications\Notification;
+
+use Illuminate\Validation\ValidationException;
 
 class CreateRequest extends CreateRecord
 {
@@ -31,8 +34,16 @@ class CreateRequest extends CreateRecord
        // استثناء أنواع الطلبات التي لا تحتاج إلى سياسة
        $policy = Policy::where('policy_type', $data['type'])->first();
        if (!$policy) {
-           throw new \Exception(__('No policy defined for this request type.'));
-       }
+        Notification::make()
+        ->title(__('approval_error'))
+        ->body(__('no_policy_defined'))
+        ->danger()
+        ->send();
+    
+    throw ValidationException::withMessages([
+        'policy_error' => __('no_policy_defined_message'),
+    ]);
+           }
 
 
 
