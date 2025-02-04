@@ -13,8 +13,21 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class AttendanceExport2Controller extends Controller
 {
+
+    
     public function export2(Request $request)
     {
+        // خريطة الألوان لكل حالة
+        $attendanceColors = [
+            'absent' => 'E57373',   // أحمر
+            'present' => 'C8E6C9',  // أخضر فاتح
+            'coverage' => 'FFD54F', // أصفر
+            'M' => 'FFCDD2',        // وردي فاتح
+            'leave' => '4CAF50',    // أخضر داكن
+            'UV' => 'FFB74D',       // برتقالي
+            'W' => 'FFA07A',        // برتقالي محمر (انسحاب)
+        ];
+
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
@@ -208,6 +221,7 @@ class AttendanceExport2Controller extends Controller
                 if ($statusAttendance && $statusAttendance->status === 'present' && $statusAttendance->check_in && !$statusAttendance->check_out) {
                     $status = 'W'; // انسحاب بدلاً من حضور
                 }
+
                 // $attendance = $employee->attendances->firstWhere('date', $date);
                 // $coverage = $attendance ? ($attendance->is_coverage ? 'COV' : '') : '';
                 // $workHours = $attendance ? $attendance->work_hours : '';
@@ -217,6 +231,32 @@ class AttendanceExport2Controller extends Controller
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverageStatus);
 
+
+                // **تطبيق الألوان بناءً على الحالة**
+                if (isset($attendanceColors[$status])) {
+                    $color = $attendanceColors[$status]; // استرجاع اللون من المصفوفة
+                    $cellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex) . $rowIndex;
+
+                    $sheet->getStyle($cellCoordinate)->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => $color],
+                        ],
+                    ]);
+                }
+
+                // **تلوين خلايا التغطية COV**
+                if (!empty($coverageStatus) && isset($attendanceColors['coverage'])) {
+                    $color = $attendanceColors['coverage'];
+                    $coverageCellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex) . ($rowIndex + 2);
+
+                    $sheet->getStyle($coverageCellCoordinate)->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['rgb' => $color],
+                        ],
+                    ]);
+                }
                 // // إدراج البيانات المكدسة
                 // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex,$status );
                 // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
