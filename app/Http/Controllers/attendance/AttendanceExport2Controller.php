@@ -68,6 +68,8 @@ class AttendanceExport2Controller extends Controller
             ['title' => 'إجازة مدفوعة PV', 'color' => '4CAF50', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"leave")'],
             ['title' => 'إجازة غير مدفوعة UV', 'color' => 'FFB74D', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"UV")'],
             ['title' => 'غياب A', 'color' => 'E57373', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"absent")'],
+            ['title' => 'انسحاب W', 'color' => 'FFA07A', 'formula' => '=COUNTIF($startColumn$row:$endColumn$row,"W")'], // **عمود الانسحاب الجديد**
+
             ['title' => 'الإجمالي Total', 'color' => '90A4AE', 'formula' => '=COUNTA($startColumn$row:$endColumn$row)'],
             ['title' => 'إجمالي الساعات', 'color' => 'B39DDB', 'formula' => '=SUM($startColumn$row:$endColumn$row)'], // العمود الجديد
             ['title' => 'المخالفات الإدارية Infract', 'color' => 'FFE0B2', 'formula' => ''],
@@ -200,6 +202,12 @@ class AttendanceExport2Controller extends Controller
                 $status = $statusAttendance ? $statusAttendance->status : 'N/A'; // حالة الحضور الأساسي
                 $workHours = $dailyAttendances->sum('work_hours'); // مجموع ساعات العمل
 
+
+
+                        // **تحديث حالة "انسحاب" في السطر الأول بدلًا من "حضور"**
+                if ($statusAttendance && $statusAttendance->status === 'present' && $statusAttendance->check_in && !$statusAttendance->check_out) {
+                    $status = 'W'; // انسحاب بدلاً من حضور
+                }
                 // $attendance = $employee->attendances->firstWhere('date', $date);
                 // $coverage = $attendance ? ($attendance->is_coverage ? 'COV' : '') : '';
                 // $workHours = $attendance ? $attendance->work_hours : '';
@@ -232,7 +240,11 @@ class AttendanceExport2Controller extends Controller
                     $nextRow = $rowIndex + 1; // احسب الصف الثاني خارج النص
                     $formula = "=SUM({$startColumn}{$nextRow}:{$endColumn}{$nextRow})"; 
 
-                }elseif
+                } elseif ($column['title'] === 'انسحاب W') {
+                    $formula = "=COUNTIF({$startColumn}{$startRow}:{$endColumn}{$startRow}, \"W\")";
+                }
+                
+                elseif 
                  ($column['title'] === 'الإجمالي Total') {
                     $offCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 7); // عمود أوف
                     $pCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 6);  // عمود P
