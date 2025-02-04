@@ -81,7 +81,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugin(FilamentSpatieLaravelBackupPlugin::make()
             
-            ->authorize(fn (): bool => auth()->user()->email === 'a@a.com'))
+            ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com'))
             ->authMiddleware([
                 Authenticate::class,
             ])
