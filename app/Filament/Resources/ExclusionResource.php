@@ -9,6 +9,7 @@ use App\Models\Exclusion;
 use Filament\Tables\Table;
 use App\Enums\ExclusionType;
 use Filament\Resources\Resource;
+use App\Forms\Components\EmployeeSelect;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\ExclusionResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -47,11 +48,7 @@ class ExclusionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('employee_id')
-                    ->label(__('Employee'))
-                    ->relationship('employee', 'first_name')
-                    ->searchable()
-                    ->required(),
+                EmployeeSelect::make(),
 
                 Forms\Components\Select::make('type')
                     ->label(__('Exclusion Type'))

@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
+use App\Forms\Components\EmployeeSelect;
 use Filament\Tables\Filters\SelectFilter;
 use App\Filament\Resources\LoanResource\Pages;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
@@ -38,32 +39,7 @@ class LoanResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('employee_id')
-            ->label(__('Employee'))
-            ->searchable()
-            ->placeholder(__('Search for an employee...'))
-           
-            ->getSearchResultsUsing(function (string $search) {
-                return \App\Models\Employee::query()
-                    ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                    ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                    ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                    ->limit(50)
-                    ->get()
-                    ->mapWithKeys(function ($employee) {
-                        return [
-                            $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"
-                        ]; // عرض الاسم الأول، العائلة، والمعرف
-                    });
-            })
-            ->getOptionLabelUsing(function ($value) {
-                $employee = \App\Models\Employee::find($value);
-                return $employee
-                    ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                    : null;
-            })
-            ->preload()
-            ->required(),
+            EmployeeSelect::make(),
             Forms\Components\Select::make('bank_id')
                 ->label(__('Bank'))
                 ->relationship('bank', 'name')

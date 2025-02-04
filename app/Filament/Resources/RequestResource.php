@@ -9,6 +9,7 @@ use App\Models\Policy;
 use App\Models\Request;
 use App\Models\Employee;
 use Filament\Resources\Resource;
+use App\Forms\Components\EmployeeSelect;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\RequestResource\Pages;
@@ -68,39 +69,7 @@ class RequestResource extends Resource
                             //     ->searchable()
                             //     ->nullable()
                             //     ->required(),
-                            Forms\Components\Select::make('employee_id')
-                                ->label(__('Employee'))
-                                ->searchable()
-                                ->placeholder(__('Search for an employee...'))
-                                ->getSearchResultsUsing(function (string $search) {
-                                    return \App\Models\Employee::query()
-                                        ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                                        ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                                        ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                                        ->limit(50)
-                                        ->get()
-                                        ->mapWithKeys(function ($employee) {
-                                            return [
-                                                $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
-                                            ]; // عرض الاسم الأول، العائلة، والمعرف
-                                        });
-                                })
-                                ->getOptionLabelUsing(function ($value) {
-                                    $employee = \App\Models\Employee::find($value);
-
-                                    return $employee
-                                        ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                                        : null;
-                                })
-                                ->reactive() // ✅ يجعل الحقل ديناميكيًا
-                                ->afterStateUpdated(function ($state, callable $set, $livewire) {
-                                    \Log::info('Employee selected:', ['employee_id' => $state]); // ✅ التحقق من القيمة في الـ Log
-                                    $livewire->selectedEmployeeId = $state; // ✅ تحديث `selectedEmployeeId` في Livewire
-                                    $set('selectedEmployeeId', $state); // ✅ تحديث داخل النموذج
-                                })
-                                ->preload()
-
-                                ->required(),
+                            EmployeeSelect::make(),
 
                             // المقدم
                             Forms\Components\Select::make('submitted_by')

@@ -83,6 +83,11 @@ class Employee extends Model
         return $this->belongsTo(User::class, 'added_by');
     }
 
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
+
     public function zone()
     {
         return $this->belongsTo(Zone::class);

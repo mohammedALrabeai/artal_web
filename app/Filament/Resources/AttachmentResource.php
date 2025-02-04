@@ -2,17 +2,18 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\AttachmentResource\Pages;
-use App\Models\Attachment;
-use App\Models\Employee;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Forms\Get;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Forms\Get;
+use App\Models\Employee;
+use Filament\Forms\Form;
+use App\Models\Attachment;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Illuminate\Support\Facades\Storage;
+use App\Forms\Components\EmployeeSelect;
+use Filament\Tables\Filters\SelectFilter;
+use App\Filament\Resources\AttachmentResource\Pages;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class AttachmentResource extends Resource
@@ -50,32 +51,7 @@ class AttachmentResource extends Resource
                 ->label(__('Title'))
                 ->required(),
 
-                Forms\Components\Select::make('employee_id')
-                ->label(__('Employee'))
-                ->searchable()
-                ->placeholder(__('Search for an employee...'))
-               
-                ->getSearchResultsUsing(function (string $search) {
-                    return \App\Models\Employee::query()
-                        ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                        ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                        ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                        ->limit(50)
-                        ->get()
-                        ->mapWithKeys(function ($employee) {
-                            return [
-                                $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"
-                            ]; // عرض الاسم الأول، العائلة، والمعرف
-                        });
-                })
-                ->getOptionLabelUsing(function ($value) {
-                    $employee = \App\Models\Employee::find($value);
-                    return $employee
-                        ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                        : null;
-                })
-                ->preload()
-                ->required(),
+                EmployeeSelect::make(),
 
             Forms\Components\Select::make('type')
                 ->label(__('Type'))

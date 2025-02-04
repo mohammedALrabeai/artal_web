@@ -16,14 +16,15 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use App\Forms\Components\EmployeeSelect;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Filters\TernaryFilter;
+
+
 use Filament\Tables\Actions\DeleteBulkAction;
-
-
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 
@@ -55,32 +56,7 @@ class EmployeeProjectRecordResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Select::make('employee_id')
-            ->label(__('Employee'))
-            ->searchable()
-            ->placeholder(__('Search for an employee...'))
-           
-            ->getSearchResultsUsing(function (string $search) {
-                return \App\Models\Employee::query()
-                    ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                    ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                    ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                    ->limit(50)
-                    ->get()
-                    ->mapWithKeys(function ($employee) {
-                        return [
-                            $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"
-                        ]; // عرض الاسم الأول، العائلة، والمعرف
-                    });
-            })
-            ->getOptionLabelUsing(function ($value) {
-                $employee = \App\Models\Employee::find($value);
-                return $employee
-                    ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                    : null;
-            })
-            ->preload()
-            ->required(),
+            EmployeeSelect::make(),
         
             // Select::make('employee_id')
             // ->label(__('Employee'))

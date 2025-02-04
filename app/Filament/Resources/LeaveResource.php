@@ -5,15 +5,16 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Leave;
+use App\Models\Employee;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use App\Forms\Components\EmployeeSelect;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\LeaveResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\LeaveResource\RelationManagers;
-use App\Models\Employee;
 
 class LeaveResource extends Resource
 {
@@ -45,32 +46,7 @@ protected static ?int $navigationSort = 2;
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('employee_id')
-            ->label(__('Employee'))
-            ->searchable()
-            ->placeholder(__('Search for an employee...'))
-           
-            ->getSearchResultsUsing(function (string $search) {
-                return \App\Models\Employee::query()
-                    ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                    ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                    ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                    ->limit(50)
-                    ->get()
-                    ->mapWithKeys(function ($employee) {
-                        return [
-                            $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})"
-                        ]; // عرض الاسم الأول، العائلة، والمعرف
-                    });
-            })
-            ->getOptionLabelUsing(function ($value) {
-                $employee = \App\Models\Employee::find($value);
-                return $employee
-                    ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                    : null;
-            })
-            ->preload()
-            ->required(),
+            EmployeeSelect::make(),
             
             Forms\Components\DatePicker::make('start_date')
                 ->label(__('Start Date'))
