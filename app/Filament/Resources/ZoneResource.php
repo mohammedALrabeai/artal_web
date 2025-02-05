@@ -2,41 +2,29 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\Zone;
-use Filament\Tables;
+use App\Filament\Resources\ZoneResource\Pages;
 use App\Models\Pattern;
 use App\Models\Project;
+use App\Models\Zone;
+use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Filters\TernaryFilter;
-
-
-
-
-use App\Filament\Resources\ZoneResource\Pages;
-
-
-
-
-
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\ZoneResource\RelationManagers;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ZoneResource extends Resource
 {
     protected static ?string $model = Zone::class;
-    protected static ?int $navigationSort = -9; 
+
+    protected static ?int $navigationSort = -9;
 
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
-
+    {
+        return static::getModel()::count();
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-map-pin'; // أيقونة المورد
 
@@ -44,17 +32,16 @@ class ZoneResource extends Resource
     {
         return __('Zones');
     }
-    
+
     public static function getPluralLabel(): string
     {
         return __('Zones');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Zone & Project Management');
     }
-    
 
     public static function form(Form $form): Form
     {
@@ -63,63 +50,53 @@ class ZoneResource extends Resource
                 ->label(__('Name'))
                 ->required()
                 ->maxLength(255),
-    
+
             Forms\Components\DatePicker::make('start_date')
                 ->label(__('Start Date'))
                 ->required(),
-    
+
             Forms\Components\Select::make('pattern_id')
                 ->label(__('Pattern'))
                 ->options(Pattern::all()->pluck('name', 'id'))
                 ->searchable()
                 ->preload()
                 ->required(),
-                Forms\Components\Select::make('project_id')
+            Forms\Components\Select::make('project_id')
                 ->label(__('Project'))
                 ->options(Project::all()->pluck('name', 'id'))
                 ->searchable()
                 ->required(),
-    
-           
-                Forms\Components\TextInput::make('lat')
+
+            Forms\Components\TextInput::make('lat')
                 ->label(__('Latitude'))
                 ->required()
                 ->default(fn ($record) => $record?->lat)
                 ->id('lat'),
-            
+
             Forms\Components\TextInput::make('longg')
                 ->label(__('Longitude'))
                 ->required()
                 ->default(fn ($record) => $record?->longg)
                 ->id('longg'),
 
-                
-    
             Forms\Components\TextInput::make('area')
                 ->label(__('Range (meter)'))
                 ->required()
                 ->numeric(),
 
-              
-    
             Forms\Components\TextInput::make('emp_no')
                 ->label(__('Number of Employees in one shift'))
                 ->numeric()
                 ->required(),
-                Forms\Components\Toggle::make('status')
+            Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
                 ->default(true),
-                Forms\Components\View::make('components.map-picker')
+            Forms\Components\View::make('components.map-picker')
                 ->label(__('Pick Location'))
                 ->columnSpanFull(),
-    
-          
+
         ]);
     }
-    
-    
-    
-    
 
     public static function table(Table $table): Table
     {
@@ -134,7 +111,7 @@ class ZoneResource extends Resource
                     ->label(__('Pattern'))
                     ->sortable()
                     ->searchable(),
-                    Tables\Columns\TextColumn::make('project.name')
+                Tables\Columns\TextColumn::make('project.name')
                     ->label(__('Project'))
                     ->sortable()
                     ->searchable(),
@@ -157,7 +134,7 @@ class ZoneResource extends Resource
                 SelectFilter::make('pattern_id')
                     ->label(__('Pattern'))
                     ->options(Pattern::all()->pluck('name', 'id')),
-                    SelectFilter::make('project_id')
+                SelectFilter::make('project_id')
                     ->label(__('Project'))
                     ->options(Project::all()->pluck('name', 'id')),
 
@@ -171,7 +148,7 @@ class ZoneResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
-                ExportBulkAction::make()
+                ExportBulkAction::make(),
             ]);
     }
 

@@ -35,9 +35,14 @@ class EmployeeProjectRecordResource extends Resource
     protected static ?string $navigationIcon = 'fluentui-globe-person-20-o';
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
         return static::getModel()::count();
-        
     }
+    
     protected static ?int $navigationSort = 0; 
 
     public static function getNavigationLabel(): string

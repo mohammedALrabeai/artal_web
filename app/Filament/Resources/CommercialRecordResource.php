@@ -4,12 +4,20 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CommercialRecordResource\Pages;
 use App\Models\CommercialRecord;
+use App\Models\RecordMedia;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class CommercialRecordResource extends Resource
@@ -20,6 +28,11 @@ class CommercialRecordResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (! auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+
         return static::getModel()::count();
     }
 
@@ -165,8 +178,8 @@ class CommercialRecordResource extends Resource
                     ->label(__('ID'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-              
-                    Tables\Columns\TextColumn::make('record_number')
+
+                Tables\Columns\TextColumn::make('record_number')
                     ->label(__('Record Number'))
                     ->searchable(),
 
@@ -262,6 +275,76 @@ class CommercialRecordResource extends Resource
                     ->query(fn (Builder $query) => $query->where('capital', '>', 100000)),
             ])
             ->actions([
+                // // ✅ زر إضافة المرفقات
+                // Action::make('add_attachment')
+                //     ->label(__('📎 Add Attachment'))
+                // // ->icon('heroicon-o-paper-clip')
+                //     ->form(fn (Form $form) => [
+                //         TextInput::make('title')
+                //             ->label(__('Title'))
+                //             ->required()
+                //             ->maxLength(255),
+
+                //         Textarea::make('notes')
+                //             ->label(__('Notes'))
+                //             ->nullable()
+                //             ->rows(2),
+
+                //         DatePicker::make('expiry_date')
+                //             ->label(__('Expiry Date'))
+                //             ->nullable(),
+
+                //         // SpatieMediaLibraryFileUpload::make('file')
+                //         //     ->label(__('Upload File'))
+                //         //     ->collection('record_media')
+                //         //     ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
+                //         //     ->preserveFilenames()
+                //         //     ->maxSize(10240) // 10MB
+                //         //     ->model(RecordMedia::class) // ✅ التأكد من أن `RecordMedia` هو الموديل المستخدم
+                //         //     ->visibility('private') // ✅ التأكد من أن الملفات لا تضيع بسبب إعدادات التخزين
+                //         //     ->openable() // ✅ السماح للمستخدم بفتح الملفات بعد الرفع
+                //         //     ->downloadable()
+                //         //     ->live(), // 10MB
+
+                //         FileUpload::make('file')
+                //             ->label(__('Upload File'))
+                //             ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
+                //             ->preserveFilenames()
+                //             ->model(RecordMedia::class)
+                //             ->maxSize(10240) // ✅ 10MB
+                //             ->visibility('private') // ✅ تأكد من أن الملفات لا تضيع بسبب إعدادات التخزين
+                //             ->live() // ✅ تمكين `Livewire` للتعامل مع الملفات
+                //             ->temporary(),
+                //     ])
+                //     ->action(function (array $data, Model $record) {
+                //         dd(request()->all()); // ✅ تحقق مما إذا كان الملف يظهر هنا
+
+                //         $file = $data['file'] ?? request()->file('file'); // ✅ استخدم `request()->file()` إذا لم يكن في `$data`
+
+                //         dd([
+                //             'title' => $data['title'],
+                //             'notes' => $data['notes'],
+                //             'expiry_date' => $data['expiry_date'],
+                //             'file' => $file, // ✅ تحقق مما إذا كان الملف موجودًا
+                //         ]);
+
+                //         if (! $file) {
+                //             throw new \Exception('File was not received.');
+                //         }
+
+                //         // ✅ إنشاء سجل جديد في `RecordMedia`
+                //         $attachment = RecordMedia::create([
+                //             'title' => $data['title'],
+                //             'notes' => $data['notes'],
+                //             'expiry_date' => $data['expiry_date'],
+                //             'recordable_id' => $record->id,
+                //             'recordable_type' => get_class($record),
+                //         ]);
+
+                //         // ✅ رفع الملف إلى `RecordMedia`
+                //         $attachment->addMedia($file)->toMediaCollection('record_media');
+
+                //     }),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

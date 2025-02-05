@@ -20,8 +20,14 @@ class MunicipalLicenseResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
         return static::getModel()::count();
     }
+    
 
     public static function getNavigationLabel(): string
     {
@@ -57,7 +63,7 @@ class MunicipalLicenseResource extends Resource
                                 Forms\Components\TextInput::make('license_number')
                                     ->label(__('License Number B'))
                                     ->required()
-                                    ->unique()
+                                    // ->unique()
                                     ->maxLength(50),
 
                                 Forms\Components\DatePicker::make('expiry_date_hijri')

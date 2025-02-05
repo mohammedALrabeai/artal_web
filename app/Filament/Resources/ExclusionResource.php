@@ -25,8 +25,14 @@ class ExclusionResource extends Resource
     protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
         return static::getModel()::count();
     }
+    
 
     public static function getNavigationLabel(): string
     {

@@ -21,8 +21,14 @@ class EmployeeNotificationResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('is_read', false)->count(); // عدد الإشعارات غير المقروءة
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
+        return static::getModel()::count();
     }
+    
 
     public static function getNavigationLabel(): string
     {

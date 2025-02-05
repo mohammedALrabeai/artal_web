@@ -20,8 +20,14 @@ class PrivateLicenseResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
         return static::getModel()::count();
     }
+    
 
     public static function getNavigationLabel(): string
     {
@@ -51,6 +57,7 @@ class PrivateLicenseResource extends Resource
                                     ->label(__('Commercial Record'))
                                     ->relationship('commercialRecord', 'entity_name')
                                     ->required()
+                                    ->preload()
                                     ->searchable(),
 
                                 Forms\Components\TextInput::make('license_name')
@@ -61,7 +68,7 @@ class PrivateLicenseResource extends Resource
                                 Forms\Components\TextInput::make('license_number')
                                     ->label(__('License Number'))
                                     ->required()
-                                    ->unique()
+                                    // ->unique()
                                     ->maxLength(50),
 
                                 Forms\Components\DatePicker::make('issue_date')

@@ -30,8 +30,14 @@ class AttendanceResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
         return static::getModel()::count();
     }
+    
 
     public static function getNavigationLabel(): string
     {

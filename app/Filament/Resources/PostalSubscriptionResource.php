@@ -20,8 +20,14 @@ class PostalSubscriptionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
         return static::getModel()::count();
     }
+    
 
     public static function getNavigationLabel(): string
     {
@@ -51,12 +57,13 @@ class PostalSubscriptionResource extends Resource
                                     ->label(__('Commercial Record'))
                                     ->relationship('commercialRecord', 'entity_name')
                                     ->required()
+                                    ->preload()
                                     ->searchable(),
 
                                 Forms\Components\TextInput::make('subscription_number')
                                     ->label(__('Subscription Number'))
                                     ->required()
-                                    ->unique()
+                                    // ->unique()
                                     ->maxLength(50),
 
                                 Forms\Components\DatePicker::make('start_date')

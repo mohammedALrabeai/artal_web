@@ -18,9 +18,15 @@ class CoverageResource extends Resource
 {
     protected static ?string $model = Coverage::class;
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
+        return static::getModel()::count();
+    }
+    
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

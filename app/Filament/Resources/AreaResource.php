@@ -22,9 +22,15 @@ class AreaResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-map';
 
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
+        return static::getModel()::count();
+    }
+    
 
     public static function getNavigationLabel(): string
     {

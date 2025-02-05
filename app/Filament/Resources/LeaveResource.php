@@ -20,9 +20,15 @@ class LeaveResource extends Resource
 {
     protected static ?string $model = Leave::class;
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+        if (!auth()->user()?->hasRole('admin')) {
+            return null;
+        }
+    
+        return static::getModel()::count();
+    }
+    
 protected static ?int $navigationSort = 2; 
 
 
