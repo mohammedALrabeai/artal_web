@@ -20,4 +20,8 @@ class NationalAddress extends Model
     {
         return $this->belongsTo(CommercialRecord::class, 'commercial_record_id');
     }
+    public function recordMedia()
+    {
+        return $this->morphMany(RecordMedia::class, 'recordable');
+    }
 }

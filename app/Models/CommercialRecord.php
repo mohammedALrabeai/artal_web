@@ -73,5 +73,11 @@ public function insuranceCompany()
     return $this->belongsTo(InsuranceCompany::class, 'insurance_company_id');
 }
 
+public function recordMedia()
+{
+    return $this->morphMany(RecordMedia::class, 'recordable');
+}
+
+
 
 }

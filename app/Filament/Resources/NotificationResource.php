@@ -50,6 +50,10 @@ class NotificationResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                ->label(__('ID'))
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('data->message')
                     ->label('الرسالة')
                     ->searchable(),

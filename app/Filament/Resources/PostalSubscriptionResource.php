@@ -2,16 +2,15 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\PostalSubscriptionResource\Pages;
 use App\Models\PostalSubscription;
 use Filament\Forms;
-use Filament\Tables;
-use Filament\Resources\Resource;
 use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-
-use App\Filament\Resources\PostalSubscriptionResource\Pages;
 
 class PostalSubscriptionResource extends Resource
 {
@@ -43,74 +42,121 @@ class PostalSubscriptionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('commercial_record_id')
-                    ->label(__('Commercial Record'))
-                    ->relationship('commercialRecord', 'entity_name')
-                    ->required()
-                    ->searchable(),
-    
-                Forms\Components\TextInput::make('subscription_number')
-                    ->label(__('Subscription Number'))
-                    ->required()
-                    ->unique()
-                    ->maxLength(50),
-    
-                Forms\Components\DatePicker::make('start_date')
-                    ->label(__('Start Date'))
-                    ->nullable(),
-    
-                Forms\Components\DatePicker::make('expiry_date')
-                    ->label(__('Expiry Date (Gregorian)'))
-                    ->nullable(),
-    
-                Forms\Components\DatePicker::make('expiry_date_hijri')
-                    ->label(__('Expiry Date (Hijri)')) // نهاية الاشتراك (هجري)
-                    ->nullable(),
-    
-                Forms\Components\TextInput::make('mobile_number')
-                    ->label(__('Mobile Number')) // رقم الجوال
-                    ->nullable()
-                    ->tel(),
-    
-                Forms\Components\Textarea::make('notes')
-                    ->label(__('Notes'))
-                    ->nullable()
-                    ->maxLength(1000),
-            ]);
+                Forms\Components\Tabs::make('CommercialRecordTabs')
+                    ->tabs([
+                        // 📌 تبويب المعلومات الأساسية
+                        Forms\Components\Tabs\Tab::make(__('Basic Details'))
+                            ->schema([
+                                Forms\Components\Select::make('commercial_record_id')
+                                    ->label(__('Commercial Record'))
+                                    ->relationship('commercialRecord', 'entity_name')
+                                    ->required()
+                                    ->searchable(),
+
+                                Forms\Components\TextInput::make('subscription_number')
+                                    ->label(__('Subscription Number'))
+                                    ->required()
+                                    ->unique()
+                                    ->maxLength(50),
+
+                                Forms\Components\DatePicker::make('start_date')
+                                    ->label(__('Start Date'))
+                                    ->nullable(),
+
+                                Forms\Components\DatePicker::make('expiry_date')
+                                    ->label(__('Expiry Date (Gregorian)'))
+                                    ->nullable(),
+
+                                Forms\Components\DatePicker::make('expiry_date_hijri')
+                                    ->label(__('Expiry Date (Hijri)')) // نهاية الاشتراك (هجري)
+                                    ->nullable(),
+
+                                Forms\Components\TextInput::make('mobile_number')
+                                    ->label(__('Mobile Number')) // رقم الجوال
+                                    ->nullable()
+                                    ->tel(),
+
+                                Forms\Components\Textarea::make('notes')
+                                    ->label(__('Notes'))
+                                    ->nullable()
+                                    ->maxLength(1000),
+                            ])->columns(2),
+
+                        // 📌 تبويب المرفقات
+                        Forms\Components\Tabs\Tab::make(__('Attachments'))
+                            ->schema([
+                                Forms\Components\Repeater::make('recordMedia')
+                                    ->relationship('recordMedia')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('title')
+                                            ->label(__('Title'))
+                                            ->required()
+                                            ->maxLength(255),
+
+                                        Forms\Components\Textarea::make('notes')
+                                            ->label(__('Notes'))
+                                            ->nullable()
+                                            ->rows(2),
+
+                                        Forms\Components\DatePicker::make('expiry_date')
+                                            ->label(__('Expiry Date'))
+                                            ->nullable(),
+
+                                        Forms\Components\SpatieMediaLibraryFileUpload::make('file')
+                                            ->label(__('Upload File'))
+                                            ->collection('record_media')
+                                            ->multiple()
+                                            ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
+                                            ->preserveFilenames()
+                                            ->maxFiles(5)
+                                            ->maxSize(10240), // 10MB
+                                    ])
+
+                                    ->collapsible()
+                                    ->grid(2)
+                                    ->columns(2)
+                                    ->default([]),
+                            ]),
+                    ]),
+            ])
+            ->columns(1);
     }
-    
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label(__('ID'))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('commercialRecord.entity_name')
                     ->label(__('Commercial Record'))
                     ->searchable(),
-    
+
                 Tables\Columns\TextColumn::make('subscription_number')
                     ->label(__('Subscription Number'))
                     ->searchable(),
-    
+
                 Tables\Columns\TextColumn::make('start_date')
                     ->label(__('Start Date'))
                     ->dateTime()
                     ->toggleable(),
-    
+
                 Tables\Columns\TextColumn::make('expiry_date')
                     ->label(__('Expiry Date (Gregorian)'))
                     ->dateTime()
                     ->sortable(),
-    
+
                 Tables\Columns\TextColumn::make('expiry_date_hijri')
                     ->label(__('Expiry Date (Hijri)')) // نهاية الاشتراك (هجري)
                     ->dateTime()
                     ->sortable(),
-    
+
                 Tables\Columns\TextColumn::make('mobile_number')
                     ->label(__('Mobile Number')) // رقم الجوال
                     ->toggleable(),
-    
+
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Notes'))
                     ->toggleable()
@@ -120,7 +166,7 @@ class PostalSubscriptionResource extends Resource
                 Tables\Filters\Filter::make('expiry_soon')
                     ->label(__('Expiring Soon'))
                     ->query(fn (Builder $query) => $query->where('expiry_date', '<=', now()->addMonth())),
-    
+
                 Tables\Filters\Filter::make('no_notes')
                     ->label(__('Without Notes'))
                     ->query(fn (Builder $query) => $query->whereNull('notes')),
@@ -135,7 +181,6 @@ class PostalSubscriptionResource extends Resource
                 ExportBulkAction::make(),
             ]);
     }
-    
 
     public static function getRelations(): array
     {

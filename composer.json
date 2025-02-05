@@ -17,6 +17,7 @@
         "consoletvs/charts": "^6.7",
         "filament/filament": "^3.2",
         "filament/notifications": "^3.2",
+        "filament/spatie-laravel-media-library-plugin": "^3.2",
         "geniusts/hijri-dates": "^1.2",
         "laravel/framework": "^11.9",
         "laravel/sanctum": "^4.0",

@@ -25,5 +25,8 @@ class InsuranceCompany extends Model
         return $this->hasMany(Employee::class, 'insurance_company_id');
     }
 
-
+    public function recordMedia()
+    {
+        return $this->morphMany(RecordMedia::class, 'recordable');
+    }
 }

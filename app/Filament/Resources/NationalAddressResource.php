@@ -2,15 +2,15 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\NationalAddressResource\Pages;
 use App\Models\NationalAddress;
 use Filament\Forms;
-use Filament\Tables;
-use Filament\Resources\Resource;
 use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use App\Filament\Resources\NationalAddressResource\Pages;
 
 class NationalAddressResource extends Resource
 {
@@ -42,28 +42,76 @@ class NationalAddressResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('commercial_record_id')
-                    ->label(__('Commercial Record'))
-                    ->relationship('commercialRecord', 'entity_name')
-                    ->required()
-                    ->preload()
-                    ->searchable(),
+                Forms\Components\Tabs::make('CommercialRecordTabs')
+                    ->tabs([
+                        // 📌 تبويب المعلومات الأساسية
+                        Forms\Components\Tabs\Tab::make(__('Basic Details'))
+                            ->schema([
+                                Forms\Components\Select::make('commercial_record_id')
+                                    ->label(__('Commercial Record'))
+                                    ->relationship('commercialRecord', 'entity_name')
+                                    ->required()
+                                    ->preload()
+                                    ->searchable(),
 
-                Forms\Components\DatePicker::make('expiry_date')
-                    ->label(__('Expiry Date'))
-                    ->nullable(),
+                                Forms\Components\DatePicker::make('expiry_date')
+                                    ->label(__('Expiry Date'))
+                                    ->nullable(),
 
-                Forms\Components\Textarea::make('notes')
-                    ->label(__('Notes'))
-                    ->nullable()
-                    ->maxLength(1000),
-            ]);
+                                Forms\Components\Textarea::make('notes')
+                                    ->label(__('Notes'))
+                                    ->nullable()
+                                    ->maxLength(1000),
+                            ])->columns(2),
+
+                        // 📌 تبويب المرفقات
+                        Forms\Components\Tabs\Tab::make(__('Attachments'))
+                            ->schema([
+                                Forms\Components\Repeater::make('recordMedia')
+                                    ->relationship('recordMedia')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('title')
+                                            ->label(__('Title'))
+                                            ->required()
+                                            ->maxLength(255),
+
+                                        Forms\Components\Textarea::make('notes')
+                                            ->label(__('Notes'))
+                                            ->nullable()
+                                            ->rows(2),
+
+                                        Forms\Components\DatePicker::make('expiry_date')
+                                            ->label(__('Expiry Date'))
+                                            ->nullable(),
+
+                                        Forms\Components\SpatieMediaLibraryFileUpload::make('file')
+                                            ->label(__('Upload File'))
+                                            ->collection('record_media')
+                                            ->multiple()
+                                            ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
+                                            ->preserveFilenames()
+                                            ->maxFiles(5)
+                                            ->maxSize(10240), // 10MB
+                                    ])
+
+                                    ->collapsible()
+                                    ->grid(2)
+                                    ->columns(2)
+                                    ->default([]),
+                            ]),
+                    ]),
+            ])
+            ->columns(1);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label(__('ID'))
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('commercialRecord.entity_name')
                     ->label(__('Commercial Record'))
                     ->searchable(),
