@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use App\Models\Policy;
-use App\Models\Request;
-use App\Models\Employee;
-use Filament\Resources\Resource;
-use App\Forms\Components\EmployeeSelect;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\RequestResource\Pages;
 use App\Filament\Resources\RequestResource\RelationManagers;
+use App\Forms\Components\EmployeeSelect;
+use App\Models\Employee;
+use App\Models\Request;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Illuminate\Database\Eloquent\Builder;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class RequestResource extends Resource
 {
@@ -26,13 +27,12 @@ class RequestResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
@@ -176,9 +176,6 @@ class RequestResource extends Resource
                             // ->columns(1)
                             // ->minItems(1) // الحد الأدنى للمرفقات
                             // ->maxItems(5), // الحد الأقصى للمرفقات
-                        
-                        
-                        
 
                             Forms\Components\Textarea::make('exclusion_notes')
                                 ->label(__('Notes'))
@@ -198,111 +195,111 @@ class RequestResource extends Resource
                         ])
                         ->columns(2)
                         ->visible(fn ($livewire, $get) => $get('type') === 'loan'),
-                      
-                        Forms\Components\Tabs\Tab::make(__('Attachments'))
-            ->schema([
-                Forms\Components\Repeater::make('attachments')
-                    ->label(__('Attachments'))
-                    ->relationship('attachments') // الربط بالعلاقة في موديل Request
-                    ->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->label(__('Title'))
-                            ->required(),
-                        
-                        Forms\Components\Select::make('type')
-                            ->label(__('Type'))
-                            ->options([
-                                'text' => __('Text'),
-                                'link' => __('Link'),
-                                'image' => __('Image'),
-                                'video' => __('Video'),
-                                'file' => __('File'),
-                            ])
-                            ->required()
-                            ->reactive(),
 
-                        Forms\Components\Textarea::make('content')
-                            ->label(__('Content (Text)'))
-                            ->nullable()
-                            ->visible(fn ($get) => $get('type') === 'text'),
+                    Forms\Components\Tabs\Tab::make(__('Attachments'))
+                        ->schema([
+                            Forms\Components\Repeater::make('attachments')
+                                ->label(__('Attachments'))
+                                ->relationship('attachments') // الربط بالعلاقة في موديل Request
+                                ->schema([
+                                    Forms\Components\TextInput::make('title')
+                                        ->label(__('Title'))
+                                        ->required(),
 
-                        Forms\Components\TextInput::make('content')
-                            ->label(__('Content (Link)'))
-                            ->nullable()
-                            ->visible(fn ($get) => $get('type') === 'link')
-                            ->url(),
-                            // Forms\Components\TextInput::make('image_url')
-                        Forms\Components\FileUpload::make('image_url')
-                            ->label(__('Content (Image)'))
-                            // ->nullable()
-                            ->disk('s3')
-                            ->directory('attachments/images')
-                            ->visibility('public')
-                            ->visible(fn ($get) => $get('type') === 'image'),
+                                    Forms\Components\Select::make('type')
+                                        ->label(__('Type'))
+                                        ->options([
+                                            'text' => __('Text'),
+                                            'link' => __('Link'),
+                                            'image' => __('Image'),
+                                            'video' => __('Video'),
+                                            'file' => __('File'),
+                                        ])
+                                        ->required()
+                                        ->reactive(),
 
-                        Forms\Components\FileUpload::make('video_url')
-                            ->label(__('Content (Video)'))
-                            ->nullable()
-                            ->disk('s3')
-                            ->directory('attachments/videos')
-                            ->visibility('public')
-                            ->acceptedFileTypes(['video/*'])
-                            ->visible(fn ($get) => $get('type') === 'video'),
+                                    Forms\Components\Textarea::make('content')
+                                        ->label(__('Content (Text)'))
+                                        ->nullable()
+                                        ->visible(fn ($get) => $get('type') === 'text'),
 
-                        Forms\Components\FileUpload::make('file_url')
-                            ->label(__('Content (File)'))
-                            ->nullable()
-                            ->disk('s3')
-                            ->directory('attachments/files')
-                            ->visibility('public')
-                            ->acceptedFileTypes(['application/*'])
-                            ->visible(fn ($get) => $get('type') === 'file'),
+                                    Forms\Components\TextInput::make('content')
+                                        ->label(__('Content (Link)'))
+                                        ->nullable()
+                                        ->visible(fn ($get) => $get('type') === 'link')
+                                        ->url(),
+                                    // Forms\Components\TextInput::make('image_url')
+                                    Forms\Components\FileUpload::make('image_url')
+                                        ->label(__('Content (Image)'))
+                                        // ->nullable()
+                                        ->disk('s3')
+                                        ->directory('attachments/images')
+                                        ->visibility('public')
+                                        ->visible(fn ($get) => $get('type') === 'image'),
 
-                        Forms\Components\DatePicker::make('expiry_date')
-                            ->label(__('Expiry Date'))
-                            ->nullable(),
+                                    Forms\Components\FileUpload::make('video_url')
+                                        ->label(__('Content (Video)'))
+                                        ->nullable()
+                                        ->disk('s3')
+                                        ->directory('attachments/videos')
+                                        ->visibility('public')
+                                        ->acceptedFileTypes(['video/*'])
+                                        ->visible(fn ($get) => $get('type') === 'video'),
 
-                        Forms\Components\Textarea::make('notes')
-                            ->label(__('Notes'))
-                            ->nullable(),
+                                    Forms\Components\FileUpload::make('file_url')
+                                        ->label(__('Content (File)'))
+                                        ->nullable()
+                                        ->disk('s3')
+                                        ->directory('attachments/files')
+                                        ->visibility('public')
+                                        ->acceptedFileTypes(['application/*'])
+                                        ->visible(fn ($get) => $get('type') === 'file'),
 
-                        // ✅ **إضافة حقل مخفي لتمرير employee_id تلقائيًا**
-                        // Forms\Components\Select::make('employee_id')
-                        // ->label(__('Employee'))
-                        // ->searchable()
-                        // ->placeholder(__('Search for an employee...'))
-                        // ->getSearchResultsUsing(function (string $search) {
-                        //     return \App\Models\Employee::query()
-                        //         ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
-                        //         ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
-                        //         ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
-                        //         ->limit(50)
-                        //         ->get()
-                        //         ->mapWithKeys(function ($employee) {
-                        //             return [
-                        //                 $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
-                        //             ]; // عرض الاسم الأول، العائلة، والمعرف
-                        //         });
-                        // })
-                        // ->getOptionLabelUsing(function ($value) {
-                        //     $employee = \App\Models\Employee::find($value);
+                                    Forms\Components\DatePicker::make('expiry_date')
+                                        ->label(__('Expiry Date'))
+                                        ->nullable(),
 
-                        //     return $employee
-                        //         ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
-                        //         : null;
-                        // })
-        
-                        // ->preload()
+                                    Forms\Components\Textarea::make('notes')
+                                        ->label(__('Notes'))
+                                        ->nullable(),
 
-                        // ->required(), // ✅ إخفاؤه فقط إذا لم يتم اختيار موظف
-                    // تمرير `employee_id` إلى كل مرفق
-                    ])
-                    ->columns(2) 
-                    ->minItems(0) 
-                    ->maxItems(10), 
-            ])
-            ->columns(1)
-            // ->visible(fn ($get) => !empty($get('employee_id'))),
+                                    // ✅ **إضافة حقل مخفي لتمرير employee_id تلقائيًا**
+                                    // Forms\Components\Select::make('employee_id')
+                                    // ->label(__('Employee'))
+                                    // ->searchable()
+                                    // ->placeholder(__('Search for an employee...'))
+                                    // ->getSearchResultsUsing(function (string $search) {
+                                    //     return \App\Models\Employee::query()
+                                    //         ->where('national_id', 'like', "%{$search}%") // البحث باستخدام رقم الهوية
+                                    //         ->orWhere('first_name', 'like', "%{$search}%") // البحث باستخدام الاسم الأول
+                                    //         ->orWhere('family_name', 'like', "%{$search}%") // البحث باستخدام اسم العائلة
+                                    //         ->limit(50)
+                                    //         ->get()
+                                    //         ->mapWithKeys(function ($employee) {
+                                    //             return [
+                                    //                 $employee->id => "{$employee->first_name} {$employee->family_name} ({$employee->id})",
+                                    //             ]; // عرض الاسم الأول، العائلة، والمعرف
+                                    //         });
+                                    // })
+                                    // ->getOptionLabelUsing(function ($value) {
+                                    //     $employee = \App\Models\Employee::find($value);
+
+                                    //     return $employee
+                                    //         ? "{$employee->first_name} {$employee->family_name} ({$employee->id})" // عرض الاسم والمعرف عند الاختيار
+                                    //         : null;
+                                    // })
+
+                                    // ->preload()
+
+                                    // ->required(), // ✅ إخفاؤه فقط إذا لم يتم اختيار موظف
+                                    // تمرير `employee_id` إلى كل مرفق
+                                ])
+                                ->columns(2)
+                                ->minItems(0)
+                                ->maxItems(10),
+                        ])
+                        ->columns(1),
+                    // ->visible(fn ($get) => !empty($get('employee_id'))),
 
                 ])
             // ->columns(1)
@@ -310,7 +307,6 @@ class RequestResource extends Resource
 
         ])->columns(1);
     }
-   
 
     public static function table(Tables\Table $table): Tables\Table
     {
@@ -335,24 +331,24 @@ class RequestResource extends Resource
                         'rejected' => 'danger',
                         default => null,
                     }),
-                 
+
                 Tables\Columns\TextColumn::make('current_approver_role')
                     ->label(__('Current Approver Role'))
                     ->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state))),
                 Tables\Columns\TextColumn::make('duration')
                     ->label(__('Duration (Days)'))
                     ->toggleable(isToggledHiddenByDefault: true),
-                    Tables\Columns\TextColumn::make('description')
+                Tables\Columns\TextColumn::make('description')
                     ->label(__('Description'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Amount'))
                     ->toggleable(isToggledHiddenByDefault: true),
-                    // Tables\Columns\TextColumn::make('attachments_count')
-                    // ->label(__('Attachments Count'))
-                    // ->getStateUsing(fn ($record) => $record->exclusion ? $record->exclusion->attachments->count() : 0)
-                    // ->sortable()
-                    // ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('attachments_count')
+                // ->label(__('Attachments Count'))
+                // ->getStateUsing(fn ($record) => $record->exclusion ? $record->exclusion->attachments->count() : 0)
+                // ->sortable()
+                // ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('additional_data')
                     ->label(__('Additional Data'))
                     ->formatStateUsing(fn ($state) => $state ? json_encode($state) : '-')
@@ -499,6 +495,23 @@ class RequestResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
+                // ExportBulkAction::make()
+                //     ->label(__('Export to Excel'))
+                //     ->exporter(ExcelExport::make()
+                //         ->fromTable() // تصدير البيانات كما هي من الجدول
+                //         ->withColumns([ // تحديد الأعمدة المراد تصديرها
+                //             'id' => __('Request ID'),
+                //             'type' => __('Type'),
+                //             'submittedBy.name' => __('Submitted By'),
+                //             'employee.first_name' => __('Employee'),
+                //             'status' => __('Status'),
+                //             'current_approver_role' => __('Current Approver Role'),
+                //             'duration' => __('Duration (Days)'),
+                //             'amount' => __('Amount'),
+                //             'additional_data' => __('Additional Data'),
+                //             'created_at' => __('Created At'),
+                //         ])
+                //     ),
             ]);
     }
 
