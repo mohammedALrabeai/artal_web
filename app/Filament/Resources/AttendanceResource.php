@@ -256,6 +256,7 @@ class AttendanceResource extends Resource
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
         ])
+        ->paginationPageOptions([10, 25, 50, 100])
             ->filters([
 
                 Tables\Filters\Filter::make('present_status')

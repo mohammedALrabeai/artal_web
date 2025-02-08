@@ -193,6 +193,7 @@ class ShiftResource extends Resource
                     ->label(__('Active'))
                     ->nullable(),
             ])
+            ->paginationPageOptions([10, 25, 50, 100])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

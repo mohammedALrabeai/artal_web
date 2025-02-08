@@ -222,6 +222,7 @@ class EmployeeProjectRecordResource extends Resource
                 EditAction::make(),
                 DeleteAction::make(),
             ])
+            ->paginationPageOptions([10, 25, 50, 100])
             ->bulkActions([
                 DeleteBulkAction::make(),
                 ExportBulkAction::make(),

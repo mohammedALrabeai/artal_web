@@ -131,6 +131,7 @@ class EmployeeNotificationResource extends Resource
                         false => __('Unread'),
                     ]),
             ])
+            ->paginationPageOptions([10, 25, 50, 100])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
