@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\Exclusion;
 use App\Models\User;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -25,6 +26,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
@@ -1025,6 +1027,33 @@ class EmployeeResource extends Resource
                     })
                     ->requiresConfirmation()
                     ->color('primary'),
+
+                BulkAction::make('exportAttendance')
+                    ->label('تصدير الحضور')
+                    ->form([
+                        DatePicker::make('start_date')
+                            ->label('تاريخ البداية')
+                            ->required(),
+                        DatePicker::make('end_date')
+                            ->label('تاريخ النهاية')
+                            ->required(),
+                    ])
+                    ->action(function (array $data, $records) {
+                        $employeeIds = $records->pluck('id')->toArray();
+
+                        // إنشاء رابط مؤقت لاستدعاء التصدير وتمرير معرّفات الموظفين
+                        $url = URL::temporarySignedRoute(
+                            'export.attendance.filtered',
+                            now()->addMinutes(5),
+                            [
+                                'employee_ids' => implode(',', $employeeIds),
+                                'start_date' => $data['start_date'],
+                                'end_date' => $data['end_date'],
+                            ]
+                        );
+
+                        return redirect($url);
+                    }),
 
                 // Tables\Actions\BulkAction::make('exportAll')
                 // ->label(__('Export All to PDF'))

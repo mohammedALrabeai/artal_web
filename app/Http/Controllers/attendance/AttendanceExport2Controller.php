@@ -2,20 +2,64 @@
 
 namespace App\Http\Controllers\attendance;
 
+use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AttendanceExport2Controller extends Controller
 {
+    public function exportFiltered(Request $request)
+    {
+        // التحقق من المدخلات
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $employeeIds = explode(',', $request->query('employee_ids', ''));
 
-    
+        if (! $startDate || ! $endDate || empty($employeeIds)) {
+            abort(400, 'Missing required parameters');
+        }
+
+        // جلب الموظفين المحددين فقط
+        $employees = Employee::whereIn('id', $employeeIds)
+            ->with([
+                'attendances' => function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('date', [$startDate, $endDate]);
+                },
+                'leaveBalances',
+                'currentZone',
+            ])
+            ->get();
+
+        // استخدام نفس الكود الموجود في `export2`، لكن مع الموظفين المحددين فقط
+        return $this->exportAttendanceData($employees, $startDate, $endDate);
+    }
+
     public function export2(Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        if (! $startDate || ! $endDate) {
+            abort(400, 'Missing start_date or end_date');
+        }
+
+        // جلب جميع الموظفين
+        $employees = Employee::with([
+            'attendances' => function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('date', [$startDate, $endDate]);
+            },
+            'leaveBalances',
+            'currentZone',
+        ])->get();
+
+        return $this->exportAttendanceData($employees, $startDate, $endDate);
+    }
+
+    public function exportAttendanceData($employees, $startDate, $endDate)
     {
         // خريطة الألوان لكل حالة
         $attendanceColors = [
@@ -28,25 +72,13 @@ class AttendanceExport2Controller extends Controller
             'W' => 'FFA07A',        // برتقالي محمر (انسحاب)
         ];
 
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
-
         // تحقق من صحة التواريخ
-        if (!$startDate || !$endDate) {
+        if (! $startDate || ! $endDate) {
             abort(400, 'Missing start_date or end_date');
         }
 
-        // استرداد بيانات الموظفين
-        $employees = Employee::with([
-            'attendances' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('date', [$startDate, $endDate]);
-            },
-            'leaveBalances',
-            'currentZone',
-        ])->get();
-
         // إنشاء ملف Excel
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // إعداد رأس الجدول
@@ -194,15 +226,14 @@ class AttendanceExport2Controller extends Controller
             // إدخال العمود HRS
 
             $sheet->setCellValue("I{$startRow}", 'NOR');
-            $sheet->setCellValue("I" . ($startRow + 1), 'HUR');
-            $sheet->setCellValue("I" . ($startRow + 2), 'COV');
+            $sheet->setCellValue('I'.($startRow + 1), 'HUR');
+            $sheet->setCellValue('I'.($startRow + 2), 'COV');
 
             // إضافة بيانات الحضور لكل تاريخ
             $currentDate = strtotime($startDate);
             $columnIndex = 10; // التواريخ تبدأ بعد HRS
             while ($currentDate <= $endDateTimestamp) {
                 $date = date('Y-m-d', $currentDate);
-
 
                 // جلب جميع سجلات الحضور لليوم
                 $dailyAttendances = $employee->attendances->where('date', $date);
@@ -215,10 +246,8 @@ class AttendanceExport2Controller extends Controller
                 $status = $statusAttendance ? $statusAttendance->status : 'N/A'; // حالة الحضور الأساسي
                 $workHours = $dailyAttendances->sum('work_hours'); // مجموع ساعات العمل
 
-
-
-                        // **تحديث حالة "انسحاب" في السطر الأول بدلًا من "حضور"**
-                if ($statusAttendance && $statusAttendance->status === 'present' && $statusAttendance->check_in && !$statusAttendance->check_out) {
+                // **تحديث حالة "انسحاب" في السطر الأول بدلًا من "حضور"**
+                if ($statusAttendance && $statusAttendance->status === 'present' && $statusAttendance->check_in && ! $statusAttendance->check_out) {
                     $status = 'W'; // انسحاب بدلاً من حضور
                 }
 
@@ -231,11 +260,10 @@ class AttendanceExport2Controller extends Controller
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverageStatus);
 
-
                 // **تطبيق الألوان بناءً على الحالة**
                 if (isset($attendanceColors[$status])) {
                     $color = $attendanceColors[$status]; // استرجاع اللون من المصفوفة
-                    $cellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex) . $rowIndex;
+                    $cellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex).$rowIndex;
 
                     $sheet->getStyle($cellCoordinate)->applyFromArray([
                         'fill' => [
@@ -246,9 +274,9 @@ class AttendanceExport2Controller extends Controller
                 }
 
                 // **تلوين خلايا التغطية COV**
-                if (!empty($coverageStatus) && isset($attendanceColors['coverage'])) {
+                if (! empty($coverageStatus) && isset($attendanceColors['coverage'])) {
                     $color = $attendanceColors['coverage'];
-                    $coverageCellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex) . ($rowIndex + 2);
+                    $coverageCellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex).($rowIndex + 2);
 
                     $sheet->getStyle($coverageCellCoordinate)->applyFromArray([
                         'fill' => [
@@ -276,16 +304,13 @@ class AttendanceExport2Controller extends Controller
                 if ($column['title'] === 'إضافي COV') {
                     $thirdRow = $rowIndex + 2; // السطر الثالث لكل موظف
                     $formula = "=COUNTIF({$startColumn}{$thirdRow}:{$endColumn}{$thirdRow}, \"coverage\")";
-                } elseif($column['title'] === 'إجمالي الساعات'){
+                } elseif ($column['title'] === 'إجمالي الساعات') {
                     $nextRow = $rowIndex + 1; // احسب الصف الثاني خارج النص
-                    $formula = "=SUM({$startColumn}{$nextRow}:{$endColumn}{$nextRow})"; 
+                    $formula = "=SUM({$startColumn}{$nextRow}:{$endColumn}{$nextRow})";
 
                 } elseif ($column['title'] === 'انسحاب W') {
                     $formula = "=COUNTIF({$startColumn}{$startRow}:{$endColumn}{$startRow}, \"W\")";
-                }
-                
-                elseif 
-                 ($column['title'] === 'الإجمالي Total') {
+                } elseif ($column['title'] === 'الإجمالي Total') {
                     $offCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 7); // عمود أوف
                     $pCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 6);  // عمود P
                     $covCell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex - 5); // عمود COV
