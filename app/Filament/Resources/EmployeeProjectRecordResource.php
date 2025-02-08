@@ -22,6 +22,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class EmployeeProjectRecordResource extends Resource
@@ -188,6 +189,11 @@ class EmployeeProjectRecordResource extends Resource
                 BooleanColumn::make('status')
                     ->label(__('Status'))
                     ->sortable(),
+                TextColumn::make('work_pattern')
+                    ->label('نمط العمل')
+                    ->getStateUsing(fn ($record) => self::calculateWorkPattern($record))
+                    ->html()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
             ])
             ->filters([
@@ -238,5 +244,38 @@ class EmployeeProjectRecordResource extends Resource
             'create' => Pages\CreateEmployeeProjectRecord::route('/create'),
             'edit' => Pages\EditEmployeeProjectRecord::route('/{record}/edit'),
         ];
+    }
+
+    private static function calculateWorkPattern($record)
+    {
+        $pattern = $record->shift->zone->pattern ?? null;
+
+        if (! $pattern) {
+            return '<span style="color: red;">❌ لا يوجد نمط محدد</span>';
+        }
+
+        $workingDays = $pattern->working_days;
+        $offDays = $pattern->off_days;
+        $cycleLength = $workingDays + $offDays;
+
+        $startDate = Carbon::parse($record->start_date);
+        $currentDate = Carbon::now();
+        $totalDays = $currentDate->diffInDays($startDate);
+        $currentDayInCycle = $totalDays % $cycleLength;
+
+        $daysView = [];
+
+        for ($i = 0; $i < 30; $i++) {
+            $dayInCycle = ($currentDayInCycle + $i) % $cycleLength;
+            $isWorkDay = $dayInCycle < $workingDays;
+            $date = $currentDate->copy()->addDays($i)->format('d M');
+
+            $color = $isWorkDay ? 'green' : 'red';
+            $label = $isWorkDay ? 'عمل' : 'إجازة';
+
+            $daysView[] = "<span style='padding: 4px; border-radius: 5px; background-color: $color; color: white; margin-right: 5px;'>$date: $label</span>";
+        }
+
+        return implode(' ', $daysView);
     }
 }
