@@ -169,10 +169,17 @@ class ListEmployees extends ListRecords
                     // استخدام علاقة currentZone للتأكد من وجود سجل تعيين نشط
                     return $query->whereHas('currentZone');
                 }),
+
+            // ✅ **إضافة تبويب "الموظفون قيد المباشرة"**
+            'onboarding_employees' => Tab::make(__('Onboarding Employees'))
+                ->modifyQueryUsing(fn ($query) => $query->whereHas('currentZone') // لديهم موقع مسند إليهم
+                    ->whereDoesntHave('attendances')), // ليس لديهم أي سجل حضور
+
             // ✅ **إضافة تبويب الموظفين المستبعدين**
             'excluded_employees' => Tab::make(__('Excluded Employees'))
                 ->modifyQueryUsing(fn ($query) => $query->whereHas('exclusions', fn ($q) => $q->where('status', Exclusion::STATUS_APPROVED)
                 )),
+
         ];
     }
 }
