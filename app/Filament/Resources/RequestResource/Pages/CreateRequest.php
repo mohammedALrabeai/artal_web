@@ -3,19 +3,16 @@
 namespace App\Filament\Resources\RequestResource\Pages;
 
 // use App\Models\Role;
-use Spatie\Permission\Models\Role;
-
-use App\Models\Leave;
-use Filament\Actions;
-use App\Models\Policy;
-use App\Models\Employee;
-use App\Models\ApprovalFlow;
-use App\Services\NotificationService;
-use Filament\Resources\Pages\CreateRecord;
 use App\Filament\Resources\RequestResource;
+use App\Models\ApprovalFlow;
+use App\Models\Employee;
+use App\Models\Leave;
+use App\Models\Policy;
+use App\Services\NotificationService;
 use Filament\Notifications\Notification;
-
+use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class CreateRequest extends CreateRecord
 {
@@ -31,25 +28,23 @@ class CreateRequest extends CreateRecord
         //     throw new \Exception(__('Attachments data is missing.'));
         // }
         // التحقق من وجود سياسة مرتبطة بنوع الطلب
-       // استثناء أنواع الطلبات التي لا تحتاج إلى سياسة
-       $policy = Policy::where('policy_type', $data['type'])->first();
-       if (!$policy) {
-        Notification::make()
-        ->title(__('approval_error'))
-        ->body(__('no_policy_defined'))
-        ->danger()
-        ->send();
-    
-    throw ValidationException::withMessages([
-        'policy_error' => __('no_policy_defined_message'),
-    ]);
-           }
+        // استثناء أنواع الطلبات التي لا تحتاج إلى سياسة
+        $policy = Policy::where('policy_type', $data['type'])->first();
+        if (! $policy) {
+            Notification::make()
+                ->title(__('approval_error'))
+                ->body(__('no_policy_defined'))
+                ->danger()
+                ->send();
 
-
+            throw ValidationException::withMessages([
+                'policy_error' => __('no_policy_defined_message'),
+            ]);
+        }
 
         // تحويل الشروط إلى مصفوفة إذا كانت نصًا
         $conditions = is_array($policy->conditions) ? $policy->conditions : json_decode($policy->conditions, true);
-        if (!$conditions) {
+        if (! $conditions) {
             throw new \Exception(__('Policy conditions are invalid.'));
         }
 
@@ -57,26 +52,25 @@ class CreateRequest extends CreateRecord
         $approvalFlow = ApprovalFlow::where('request_type', $data['type'])
             ->orderBy('approval_level', 'asc')
             ->first();
-        if (!$approvalFlow) {
+        if (! $approvalFlow) {
             throw new \Exception(__('No approval flow defined for this request type.'));
         }
 
         // تخزين الدور الأول في `current_approver_role`
-  
 
         // $roleExists = Role::where('name', $approvalFlow->approver_role)->exists();
         // if (!$roleExists) {
         //     throw new \Exception(__('Role not found for the approver in the approval flow.'));
         // }
         $data['current_approver_role'] = $approvalFlow->approver_role; // الآن يتم حفظ اسم الدور فقط
-        
+
         $data['status'] = 'pending'; // الحالة المبدئية للطلب
 
         // التحقق من نوع الطلب وتطبيق القيود
         switch ($data['type']) {
             case 'leave': // طلب إجازة
                 $employee = Employee::find($data['employee_id']);
-                if (!$employee) {
+                if (! $employee) {
                     throw new \Exception(__('Employee not found.'));
                 }
 
@@ -87,29 +81,26 @@ class CreateRequest extends CreateRecord
                 $endDate = \Carbon\Carbon::parse($data['end_date']);
                 $data['duration'] = $startDate->diffInDays($endDate) + 1; // +1 لإضافة اليوم الأول
 
-                if (!$leaveBalance) {
+                if (! $leaveBalance) {
                     // throw new \Exception(__('No leave balance record found for this employee.'));
                 } else {
-                    if ($data['leave_type'] == 'annual') {
-                        // التحقق من أن رصيد الإجازات يكفي
-                        if ($leaveBalance->calculateAnnualLeaveBalance() < $data['duration']) {
-                            throw new \Exception(__('Insufficient leave balance.' . $leaveBalance->calculateAnnualLeaveBalance() . ' ' . $data['duration']));
-                        }
-                        $leaveBalance->update([
-                            'balance' => $leaveBalance->balance - $data['duration'],
-                            'used_balance' => $leaveBalance->used_balance + $data['duration'],
-                            'last_updated' => now(),
-                        ]);
-                    }
+                    // if ($data['leave_type'] == 'annual') {
+                    //     // التحقق من أن رصيد الإجازات يكفي
+                    //     if ($leaveBalance->calculateAnnualLeaveBalance() < $data['duration']) {
+                    //         throw new \Exception(__('Insufficient leave balance.' . $leaveBalance->calculateAnnualLeaveBalance() . ' ' . $data['duration']));
+                    //     }
+                    //     $leaveBalance->update([
+                    //         'balance' => $leaveBalance->balance - $data['duration'],
+                    //         'used_balance' => $leaveBalance->used_balance + $data['duration'],
+                    //         'last_updated' => now(),
+                    //     ]);
+                    // }
                 }
-
-
 
                 // التحقق من الحد الأقصى لمدة الإجازة
                 if (isset($conditions['max_duration']) && $data['duration'] > $conditions['max_duration']) {
                     throw new \Exception(__('Requested duration exceeds the maximum allowed.'));
                 }
-
 
                 $leave = Leave::create([
                     'employee_id' => $data['employee_id'],
@@ -139,9 +130,7 @@ class CreateRequest extends CreateRecord
                     ]
                 );
 
-
                 break;
-
 
             case 'loan': // طلب سلفة
                 if (isset($conditions['max_amount']) && $data['amount'] > $conditions['max_amount']) {
@@ -149,7 +138,7 @@ class CreateRequest extends CreateRecord
                 }
 
                 $employee = Employee::find($data['employee_id']);
-                if (!$employee) {
+                if (! $employee) {
                     throw new \Exception(__('Employee not found.'));
                 }
 
@@ -157,7 +146,7 @@ class CreateRequest extends CreateRecord
                 $notificationService->sendNotification(
                     ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
                     'طلب قرض جديد ', // عنوان الإشعار
-                    $data['amount'].'  | '. $employee->first_name.' '. $employee->family_name.' | '.auth()->user()->name, // نص الإشعار
+                    $data['amount'].'  | '.$employee->first_name.' '.$employee->family_name.' | '.auth()->user()->name, // نص الإشعار
                     [
                         // $notificationService->createAction('View Bank', "/admin/banks/{$this->record->id}", 'heroicon-s-eye'),
                         $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
@@ -165,24 +154,23 @@ class CreateRequest extends CreateRecord
                 );
                 break;
 
+            case 'exclusion': // طلب استبعاد
 
-                case 'exclusion': // طلب استبعاد
-                
-                    $employee = Employee::find($data['employee_id']);
-                    if (!$employee) {
-                        throw new \Exception(__('Employee not found.'));
-                    }
-                
-                    // التحقق من سياسة الاستبعاد إذا كانت موجودة
-                    if (!isset($conditions['allowed_exclusions'])) {
-                        throw new \Exception(__('Allowed exclusions are not defined in the policy.'));
-                    }
-                    
-                    if (!in_array(strtolower($data['exclusion_type']), array_map('strtolower', $conditions['allowed_exclusions']))) {
-                        throw new \Exception(__('The selected exclusion type (:type) is not allowed.', ['type' => $data['exclusion_type']]));
-                    }
-                
-                    try{
+                $employee = Employee::find($data['employee_id']);
+                if (! $employee) {
+                    throw new \Exception(__('Employee not found.'));
+                }
+
+                // التحقق من سياسة الاستبعاد إذا كانت موجودة
+                if (! isset($conditions['allowed_exclusions'])) {
+                    throw new \Exception(__('Allowed exclusions are not defined in the policy.'));
+                }
+
+                if (! in_array(strtolower($data['exclusion_type']), array_map('strtolower', $conditions['allowed_exclusions']))) {
+                    throw new \Exception(__('The selected exclusion type (:type) is not allowed.', ['type' => $data['exclusion_type']]));
+                }
+
+                try {
                     // إنشاء سجل استبعاد
                     $exclusion = \App\Models\Exclusion::create([
                         'employee_id' => $data['employee_id'],
@@ -192,15 +180,15 @@ class CreateRequest extends CreateRecord
                         'attachment' => $data['exclusion_attachment'] ?? null,
                         'notes' => $data['exclusion_notes'] ?? null,
                     ]);
-                
+
                     $data['exclusion_id'] = $exclusion->id; // ربط الطلب بسجل الاستبعاد
-                
+
                     // إرسال إشعار للأدوار المستهدفة
                     $notificationService = new NotificationService;
                     $notificationService->sendNotification(
                         ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
                         'طلب استبعاد', // عنوان الإشعار
-                        'يرجى مراجعة طلب الاستبعاد للموظف ' . $employee->first_name . ' ' . $employee->family_name, // نص الإشعار
+                        'يرجى مراجعة طلب الاستبعاد للموظف '.$employee->first_name.' '.$employee->family_name, // نص الإشعار
                         [
                             $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
                         ]
@@ -209,17 +197,16 @@ class CreateRequest extends CreateRecord
                 } catch (\Exception $e) {
                     dd($e->getMessage());
                 }
-                    break;
-                
+                break;
 
             case 'compensation': // طلب تعويض
-                if (!isset($data['additional_data']['documentation'])) {
+                if (! isset($data['additional_data']['documentation'])) {
                     throw new \Exception(__('Documentation is required for compensation requests.'));
                 }
                 break;
 
             case 'transfer': // طلب نقل
-                if (!isset($data['target_location'])) {
+                if (! isset($data['target_location'])) {
                     throw new \Exception(__('Target location is required for transfer requests.'));
                 }
                 break;
@@ -228,7 +215,7 @@ class CreateRequest extends CreateRecord
                 $employee = Employee::find($data['employee_id']);
                 $overtimeBalance = $employee->leaveBalances()->where('leave_type', 'overtime')->first();
 
-                if (!$overtimeBalance) {
+                if (! $overtimeBalance) {
                     throw new \Exception(__('No overtime balance record found for this employee.'));
                 }
 
@@ -248,14 +235,13 @@ class CreateRequest extends CreateRecord
                 throw new \Exception(__('Invalid request type.'));
         }
 
-
-        if (!isset($data['employee_id'])) {
+        if (! isset($data['employee_id'])) {
             throw new \Exception(__('Employee ID is required.'));
         }
-    
+
         if (isset($data['attachments'])) {
             foreach ($data['attachments'] as &$attachment) {
-                if (!isset($attachment['employee_id'])) {
+                if (! isset($attachment['employee_id'])) {
                     $attachment['employee_id'] = $data['employee_id']; // تأكد من تمرير employee_id
                 }
             }
@@ -283,32 +269,31 @@ class CreateRequest extends CreateRecord
     //             ]);
     //         }
     //     }
-    
+
     //     return $data;
     // }
 
-//     protected function mutateFormDataBeforeSave(array $data): array
-// {
-//     if (isset($data['attachments'])) {
-//         foreach ($data['attachments'] as &$attachment) {
-//             if (!isset($attachment['employee_id'])) {
-//                 $attachment['employee_id'] = $data['related_employee_id']; // تمرير employee_id إذا لم يكن موجودًا
-//             }
-//         }
-//     }
+    //     protected function mutateFormDataBeforeSave(array $data): array
+    // {
+    //     if (isset($data['attachments'])) {
+    //         foreach ($data['attachments'] as &$attachment) {
+    //             if (!isset($attachment['employee_id'])) {
+    //                 $attachment['employee_id'] = $data['related_employee_id']; // تمرير employee_id إذا لم يكن موجودًا
+    //             }
+    //         }
+    //     }
 
-//     return $data;
-// }
+    //     return $data;
+    // }
 
-protected function afterSave(): void
-{
-   
-    
+    protected function afterSave(): void
+    {
+
         // // Handle media separately if needed
         // if (!empty($data['media'])) {
         //     $employee = $this->getOwnerRecord();
         //     $filePath =  $this->data['media'];
-    
+
         //     // Ensure file exists on S3 before saving
         //     if (\Storage::disk('s3')->exists($filePath)) {
         //         $media = $employee
@@ -320,19 +305,11 @@ protected function afterSave(): void
         //     }
         // }
         // $this->record->attachments()->create($data);
-    
-      
-  
-    foreach ($this->record->attachments as $attachment) {
-        if (!$attachment->employee_id) {
-            $attachment->update(['employee_id' => $this->record->employee_id]);
+
+        foreach ($this->record->attachments as $attachment) {
+            if (! $attachment->employee_id) {
+                $attachment->update(['employee_id' => $this->record->employee_id]);
+            }
         }
     }
-}
-
-
-
-
-
-    
 }

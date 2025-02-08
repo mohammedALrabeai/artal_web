@@ -214,6 +214,29 @@ public function attachments(): MorphMany
         return $this->attachments->merge($this->requestAttachments);
     }
 
+    public function isActive(): bool
+    {
+        // جلب آخر استبعاد إذا كان موجودًا
+        $latestExclusion = $this->exclusions()->latest('exclusion_date')->first();
+    
+        // إذا لم يكن هناك استبعاد، نتحقق من تاريخ نهاية العقد
+        if (!$latestExclusion) {
+            return $this->contract_end === null || $this->contract_end > now();
+        }
+    
+        // التحقق مما إذا كان الموظف قد تم استبعاده ويظل غير نشط
+        return $latestExclusion->status === Exclusion::STATUS_REJECTED || $latestExclusion->exclusion_date < now();
+    }
+
+    public function isExcluded(): bool
+{
+    return $this->exclusions()
+        ->where('status', Exclusion::STATUS_APPROVED)
+        ->where('exclusion_date', '<=', now())
+        ->exists();
+}
+
+
 
 public function getDescriptionForEvent(string $eventName): string
 {

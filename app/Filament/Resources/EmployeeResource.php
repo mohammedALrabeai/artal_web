@@ -2,31 +2,31 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
 use App\Enums\ContractType;
 use App\Enums\InsuranceType;
 use App\Enums\MaritalStatus;
-use Filament\Resources\Resource;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Filters\Filter;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Repeater;
-use Filament\Tables\Actions\BulkAction;
-use Illuminate\Support\Facades\Storage;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\FileUpload;
-use Filament\Tables\Filters\SelectFilter;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use App\Filament\Resources\EmployeeResource\Pages;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
+use App\Models\Employee;
+use App\Models\Exclusion;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class EmployeeResource extends Resource
 {
@@ -39,13 +39,12 @@ class EmployeeResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
@@ -134,15 +133,15 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('nationality')
                             ->label(__('Nationality'))
                             ->required(),
-                            Forms\Components\Select::make('marital_status')
-            ->label(__('Marital Status')) // استخدام الترجمة
-            ->options(collect(MaritalStatus::cases())->mapWithKeys(fn ($status) => [
-                $status->value => $status->label()
-            ]))
-            ->nullable()
-            ->searchable()
-            ->preload()
-            ->columnSpanFull(),
+                        Forms\Components\Select::make('marital_status')
+                            ->label(__('Marital Status')) // استخدام الترجمة
+                            ->options(collect(MaritalStatus::cases())->mapWithKeys(fn ($status) => [
+                                $status->value => $status->label(),
+                            ]))
+                            ->nullable()
+                            ->searchable()
+                            ->preload()
+                            ->columnSpanFull(),
                         Forms\Components\Select::make('job_title')
                             ->label(__('Job Title'))
                             ->options(
@@ -248,7 +247,7 @@ class EmployeeResource extends Resource
                         Forms\Components\Select::make('contract_type')
                             ->label(__('Contract Type'))
                             ->reactive()
-                            ->options(ContractType::options()) 
+                            ->options(ContractType::options())
                             ->required(),
 
                         Forms\Components\DatePicker::make('contract_start')
@@ -264,7 +263,8 @@ class EmployeeResource extends Resource
 
                         Forms\Components\DatePicker::make('actual_start')
                             ->label(__('Actual Start'))
-                            ->required(),
+                        // ->required()
+                        ,
 
                         Forms\Components\TextInput::make('basic_salary')
                             ->label(__('Basic Salary'))
@@ -280,8 +280,7 @@ class EmployeeResource extends Resource
                             ->numeric(),
 
                         Forms\Components\TextInput::make('job_status')
-                            ->label(__('Job Status'))
-                            ,
+                            ->label(__('Job Status')),
 
                         // Forms\Components\TextInput::make('health_insurance_status')
                         //     ->label(__('Health Insurance Status'))
@@ -481,7 +480,6 @@ class EmployeeResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-              
                 Tables\Columns\TextColumn::make('family_name')
                     ->label(__('Family Name'))
                     ->searchable()
@@ -490,10 +488,10 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('english_name')
                     ->label(__('English Name'))
                     ->searchable()
-                   
+
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                      // Tables\Columns\TextColumn::make('leaveBalances_sum_balance')
+                // Tables\Columns\TextColumn::make('leaveBalances_sum_balance')
                 //     ->label('إجمالي رصيد الإجازات')
                 //     ->sortable()
                 //     ->getStateUsing(function ($record) {
@@ -502,21 +500,28 @@ class EmployeeResource extends Resource
                 //     ->default('0') // القيمة الافتراضية في حال لم يكن هناك رصيد
                 //     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('leaveBalances')
-                ->label('رصيد الإجازات السنوية')
-                ->getStateUsing(function ($record) {
-                    // الحصول على الإجازة السنوية
-                    $leaveBalance = $record->leaveBalances->where('leave_type', 'annual')->first();
+                    ->label('رصيد الإجازات السنوية')
+                    ->getStateUsing(function ($record) {
+                        // الحصول على الإجازة السنوية
+                        $leaveBalance = $record->leaveBalances->where('leave_type', 'annual')->first();
 
-                    if ($leaveBalance) {
-                        return $leaveBalance->calculateAnnualLeaveBalance();
-                    }
+                        if ($leaveBalance) {
+                            return $leaveBalance->calculateAnnualLeaveBalance();
+                        }
 
-                    return 'غير متوفر';
-                })
-                ->sortable()
-                ->default('غير متوفر')
-                ->toggleable(isToggledHiddenByDefault: true), // إذا لم يكن هناك رصيد
+                        return 'غير متوفر';
+                    })
+                    ->sortable()
+                    ->default('غير متوفر')
+                    ->toggleable(isToggledHiddenByDefault: true), // إذا لم يكن هناك رصيد
 
+                Tables\Columns\TextColumn::make('is_excluded')
+                    ->badge()
+                    ->label(__('Excluded'))
+                    ->getStateUsing(fn ($record) => $record->isExcluded() ? __('Yes') : __('No'))
+                    ->color(fn ($record) => $record->isExcluded() ? 'danger' : 'success')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('birth_date')
                     ->label(__('Birth Date'))
@@ -527,10 +532,9 @@ class EmployeeResource extends Resource
                     ->label(__('National ID'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
-                    Tables\Columns\TextColumn::make('marital_status')
+                Tables\Columns\TextColumn::make('marital_status')
                     ->label(__('Marital Status'))
-                    ->formatStateUsing(fn ($state) => 
-                        $state ? MaritalStatus::fromArabic($state)?->label() ?? '-' : '-'
+                    ->formatStateUsing(fn ($state) => $state ? MaritalStatus::fromArabic($state)?->label() ?? '-' : '-'
                     )
                     ->sortable()
                     ->searchable()
@@ -754,9 +758,14 @@ class EmployeeResource extends Resource
                     ->sortable(),
 
             ])
-           ->paginationPageOptions([10, 25, 50, 100])
+            ->paginationPageOptions([10, 25, 50, 100])
 
             ->filters([
+
+                Tables\Filters\Filter::make('excluded')
+                    ->label(__('Excluded Employees'))
+                    ->query(fn ($query) => $query->whereHas('exclusions', fn ($q) => $q->where('status', Exclusion::STATUS_APPROVED)))
+                    ->toggle(),
                 SelectFilter::make('added_by')
                     ->label(__('Added By'))
                     ->options(User::all()->pluck('name', 'id')),
@@ -866,20 +875,20 @@ class EmployeeResource extends Resource
             ])
             ->actions([
                 Tables\Actions\BulkActionGroup::make([
-                Action::make('viewMap')
-                    ->label('عرض المسار')
-                    ->color('primary')
-                    ->icon('heroicon-o-map')
-                    ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
+                    Action::make('viewMap')
+                        ->label('عرض المسار')
+                        ->color('primary')
+                        ->icon('heroicon-o-map')
+                        ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
 
-                Tables\Actions\Action::make('view')
-                    ->label(__('View'))
-                    ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => static::getUrl('view', ['record' => $record->id]))
-                    ->openUrlInNewTab(false),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                ])
+                    Tables\Actions\Action::make('view')
+                        ->label(__('View'))
+                        ->icon('heroicon-o-eye')
+                        ->url(fn ($record) => static::getUrl('view', ['record' => $record->id]))
+                        ->openUrlInNewTab(false),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
@@ -1057,7 +1066,7 @@ class EmployeeResource extends Resource
             RelationManagers\AttendancesRelationManager::class,
             RelationManagers\DevicesRelationManager::class,
             RelationManagers\LoansRelationManager::class,
-            RelationManagers\ResignationsRelationManager::class, 
+            RelationManagers\ResignationsRelationManager::class,
             //  RelationManagers\MediaRelationManager::class,
 
         ];
