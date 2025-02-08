@@ -172,9 +172,10 @@ class ListEmployees extends ListRecords
 
             // ✅ **إضافة تبويب "الموظفون قيد المباشرة"**
             'onboarding_employees' => Tab::make(__('Onboarding Employees'))
-                ->modifyQueryUsing(fn ($query) => $query->whereHas('currentZone') // لديهم موقع مسند إليهم
-                    ->whereDoesntHave('attendances')), // ليس لديهم أي سجل حضور
-
+                ->modifyQueryUsing(fn ($query) => $query
+                    ->whereHas('currentZone') // ✅ الموظفون الذين لديهم موقع مسند إليهم
+                    ->whereDoesntHave('attendances', fn ($q) => $q->where('status', 'present')) // ✅ لا يوجد لهم أي تحضير بحالة "حضور"
+                ),
             // ✅ **إضافة تبويب الموظفين المستبعدين**
             'excluded_employees' => Tab::make(__('Excluded Employees'))
                 ->modifyQueryUsing(fn ($query) => $query->whereHas('exclusions', fn ($q) => $q->where('status', Exclusion::STATUS_APPROVED)
