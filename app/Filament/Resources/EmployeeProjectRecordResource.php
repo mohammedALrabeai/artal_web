@@ -267,6 +267,8 @@ class EmployeeProjectRecordResource extends Resource
         $totalDays = $currentDate->diffInDays($startDate);
         $currentDayInCycle = $totalDays % $cycleLength;
 
+        $cycleNumber = (int) floor($totalDays / $cycleLength) + 1; // حساب رقم الدورة الحالية
+
         $daysView = [];
 
         for ($i = 0; $i < 30; $i++) {
@@ -275,9 +277,29 @@ class EmployeeProjectRecordResource extends Resource
             $date = $currentDate->copy()->addDays($i)->format('d M');
 
             $color = $isWorkDay ? 'green' : 'red';
-            $label = $isWorkDay ? 'عمل' : 'إجازة';
+            $label = $isWorkDay ? '' : '';
 
-            $daysView[] = "<span style='padding: 4px; border-radius: 5px; background-color: $color; color: white; margin-right: 5px;'>$date: $label</span>";
+            // ✅ إضافة "صباحًا" أو "مساءً" بجانب أيام العمل
+            if ($isWorkDay) {
+                $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
+                $label .= " - $shiftType";
+            }
+
+            // $daysView[] = "<span style='padding: 4px; border-radius: 5px; background-color: $color; color: white; margin-right: 5px;'>$date: $label</span>";
+            $daysView[] = "
+            <span style='
+                padding: 4px; 
+                border-radius: 5px; 
+                background-color: $color; 
+                color: white; 
+                display: inline-block; 
+                width: 110px; /* ضمان نفس العرض */
+                text-align: center; 
+                margin-right: 5px; 
+                font-weight: bold;
+            '>
+                $date$label
+            </span>";
         }
 
         return implode(' ', $daysView);
