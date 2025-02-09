@@ -2,24 +2,24 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\Role;
-use Filament\Tables;
-use App\Models\Shift;
-use App\Models\Request;
-use App\Models\Coverage;
-use Filament\Forms\Form;
-use App\Models\Attendance;
-use Filament\Tables\Table;
-use App\Models\ApprovalFlow;
 use App\Enums\CoverageReason;
-use Filament\Resources\Resource;
-use Filament\Tables\Filters\Filter;
-use Filament\Forms\Components\Select;
-use App\Forms\Components\EmployeeSelect;
-use Filament\Tables\Filters\SelectFilter;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\AttendanceResource\Pages;
+use App\Forms\Components\EmployeeSelect;
+use App\Models\ApprovalFlow;
+use App\Models\Attendance;
+use App\Models\Coverage;
+use App\Models\Request;
+use App\Models\Role;
+use App\Models\Shift;
+use Filament\Forms;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class AttendanceResource extends Resource
@@ -31,13 +31,12 @@ class AttendanceResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
@@ -163,8 +162,26 @@ class AttendanceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\TextColumn::make('employee.first_name')
+            Tables\Columns\TextColumn::make('full_name')
                 ->label(__('Employee'))
+                ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
+                    $record->employee->father_name.' '.
+                    $record->employee->grandfather_name.' '.
+                    $record->employee->family_name
+                )
+                ->searchable(query: function ($query, $search) {
+                    return $query->whereHas('employee', function ($subQuery) use ($search) {
+                        $subQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('father_name', 'like', "%{$search}%")
+                            ->orWhere('grandfather_name', 'like', "%{$search}%")
+                            ->orWhere('family_name', 'like', "%{$search}%")
+                            ->orWhere('national_id', 'like', "%{$search}%");
+                    });
+                })
+                ->sortable(),
+
+            Tables\Columns\TextColumn::make('employee.national_id')
+                ->label(__('National ID'))
                 ->searchable(),
 
             Tables\Columns\TextColumn::make('date')
@@ -256,7 +273,7 @@ class AttendanceResource extends Resource
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
         ])
-        ->paginationPageOptions([10, 25, 50, 100])
+            ->paginationPageOptions([10, 25, 50, 100])
             ->filters([
 
                 Tables\Filters\Filter::make('present_status')
@@ -276,13 +293,13 @@ class AttendanceResource extends Resource
                 SelectFilter::make('status')
                     ->label(__('Status'))
                     ->options([
-                            'off' => __('Off'),    // إضافة خيار عطلة
-                            'present' => __('Present'),   // إضافة خيار الحضور
-                            'coverage' => __('Coverage'), // إضافة خيار التغطية
-                            'M' => __('Morbid'),  // إضافة خيار مرضي Sick
-                            'leave' => __('paid leave'),     // إضافة خيار الإجازة
-                            'UV' => __('Unpaid leave'),
-                            'absent' => __('Absent'),
+                        'off' => __('Off'),    // إضافة خيار عطلة
+                        'present' => __('Present'),   // إضافة خيار الحضور
+                        'coverage' => __('Coverage'), // إضافة خيار التغطية
+                        'M' => __('Morbid'),  // إضافة خيار مرضي Sick
+                        'leave' => __('paid leave'),     // إضافة خيار الإجازة
+                        'UV' => __('Unpaid leave'),
+                        'absent' => __('Absent'),
                     ]),
                 // فلتر الحالة
 
@@ -343,19 +360,19 @@ class AttendanceResource extends Resource
                     ->action(function ($record, array $data) {
                         $reasonEnum = CoverageReason::tryFrom($data['coverage_reason']);
 
-                              // التحقق من سلسلة الموافقات المرتبطة بنوع الطلب
-                              $approvalFlow = ApprovalFlow::where('request_type', 'coverage')
-                              ->orderBy('approval_level', 'asc')
-                              ->first();
-                          if (!$approvalFlow) {
-                              throw new \Exception(__('No approval flow defined for this request type.'));
-                          }
-      
-                              // تخزين الدور الأول في `current_approver_role`
-                            //   $role = Role::where('name', $approvalFlow->approver_role)->first();
-                            //   if (! $role) {
-                            //       throw new \Exception(__('Role not found for the approver in the approval flow.'));
-                            //   }
+                        // التحقق من سلسلة الموافقات المرتبطة بنوع الطلب
+                        $approvalFlow = ApprovalFlow::where('request_type', 'coverage')
+                            ->orderBy('approval_level', 'asc')
+                            ->first();
+                        if (! $approvalFlow) {
+                            throw new \Exception(__('No approval flow defined for this request type.'));
+                        }
+
+                        // تخزين الدور الأول في `current_approver_role`
+                        //   $role = Role::where('name', $approvalFlow->approver_role)->first();
+                        //   if (! $role) {
+                        //       throw new \Exception(__('Role not found for the approver in the approval flow.'));
+                        //   }
 
                         // تحديث حالة الطلب إلى "موافق عليه"
                         $record->update(['approval_status' => 'approved']);
@@ -375,7 +392,6 @@ class AttendanceResource extends Resource
                         // تحديث معرف التغطية في الحضور
                         $record->update(['coverage_id' => $coverage->id]);
 
-                  
                         // $data['current_approver_role'] = $role->name;
 
                         // **إنشاء طلب جديد تلقائيًا من نوع "التغطية"**
@@ -383,7 +399,7 @@ class AttendanceResource extends Resource
                             'type' => 'coverage',
                             'submitted_by' => auth()->id(), // المستخدم الحالي هو مقدم الطلب
                             'employee_id' => $record->employee_id, // الموظف الذي يحتاج التغطية
-                           'current_approver_role' => $approvalFlow->approver_role, // الدور الحالي
+                            'current_approver_role' => $approvalFlow->approver_role, // الدور الحالي
                             'description' => __('Coverage request for :employee', ['employee' => $record->employee->first_name]),
                             'additional_data' => json_encode([
                                 'coverage_reason' => $data['coverage_reason'],

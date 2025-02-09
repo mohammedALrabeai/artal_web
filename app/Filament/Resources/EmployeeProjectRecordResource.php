@@ -164,6 +164,9 @@ class EmployeeProjectRecordResource extends Resource
                         });
                     })
                     ->sortable(),
+                TextColumn::make('employee.national_id')
+                    ->label(__('National ID'))
+                    ->searchable(),
 
                 TextColumn::make('project.name')
                     ->label(__('Project'))
