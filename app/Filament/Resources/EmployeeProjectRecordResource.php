@@ -294,6 +294,9 @@ class EmployeeProjectRecordResource extends Resource
                 color: white; 
                 display: inline-block; 
                 width: 110px; /* ضمان نفس العرض */
+                 height: 30px;
+                 margin-bottom: 0px; /* تقليل الهوامش بين الصفوف */
+
                 text-align: center; 
                 margin-right: 5px; 
                 font-weight: bold;
