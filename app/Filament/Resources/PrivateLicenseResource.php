@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use MohamedSabil83\FilamentHijriPicker\Forms\Components\HijriDatePicker;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class PrivateLicenseResource extends Resource
@@ -21,13 +22,12 @@ class PrivateLicenseResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
@@ -79,7 +79,7 @@ class PrivateLicenseResource extends Resource
                                     ->label(__('Expiry Date (Gregorian)'))
                                     ->nullable(),
 
-                                Forms\Components\DatePicker::make('expiry_date_hijri')
+                                HijriDatePicker::make('expiry_date_hijri')
                                     ->label(__('Expiry Date (Hijri)'))
                                     ->nullable(),
 
@@ -173,7 +173,8 @@ class PrivateLicenseResource extends Resource
 
                 Tables\Columns\TextColumn::make('expiry_date_hijri')
                     ->label(__('Expiry Date (Hijri)'))
-                    ->dateTime()
+                    ->date()
+                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('d/m/Y'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('website')

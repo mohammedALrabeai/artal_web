@@ -6,7 +6,6 @@ use App\Filament\Resources\CommercialRecordResource\Pages;
 use App\Models\CommercialRecord;
 use App\Models\RecordMedia;
 use Filament\Forms;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
@@ -18,6 +17,8 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use MohamedSabil83\FilamentHijriPicker\Forms\Components\HijriDatePicker;
+// use Sabil83\FilamentHijriPicker\Forms\Components\HijriDatePicker;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class CommercialRecordResource extends Resource
@@ -104,9 +105,14 @@ class CommercialRecordResource extends Resource
                                 ->label(__('Unified Number (700)'))
                                 ->nullable(),
 
-                            Forms\Components\DatePicker::make('expiry_date_hijri')
+                            // Forms\Components\DatePicker::make('expiry_date_hijri')
+                            //     ->label(__('Expiry Date (Hijri)'))
+                            //     ->nullable(),
+                            HijriDatePicker::make('expiry_date_hijri')
                                 ->label(__('Expiry Date (Hijri)'))
-                                ->nullable(),
+                                ->nullable()
+                            // ->required()
+                            ,
 
                             Forms\Components\DatePicker::make('expiry_date_gregorian')
                                 ->label(__('Expiry Date (Gregorian)'))
@@ -235,6 +241,8 @@ class CommercialRecordResource extends Resource
                 Tables\Columns\TextColumn::make('expiry_date_hijri')
                     ->label(__('Expiry Date (Hijri)')) // نهاية السجل التجاري (هجري)
                     ->date() // يعرض التاريخ فقط بدون الوقت
+                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('d/m/Y'))
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('insuranceCompany.name')

@@ -2,15 +2,16 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\PostalSubscriptionResource\Pages;
-use App\Models\PostalSubscription;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use App\Models\PostalSubscription;
 use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\PostalSubscriptionResource\Pages;
+use MohamedSabil83\FilamentHijriPicker\Forms\Components\HijriDatePicker;
 
 class PostalSubscriptionResource extends Resource
 {
@@ -74,7 +75,7 @@ class PostalSubscriptionResource extends Resource
                                     ->label(__('Expiry Date (Gregorian)'))
                                     ->nullable(),
 
-                                Forms\Components\DatePicker::make('expiry_date_hijri')
+                                    HijriDatePicker::make('expiry_date_hijri')
                                     ->label(__('Expiry Date (Hijri)')) // نهاية الاشتراك (هجري)
                                     ->nullable(),
 
@@ -157,7 +158,9 @@ class PostalSubscriptionResource extends Resource
 
                 Tables\Columns\TextColumn::make('expiry_date_hijri')
                     ->label(__('Expiry Date (Hijri)')) // نهاية الاشتراك (هجري)
-                    ->dateTime()
+                    ->date()
+                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('d/m/Y'))
+
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('mobile_number')

@@ -25,6 +25,7 @@
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.0",
         "livewire/livewire": "^3.5",
+        "mohamedsabil83/filament-hijri-picker": "^1.1",
         "owenvoke/blade-fontawesome": "^2.8",
         "pusher/pusher-php-server": "^7.2",
         "pxlrbt/filament-excel": "^2.3",

@@ -2,15 +2,16 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\MunicipalLicenseResource\Pages;
-use App\Models\MunicipalLicense;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\MunicipalLicense;
+use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\MunicipalLicenseResource\Pages;
+use MohamedSabil83\FilamentHijriPicker\Forms\Components\HijriDatePicker;
 
 class MunicipalLicenseResource extends Resource
 {
@@ -66,7 +67,7 @@ class MunicipalLicenseResource extends Resource
                                     // ->unique()
                                     ->maxLength(50),
 
-                                Forms\Components\DatePicker::make('expiry_date_hijri')
+                                    HijriDatePicker::make('expiry_date_hijri')
                                     ->label(__('Expiry Date L(Hijri)'))
                                     ->nullable(),
 
@@ -142,7 +143,8 @@ class MunicipalLicenseResource extends Resource
 
                 Tables\Columns\TextColumn::make('expiry_date_hijri')
                     ->label(__('Expiry Date L(Hijri)'))
-                    ->dateTime()
+                    ->date()
+                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('d/m/Y'))
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('expiry_date_gregorian')
