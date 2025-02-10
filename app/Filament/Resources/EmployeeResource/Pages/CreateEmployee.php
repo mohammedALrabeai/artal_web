@@ -30,18 +30,30 @@ class CreateEmployee extends CreateRecord
         $addedBy = auth()->user()->name; // معرفة من قام بالإضافة
         $employee = $this->record; // جلب بيانات الموظف الجديد
 
-        // ✅ إرسال إشعار عند إضافة موظف جديد
+        // ✅ إنشاء رسالة الإشعار بتنسيق محسن
+        $message = "👤 *إضافة موظف جديد*\n\n";
+        $message .= "📢 *تمت إضافة الموظف بواسطة:* {$addedBy}\n\n";
+        $message .= "👨‍💼 *اسم الموظف:* {$employee->name()}\n";
+        $message .= "🆔 *رقم الهوية:* {$employee->national_id}\n";
+        $message .= "📞 *رقم الجوال:* {$employee->mobile_number}\n";
+
+        if (! empty($employee->email)) {
+            $message .= "📧 *البريد الإلكتروني:* {$employee->email}\n";
+        }
+
+        $message .= "🏢 *المسمى الوظيفي:* {$employee->job_title}\n";
+
+        if (! empty($employee->birth_date)) {
+            $message .= "📅 *تاريخ الميلاد:* {$employee->birth_date}\n";
+        }
+
+        $message .= '🏡 *مكان الميلاد:* '.(! empty($employee->birth_place) ? $employee->birth_place : 'غير متوفر')."\n\n";
+
+        // ✅ إرسال الإشعار مع الروابط
         $notificationService->sendNotification(
             ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
-            '🆕 تم إضافة موظف جديد', // عنوان الإشعار
-            "📌 قام **{$addedBy}** بإضافة الموظف **{$employee->name()}** إلى النظام بنجاح.\n\n".
-            "**📄 تفاصيل الموظف:**\n".
-            "🆔 **رقم الهوية:** {$employee->national_id}\n".
-            "📞 **رقم الجوال:** {$employee->mobile_number}\n".
-            "📧 **البريد الإلكتروني:** {$employee->email}\n".
-            "🏢 **الوظيفة:** {$employee->job_title}\n".
-            '📅 **تاريخ الميلاد:** '.($employee->birth_date ?? 'غير متوفر')."\n".
-            '🏡 **مكان الميلاد:** '.($employee->birth_place ?? 'غير متوفر')."\n",
+            '👤 إضافة موظف جديد', // عنوان الإشعار
+            $message,
             [
                 $notificationService->createAction('👁️ عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
                 $notificationService->createAction('📋 قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
