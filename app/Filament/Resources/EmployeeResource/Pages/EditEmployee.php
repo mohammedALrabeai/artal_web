@@ -18,42 +18,42 @@ class EditEmployee extends EditRecord
         ];
     }
 
-    protected function afterSave(): void
-    {
-        $notificationService = new NotificationService;
-        $editedBy = auth()->user()->name; // معرفة من قام بالتعديل
-        $employee = $this->record; // جلب بيانات الموظف بعد التعديل
+    // protected function afterSave(): void
+    // {
+    //     $notificationService = new NotificationService;
+    //     $editedBy = auth()->user()->name; // معرفة من قام بالتعديل
+    //     $employee = $this->record; // جلب بيانات الموظف بعد التعديل
 
-        // ✅ استخدام `getChanges()` بعد الحفظ مباشرة لتفادي تأثير `Spatie Activitylog`
-        $changes = $employee->getChanges();
-        $original = $employee->getOriginal();
+    //     // ✅ استخدام `getChanges()` بعد الحفظ مباشرة لتفادي تأثير `Spatie Activitylog`
+    //     $changes = $employee->getChanges();
+    //     $original = $employee->getOriginal();
 
-        // ✅ تجهيز قائمة التعديلات (استبعاد `updated_at` والحقول غير المهمة)
-        $ignoredFields = ['updated_at', 'created_at'];
-        $changeDetails = '';
+    //     // ✅ تجهيز قائمة التعديلات (استبعاد `updated_at` والحقول غير المهمة)
+    //     $ignoredFields = ['updated_at', 'created_at'];
+    //     $changeDetails = '';
 
-        foreach ($changes as $field => $newValue) {
-            if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
-                $changeDetails .= ucfirst(str_replace('_', ' ', $field)).": \"{$original[$field]}\" → \"{$newValue}\"\n";
-            }
-        }
+    //     foreach ($changes as $field => $newValue) {
+    //         if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
+    //             $changeDetails .= ucfirst(str_replace('_', ' ', $field)).": \"{$original[$field]}\" → \"{$newValue}\"\n";
+    //         }
+    //     }
 
-        // ✅ تجهيز نص الإشعار
-        $message = "تم تعديل بيانات الموظف بنجاح\n\n";
-        $message .= "الموظف: {$employee->name()}\n";
-        $message .= "تم التعديل بواسطة: {$editedBy}\n\n";
-        $message .= "تفاصيل التعديل:\n";
-        $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
+    //     // ✅ تجهيز نص الإشعار
+    //     $message = "تم تعديل بيانات الموظف بنجاح\n\n";
+    //     $message .= "الموظف: {$employee->name()}\n";
+    //     $message .= "تم التعديل بواسطة: {$editedBy}\n\n";
+    //     $message .= "تفاصيل التعديل:\n";
+    //     $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
 
-        // ✅ إرسال الإشعار إلى المديرين
-        $notificationService->sendNotification(
-            ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
-            'تعديل بيانات الموظف', // عنوان الإشعار
-            $message,
-            [
-                $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                $notificationService->createAction('قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
-            ]
-        );
-    }
+    //     // ✅ إرسال الإشعار إلى المديرين
+    //     $notificationService->sendNotification(
+    //         ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
+    //         'تعديل بيانات الموظف', // عنوان الإشعار
+    //         $message,
+    //         [
+    //             $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+    //             $notificationService->createAction('قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
+    //         ]
+    //     );
+    // }
 }
