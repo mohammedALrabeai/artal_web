@@ -24,11 +24,11 @@ class EditEmployee extends EditRecord
         $editedBy = auth()->user()->name; // معرفة من قام بالتعديل
         $employee = $this->record; // جلب بيانات الموظف بعد التعديل
 
-        // ✅ جلب البيانات التي تم تغييرها
-        $changes = $employee->getChanges();
+        // ✅ جلب البيانات التي تم تغييرها فعليًا قبل الحفظ
+        $changes = $employee->getDirty();
         $original = $employee->getOriginal();
 
-        // ✅ تجهيز قائمة التعديلات (تجاهل `updated_at` وأي حقول غير مهمة)
+        // ✅ تجهيز قائمة التعديلات
         $ignoredFields = ['updated_at', 'created_at'];
         $changeDetails = '';
 
@@ -43,7 +43,7 @@ class EditEmployee extends EditRecord
         $message .= "الموظف: {$employee->name()}\n";
         $message .= "تم التعديل بواسطة: {$editedBy}\n\n";
         $message .= "تفاصيل التعديل:\n";
-        $message .= ! empty($changeDetails) ? $changeDetails : "لم يتم الكشف عن تغييرات كبيرة.\n";
+        $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
 
         // ✅ إرسال الإشعار إلى المديرين
         $notificationService->sendNotification(
