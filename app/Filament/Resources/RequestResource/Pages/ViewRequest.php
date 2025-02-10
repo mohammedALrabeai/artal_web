@@ -81,9 +81,9 @@ class ViewRequest extends ViewRecord
                                             ->state(match ($attachment->type) {
                                                 'text' => "<p>{$attachment->content}</p>",
                                                 'link' => "<a href='{$attachment->content}' target='_blank' class='text-blue-600 underline'>{$attachment->content}</a>",
-                                                'image' => "<a href='{$attachment->content_url}' target='_blank'><img src='{$attachment->content_url}' width='80' class='rounded shadow' /></a>",
-                                                'video' => "<video width='160' controls><source src='{$attachment->content_url}' type='video/mp4'></video>",
-                                                'file' => "<a href='{$attachment->content_url}' target='_blank' class='text-blue-600 underline'>".__('Download File').'</a>',
+                                                'image' => "<a href='{$attachment->image_url}' target='_blank'><img src='{$attachment->image_url}' width='80' class='rounded shadow' /></a>",
+                                                'video' => "<video width='160' controls><source src='{$attachment->video_url}' type='video/mp4'></video>",
+                                                'file' => "<a href='{$attachment->file_url}' target='_blank' class='text-blue-600 underline'>".__('Download File').'</a>',
                                                 default => __('Unsupported Format'),
                                             }),
                                         TextEntry::make('expiry_date')->label(__('Expiry Date'))->state($attachment->expiry_date),
