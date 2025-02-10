@@ -28,29 +28,31 @@ class EditEmployee extends EditRecord
         $changes = $employee->getChanges();
         $original = $employee->getOriginal();
 
-        // ✅ تجهيز قائمة التعديلات
+        // ✅ تجهيز قائمة التعديلات (تجاهل `updated_at` وأي حقول غير مهمة)
+        $ignoredFields = ['updated_at', 'created_at'];
         $changeDetails = '';
+
         foreach ($changes as $field => $newValue) {
-            if (isset($original[$field]) && $original[$field] !== $newValue) {
-                $changeDetails .= '🔹 **'.ucfirst(str_replace('_', ' ', $field)).":** `{$original[$field]}` → `{$newValue}`\n";
+            if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
+                $changeDetails .= ucfirst(str_replace('_', ' ', $field)).": \"{$original[$field]}\" → \"{$newValue}\"\n";
             }
         }
 
         // ✅ تجهيز نص الإشعار
-        $message = "✏️ *تم تعديل بيانات الموظف بنجاح!*\n\n";
-        $message .= "👤 *الموظف:* {$employee->name()}\n";
-        $message .= "📌 *تم التعديل بواسطة:* {$editedBy}\n\n";
-        $message .= "📝 *تفاصيل التعديل:*\n";
-        $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
+        $message = "تم تعديل بيانات الموظف بنجاح\n\n";
+        $message .= "الموظف: {$employee->name()}\n";
+        $message .= "تم التعديل بواسطة: {$editedBy}\n\n";
+        $message .= "تفاصيل التعديل:\n";
+        $message .= ! empty($changeDetails) ? $changeDetails : "لم يتم الكشف عن تغييرات كبيرة.\n";
 
         // ✅ إرسال الإشعار إلى المديرين
         $notificationService->sendNotification(
             ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
-            '✏️ تعديل بيانات الموظف', // عنوان الإشعار
+            'تعديل بيانات الموظف', // عنوان الإشعار
             $message,
             [
-                $notificationService->createAction('👁️ عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                $notificationService->createAction('📋 قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
+                $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                $notificationService->createAction('قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
             ]
         );
     }
