@@ -2,12 +2,10 @@
 
 namespace App\Filament\Resources\EmployeeResource\Pages;
 
-use App\Models\User;
-use Filament\Actions;
-use App\Services\NotificationService;
-use Filament\Resources\Pages\EditRecord;
 use App\Filament\Resources\EmployeeResource;
-use App\Notifications\NewEmployeeNotification;
+use App\Services\NotificationService;
+use Filament\Actions;
+use Filament\Resources\Pages\EditRecord;
 
 class EditEmployee extends EditRecord
 {
@@ -23,25 +21,37 @@ class EditEmployee extends EditRecord
     protected function afterSave(): void
     {
         $notificationService = new NotificationService;
+        $editedBy = auth()->user()->name; // معرفة من قام بالتعديل
+        $employee = $this->record; // جلب بيانات الموظف بعد التعديل
+
+        // ✅ جلب البيانات التي تم تغييرها
+        $changes = $employee->getChanges();
+        $original = $employee->getOriginal();
+
+        // ✅ تجهيز قائمة التعديلات
+        $changeDetails = '';
+        foreach ($changes as $field => $newValue) {
+            if (isset($original[$field]) && $original[$field] !== $newValue) {
+                $changeDetails .= '🔹 **'.ucfirst(str_replace('_', ' ', $field)).":** `{$original[$field]}` → `{$newValue}`\n";
+            }
+        }
+
+        // ✅ تجهيز نص الإشعار
+        $message = "✏️ *تم تعديل بيانات الموظف بنجاح!*\n\n";
+        $message .= "👤 *الموظف:* {$employee->name()}\n";
+        $message .= "📌 *تم التعديل بواسطة:* {$editedBy}\n\n";
+        $message .= "📝 *تفاصيل التعديل:*\n";
+        $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
+
+        // ✅ إرسال الإشعار إلى المديرين
         $notificationService->sendNotification(
             ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
-            'تعديل بيانات الموظف', // عنوان الإشعار
-            'تم تعديل بيانات الموظف بنجاح!', // نص الإشعار
+            '✏️ تعديل بيانات الموظف', // عنوان الإشعار
+            $message,
             [
-                $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$this->record->id}/view", 'heroicon-s-eye'),
-                $notificationService->createAction('عرض قائمة الموظفين', '/admin/banks', 'heroicon-s-eye'),
+                $notificationService->createAction('👁️ عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                $notificationService->createAction('📋 قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
             ]
         );
-       
-    //     // إرسال إشعار بتعديل بيانات الموظف
-    //      // جلب المستخدمين الذين لديهم الأدوار المطلوبة عبر العلاقة مع جدول الأدوار
-    // $managers = User::whereHas('role', function ($query) {
-    //     $query->whereIn('name', ['manager', 'general_manager', 'hr']); // الأدوار المطلوبة
-    // })->get();
-
-    // // إرسال الإشعارات
-    // foreach ($managers as $manager) {
-    //     $manager->notify(new NewEmployeeNotification($this->record));
-    // }
     }
 }
