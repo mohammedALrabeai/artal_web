@@ -95,7 +95,7 @@ class NationalAddressResource extends Resource
                                             ->collection('record_media')
                                             ->multiple()
                                             ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
-                                            ->preserveFilenames()
+                                            // ->preserveFilenames()
                                             ->maxFiles(5)
                                             ->maxSize(10240), // 10MB
                                     ])

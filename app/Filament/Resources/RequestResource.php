@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\RequestResource\Pages;
 use App\Filament\Resources\RequestResource\RelationManagers;
 use App\Forms\Components\EmployeeSelect;
+use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\Request;
 use App\Models\User;
@@ -211,7 +212,7 @@ class RequestResource extends Resource
                                         ->collection('attachments')
                                         ->multiple()
                                         ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
-                                        ->preserveFilenames()
+                                        // ->preserveFilenames()
                                         ->maxFiles(5)
                                         ->maxSize(10240),
 
@@ -339,12 +340,12 @@ class RequestResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
-                ->label(__('Created At'))
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('updated_at')
-                ->label(__('Updated At'))
+                    ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -436,6 +437,7 @@ class RequestResource extends Resource
                 //             ->send();
                 //     }
                 // }),
+                // ✅ **زر "إرفاق ملف"**
                 Tables\Actions\Action::make('approve')
                     ->label(__('Approve'))
                     ->action(fn ($record, array $data) => $record->approveRequest(auth()->user(), $data['comments']))
@@ -461,6 +463,64 @@ class RequestResource extends Resource
                     ->requiresConfirmation()
                     ->hidden(fn ($record) => $record->status !== 'pending'),
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('attach_file')
+                    ->label(__('Attach File'))
+                    ->icon('heroicon-o-paper-clip')
+                    ->color('primary')
+                    ->form([
+                        Forms\Components\TextInput::make('title')
+                            ->label(__('File Title'))
+                            ->required(),
+
+                        Forms\Components\FileUpload::make('file')
+                            ->label(__('Upload File'))
+                            // ->collection('attachments')
+                            ->disk('s3') // ✅ حفظ إلى S3
+                            // ->preserveFilenames()
+                            ->storeFiles()
+                            ->directory('form-attachments')
+                            ->visibility('private')
+                            ->required(),
+
+                        Forms\Components\DatePicker::make('expiry_date')
+                            ->label(__('Expiry Date'))
+                            ->nullable(),
+
+                        Forms\Components\Textarea::make('notes')
+                            ->label(__('Notes'))
+                            ->nullable(),
+                    ])
+                    ->action(function (array $data, Request $record) {
+
+                        // ✅ إنشاء مرفق جديد مربوط بالطلب
+                        $attachment = new Attachment([
+                            'title' => $data['title'],
+                            'expiry_date' => $data['expiry_date'],
+                            'notes' => $data['notes'],
+                            'added_by' => auth()->id(),
+                            'model_type' => Request::class,
+                            'model_id' => $record->id,
+                        ]);
+
+                        $attachment->save();
+
+                        // ✅ **إرفاق الملف باستخدام `addMediaFromDisk()`**
+                        if (! empty($data['file']) && is_string($data['file'])) {
+                            \Log::info('File path received:', ['file' => $data['file']]);
+
+                            $attachment->addMediaFromDisk($data['file'], 's3') // ✅ استخدم `addMediaFromDisk()`
+                                ->toMediaCollection('attachments', 's3'); // ✅ حفظ في S3
+                        } else {
+                            \Log::error('No valid file path detected.');
+                        }
+
+                        Notification::make()
+                            ->title(__('File Attached'))
+                            ->body(__('The file has been successfully attached to the request.'))
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

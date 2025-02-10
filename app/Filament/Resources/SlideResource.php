@@ -67,7 +67,7 @@ class SlideResource extends Resource
                     ->disk('s3') // استخدام القرص S3
                     ->directory('slides') // تحديد المجلد في الحاوية
                     ->visibility('public') // ضبط الرؤية للملفات
-                    ->preserveFilenames() // الاحتفاظ باسم الملف الأصلي
+                    // ->preserveFilenames() // الاحتفاظ باسم الملف الأصلي
                     ->required(),
                 Toggle::make('is_active')
                     ->label(__('is_active'))

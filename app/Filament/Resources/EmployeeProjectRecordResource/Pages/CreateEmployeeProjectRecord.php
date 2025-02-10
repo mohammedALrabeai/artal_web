@@ -48,9 +48,9 @@ class CreateEmployeeProjectRecord extends CreateRecord
                 '📧 *البريد الإلكتروني:* '.(! empty($employee->email) ? $employee->email : 'غير متوفر')."\n\n".
                 "📢 *تم الإسناد بواسطة:* {$assignedBy}\n",
                 [
-                    $notificationService->createAction('👁️ عرض تفاصيل الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                    $notificationService->createAction('🗺️ عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
-                    $notificationService->createAction('📋 قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
+                    $notificationService->createAction(' عرض تفاصيل الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                    $notificationService->createAction(' عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
+                    // $notificationService->createAction('📋 قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
                 ]
             );
 

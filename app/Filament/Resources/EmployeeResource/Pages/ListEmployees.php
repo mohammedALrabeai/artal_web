@@ -33,7 +33,7 @@ class ListEmployees extends ListRecords
                         ->label(__('Upload Excel File'))
                         ->disk('public') // تأكد من إعداد المسار
                         ->directory('uploads') // مسار حفظ الملف
-                        ->preserveFilenames()
+                        // ->preserveFilenames()
                         ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']) // ملفات Excel فقط
                         ->required(),
                     Forms\Components\Checkbox::make('use_ids_from_file')

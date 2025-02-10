@@ -78,7 +78,7 @@ class AttachmentResource extends Resource
                 ->label(__('Upload File'))
                 ->collection('attachments')
                 ->disk('s3')
-                ->preserveFilenames()
+                // ->preserveFilenames()
                 ->multiple()
                 ->maxFiles(5)
                 ->maxSize(10240),

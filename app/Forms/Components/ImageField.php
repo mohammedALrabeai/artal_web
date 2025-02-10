@@ -15,7 +15,7 @@ class ImageField extends FileUpload
             ->disk('s3')
             ->directory('employees')
             ->visibility('public')
-            ->preserveFilenames()
+            // ->preserveFilenames()
             ->previewable(true)
             ->downloadable();
     }
