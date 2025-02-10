@@ -145,10 +145,9 @@ class ZoneResource extends Resource
             ->paginationPageOptions([10, 25, 50, 100])
             ->actions([
                 Tables\Actions\Action::make('view')
-                ->label(__('View'))
-                ->icon('heroicon-o-eye')
-                ->url(fn (Zone $record) => ZoneResource::getUrl('view', ['record' => $record->id])), // ربط زر العرض بصفحة التفاصيل
-      
+                    ->label(__('View'))
+                    ->icon('heroicon-o-eye')
+                    ->url(fn (Zone $record) => ZoneResource::getUrl('view', ['record' => $record->id])), // ربط زر العرض بصفحة التفاصيل
 
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
