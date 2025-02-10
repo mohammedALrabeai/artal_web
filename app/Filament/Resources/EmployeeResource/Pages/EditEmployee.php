@@ -24,11 +24,11 @@ class EditEmployee extends EditRecord
         $editedBy = auth()->user()->name; // معرفة من قام بالتعديل
         $employee = $this->record; // جلب بيانات الموظف بعد التعديل
 
-        // ✅ جلب البيانات التي تم تغييرها فعليًا قبل الحفظ
-        $changes = $employee->getDirty();
+        // ✅ استخدام `getChanges()` بعد الحفظ مباشرة لتفادي تأثير `Spatie Activitylog`
+        $changes = $employee->getChanges();
         $original = $employee->getOriginal();
 
-        // ✅ تجهيز قائمة التعديلات
+        // ✅ تجهيز قائمة التعديلات (استبعاد `updated_at` والحقول غير المهمة)
         $ignoredFields = ['updated_at', 'created_at'];
         $changeDetails = '';
 
