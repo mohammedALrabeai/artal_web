@@ -18,4 +18,9 @@ class ListEmployeeProjectRecords extends ListRecords
             ExportAction::make(),
         ];
     }
+
+    protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getTableQuery()->latest();
+    }
 }

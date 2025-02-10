@@ -178,8 +178,10 @@ class AttachmentResource extends Resource
                     ->label(__('Added By')),
 
                 Tables\Columns\TextColumn::make('notes')
-                    ->label(__('Notes')),
-                    Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Notes'))
+                    ->limit(50), // ✅ تحديد عدد الأحرف بـ 50 حرفًا فقط
+
+                Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
