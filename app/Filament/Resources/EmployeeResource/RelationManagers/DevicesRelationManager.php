@@ -82,6 +82,7 @@ class DevicesRelationManager extends RelationManager
                 
 
                 Tables\Columns\TextColumn::make('created_at')
+                
                     ->label(__('Added On'))
                     ->dateTime()
                     ->sortable(),

@@ -6,7 +6,6 @@ use App\Notifications\RequestStatusNotification;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Validation\ValidationException;
 
 class Request extends Model
@@ -347,7 +346,7 @@ class Request extends Model
         }
     }
 
-    public function attachments(): MorphMany
+    public function attachments()
     {
         return $this->morphMany(Attachment::class, 'model');
     }

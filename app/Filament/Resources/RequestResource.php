@@ -206,54 +206,14 @@ class RequestResource extends Resource
                                         ->label(__('Title'))
                                         ->required(),
 
-                                    Forms\Components\Select::make('type')
-                                        ->label(__('Type'))
-                                        ->options([
-                                            'text' => __('Text'),
-                                            'link' => __('Link'),
-                                            'image' => __('Image'),
-                                            'video' => __('Video'),
-                                            'file' => __('File'),
-                                        ])
-                                        ->required()
-                                        ->reactive(),
-
-                                    Forms\Components\Textarea::make('content')
-                                        ->label(__('Content (Text)'))
-                                        ->nullable()
-                                        ->visible(fn ($get) => $get('type') === 'text'),
-
-                                    Forms\Components\TextInput::make('content')
-                                        ->label(__('Content (Link)'))
-                                        ->nullable()
-                                        ->visible(fn ($get) => $get('type') === 'link')
-                                        ->url(),
-                                    // Forms\Components\TextInput::make('image_url')
-                                    Forms\Components\FileUpload::make('image_url')
-                                        ->label(__('Content (Image)'))
-                                        // ->nullable()
-                                        ->disk('s3')
-                                        ->directory('attachments/images')
-                                        ->visibility('public')
-                                        ->visible(fn ($get) => $get('type') === 'image'),
-
-                                    Forms\Components\FileUpload::make('video_url')
-                                        ->label(__('Content (Video)'))
-                                        ->nullable()
-                                        ->disk('s3')
-                                        ->directory('attachments/videos')
-                                        ->visibility('public')
-                                        ->acceptedFileTypes(['video/*'])
-                                        ->visible(fn ($get) => $get('type') === 'video'),
-
-                                    Forms\Components\FileUpload::make('file_url')
-                                        ->label(__('Content (File)'))
-                                        ->nullable()
-                                        ->disk('s3')
-                                        ->directory('attachments/files')
-                                        ->visibility('public')
-                                        ->acceptedFileTypes(['application/*'])
-                                        ->visible(fn ($get) => $get('type') === 'file'),
+                                    Forms\Components\SpatieMediaLibraryFileUpload::make('file')
+                                        ->label(__('Upload File'))
+                                        ->collection('attachments')
+                                        ->multiple()
+                                        ->disk('s3') // ✅ رفع الملفات مباشرة إلى S3
+                                        ->preserveFilenames()
+                                        ->maxFiles(5)
+                                        ->maxSize(10240),
 
                                     Forms\Components\DatePicker::make('expiry_date')
                                         ->label(__('Expiry Date'))
@@ -376,6 +336,16 @@ class RequestResource extends Resource
 
                         return $remainingFlows->isEmpty() ? __('No remaining approvals') : $remainingFlows->join(', ');
                     })
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('created_at')
+                ->label(__('Created At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('updated_at')
+                ->label(__('Updated At'))
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 

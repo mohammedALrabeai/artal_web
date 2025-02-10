@@ -72,10 +72,12 @@ class AreaResource extends Resource
                     Tables\Columns\TextColumn::make('description')->label(__('Description'))->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
+                ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -65,32 +65,52 @@ class ViewRequest extends ViewRecord
                             ]),
                     ]),
 
-                // ✅ **القسم الثالث: المرفقات**
-                Section::make(__('Attachments'))
+                // ✅ **القسم الثالث: المرفقات باستخدام `Spatie Media Library`**
+                Section::make(fn ($record) => sprintf('%s (%d)', __('Attachments'), $record->attachments->count()))
                     ->schema([
                         Group::make()
-                            ->state(fn ($record) => $record->attachments) // ✅ جلب المرفقات يدويًا
+                            ->state(fn ($record) => $record->attachments) // ✅ جلب المرفقات المرتبطة بالطلب
                             ->columns(2)
                             ->schema(fn ($state) => collect($state)->map(function ($attachment) {
+                                $file = $attachment->getFirstMedia('attachments');
+
                                 return Section::make($attachment->title)
                                     ->schema([
-                                        TextEntry::make('type')->label(__('Type'))->state($attachment->type),
-                                        TextEntry::make('content_url')
+                                        TextEntry::make('type')
+                                            ->label(__('Type'))
+                                            ->state(class_basename($attachment->model_type)), // ✅ عرض نوع الموديل المرتبط
+
+                                        TextEntry::make('preview')
                                             ->label(__('Preview'))
                                             ->html()
-                                            ->state(match ($attachment->type) {
-                                                'text' => "<p>{$attachment->content}</p>",
-                                                'link' => "<a href='{$attachment->content}' target='_blank' class='text-blue-600 underline'>{$attachment->content}</a>",
-                                                'image' => "<a href='{$attachment->image_url}' target='_blank'><img src='{$attachment->image_url}' width='80' class='rounded shadow' /></a>",
-                                                'video' => "<video width='160' controls><source src='{$attachment->video_url}' type='video/mp4'></video>",
-                                                'file' => "<a href='{$attachment->file_url}' target='_blank' class='text-blue-600 underline'>".__('Download File').'</a>',
-                                                default => __('Unsupported Format'),
-                                            }),
-                                        TextEntry::make('expiry_date')->label(__('Expiry Date'))->state($attachment->expiry_date),
-                                        TextEntry::make('notes')->label(__('Notes'))->state($attachment->notes),
+                                            ->state(fn () => $file ? match ($file->mime_type) {
+                                                'image/png', 'image/jpeg', 'image/gif' => "<a href='{$file->getTemporaryUrl(now()->addMinutes(30))}' target='_blank'>
+                                    <img src='{$file->getTemporaryUrl(now()->addMinutes(30))}' width='80' class='rounded shadow' />
+                                </a>",
+                                                'video/mp4', 'video/mpeg' => "<video width='160' controls>
+                                  <source src='{$file->getTemporaryUrl(now()->addMinutes(30))}' type='video/mp4'>
+                               </video>",
+                                                'application/pdf' => "<a href='{$file->getTemporaryUrl(now()->addMinutes(30))}' target='_blank' class='font-bold text-primary'>
+                                 📄 ".__('View PDF').'
+                              </a>',
+                                                default => "<a href='{$file->getTemporaryUrl(now()->addMinutes(30))}' target='_blank' class='font-bold text-primary'>
+                                📂 ".__('Download File').'
+                            </a>',
+                                            } : '<span class="text-gray-500">'.__('No File Available').'</span>'),
+
+                                        TextEntry::make('expiry_date')
+                                            ->label(__('Expiry Date'))
+                                            ->state($attachment->expiry_date ?? '-'),
+
+                                        TextEntry::make('notes')
+                                            ->label(__('Notes'))
+                                            ->state($attachment->notes ?? '-'),
                                     ]);
                             })->toArray()),
-                    ]),
+                    ])
+                    ->visible(fn ($record) => $record->attachments->isNotEmpty()) // ✅ إخفاء القسم إذا لم يكن هناك مرفقات
+                // ->badge(fn ($record) => count($record->attachments))
+                , // ✅ عرض عدد المرفقات كـ badge
 
                 // ✅ **القسم الرابع: تاريخ الموافقات**
                 Section::make(__('Approval History'))

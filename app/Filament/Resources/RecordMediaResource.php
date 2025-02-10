@@ -120,6 +120,16 @@ class RecordMediaResource extends Resource
                         }
                         : '<span class="text-gray-500">No File</span>') // ❌ عرض "No File" عند عدم وجود ملف
                     ->html(),
+                    Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
             ])
             ->actions([

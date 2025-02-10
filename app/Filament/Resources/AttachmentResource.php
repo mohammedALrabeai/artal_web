@@ -2,18 +2,18 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use Filament\Forms\Get;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use App\Models\Attachment;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Illuminate\Support\Facades\Storage;
-use App\Forms\Components\EmployeeSelect;
-use Filament\Tables\Filters\SelectFilter;
 use App\Filament\Resources\AttachmentResource\Pages;
+use App\Forms\Components\EmployeeSelect;
+use App\Models\Attachment;
+use App\Models\Employee;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class AttachmentResource extends Resource
@@ -27,13 +27,12 @@ class AttachmentResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
@@ -57,133 +56,15 @@ class AttachmentResource extends Resource
                 ->label(__('Title'))
                 ->required(),
 
-                EmployeeSelect::make(),
+            // ✅ استخدام `EmployeeSelect` لاختيار الموظف مع البحث المتقدم
+            EmployeeSelect::make('model_id')
+                ->label(__('Employee'))
+                ->required(),
 
-            Forms\Components\Select::make('type')
-                ->label(__('Type'))
-                ->options([
-                    'text' => __('Text'),
-                    'link' => __('Link'),
-                    'image' => __('Image'),
-                    'video' => __('Video'),
-                    'file' => __('File'),
-                ])
-                ->required()
-                ->reactive(),
+            // ✅ تعيين نوع الموديل تلقائيًا ليكون `Employee`
+            Forms\Components\Hidden::make('model_type')
+                ->default('App\Models\Employee'),
 
-          
-                // Forms\Components\Fieldset::make(__('Image'))
-                // ->schema([
-                //     Forms\Components\FileUpload::make('image_url')
-                //     ->label(__('Content (Image)'))
-                //     ->image()
-                //     ->nullable()
-                //     ->disk('s3')
-                //     ->directory('attachments/images')
-                //     ->visibility('public'),
-                // ]
-                // )
-                // ->visible(fn (Get $get) => $get('type') === 'image'),
-
-                // Forms\Components\Fieldset::make(__('Video'))
-                // ->schema([
-                //     Forms\Components\FileUpload::make('video_url')
-                //     ->label(__('Content (Video)'))
-                //     ->disk('s3')
-                //     ->nullable()
-                //     ->directory('attachments/videos')
-                //     ->visibility('public')
-                //     ->acceptedFileTypes(['video/*']),
-                //     // ->preserveFilenames(),
-                // ])
-                // ->visible(fn (Get $get) => $get('type') === 'video'),
-
-                       Forms\Components\Textarea::make('content')
-                        ->label(__('Content (Text)'))
-                        ->default(''),
-
-                // Forms\Components\Fieldset::make(__('File'))
-                // ->schema([
-                //     Forms\Components\FileUpload::make('file_url')
-                //     ->label(__('Content (File)'))
-                //     ->disk('s3')
-                //     ->nullable()
-                //     ->directory('attachments/files')
-                //     ->visibility('public')
-                //     ->acceptedFileTypes(['application/*']),
-                //     // ->preserveFilenames(),
-                // ])
-                // ->visible(fn (Get $get) => $get('type') === 'file'),
-                
-                Forms\Components\Fieldset::make(__('Content'))
-                ->schema([
-                    // Forms\Components\Textarea::make('content')
-                    //     ->label(__('Content (Text)'))
-                    //     ->default(''),
-                        // ->nullable(),
-                        // ->visible(fn (Get $get) => $get('type') === 'text'),
-            
-                    // Forms\Components\TextInput::make('content')
-                    //     ->label(__('Content (Link)'))
-                    //     ->url()
-                    //     ->nullable()
-                    //     ->visible(fn (Get $get) => $get('type') === 'link'),
-            
-                    Forms\Components\FileUpload::make('image_url')
-                    ->label(__('Content (Image)'))
-                    ->image()
-                    ->nullable()
-                    ->disk('s3')
-                    ->directory('attachments/images')
-                    ->visibility('public')
-                        ->visible(fn (Get $get) => $get('type') === 'image'),
-            
-                        Forms\Components\FileUpload::make('video_url')
-                        ->label(__('Content (Video)'))
-                        ->disk('s3')
-                        ->nullable()
-                        ->directory('attachments/videos')
-                        ->visibility('public')
-                        ->acceptedFileTypes(['video/*'])
-                        ->visible(fn (Get $get) => $get('type') === 'video'),
-
-                    Forms\Components\FileUpload::make('file_url')
-                    ->label(__('Content (File)'))
-                    ->disk('s3')
-                    ->nullable()
-                    ->directory('attachments/files')
-                    ->visibility('public')
-                    ->acceptedFileTypes(['application/*'])
-                     ->visible(fn (Get $get) => $get('type') === 'file'),
-            
-                    // Forms\Components\FileUpload::make('file_url')
-                    //     ->label(__('Content (File)'))
-                    //     ->disk('s3')
-                    //     ->nullable()
-                    //     ->directory('attachments/files')
-                    //     ->visibility('public')
-                    //     ->acceptedFileTypes([
-                    //         'application/pdf',
-                    //         'application/msword',
-                    //         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    //         'application/zip',
-                    //         'application/x-rar-compressed',
-                    //     ])
-                    //     ->preserveFilenames(),
-                    //     // ->visible(fn (Get $get) => $get('type') === 'file'),
-                ])
-                ->columns(1),
-            
-                // Forms\Components\FileUpload::make('image_url')
-                // ->label(__('Content (Image)'))
-                // ->image()
-              
-                // ->disk('s3')
-                // ->directory('attachments/images')
-                // ->visibility('public'),
-                // // ->preserveFilenames(),
-                // // ->visible(fn (Get $get) => $get('type') === 'image'),
-        
             Forms\Components\DatePicker::make('expiry_date')
                 ->label(__('Expiry Date'))
                 ->nullable(),
@@ -192,8 +73,16 @@ class AttachmentResource extends Resource
                 ->label(__('Notes'))
                 ->nullable(),
 
-            Forms\Components\Hidden::make('content')
-                ->required(), // الحقل الفعلي الذي سيتم حفظه في قاعدة البيانات
+            // ✅ استخدام Spatie Media Library لرفع جميع أنواع الملفات
+            Forms\Components\SpatieMediaLibraryFileUpload::make('attachments')
+                ->label(__('Upload File'))
+                ->collection('attachments')
+                ->disk('s3')
+                ->preserveFilenames()
+                ->multiple()
+                ->maxFiles(5)
+                ->maxSize(10240),
+
         ]);
     }
 
@@ -207,37 +96,80 @@ class AttachmentResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('model.first_name')
-                    ->label(__('Employee'))
-                    ->searchable(),
+                // TextColumn::make('full_name')
+                // ->label(__('Employee'))
+                // ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
+                //     $record->employee->father_name.' '.
+                //     $record->employee->grandfather_name.' '.
+                //     $record->employee->family_name
+                // )
+                // ->searchable(query: function ($query, $search) {
+                //     return $query->whereHas('employee', function ($subQuery) use ($search) {
+                //         $subQuery->where('first_name', 'like', "%{$search}%")
+                //             ->orWhere('father_name', 'like', "%{$search}%")
+                //             ->orWhere('grandfather_name', 'like', "%{$search}%")
+                //             ->orWhere('family_name', 'like', "%{$search}%")
+                //             ->orWhere('national_id', 'like', "%{$search}%");
+                //     });
+                // })
+                // ->sortable(),
 
-                Tables\Columns\TextColumn::make('type')
-                    ->label(__('Type'))
-                    ->sortable(),
-                    Tables\Columns\TextColumn::make('content')
-                    ->label(__('Content (Text/Link)'))
-                    ->getStateUsing(fn ($record) => $record->type === 'text' || $record->type === 'link' ? $record->content : null)
-                    ->html()
-                    
-                    ->toggleable(),
-                
-                    Tables\Columns\ImageColumn::make('image_url')
-                    ->label(__('Image URL'))
-                    ->toggleable()
-                    ->url(fn ($record) => $record->image_url, true),
-                
-                Tables\Columns\TextColumn::make('video_url')
-                    ->label(__('Video'))
-                    ->getStateUsing(fn ($record) => $record->video_url ? "<a href='{$record->video_url}' target='_blank'>".__('View Video')."</a>" : null)
-                    ->html()
-                    ->toggleable(),
-                
-                Tables\Columns\TextColumn::make('file_url')
-                    ->label(__('File'))
-                    ->getStateUsing(fn ($record) => $record->file_url ? "<a href='{$record->file_url}' target='_blank'>".__('Download File')."</a>" : null)
-                    ->html()
-                    ->toggleable(),
-                
+                // TextColumn::make('employee.national_id')
+                // ->label(__('National ID'))
+                // ->searchable(),
+                TextColumn::make('model_type')
+                    ->label(__('Model Type'))
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => class_basename($state)),
+
+                TextColumn::make('model_id')->label(__('Record ID'))->sortable(),
+                // ✅ عرض اسم الموظف إذا كان نوع المرفق `Employee`
+                Tables\Columns\TextColumn::make('model.full_name')
+                    ->label(__('Employee'))
+                    ->sortable()
+                    ->searchable(query: function ($query, $search) {
+                        return $query->where(function ($query) use ($search) {
+                            // ✅ البحث عندما يكون `model_type = Employee`
+                            $query->where(function ($query) use ($search) {
+                                $query->where('model_type', 'App\Models\Employee')
+                                    ->whereHasMorph('model', ['App\Models\Employee'], function ($q) use ($search) {
+                                        $q->where('first_name', 'like', "%{$search}%")
+                                            ->orWhere('father_name', 'like', "%{$search}%")
+                                            ->orWhere('grandfather_name', 'like', "%{$search}%")
+                                            ->orWhere('family_name', 'like', "%{$search}%")
+                                            ->orWhere('national_id', 'like', "%{$search}%");
+                                    });
+                            });
+
+                            // ✅ البحث عندما يكون `model_type = Request` ولكن داخل الموظف المرتبط
+                            $query->orWhere(function ($query) use ($search) {
+                                $query->where('model_type', 'App\Models\Request')
+                                    ->whereHasMorph('model', ['App\Models\Request'], function ($q) use ($search) {
+                                        $q->whereHas('employee', function ($employeeQuery) use ($search) {
+                                            $employeeQuery->where('first_name', 'like', "%{$search}%")
+                                                ->orWhere('father_name', 'like', "%{$search}%")
+                                                ->orWhere('grandfather_name', 'like', "%{$search}%")
+                                                ->orWhere('family_name', 'like', "%{$search}%")
+                                                ->orWhere('national_id', 'like', "%{$search}%");
+                                        });
+                                    });
+                            });
+                        });
+                    })
+                    ->formatStateUsing(fn ($record) => match ($record->model_type) {
+                        'App\Models\Employee' => "{$record->model?->first_name} {$record->model?->father_name} {$record->model?->grandfather_name} {$record->model?->family_name} - {$record->model?->national_id} ({$record->model?->id})",
+                        'App\Models\Request' => "{$record->model?->employee?->first_name} {$record->model?->employee?->father_name} {$record->model?->employee?->grandfather_name} {$record->model?->employee?->family_name} - {$record->model?->employee?->national_id} ({$record->model?->employee?->id})",
+                        default => '-'
+                    })
+                    ->default('-'),
+                // ✅ عرض المرفقات كصور أو روابط تحميل
+                SpatieMediaLibraryImageColumn::make('attachments')
+                    ->label(__('Preview'))
+                    ->collection('attachments')
+                    ->disk('s3')
+                    ->size(50)
+                    ->defaultImageUrl(url('/default-placeholder.png'))
+                    ->url(fn ($record) => $record->getFirstMediaUrl('attachments')),
 
                 Tables\Columns\TextColumn::make('expiry_date')
                     ->label(__('Expiry Date')),
@@ -247,21 +179,48 @@ class AttachmentResource extends Resource
 
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Notes')),
+                    Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('type')
-                    ->label(__('Type'))
+                SelectFilter::make('recordable_type')
+                    ->label(__('Model Type'))
                     ->options([
-                        'text' => __('Text'),
-                        'link' => __('Link'),
-                        'image' => __('Image'),
-                        'video' => __('Video'),
-                        'file' => __('File'),
+                        'App\Models\Employee' => __('Employee'),
+                        'App\Models\Request' => __('Request'),
+                        // 'App\Models\CommercialRecord' => __('Commercial Record'),
+                        // 'App\Models\Project' => __('Project'),
                     ]),
-
                 SelectFilter::make('employee_id')
                     ->label(__('Employee'))
                     ->options(Employee::all()->pluck('first_name', 'id')),
+                // Tables\Filters\Filter::make('employee_search')
+                //     ->label(__('Search Employee'))
+                //     ->query(fn ($query, $value) => $query->where(function ($query) use ($value) {
+                //         $query->where(function ($query) use ($value) {
+                //             $query->where('model_type', 'App\Models\Employee')
+                //                 ->whereHas('model', fn ($q) => $q->where('first_name', 'like', "%{$value}%")
+                //                     ->orWhere('father_name', 'like', "%{$value}%")
+                //                     ->orWhere('grandfather_name', 'like', "%{$value}%")
+                //                     ->orWhere('family_name', 'like', "%{$value}%")
+                //                     ->orWhere('national_id', 'like', "%{$value}%"));
+                //         })->orWhere(function ($query) use ($value) {
+                //             $query->where('model_type', 'App\Models\Request')
+                //                 ->whereHas('model.employee', fn ($q) => $q->where('first_name', 'like', "%{$value}%")
+                //                     ->orWhere('father_name', 'like', "%{$value}%")
+                //                     ->orWhere('grandfather_name', 'like', "%{$value}%")
+                //                     ->orWhere('family_name', 'like', "%{$value}%")
+                //                     ->orWhere('national_id', 'like', "%{$value}%"));
+                //         });
+                //     })),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

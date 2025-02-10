@@ -28,6 +28,11 @@ class RecordMedia extends Model implements HasMedia
         static::creating(function ($record) {
             $record->added_by = Auth::id() ?? 1; // تعيين المستخدم الحالي
         });
+        static::deleting(function ($recordMedia) {
+            if ($recordMedia->hasMedia('record_media')) {
+                $recordMedia->clearMediaCollection('record_media'); // ✅ حذف الملفات من `Spatie Media Library`
+            }
+        });
     }
 
     public function recordable(): MorphTo
