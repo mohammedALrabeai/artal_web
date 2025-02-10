@@ -2,23 +2,17 @@
 
 namespace App\Providers;
 
-use Filament\Facades\Filament;
-use Filament\Support\Assets\Js;
-use Illuminate\Support\Facades\DB;
-
-use Illuminate\Support\Facades\Vite;
-use Illuminate\Support\Facades\Blade;
-
-use Illuminate\Support\ServiceProvider;
-
-
-use Filament\Notifications\Notification;
-
 use App\View\Components\NotificationBell;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Support\Facades\FilamentAsset;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
+use Filament\Facades\Filament;
 use Filament\Notifications\Livewire\DatabaseNotifications;
+use Filament\Notifications\Notification;
+use Filament\Support\Assets\Js;
+use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,59 +23,53 @@ class AppServiceProvider extends ServiceProvider
     {
         // DatabaseNotifications::trigger('filament.notifications.database-notifications-trigger');
 
-
-   
-   
-      
     }
-    
 
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
-       
-        Filament::registerRenderHook('header.end', function () {
-            // جلب الإشعارات غير المقروءة إذا كان المستخدم مسجلاً دخوله
-            $notifications = auth()->check() ? auth()->user()->unreadNotifications : collect([]);
-            $unreadCount = $notifications->count();
-    
-            // تمرير البيانات إلى العرض
-            return view('components.notification-bell', [
-                'notifications' => $notifications,
-                'unreadCount' => $unreadCount,
-            ])->render();
-        });
-        Blade::component('notification-bell', NotificationBell::class);
+
+        // Filament::registerRenderHook('header.end', function () {
+        //     // جلب الإشعارات غير المقروءة إذا كان المستخدم مسجلاً دخوله
+        //     $notifications = auth()->check() ? auth()->user()->unreadNotifications : collect([]);
+        //     $unreadCount = $notifications->count();
+
+        //     // تمرير البيانات إلى العرض
+        //     return view('components.notification-bell', [
+        //         'notifications' => $notifications,
+        //         'unreadCount' => $unreadCount,
+        //     ])->render();
+        // });
+        // Blade::component('notification-bell', NotificationBell::class);
         FilamentAsset::register([
             Js::make('echo', Vite::asset('resources/js/echo.js'))->module(),
         ]);
         LanguageSwitch::configureUsing(function (LanguageSwitch $switch) {
             $switch
-                ->locales(['ar','en','fr']); // also accepts a closure
+                ->locales(['ar', 'en', 'fr']); // also accepts a closure
         });
-       
-      
+
         // DatabaseNotifications::trigger('filament.notifications.database-notifications-trigger');
         // Filament::serving(function () {
         //     // طباعة معرف المستخدم للتأكد
         //     \Log::info('Current user ID: ' . auth()->id());
-    
+
         //     // الاستعلام الكامل مع طباعة النتائج
         //     $notifications = DB::table('notifications')
         //         ->where('notifiable_type', 'App\\Models\\User')
         //         ->where('notifiable_id', auth()->id())
         //         ->whereNull('read_at')
         //         ->get();
-    
+
         //     // طباعة الإشعارات كاملة للتحقق
         //     \Log::info('Full notifications:', $notifications->toArray());
-            
+
         //     // عدد الإشعارات
         //     $unreadCount = $notifications->count();
         //     \Log::info('Unread count: ' . $unreadCount);
-    
+
         //     // إعداد العرض
         //     Filament::registerRenderHook(
         //         'global-search.end',
@@ -104,8 +92,8 @@ class AppServiceProvider extends ServiceProvider
         // DatabaseNotifications::trigger('filament.notifications.database-notifications-trigger');
         // DatabaseNotifications::view('filament.notifications.database-notifications');
 
-        // DatabaseNotifications::pollingInterval('10s'); 
-    
+        // DatabaseNotifications::pollingInterval('10s');
+
         // Filament::serving(function () {
         //     Filament::registerRenderHook(
         //         'header.end',

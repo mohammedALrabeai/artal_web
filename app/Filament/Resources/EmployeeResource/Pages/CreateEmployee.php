@@ -27,13 +27,24 @@ class CreateEmployee extends CreateRecord
     protected function afterCreate(): void
     {
         $notificationService = new NotificationService;
+        $addedBy = auth()->user()->name; // معرفة من قام بالإضافة
+        $employee = $this->record; // جلب بيانات الموظف الجديد
+
+        // ✅ إرسال إشعار عند إضافة موظف جديد
         $notificationService->sendNotification(
             ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
-            'اضافة موظف جديد', // عنوان الإشعار
-            'تم اضافة موظف جديد بنجاح!', // نص الإشعار
+            '🆕 تم إضافة موظف جديد', // عنوان الإشعار
+            "📌 قام **{$addedBy}** بإضافة الموظف **{$employee->name()}** إلى النظام بنجاح.\n\n".
+            "**📄 تفاصيل الموظف:**\n".
+            "🆔 **رقم الهوية:** {$employee->national_id}\n".
+            "📞 **رقم الجوال:** {$employee->mobile_number}\n".
+            "📧 **البريد الإلكتروني:** {$employee->email}\n".
+            "🏢 **الوظيفة:** {$employee->job_title}\n".
+            '📅 **تاريخ الميلاد:** '.($employee->birth_date ?? 'غير متوفر')."\n".
+            '🏡 **مكان الميلاد:** '.($employee->birth_place ?? 'غير متوفر')."\n",
             [
-                $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$this->record->id}/view", 'heroicon-s-eye'),
-                $notificationService->createAction('عرض قائمة الموظفين', '/admin/banks', 'heroicon-s-eye'),
+                $notificationService->createAction('👁️ عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                $notificationService->createAction('📋 قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
             ]
         );
         try {

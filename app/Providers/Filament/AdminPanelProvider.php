@@ -2,25 +2,25 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
+use App\Filament\Widgets\NotificationsWidget;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
 use Filament\Panel;
-use Filament\Widgets;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
-use App\Filament\Pages\Auth\EditProfile;
-use Filament\Http\Middleware\Authenticate;
-use App\Filament\Widgets\NotificationsWidget;
-use Illuminate\Session\Middleware\StartSession;
+use Filament\Widgets;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\Http\Middleware\DisableBladeIconComponents;
-use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupPlugin;
 
 class AdminPanelProvider extends PanelProvider
@@ -51,7 +51,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-      
+
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -80,19 +80,17 @@ class AdminPanelProvider extends PanelProvider
                 FilamentShieldPlugin::make(),
             ])
             ->plugin(FilamentSpatieLaravelBackupPlugin::make()
-            
-            ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com'))
+                ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com'))
             ->authMiddleware([
                 Authenticate::class,
             ])
             ->databaseNotifications()
-            ->databaseNotificationsPolling(null)
-->renderHook( PanelsRenderHook::USER_MENU_BEFORE, function () {
-    return view('components.notification-bell', [
-        'notifications' => auth()->user()->unreadNotifications,
-        'unreadCount' => auth()->user()->unreadNotifications->count(),
-    ])->render();
-})
-;
+            ->databaseNotificationsPolling(null);
+        // ->renderHook( PanelsRenderHook::USER_MENU_BEFORE, function () {
+        //     return view('components.notification-bell', [
+        //         'notifications' => auth()->user()->unreadNotifications,
+        //         'unreadCount' => auth()->user()->unreadNotifications->count(),
+        //     ])->render();
+        // })
     }
 }
