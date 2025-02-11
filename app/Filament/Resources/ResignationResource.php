@@ -1,129 +1,128 @@
 <?php
-namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Employee;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use App\Models\Resignation;
-use Filament\Resources\Resource;
-use App\Forms\Components\EmployeeSelect;
-use App\Filament\Resources\ResignationResource\Pages;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+// namespace App\Filament\Resources;
 
-class ResignationResource extends Resource
-{
-    protected static ?string $model = Resignation::class;
+// use Filament\Forms;
+// use Filament\Tables;
+// use App\Models\Employee;
+// use Filament\Forms\Form;
+// use Filament\Tables\Table;
+// use App\Models\Resignation;
+// use Filament\Resources\Resource;
+// use App\Forms\Components\EmployeeSelect;
+// use App\Filament\Resources\ResignationResource\Pages;
+// use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard';
+// class ResignationResource extends Resource
+// {
+//     protected static ?string $model = Resignation::class;
 
-    protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم
-    public static function getNavigationBadge(): ?string
-    {
-        // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
-            return null;
-        }
-    
-        return static::getModel()::count();
-    }
-    
+//     protected static ?string $navigationIcon = 'heroicon-o-clipboard';
 
-    public static function getNavigationLabel(): string
-    {
-        return __('Resignation');
-    }
-    
-    public static function getPluralLabel(): string
-    {
-        return __('Resignations');
-    }
-    
-    public static function getNavigationGroup(): ?string
-    {
-        return __('Employee Management');
-    }
- 
+//     protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم
+//     public static function getNavigationBadge(): ?string
+//     {
+//         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
+//         if (!auth()->user()?->hasRole('admin')) {
+//             return null;
+//         }
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                EmployeeSelect::make(),
-                Forms\Components\DatePicker::make('resignation_date')
-                    ->label(__('Resignation Date'))
-                    ->required(),
+//         return static::getModel()::count();
+//     }
 
-                Forms\Components\TextInput::make('reason')
-                    ->label(__('Reason'))
-                    ->maxLength(255),
+//     public static function getNavigationLabel(): string
+//     {
+//         return __('Resignation');
+//     }
 
-                Forms\Components\Textarea::make('notes')
-                    ->label(__('Notes'))
-                    ->maxLength(1000),
-            ]);
-    }
+//     public static function getPluralLabel(): string
+//     {
+//         return __('Resignations');
+//     }
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('employee.first_name')
-                    ->label(__('Employee'))
-                    ->searchable()
-                    ->sortable(),
+//     public static function getNavigationGroup(): ?string
+//     {
+//         return __('Employee Management');
+//     }
 
-                Tables\Columns\TextColumn::make('resignation_date')
-                    ->label(__('Resignation Date'))
-                    ->date()
-                    ->sortable()
-                    ->searchable(),
+//     public static function form(Form $form): Form
+//     {
+//         return $form
+//             ->schema([
+//                 EmployeeSelect::make(),
+//                 Forms\Components\DatePicker::make('resignation_date')
+//                     ->label(__('Resignation Date'))
+//                     ->required(),
 
-                Tables\Columns\TextColumn::make('reason')
-                    ->label(__('Reason'))
-                    ->limit(50)
-                    ->searchable(),
+//                 Forms\Components\TextInput::make('reason')
+//                     ->label(__('Reason'))
+//                     ->maxLength(255),
 
-                Tables\Columns\TextColumn::make('notes')
-                    ->label(__('Notes'))
-                    ->limit(50),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('employee_id')
-                    ->label(__('Employee'))
-                    ->relationship('employee', 'first_name'),
+//                 Forms\Components\Textarea::make('notes')
+//                     ->label(__('Notes'))
+//                     ->maxLength(1000),
+//             ]);
+//     }
 
-                Tables\Filters\Filter::make('resignation_date')
-                    ->label(__('Resignation Date'))
-                    ->form([
-                        Forms\Components\DatePicker::make('start_date')->label(__('Start Date')),
-                        Forms\Components\DatePicker::make('end_date')->label(__('End Date')),
-                    ])
-                    ->query(function ($query, $data) {
-                        return $query->when($data['start_date'], fn ($q) => $q->whereDate('resignation_date', '>=', $data['start_date']))
-                                     ->when($data['end_date'], fn ($q) => $q->whereDate('resignation_date', '<=', $data['end_date']));
-                    }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-                ExportBulkAction::make()
-            ]);
-    }
+//     public static function table(Table $table): Table
+//     {
+//         return $table
+//             ->columns([
+//                 Tables\Columns\TextColumn::make('employee.first_name')
+//                     ->label(__('Employee'))
+//                     ->searchable()
+//                     ->sortable(),
 
-    public static function getRelations(): array
-    {
-        return [];
-    }
+//                 Tables\Columns\TextColumn::make('resignation_date')
+//                     ->label(__('Resignation Date'))
+//                     ->date()
+//                     ->sortable()
+//                     ->searchable(),
 
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListResignations::route('/'),
-            'create' => Pages\CreateResignation::route('/create'),
-            'edit' => Pages\EditResignation::route('/{record}/edit'),
-        ];
-    }
-}
+//                 Tables\Columns\TextColumn::make('reason')
+//                     ->label(__('Reason'))
+//                     ->limit(50)
+//                     ->searchable(),
+
+//                 Tables\Columns\TextColumn::make('notes')
+//                     ->label(__('Notes'))
+//                     ->limit(50),
+//             ])
+//             ->filters([
+//                 Tables\Filters\SelectFilter::make('employee_id')
+//                     ->label(__('Employee'))
+//                     ->relationship('employee', 'first_name'),
+
+//                 Tables\Filters\Filter::make('resignation_date')
+//                     ->label(__('Resignation Date'))
+//                     ->form([
+//                         Forms\Components\DatePicker::make('start_date')->label(__('Start Date')),
+//                         Forms\Components\DatePicker::make('end_date')->label(__('End Date')),
+//                     ])
+//                     ->query(function ($query, $data) {
+//                         return $query->when($data['start_date'], fn ($q) => $q->whereDate('resignation_date', '>=', $data['start_date']))
+//                                      ->when($data['end_date'], fn ($q) => $q->whereDate('resignation_date', '<=', $data['end_date']));
+//                     }),
+//             ])
+//             ->bulkActions([
+//                 Tables\Actions\BulkActionGroup::make([
+//                     Tables\Actions\DeleteBulkAction::make(),
+//                 ]),
+//                 ExportBulkAction::make()
+//             ]);
+//     }
+
+//     public static function getRelations(): array
+//     {
+//         return [];
+//     }
+
+//     public static function getPages(): array
+//     {
+//         return [
+//             'index' => Pages\ListResignations::route('/'),
+//             'create' => Pages\CreateResignation::route('/create'),
+//             'edit' => Pages\EditResignation::route('/{record}/edit'),
+//         ];
+//     }
+// }

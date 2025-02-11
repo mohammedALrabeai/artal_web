@@ -1,12 +1,12 @@
 <?php
+
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\RequestTypeResource\Pages;
 use App\Models\RequestType;
 use Filament\Forms;
-use Filament\Tables;
 use Filament\Resources\Resource;
-use App\Filament\Resources\RequestTypeResource\Pages;
-
+use Filament\Tables;
 
 class RequestTypeResource extends Resource
 {
@@ -37,18 +37,21 @@ class RequestTypeResource extends Resource
         return __('Request Management');
     }
 
-    
-
-
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([
             Forms\Components\TextInput::make('key')
                 ->label(__('Key'))
                 ->required()
-                ->unique(RequestType::class, 'key'),
+                ->unique(RequestType::class, 'key', ignoreRecord: true),
             Forms\Components\TextInput::make('name')
                 ->label(__('Name'))
+                ->required(),
+            Forms\Components\Toggle::make('is_active')
+                ->label(__('Can be used?'))
+                ->onColor('success')
+                ->offColor('danger')
+                ->default(true) // ✅ القيم الافتراضية "نعم"
                 ->required(),
         ]);
     }
@@ -59,6 +62,7 @@ class RequestTypeResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('key')->label(__('Key')),
                 Tables\Columns\TextColumn::make('name')->label(__('Name')),
+                Tables\Columns\IconColumn::make('is_active')->label(__('Can be used?'))->boolean(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

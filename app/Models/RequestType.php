@@ -12,6 +12,8 @@ class RequestType extends Model
     protected $fillable = [
         'key',
         'name',
+        'is_active', // ✅ إضافة العمود الجديد
+
         
     ];
 

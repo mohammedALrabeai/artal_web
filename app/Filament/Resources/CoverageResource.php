@@ -16,6 +16,8 @@ class CoverageResource extends Resource
 {
     protected static ?string $model = Coverage::class;
 
+    protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم
+
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
@@ -40,7 +42,7 @@ class CoverageResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('Zone & Shift Management');
+        return __('Employee Management');
     }
 
     public static function form(Form $form): Form

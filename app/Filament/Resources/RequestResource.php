@@ -63,8 +63,9 @@ class RequestResource extends Resource
                             // اختيار نوع الطلب
                             Forms\Components\Select::make('type')
                                 ->label(__('Type'))
-                                ->options(\App\Models\RequestType::all()
-                                    ->mapWithKeys(fn ($type) => [$type->key => __($type->name)]) // ترجمة ديناميكية
+                                ->options(\App\Models\RequestType::where('is_active', true) // ✅ تصفية الأنواع القابلة للاستخدام فقط
+                                    ->get()
+                                    ->mapWithKeys(fn ($type) => [$type->key => __($type->name)]) // ✅ ترجمة ديناميكية
                                     ->toArray())
                                 ->required()
                                 ->reactive(),
