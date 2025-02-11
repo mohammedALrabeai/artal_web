@@ -257,6 +257,7 @@ class AttendanceResource extends Resource
                 ->formatStateUsing(fn (string $state): string => ucfirst($state)) // تنسيق النص
                 ->colors([
                     'pending' => 'warning',
+                    'submitted' => 'warning',
                     'approved' => 'success',
                     'rejected' => 'danger',
                 ]),
@@ -265,12 +266,12 @@ class AttendanceResource extends Resource
                 ->label(__('Coverage Request')),
 
             Tables\Columns\TextColumn::make('created_at')
-            ->label(__('Created At'))
+                ->label(__('Created At'))
                 ->dateTime()
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
             Tables\Columns\TextColumn::make('updated_at')
-            ->label(__('Updated At'))
+                ->label(__('Updated At'))
                 ->dateTime()
                 ->sortable()
                 ->toggleable(isToggledHiddenByDefault: true),
@@ -377,7 +378,7 @@ class AttendanceResource extends Resource
                         //   }
 
                         // تحديث حالة الطلب إلى "موافق عليه"
-                        $record->update(['approval_status' => 'approved']);
+                        $record->update(['approval_status' => 'submitted']);
 
                         // إنشاء سجل التغطية
                         $coverage = Coverage::create([
@@ -399,10 +400,11 @@ class AttendanceResource extends Resource
                         // **إنشاء طلب جديد تلقائيًا من نوع "التغطية"**
                         Request::create([
                             'type' => 'coverage',
+                            'coverage_id' => $coverage->id,
                             'submitted_by' => auth()->id(), // المستخدم الحالي هو مقدم الطلب
                             'employee_id' => $record->employee_id, // الموظف الذي يحتاج التغطية
                             'current_approver_role' => $approvalFlow->approver_role, // الدور الحالي
-                            'description' => __('Coverage request for :employee', ['employee' => $record->employee->first_name]),
+                            'description' => $data['notes'],
                             'additional_data' => json_encode([
                                 'coverage_reason' => $data['coverage_reason'],
                                 'notes' => $data['notes'],

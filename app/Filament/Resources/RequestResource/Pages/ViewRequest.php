@@ -30,7 +30,13 @@ class ViewRequest extends ViewRecord
                     ->schema([
                         TextEntry::make('type')->label(__('Type')),
                         TextEntry::make('submittedBy.name')->label(__('Submitted By')),
-                        TextEntry::make('employee.first_name')->label(__('Employee')),
+                        TextEntry::make('employee_details')
+                            ->label(__('Employee'))
+                            ->state(fn ($record) => $record->employee
+                                ? "{$record->employee->first_name} {$record->employee->father_name} {$record->employee->family_name} (ID: {$record->employee->id}, National ID: {$record->employee->national_id})"
+                                : __('No Employee'))
+                            ->default('-'),
+
                         TextEntry::make('status')->label(__('Status'))
                             ->badge()
                             ->color(fn ($state) => match ($state) {
@@ -41,6 +47,30 @@ class ViewRequest extends ViewRecord
                             }),
                         TextEntry::make('current_approver_role')->label(__('Current Approver Role')),
                         TextEntry::make('description')->label(__('Description')),
+
+                        TextEntry::make('additional_data')
+                            ->label(__('Additional Data'))
+                            ->formatStateUsing(function ($state) {
+                                if (! $state) {
+                                    return '-'; // إذا لم يكن هناك بيانات إضافية
+                                }
+
+                                // التحقق مما إذا كانت البيانات JSON أم نص عادي
+                                $decoded = json_decode($state, true);
+
+                                if (json_last_error() === JSON_ERROR_NONE) {
+                                    // ✅ إذا كانت البيانات JSON، قم بعرضها بتنسيق مناسب
+                                    return collect($decoded)
+                                        ->map(fn ($value, $key) => ucfirst(str_replace('_', ' ', $key)).': '.(is_array($value) ? json_encode($value) : $value))
+                                        ->join(' | ');
+                                }
+
+                                // ✅ إذا لم تكن JSON، اعرضها كنص عادي
+                                return $state;
+                            })
+                            ->default('-')
+                            ->html(),
+
                     ]),
 
                 // ✅ **القسم الثاني: تفاصيل الطلب بناءً على النوع**
@@ -60,13 +90,47 @@ class ViewRequest extends ViewRecord
                         Section::make(__('Exclusion Details'))
                             ->visible(fn ($record) => $record->type === 'exclusion' && $record->exclusion)
                             ->schema([
+                                TextEntry::make('exclusion.type')->label(__('Type')),
                                 TextEntry::make('exclusion.reason')->label(__('Exclusion Reason')),
                                 TextEntry::make('exclusion.details')->label(__('Details')),
-                                // note
 
                                 TextEntry::make('exclusion.notes')->label(__('Notes')),
 
                             ]),
+                        Section::make(__('Coverage Details'))
+                            ->schema([
+                                TextEntry::make('coverage.employee.full_name')
+                                    ->label(__('Covering Employee'))
+                                    ->state(fn ($record) => $record->coverage?->employee
+                                        ? "{$record->coverage->employee->first_name} {$record->coverage->employee->father_name} {$record->coverage->employee->family_name} - {$record->coverage->employee->national_id} (ID: {$record->coverage->employee->id})"
+                                        : '-'
+                                    )
+                                    ->default('-'),
+
+                                TextEntry::make('coverage.absentEmployee.full_name')
+                                    ->label(__('Absent Employee'))
+                                    ->state(fn ($record) => $record->coverage?->absentEmployee
+                                        ? "{$record->coverage->absentEmployee->first_name} {$record->coverage->absentEmployee->father_name} {$record->coverage->absentEmployee->family_name} - {$record->coverage->absentEmployee->national_id} (ID: {$record->coverage->absentEmployee->id})"
+                                        : '-'
+                                    )
+                                    ->default('-'),
+                                TextEntry::make('coverage.date')->label(__('Coverage Date'))->date()->default('-'),
+
+                                TextEntry::make('coverage.zone.name')
+                                    ->label(__('Zone'))
+                                    ->default('-'),
+
+                                TextEntry::make('coverage.addedBy.name')
+                                    ->label(__('Added By'))
+                                    ->default('-'),
+
+                                TextEntry::make('coverage.created_at')
+                                    ->label(__('Created At'))
+                                    ->dateTime()
+                                    ->default('-'),
+
+                            ])
+                            ->visible(fn ($record) => $record->coverage_id !== null),
                     ]),
 
                 // ✅ **القسم الثالث: المرفقات باستخدام `Spatie Media Library`**

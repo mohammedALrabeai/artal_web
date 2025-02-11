@@ -47,6 +47,12 @@ class Attendance extends Model
         return $this->belongsTo(Shift::class);
     }
 
+     // ✅ علاقة الحضور مع التغطية (إذا كان هناك سجل تغطية مرتبط بالحضور)
+     public function coverage()
+     {
+         return $this->belongsTo(Coverage::class, 'coverage_id');
+     }
+
 
 
     //   // تفعيل تسجيل التغييرات

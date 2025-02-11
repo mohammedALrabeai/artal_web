@@ -63,15 +63,14 @@ class Request extends Model
     }
 
     public function exclusion()
-{
-    return $this->belongsTo(Exclusion::class, 'exclusion_id');
-}
+    {
+        return $this->belongsTo(Exclusion::class, 'exclusion_id');
+    }
 
-public function coverage()
-{
-    return $this->belongsTo(Coverage::class, 'coverage_id');
-}
-
+    public function coverage()
+    {
+        return $this->belongsTo(Coverage::class, 'coverage_id');
+    }
 
     // المستخدم الذي يوافق حاليًا
     public function currentApprover()
@@ -180,6 +179,17 @@ public function coverage()
                 $this->exclusion->update([
                     'status' => Exclusion::STATUS_APPROVED,
                 ]);
+            }
+            if ($this->type === 'coverage' && $this->coverage) {
+                $this->coverage->update([
+                    'status' => 'completed',
+                ]);
+
+                // ✅ تحديث حالة الحضور المرتبط بالتغطية إلى "approved"
+                $this->coverage->attendance()->update([
+                    'approval_status' => 'approved',
+                ]);
+
             }
         }
 

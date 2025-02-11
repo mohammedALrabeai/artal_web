@@ -41,4 +41,10 @@ class Coverage extends Model
     {
         return $this->hasOne(Request::class, 'coverage_id');
     }
+
+     // ✅ علاقة التغطية مع الحضور
+     public function attendance()
+     {
+         return $this->hasOne(Attendance::class, 'coverage_id');
+     }
 }

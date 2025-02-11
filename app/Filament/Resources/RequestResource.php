@@ -312,7 +312,24 @@ class RequestResource extends Resource
                 // ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('additional_data')
                     ->label(__('Additional Data'))
-                    ->formatStateUsing(fn ($state) => $state ? json_encode($state) : '-')
+                    ->formatStateUsing(function ($state) {
+                        if (! $state) {
+                            return '-'; // إذا لم يكن هناك بيانات إضافية
+                        }
+
+                        // التحقق مما إذا كانت البيانات JSON أم نص عادي
+                        $decoded = json_decode($state, true);
+
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            // ✅ إذا كانت البيانات JSON، قم بعرضها بتنسيق مناسب
+                            return collect($decoded)
+                                ->map(fn ($value, $key) => ucfirst(str_replace('_', ' ', $key)).': '.(is_array($value) ? json_encode($value) : $value))
+                                ->join(' | ');
+                        }
+
+                        // ✅ إذا لم تكن JSON، اعرضها كنص عادي
+                        return $state;
+                    })
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('approvalFlows')
