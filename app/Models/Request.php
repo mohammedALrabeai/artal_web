@@ -26,6 +26,8 @@ class Request extends Model
         'required_documents',
         'target_location',
         'leave_id',
+        'exclusion_id',
+        'coverage_id',
     ];
 
     protected $casts = [
@@ -49,16 +51,27 @@ class Request extends Model
         return $this->belongsTo(Leave::class, 'leave_id');
     }
 
-    public function exclusion()
-    {
-        return $this->hasOne(\App\Models\Exclusion::class);
-    }
+    // public function exclusion()
+    // {
+    //     return $this->hasOne(\App\Models\Exclusion::class);
+    // }
 
     public function approvals()
     {
         return $this->hasMany(RequestApproval::class)
             ->orderBy('approved_at', 'asc'); // ترتيب الموافقات حسب الوقت
     }
+
+    public function exclusion()
+{
+    return $this->belongsTo(Exclusion::class, 'exclusion_id');
+}
+
+public function coverage()
+{
+    return $this->belongsTo(Coverage::class, 'coverage_id');
+}
+
 
     // المستخدم الذي يوافق حاليًا
     public function currentApprover()

@@ -62,6 +62,10 @@ class ViewRequest extends ViewRecord
                             ->schema([
                                 TextEntry::make('exclusion.reason')->label(__('Exclusion Reason')),
                                 TextEntry::make('exclusion.details')->label(__('Details')),
+                                // note
+
+                                TextEntry::make('exclusion.notes')->label(__('Notes')),
+
                             ]),
                     ]),
 

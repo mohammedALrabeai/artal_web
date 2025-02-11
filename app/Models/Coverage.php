@@ -36,4 +36,9 @@ class Coverage extends Model
     {
         return $this->belongsTo(User::class, 'added_by');
     }
+
+    public function request()
+    {
+        return $this->hasOne(Request::class, 'coverage_id');
+    }
 }

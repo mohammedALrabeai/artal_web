@@ -22,7 +22,9 @@ class Exclusion extends Model
 
     // تعريف الحالات كقائمة ثابتة
     public const STATUS_PENDING = 'Pending';
+
     public const STATUS_APPROVED = 'Approved';
+
     public const STATUS_REJECTED = 'Rejected';
 
     public static function getStatuses(): array
@@ -40,18 +42,17 @@ class Exclusion extends Model
         return $this->belongsTo(Employee::class);
     }
 
+    //     public function request()
+    // {
+    //     return $this->belongsTo(Request::class);
+    // }
+    public function attachments()
+    {
+        return $this->hasMany(\App\Models\Attachment::class, 'exclusion_id');
+    }
 
     public function request()
-{
-    return $this->belongsTo(Request::class);
-}
-public function attachments()
-{
-    return $this->hasMany(\App\Models\Attachment::class, 'exclusion_id');
-}
-
-
-
-
-
+    {
+        return $this->hasOne(Request::class, 'exclusion_id');
+    }
 }
