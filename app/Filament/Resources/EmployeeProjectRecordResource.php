@@ -267,7 +267,7 @@ class EmployeeProjectRecordResource extends Resource
         $offDays = $pattern->off_days;
         $cycleLength = $workingDays + $offDays;
 
-        $startDate = Carbon::parse($record->start_date);
+        $startDate = Carbon::parse($record->shift->start_date);
         $currentDate = Carbon::now();
         $totalDays = $currentDate->diffInDays($startDate);
         $currentDayInCycle = $totalDays % $cycleLength;
