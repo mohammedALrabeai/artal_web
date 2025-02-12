@@ -280,10 +280,27 @@ class RequestResource extends Resource
                 Tables\Columns\TextColumn::make('submittedBy.name')
                     ->label(__('Submitted By'))
                     ->searchable(), // تمكين البحث
-                Tables\Columns\TextColumn::make('employee.first_name')
+                Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Employee'))
-                    ->formatStateUsing(fn ($state, $record) => "{$record->employee->first_name} {$record->employee->family_name}")
-                    ->searchable(), // تمكين البحث
+                    ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
+                        $record->employee->father_name.' '.
+                        $record->employee->grandfather_name.' '.
+                        $record->employee->family_name
+                    )
+                    ->searchable(query: function ($query, $search) {
+                        return $query->whereHas('employee', function ($subQuery) use ($search) {
+                            $subQuery->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('father_name', 'like', "%{$search}%")
+                                ->orWhere('grandfather_name', 'like', "%{$search}%")
+                                ->orWhere('family_name', 'like', "%{$search}%")
+                                ->orWhere('national_id', 'like', "%{$search}%");
+                        });
+                    })
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('employee.national_id')
+                    ->label(__('National ID'))
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->formatStateUsing(fn ($state) => __($state))
