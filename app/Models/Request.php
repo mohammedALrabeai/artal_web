@@ -157,9 +157,14 @@ class Request extends Model
         // 🔹 جلب أعلى مستوى يملكه المستخدم داخل `approval_flows`
         $userHighestLevel = $approvalLevels->whereIn('approver_role', $approverRoles)->max('approval_level');
 
-        // 🔹 التحقق مما إذا كان يمكن للمستخدم الموافقة
-        if ($userHighestLevel > $currentApprovalLevel) {
-            $this->current_approver_role = $approvalLevels->where('approval_level', $userHighestLevel)->first()->approver_role;
+        // 🔹 إذا كان المستخدم في مستوى أعلى، يتم تجاوز المستويات الأقل
+        $nextApprovalFlow = $approvalLevels->where('approval_level', '>', min($currentApprovalLevel, $userHighestLevel))
+            ->sortBy('approval_level')
+            ->first();
+
+        if ($nextApprovalFlow) {
+            // ✅ إذا كان هناك مستوى أعلى يجب الانتقال إليه
+            $this->current_approver_role = $nextApprovalFlow->approver_role;
         } else {
             // إذا انتهت جميع المستويات، يتم الموافقة النهائية على الطلب
             $this->current_approver_role = null;
