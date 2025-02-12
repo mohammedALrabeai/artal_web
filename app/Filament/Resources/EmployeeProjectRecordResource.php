@@ -255,55 +255,115 @@ class EmployeeProjectRecordResource extends Resource
         ];
     }
 
+    // private static function calculateWorkPattern($record)
+    // {
+    //     $pattern = $record->shift->zone->pattern ?? null;
+
+    //     if (! $pattern) {
+    //         return '<span style="color: red;">❌ لا يوجد نمط محدد</span>';
+    //     }
+
+    //     $workingDays = $pattern->working_days;
+    //     $offDays = $pattern->off_days;
+    //     $cycleLength = $workingDays + $offDays;
+
+    //     $startDate = Carbon::parse($record->start_date);
+    //     $currentDate = Carbon::now('Asia/Riyadh');
+    //     $totalDays = $currentDate->diffInDays($startDate);
+    //     $currentDayInCycle = $totalDays % $cycleLength;
+
+    //     $cycleNumber = (int) floor($totalDays / $cycleLength) + 1; // حساب رقم الدورة الحالية
+
+    //     $daysView = [];
+
+    //     for ($i = 0; $i < 30; $i++) {
+    //         $dayInCycle = ($currentDayInCycle + $i) % $cycleLength;
+    //         $isWorkDay = $dayInCycle < $workingDays;
+    //         $date = $currentDate->copy()->addDays($i)->format('d M');
+
+    //         $color = $isWorkDay ? 'green' : 'red';
+    //         $label = $isWorkDay ? '' : '';
+
+    //         // ✅ إضافة "صباحًا" أو "مساءً" بجانب أيام العمل
+    //         if ($isWorkDay) {
+    //             $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
+    //             $label .= " - $shiftType";
+    //         }
+
+    //         // $daysView[] = "<span style='padding: 4px; border-radius: 5px; background-color: $color; color: white; margin-right: 5px;'>$date: $label</span>";
+    //         $daysView[] = "
+    //         <span style='
+    //             padding: 4px;
+    //             border-radius: 5px;
+    //             background-color: $color;
+    //             color: white;
+    //             display: inline-block;
+    //             width: 110px; /* ضمان نفس العرض */
+    //              height: 30px;
+    //              margin-bottom: 0px; /* تقليل الهوامش بين الصفوف */
+
+    //             text-align: center;
+    //             margin-right: 5px;
+    //             font-weight: bold;
+    //         '>
+    //             $date$label
+    //         </span>";
+    //     }
+
+    //     return implode(' ', $daysView);
+    // }
     private static function calculateWorkPattern($record)
     {
-        $pattern = $record->shift->zone->pattern ?? null;
-
-        if (! $pattern) {
-            return '<span style="color: red;">❌ لا يوجد نمط محدد</span>';
+        if (! $record->shift || ! $record->shift->zone || ! $record->shift->zone->pattern) {
+            return '<span style="color: red; font-weight: bold; padding: 4px; display: inline-block; width: 100px; text-align: center;">❌ غير متوفر</span>';
         }
 
-        $workingDays = $pattern->working_days;
-        $offDays = $pattern->off_days;
+        $pattern = $record->shift->zone->pattern;
+        $workingDays = (int) $pattern->working_days;
+        $offDays = (int) $pattern->off_days;
         $cycleLength = $workingDays + $offDays;
 
+        // ✅ حساب بداية الدورة من `shift.start_date`
         $startDate = Carbon::parse($record->shift->start_date);
-        $currentDate = Carbon::now();
-        $totalDays = $currentDate->diffInDays($startDate);
-        $currentDayInCycle = $totalDays % $cycleLength;
-
-        $cycleNumber = (int) floor($totalDays / $cycleLength) + 1; // حساب رقم الدورة الحالية
+        $currentDate = Carbon::now('Asia/Riyadh');
 
         $daysView = [];
 
         for ($i = 0; $i < 30; $i++) {
-            $dayInCycle = ($currentDayInCycle + $i) % $cycleLength;
-            $isWorkDay = $dayInCycle < $workingDays;
-            $date = $currentDate->copy()->addDays($i)->format('d M');
+            $targetDate = $currentDate->copy()->addDays($i); // ✅ تحديد تاريخ الخلية
+            $totalDays = $startDate->diffInDays($targetDate); // ✅ حساب الفرق من بداية الوردية وليس من اليوم الحالي
+
+            // ✅ حساب اليوم داخل الدورة بناءً على `totalDays`
+            $currentDayInCycle = $totalDays % $cycleLength;
+            $cycleNumber = (int) floor($totalDays / $cycleLength) + 1; // ✅ حساب الدورة الزمنية الصحيحة
+
+            // ✅ تحديد إذا كان اليوم "عمل" أو "إجازة" بناءً على `workingDays`
+            $isWorkDay = $currentDayInCycle < $workingDays;
+            $date = $targetDate->format('d M');
 
             $color = $isWorkDay ? 'green' : 'red';
             $label = $isWorkDay ? '' : '';
 
-            // ✅ إضافة "صباحًا" أو "مساءً" بجانب أيام العمل
+            // ✅ تحديد الفترة "صباحًا" أو "مساءً" فقط إذا كان يوم عمل
             if ($isWorkDay) {
                 $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
                 $label .= " - $shiftType";
             }
 
-            // $daysView[] = "<span style='padding: 4px; border-radius: 5px; background-color: $color; color: white; margin-right: 5px;'>$date: $label</span>";
+            // ✅ تحسين التنسيق وتقليل الهوامش بين العناصر
             $daysView[] = "
-            <span style='
-                padding: 4px; 
-                border-radius: 5px; 
-                background-color: $color; 
-                color: white; 
-                display: inline-block; 
+             <span style='
+                padding: 4px;
+                border-radius: 5px;
+                background-color: $color;
+                color: white;
+                display: inline-block;
                 width: 110px; /* ضمان نفس العرض */
                  height: 30px;
                  margin-bottom: 0px; /* تقليل الهوامش بين الصفوف */
 
-                text-align: center; 
-                margin-right: 5px; 
+                text-align: center;
+                margin-right: 5px;
                 font-weight: bold;
             '>
                 $date$label
@@ -316,7 +376,7 @@ class EmployeeProjectRecordResource extends Resource
     private static function getPreviousMonthAttendance($record)
     {
         $employeeId = $record->employee_id;
-        $currentDate = Carbon::now();
+        $currentDate = Carbon::now('Asia/Riyadh');
         $startDate = $currentDate->copy()->subDays(30)->format('Y-m-d');
         $endDate = $currentDate->format('Y-m-d');
 
