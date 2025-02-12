@@ -192,6 +192,11 @@ class EmployeeProjectRecordResource extends Resource
                 BooleanColumn::make('status')
                     ->label(__('Status'))
                     ->sortable(),
+                TextColumn::make('previous_month_attendance')
+                    ->label('دوام الشهر الماضي')
+                    ->getStateUsing(fn ($record) => self::getPreviousMonthAttendance($record))
+                    ->html()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('work_pattern')
                     ->label('نمط العمل')
                     ->getStateUsing(fn ($record) => self::calculateWorkPattern($record))
@@ -302,6 +307,62 @@ class EmployeeProjectRecordResource extends Resource
                 font-weight: bold;
             '>
                 $date$label
+            </span>";
+        }
+
+        return implode(' ', $daysView);
+    }
+
+    private static function getPreviousMonthAttendance($record)
+    {
+        $employeeId = $record->employee_id;
+        $currentDate = Carbon::now();
+        $startDate = $currentDate->copy()->subDays(30)->format('Y-m-d');
+        $endDate = $currentDate->format('Y-m-d');
+
+        // جلب بيانات الحضور للموظف خلال آخر 30 يومًا
+        $attendances = \App\Models\Attendance::where('employee_id', $employeeId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get()
+            ->keyBy('date'); // تحويل النتيجة إلى مصفوفة تعتمد على التاريخ
+
+        // خريطة الألوان الجديدة لكل حالة
+        $attendanceColors = [
+            'present' => '#2E7D32',  // أخضر غامق
+            'absent' => '#D32F2F',   // أحمر غامق
+            'coverage' => '#F9A825', // أصفر برتقالي
+            'M' => '#E91E63',        // وردي غامق
+            'leave' => '#388E3C',    // أخضر غامق
+            'UV' => '#F57C00',       // برتقالي غامق
+            'W' => '#795548',        // بني غامق
+            'N/A' => '#9E9E9E',      // رمادي غامق
+        ];
+
+        $daysView = [];
+
+        for ($i = 30; $i >= 1; $i--) {
+            $date = $currentDate->copy()->subDays($i)->format('Y-m-d');
+            $displayDate = $currentDate->copy()->subDays($i)->format('d M');
+
+            $attendance = $attendances[$date] ?? null;
+            $status = $attendance ? $attendance->status : 'N/A';
+            $color = $attendanceColors[$status] ?? '#9E9E9E'; // إذا لم يكن هناك لون، استخدم الرمادي
+
+            $daysView[] = "
+            <span style='
+                padding: 6px; 
+                border-radius: 5px; 
+                background-color: $color; 
+                color: white; 
+                display: inline-block; 
+                width: 120px; /* ضمان نفس العرض */
+                height: 30px;
+                text-align: center; 
+                border: 1px solid black; /* إضافة حد أسود */
+                margin-right: 5px; 
+                font-weight: bold;
+            '>
+                $displayDate - $status
             </span>";
         }
 
