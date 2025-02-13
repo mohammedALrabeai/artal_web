@@ -64,9 +64,11 @@ class EmployeeAuthController extends Controller
                     'employee' => $employee,
                 ]);
             } else {
-                return response()->json([
-                    'message' => 'Token is invalid',
-                ], 401);
+                if (strlen($token) > 10) {
+                    return response()->json([
+                        'message' => 'Token is invalid',
+                    ], 401);
+                }
             }
         }
 
