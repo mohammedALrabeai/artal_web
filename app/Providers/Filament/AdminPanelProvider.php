@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Widgets\NotificationsWidget;
+use App\Filament\Widgets\OpenLinkWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -62,6 +63,7 @@ class AdminPanelProvider extends PanelProvider
                 NotificationsWidget::class, // تسجيل الـ Widget هنا
 
                 Widgets\AccountWidget::class,
+                OpenLinkWidget::class,
                 // Widgets\FilamentInfoWidget::class,
 
             ])
@@ -80,9 +82,10 @@ class AdminPanelProvider extends PanelProvider
                 FilamentShieldPlugin::make(),
             ])
             ->plugin(FilamentSpatieLaravelBackupPlugin::make()
-                ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com'))
+                ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com')
+            )
             ->authMiddleware([
-                Authenticate::class,
+            Authenticate::class,
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null);

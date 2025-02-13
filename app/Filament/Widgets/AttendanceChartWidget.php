@@ -3,10 +3,14 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Attendance;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\PieChartWidget;
+use Illuminate\Support\Facades\Auth;
 
 class AttendanceChartWidget extends PieChartWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = 'Attendance Chart';
 
     protected function getData(): array
@@ -36,4 +40,9 @@ class AttendanceChartWidget extends PieChartWidget
             ],
         ];
     }
+
+    // public static function canView(): bool
+    // {
+    //     return Auth::user()?->can('view_AttendanceChartWidget');
+    // }
 }

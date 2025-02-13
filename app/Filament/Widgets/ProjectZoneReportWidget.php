@@ -2,12 +2,14 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Project;
 use App\Models\Zone;
+use App\Models\Project;
 use Filament\Widgets\Widget;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class ProjectZoneReportWidget extends Widget
 {
+    use HasWidgetShield;
     protected static ?string $heading = 'Project & Zone Reports';
 
     protected static ?int $sort = 2;

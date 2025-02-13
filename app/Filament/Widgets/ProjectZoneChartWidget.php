@@ -4,9 +4,11 @@ namespace App\Filament\Widgets;
 
 use App\Models\Project;
 use Filament\Widgets\PieChartWidget;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class ProjectZoneChartWidget extends PieChartWidget
 {
+    use HasWidgetShield;
     protected static ?string $heading = 'Projects & Zones Chart';
 
     protected function getData(): array

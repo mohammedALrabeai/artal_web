@@ -2,11 +2,13 @@
 
 namespace App\Filament\Widgets;
 
-use Filament\Widgets\StatsOverviewWidget\Card;
 use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Card;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class EmployeeReportWidget extends StatsOverviewWidget
 {
+    use HasWidgetShield;
     protected function getCards(): array
     {
         return [

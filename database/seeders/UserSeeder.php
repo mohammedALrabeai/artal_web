@@ -22,16 +22,16 @@ class UserSeeder extends Seeder
 
     /**
      * Create or update user and assign role.
-     *
-     * @param string $email
-     * @param string $roleName
      */
     protected function createOrUpdateUser(string $email, string $roleName): void
     {
         // Check if user already exists
         $user = User::firstOrCreate(
-            ['email' => $email],
-            ['name' => ucfirst(explode('@', $email)[0])] // Set the name from the email if it doesn't exist
+            ['email' => $email], // الشرط للبحث عن المستخدم
+            [
+                'password' => bcrypt('12345678'),
+                'name' => ucfirst(explode('@', $email)[0]), // توليد الاسم تلقائيًا من الإيميل
+            ]
         );
 
         // Assign the role to the user

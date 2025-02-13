@@ -1,10 +1,14 @@
 <?php
+
 namespace App\Filament\Widgets;
 
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 use Filament\Widgets\PieChartWidget;
 
 class ZoneReportWidget extends PieChartWidget
 {
+    use HasWidgetShield;
+
     protected static ?string $heading = null;
 
     public function getHeading(): ?string
@@ -21,12 +25,13 @@ class ZoneReportWidget extends PieChartWidget
                 [
                     'label' => __('Number of Employees by Zone'),
                     'data' => $zones->pluck('employees_count')->toArray(),
-                    'backgroundColor' => $this->getColors($zones->count()), 
+                    'backgroundColor' => $this->getColors($zones->count()),
                 ],
             ],
             'labels' => $zones->pluck('name')->toArray(), // تأكد من تمرير أسماء المناطق
         ];
     }
+
     private function getColors($count): array
     {
         // قائمة الألوان المخصصة
@@ -44,5 +49,4 @@ class ZoneReportWidget extends PieChartWidget
         // إذا كانت المناطق أكثر من عدد الألوان، كرر الألوان
         return array_slice(array_merge($colors, $colors), 0, $count);
     }
-    
 }

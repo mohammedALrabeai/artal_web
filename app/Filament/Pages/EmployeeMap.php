@@ -2,14 +2,18 @@
 
 namespace App\Filament\Pages;
 
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 
 class EmployeeMap extends Page
 {
+    use HasPageShield;
+
     protected static bool $shouldRegisterNavigation = false;
 
     // protected static ?string $navigationIcon = 'heroicon-o-location-marker';
     protected static ?string $title = 'خريطة الموظف';
+
     protected static string $view = 'filament.pages.employee-map';
 
     public string $employeeId;

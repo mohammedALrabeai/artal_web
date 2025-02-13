@@ -2,11 +2,13 @@
 namespace App\Filament\Pages;
 
 use Filament\Forms;
-use Filament\Pages\Page;
 use App\Models\Setting;
+use Filament\Pages\Page;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class Settings extends Page
 {
+    use HasPageShield;
     protected static ?string $navigationIcon = 'heroicon-o-cog';
     // protected static ?string $navigationGroup = 'System Settings';
     protected static string $view = 'filament.pages.settings';

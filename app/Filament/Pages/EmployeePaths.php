@@ -8,9 +8,11 @@ use App\Models\EmployeeCoordinate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use App\Models\Zone; // تأكد من وجود موديل المنطقة
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class EmployeePaths extends Page
 {
+    use HasPageShield;
     protected static bool $shouldRegisterNavigation = false;
     protected static ?string $navigationIcon = 'heroicon-o-map';
     protected static ?string $navigationIconColor = 'success';

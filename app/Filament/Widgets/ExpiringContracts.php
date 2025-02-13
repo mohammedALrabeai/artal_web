@@ -1,12 +1,14 @@
 <?php
 namespace App\Filament\Widgets;
 
-use Filament\Widgets\Widget;
-use App\Models\Employee;
 use Carbon\Carbon;
+use App\Models\Employee;
+use Filament\Widgets\Widget;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class ExpiringContracts extends Widget
 {
+    use HasWidgetShield;
     protected static string $view = 'filament.widgets.expiring-contracts';
 
     public function getData(): array

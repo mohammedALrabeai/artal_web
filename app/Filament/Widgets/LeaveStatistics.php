@@ -3,9 +3,11 @@ namespace App\Filament\Widgets;
 
 use App\Models\Leave;
 use Filament\Widgets\LineChartWidget;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class LeaveStatistics extends LineChartWidget
 {
+    use HasWidgetShield;
     protected static ?string $heading = 'Leave Statistics';
 
     protected function getData(): array

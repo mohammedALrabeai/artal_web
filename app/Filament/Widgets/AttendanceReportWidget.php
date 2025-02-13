@@ -4,9 +4,11 @@ namespace App\Filament\Widgets;
 
 use App\Models\Attendance;
 use Filament\Widgets\Widget;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class AttendanceReportWidget extends Widget
 {
+    use HasWidgetShield;
     protected static ?string $heading = 'Attendance Reports';
 
     protected static ?int $sort = 1;

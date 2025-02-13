@@ -4,9 +4,11 @@ namespace App\Filament\Widgets;
 use App\Models\Employee;
 use Leantony\Charts\Classes\Chart;
 use Filament\Widgets\BarChartWidget;
+use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
 
 class EmployeeStatistics extends BarChartWidget
 {
+    use HasWidgetShield;
     protected static ?string $heading = 'Employee Statistics';
 
     protected function getData(): array
