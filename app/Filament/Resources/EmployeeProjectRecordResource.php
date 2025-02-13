@@ -162,8 +162,7 @@ class EmployeeProjectRecordResource extends Resource
                                 ->orWhere('family_name', 'like', "%{$search}%")
                                 ->orWhere('national_id', 'like', "%{$search}%");
                         });
-                    })
-                    ->sortable(),
+                    }),
                 TextColumn::make('employee.national_id')
                     ->label(__('National ID'))
                     ->searchable(),
@@ -211,7 +210,9 @@ class EmployeeProjectRecordResource extends Resource
 
                 SelectFilter::make('zone_id')
                     ->label(__('Zone'))
-                    ->options(Zone::all()->pluck('name', 'id')),
+                    ->options(Zone::all()->pluck('name', 'id'))
+                    ->searchable()
+                    ->multiple(),
 
                 SelectFilter::make('employee_id')
                     ->label(__('Employee'))

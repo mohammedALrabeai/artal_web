@@ -2,51 +2,47 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Project;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\ProjectResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Project;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use App\Filament\Resources\ProjectResource\RelationManagers;
 
 class ProjectResource extends Resource
 {
     protected static ?string $model = Project::class;
-    protected static ?int $navigationSort = -10; 
+
+    protected static ?int $navigationSort = -10;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
         return __('Projects');
     }
-    
+
     public static function getPluralLabel(): string
     {
         return __('Projects');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Zone & Project Management');
     }
-    
 
     public static function form(Form $form): Form
     {
@@ -84,52 +80,59 @@ class ProjectResource extends Resource
 
     public static function table(Table $table): Table
     {
-        
-                return $table
-                ->columns([
-                    Tables\Columns\TextColumn::make('name')
-                        ->searchable()
-                        ->label(__('Name')), // إضافة تسمية مترجمة
-                    Tables\Columns\TextColumn::make('area.name')
-                        ->numeric()
-                        ->sortable()
-                        ->label(__('Area')), // إضافة تسمية مترجمة
-                    Tables\Columns\TextColumn::make('start_date')
-                        ->date()
-                        ->sortable()
-                        ->label(__('Start Date')), // إضافة تسمية مترجمة
-                    Tables\Columns\TextColumn::make('end_date')
-                        ->date()
-                        ->sortable()
-                        ->label(__('End Date')), // إضافة تسمية مترجمة
-                    Tables\Columns\TextColumn::make('emp_no')
-                        ->label(__('Number of Employees')) // التسمية موجودة بالفعل
-                        ->sortable(),
-                    Tables\Columns\TextColumn::make('created_at')
-                        ->dateTime()
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true)
-                        ->label(__('Created At')), // إضافة تسمية مترجمة
-                    Tables\Columns\TextColumn::make('updated_at')
-                        ->dateTime()
-                        ->sortable()
-                        ->toggleable(isToggledHiddenByDefault: true)
-                        ->label(__('Updated At')),
+
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->label(__('Name')), // إضافة تسمية مترجمة
+                Tables\Columns\TextColumn::make('area.name')
+                    ->numeric()
+                    ->sortable()
+                    ->label(__('Area')), // إضافة تسمية مترجمة
+                Tables\Columns\TextColumn::make('start_date')
+                    ->date()
+                    ->sortable()
+                    ->label(__('Start Date')), // إضافة تسمية مترجمة
+                Tables\Columns\TextColumn::make('end_date')
+                    ->date()
+                    ->sortable()
+                    ->label(__('End Date')), // إضافة تسمية مترجمة
+                Tables\Columns\TextColumn::make('emp_no')
+                    ->label(__('Number of Employees')) // التسمية موجودة بالفعل
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->label(__('Created At')), // إضافة تسمية مترجمة
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->label(__('Updated At')),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('area_id')
+                    ->label(__('Filter by Area'))
+                    ->options(
+                        \App\Models\Area::pluck('name', 'id')->toArray()
+                    )
+                    ->searchable()
+                    ->multiple()
+                    ->placeholder(__('All Areas')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
+                        Tables\Actions\EditAction::make(),
+                    ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
+                        Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->label(__('Delete Selected')), // إضافة تسمية مترجمة
-                ]),
-                ExportBulkAction::make()
+                        ]),
+                        ExportBulkAction::make()
                     ->label(__('Export')),
-            ]);
+                    ]);
     }
 
     public static function getRelations(): array

@@ -11,6 +11,7 @@ use App\Models\Coverage;
 use App\Models\Request;
 use App\Models\Role;
 use App\Models\Shift;
+use App\Tables\Filters\EmployeeFilter;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
@@ -177,8 +178,7 @@ class AttendanceResource extends Resource
                             ->orWhere('family_name', 'like', "%{$search}%")
                             ->orWhere('national_id', 'like', "%{$search}%");
                     });
-                })
-                ->sortable(),
+                }),
 
             Tables\Columns\TextColumn::make('employee.national_id')
                 ->label(__('National ID'))
@@ -282,16 +282,26 @@ class AttendanceResource extends Resource
                 Tables\Filters\Filter::make('present_status')
                     ->query(fn (Builder $query) => $query->where('status', 'present'))
                     ->label(__('Present')),
+                EmployeeFilter::make('employee_filter'),
+
+                // فلتر المنطقة
+                SelectFilter::make('zone_id')
+                    ->label(__('Zone'))
+                    ->options(\App\Models\Zone::query()->pluck('name', 'id')->toArray())
+                    ->searchable()
+                    ->multiple(),
 
                 SelectFilter::make('shift_id')
                     ->label('Shift')
-                    ->options(Shift::all()->pluck('name', 'id')->toArray()),
+                    ->options(Shift::all()->pluck('name', 'id')->toArray())
+                    ->searchable()
+                    ->multiple(),
 
-                SelectFilter::make('ismorning')
-                    ->options([
-                        true => 'صباح',
-                        false => 'مساء',
-                    ]),
+                // SelectFilter::make('ismorning')
+                //     ->options([
+                //         true => 'صباح',
+                //         false => 'مساء',
+                //     ]),
 
                 SelectFilter::make('status')
                     ->label(__('Status'))
@@ -307,16 +317,10 @@ class AttendanceResource extends Resource
                 // فلتر الحالة
 
                 // فلتر الموظف
-                SelectFilter::make('employee_id')
-                    ->label(__('Employee'))
-                    ->options(\App\Models\Employee::query()->pluck('first_name', 'id')->toArray())
-                    ->searchable(),
-
-                // فلتر المنطقة
-                SelectFilter::make('zone_id')
-                    ->label(__('Zone'))
-                    ->options(\App\Models\Zone::query()->pluck('name', 'id')->toArray())
-                    ->searchable(),
+                // SelectFilter::make('employee_id')
+                //     ->label(__('Employee'))
+                //     ->options(\App\Models\Employee::query()->pluck('first_name', 'id')->toArray())
+                //     ->searchable(),
 
                 // فلتر التاريخ
                 Filter::make('date_range')

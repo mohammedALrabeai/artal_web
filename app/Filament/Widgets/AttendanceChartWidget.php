@@ -13,6 +13,8 @@ class AttendanceChartWidget extends PieChartWidget
 
     protected static ?string $heading = 'Attendance Chart';
 
+    protected static ?int $sort = 4;
+
     protected function getData(): array
     {
         $today = now()->toDateString();

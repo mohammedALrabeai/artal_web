@@ -136,7 +136,9 @@ class ZoneResource extends Resource
                     ->options(Pattern::all()->pluck('name', 'id')),
                 SelectFilter::make('project_id')
                     ->label(__('Project'))
-                    ->options(Project::all()->pluck('name', 'id')),
+                    ->options(Project::all()->pluck('name', 'id'))
+                    ->searchable()
+                    ->multiple(),
 
                 TernaryFilter::make('status')
                     ->label(__('Active'))

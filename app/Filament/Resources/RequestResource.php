@@ -9,6 +9,7 @@ use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\Request;
 use App\Models\User;
+use App\Tables\Filters\EmployeeFilter;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -295,8 +296,7 @@ class RequestResource extends Resource
                                 ->orWhere('family_name', 'like', "%{$search}%")
                                 ->orWhere('national_id', 'like', "%{$search}%");
                         });
-                    })
-                    ->sortable(),
+                    }),
 
                 Tables\Columns\TextColumn::make('employee.national_id')
                     ->label(__('National ID'))
@@ -397,11 +397,8 @@ class RequestResource extends Resource
                     ->toggle(),
 
                 // حسب الموظف
-                Tables\Filters\SelectFilter::make('employee_id')
-                    ->label(__('Employee'))
-                    ->options(Employee::all()->pluck('first_name', 'id'))
-                    ->searchable(),
-
+                // EmployeeFilter::make('employee_id'), // إضافة فلتر الموظفين
+                EmployeeFilter::make('employee_filter'),
                 // حسب النوع
                 Tables\Filters\SelectFilter::make('type')
                     ->label(__('Type'))

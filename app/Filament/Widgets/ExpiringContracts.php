@@ -1,15 +1,18 @@
 <?php
+
 namespace App\Filament\Widgets;
 
-use Carbon\Carbon;
 use App\Models\Employee;
-use Filament\Widgets\Widget;
 use BezhanSalleh\FilamentShield\Traits\HasWidgetShield;
+use Filament\Widgets\Widget;
 
 class ExpiringContracts extends Widget
 {
     use HasWidgetShield;
+
     protected static string $view = 'filament.widgets.expiring-contracts';
+
+    protected static ?int $sort = 5;
 
     public function getData(): array
     {

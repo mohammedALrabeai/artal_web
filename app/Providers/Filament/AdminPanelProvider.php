@@ -3,7 +3,6 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
-use App\Filament\Widgets\NotificationsWidget;
 use App\Filament\Widgets\OpenLinkWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
@@ -60,7 +59,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                NotificationsWidget::class, // تسجيل الـ Widget هنا
 
                 Widgets\AccountWidget::class,
                 OpenLinkWidget::class,
@@ -85,7 +83,7 @@ class AdminPanelProvider extends PanelProvider
                 ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com')
             )
             ->authMiddleware([
-            Authenticate::class,
+                Authenticate::class,
             ])
             ->databaseNotifications()
             ->databaseNotificationsPolling(null);
