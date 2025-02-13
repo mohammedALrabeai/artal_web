@@ -2,18 +2,15 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use Filament\Forms\Form;
-use App\Models\Exclusion;
-use Filament\Tables\Table;
 use App\Enums\ExclusionType;
-use Filament\Resources\Resource;
-use App\Forms\Components\EmployeeSelect;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\ExclusionResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\ExclusionResource\RelationManagers;
+use App\Forms\Components\EmployeeSelect;
+use App\Models\Exclusion;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
 
 class ExclusionResource extends Resource
 {
@@ -21,34 +18,32 @@ class ExclusionResource extends Resource
 
     protected static ?string $navigationIcon = 'fluentui-document-dismiss-16-o';
 
-
     protected static ?int $navigationSort = 3; // ترتيب في لوحة التحكم
+
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
         return __('Exclusion');
     }
-    
+
     public static function getPluralLabel(): string
     {
         return __('Exclusions');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Employee Management');
     }
- 
 
     public static function form(Form $form): Form
     {
@@ -60,7 +55,7 @@ class ExclusionResource extends Resource
                     ->label(__('Exclusion Type'))
                     ->options(
                         collect(ExclusionType::cases())
-                            ->mapWithKeys(fn($type) => [$type->value => $type->label()])
+                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
                             ->toArray()
                     )
                     ->required(),
@@ -81,12 +76,12 @@ class ExclusionResource extends Resource
                     ->label(__('Notes'))
                     ->nullable(),
 
-                    // Forms\Components\Select::make('status')
-                    // ->label(__('Status'))
-                    // ->options(\App\Models\Exclusion::getStatuses())
-                    // ->default(\App\Models\Exclusion::STATUS_PENDING) // تعيين القيمة الافتراضية
-                    // ->required(),
-                
+                // Forms\Components\Select::make('status')
+                // ->label(__('Status'))
+                // ->options(\App\Models\Exclusion::getStatuses())
+                // ->default(\App\Models\Exclusion::STATUS_PENDING) // تعيين القيمة الافتراضية
+                // ->required(),
+
             ]);
     }
 
@@ -94,8 +89,24 @@ class ExclusionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('employee.first_name')
+                Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Employee'))
+                    ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
+                        $record->employee->father_name.' '.
+                        $record->employee->grandfather_name.' '.
+                        $record->employee->family_name
+                    )
+                    ->searchable(query: function ($query, $search) {
+                        return $query->whereHas('employee', function ($subQuery) use ($search) {
+                            $subQuery->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('father_name', 'like', "%{$search}%")
+                                ->orWhere('grandfather_name', 'like', "%{$search}%")
+                                ->orWhere('family_name', 'like', "%{$search}%")
+                                ->orWhere('national_id', 'like', "%{$search}%");
+                        });
+                    }),
+                Tables\Columns\TextColumn::make('employee.national_id')
+                    ->label(__('National ID'))
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('type')
@@ -110,24 +121,34 @@ class ExclusionResource extends Resource
                     ->label(__('Reason'))
                     ->limit(50)
                     ->toggleable(),
-                    Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->badge()
-    ->label(__('Status'))
-    ->colors([
-        'primary' => 'Pending',
-        'success' => 'Approved',
-        'danger' => 'Rejected',
-    ])
-    ->sortable(),
-
+                    ->label(__('Status'))
+                    ->colors([
+                        'primary' => 'Pending',
+                        'success' => 'Approved',
+                        'danger' => 'Rejected',
+                    ])
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Notes'))
                     ->limit(50)
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label(__('Created At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -148,6 +169,7 @@ class ExclusionResource extends Resource
             'index' => Pages\ListExclusions::route('/'),
             'create' => Pages\CreateExclusion::route('/create'),
             'edit' => Pages\EditExclusion::route('/{record}/edit'),
+            'view' => Pages\ViewExclusion::route('/{record}/view'),
         ];
     }
 }

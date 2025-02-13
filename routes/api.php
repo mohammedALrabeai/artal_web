@@ -1,47 +1,35 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\EmployeeAuthController;
-
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\ProjectController;
-use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\AreaController;
-use App\Http\Controllers\Api\SlideController;
-
-use App\Http\Controllers\Api\ZoneController;
-use App\Http\Controllers\EmployeeCoordinateController;
-use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminNotificationController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\SlideController;
+use App\Http\Controllers\Api\ZoneController;
+use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Auth\EmployeeAuthController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeCoordinateController;
+use App\Http\Controllers\ProjectController;
 use App\Services\AttendanceService;
-
-
-
-
-
-
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
-
 
 Route::post('/employee/login', [EmployeeAuthController::class, 'login']);
 Route::post('/employee/verify-otp', [EmployeeAuthController::class, 'verifyOtp']);
 Route::post('employee/check-device-approval', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'checkDeviceApproval']);
 Route::middleware('auth:employee')->get('/me', [EmployeeAuthController::class, 'getEmployeeByToken']);
 
-
 Route::middleware('auth:employee')->post('/employee/change-password', [EmployeeAuthController::class, 'changePassword']);
 
 Route::middleware('auth:employee')->post('/update-player-id', [App\Http\Controllers\Auth\EmployeeAuthController::class, 'updatePlayerId']);
 
-
 Route::middleware('auth:employee')->group(function () {
     Route::get('/employee/projects', [EmployeeController::class, 'getEmployeeProjects']);
 });
-
 
 Route::middleware('auth:employee')->group(function () {
     Route::get('/employee/projectRecords', [ProjectController::class, 'getEmployeeProjectRecords']);
@@ -51,28 +39,17 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::get('/employee/zones', [EmployeeController::class, 'getEmployeeZones']);
 });
 
-
-
-
 use App\Http\Controllers\EmployeeNotificationController;
 
 Route::middleware('auth:employee')->get('/employee/notifications', [EmployeeNotificationController::class, 'getNotifications']);
 
 Route::middleware('auth:employee')->get('/employee/notifications/unread-count', [EmployeeNotificationController::class, 'getUnreadCount']);
 
-
-
 Route::middleware('auth:employee')->patch('/employee/notifications/{id}/mark-as-read', [EmployeeNotificationController::class, 'markAsRead']);
-
-
-
 
 Route::middleware('auth:employee')->group(function () {
     Route::get('employee/schedule', [EmployeeController::class, 'schedule']);
 });
-
-
-
 
 use App\Http\Controllers\Api\SettingsController;
 
@@ -80,16 +57,6 @@ Route::prefix('settings')->group(function () {
     Route::get('/', [SettingsController::class, 'index']); // الحصول على جميع الإعدادات
     Route::post('/', [SettingsController::class, 'update']); // تحديث الإعدادات
 });
-
-
-
-
-
-
-
-
-
-
 
 Route::middleware('auth:employee')->group(function () {
     Route::post('employee/attendance/check-in', [AttendanceController::class, 'checkIn']);
@@ -102,16 +69,11 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/attendances/coverage/check-in', [AttendanceController::class, 'checkInCoverage']);
     Route::post('/attendances/coverage/check-out', [AttendanceController::class, 'checkOutCoverage']);
 
-
     Route::post('/zones/nearby', [ZoneController::class, 'nearbyZones']);
 
     Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 
-
 });
-
-
-
 
 Route::middleware('auth:employee')->group(function () {
     Route::post('/coordinates', [EmployeeCoordinateController::class, 'store']);
@@ -127,7 +89,6 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/employee/attendance', [AttendanceController::class, 'markAttendance']);
 });
 
-
 Route::post('/test-broadcast', function () {
     $testData = [
         'id' => 1,
@@ -136,40 +97,22 @@ Route::post('/test-broadcast', function () {
             [
                 'id' => 1,
                 'name' => 'Test Project',
-                'zones' => []
-            ]
-        ]
+                'zones' => [],
+            ],
+        ],
     ];
-    
+
     event(new \App\Events\AreasUpdated([$testData]));
+
     return response()->json(['status' => 'Event broadcasted successfully']);
 });
-
-
-
-
-
-
-
-
-
 
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
 
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 
-
-
-
-
-
-
-
-
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
-
-
 
 Route::post('/run-migrations', function (Request $request) {
     // حماية الوصول بكلمة مرور أو توكن
@@ -181,6 +124,7 @@ Route::post('/run-migrations', function (Request $request) {
     // تنفيذ المايجريشن
     try {
         Artisan::call('migrate', ['--force' => true]);
+
         return response()->json(['message' => 'Migrations executed successfully']);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
@@ -197,6 +141,7 @@ Route::post('/optimize-project', function (Request $request) {
     // تحسين وتنظيف المشروع
     try {
         Artisan::call('optimize:clear');
+
         return response()->json(['message' => 'Project optimized and cleared successfully']);
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
@@ -205,39 +150,25 @@ Route::post('/optimize-project', function (Request $request) {
 
 Route::get('/process-attendance', function (AttendanceService $attendanceService) {
     $attendanceService->processAttendance();
+
     return response()->json(['message' => 'Attendance processing started']);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/test', function (Request $request) {   
+Route::get('/test', function (Request $request) {
     return response()->json(
         [
             'status' => 'success',
-            'message' => 'test'
-        ]   
+            'message' => 'test',
+        ]
     );
 });
 
 // routes for notifications
-Route::
-middleware('auth:sanctum')->
+Route::middleware('auth:sanctum')->
 group(function () {
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
@@ -253,18 +184,7 @@ Route::prefix('admin')->group(function () {
     Route::delete('/notifications/all', [AdminNotificationController::class, 'deleteAllNotifications']);
 });
 
-
-
-
-
-
-
-
-
-
-
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 
 Route::post('/login', function (Request $request) {
     $credentials = $request->validate([
@@ -272,7 +192,7 @@ Route::post('/login', function (Request $request) {
         'password' => 'required',
     ]);
 
-    if (!Auth::attempt($credentials)) {
+    if (! Auth::attempt($credentials)) {
         return response()->json(['message' => 'Invalid credentials'], 401);
     }
 
@@ -281,7 +201,7 @@ Route::post('/login', function (Request $request) {
 
     return response()->json([
         'user' => $user,
-        'token' => $token
+        'token' => $token,
     ]);
 });
 
@@ -289,3 +209,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return response()->json($request->user());
 });
 
+use App\Http\Controllers\Api\OperationNotificationController;
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/operation-notifications', [OperationNotificationController::class, 'index']); // استرجاع الإشعارات
+    Route::post('/operation-notifications/{id}/read', [OperationNotificationController::class, 'markAsRead']); // وضع علامة مقروء
+});
