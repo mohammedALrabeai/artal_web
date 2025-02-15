@@ -348,6 +348,23 @@ class EmployeeProjectRecordResource extends Resource
             // ✅ تحديد الفترة "صباحًا" أو "مساءً" فقط إذا كان يوم عمل
             if ($isWorkDay) {
                 $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
+                switch ($record->shift->type) {
+                    case 'morning':
+                        $shiftType = 'ص';
+                        break;
+
+                    case 'evening':
+                        $shiftType = 'م';
+                        break;
+
+                    case 'morning_evening':
+                        // $shiftType = 'ص';
+                        break;
+
+                    case 'evening_morning':
+                        $shiftType = ($cycleNumber % 2 == 1) ? 'م' : 'ص';
+                        break;
+                }
                 $label .= " - $shiftType";
             }
 
