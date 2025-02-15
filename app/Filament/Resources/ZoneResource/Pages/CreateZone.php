@@ -73,6 +73,39 @@ class CreateZone extends CreateRecord
     //         ]
     //     );
     // }
+    protected function afterCreate(): void
+    {
+        // parent::afterCreate();
+
+        $notificationService = new NotificationService;
+        $addedBy = auth()->user()->name; // معرفة من قام بالإضافة
+        $zone = $this->record; // بيانات الموقع المضاف
+
+        // الحصول على عدد الموظفين في هذا الموقع (يُفترض تخزينه في emp_no)
+        $employeesCount = $zone->emp_no;
+        // الحصول على النطاق المدخل للموقع (يُفترض تخزينه في area)
+        $zoneRange = $zone->area ?? 'غير متوفر';
+
+        // بناء رسالة الإشعار المفصلة
+        $message = "إضافة موقع جديد\n\n";
+        $message .= "تمت الإضافة بواسطة: {$addedBy}\n\n";
+        $message .= "اسم الموقع: {$zone->name}\n";
+        $message .= "النطاق: {$zoneRange}\n";
+        $message .= "عدد الموظفين: {$employeesCount}\n";
+
+        // إنشاء رابط خرائط جوجل باستخدام الإحداثيات (يُستخدم في زر العرض فقط)
+        $mapsUrl = "https://www.google.com/maps/search/?api=1&query={$zone->lat},{$zone->longg}";
+
+        $notificationService->sendNotification(
+            ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
+            'إضافة موقع جديد',                   // عنوان الإشعار
+            $message,                             // نص الإشعار المفصل
+            [
+                $notificationService->createAction('عرض الموقع على خرائط جوجل', $mapsUrl, ''),
+                $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", ''),
+            ]
+        );
+    }
 
     protected function getRedirectUrl(): string
     {
