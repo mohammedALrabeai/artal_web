@@ -46,4 +46,35 @@ class CreateShift extends CreateRecord
     //         ]
     //     );
     // }
+    protected function afterCreate(): void
+    {
+        // parent::afterCreate();
+
+        $notificationService = new NotificationService;
+        $addedBy = auth()->user()->name; // معرفة من قام بالإضافة
+        $shift = $this->record; // بيانات الوردية المضافة
+
+        // الحصول على اسم المنطقة الخاصة بالوردية (إذا كانت العلاقة موجودة)
+        $zoneName = isset($shift->zone) ? $shift->zone->name : 'غير متوفر';
+
+        // بناء رسالة الإشعار المفصلة
+        $message = '';
+        // $message = "إضافة وردية جديدة\n\n";
+        $message .= "تمت الإضافة بواسطة: {$addedBy}\n\n";
+        $message .= "اسم الوردية: {$shift->name}\n";
+        $message .= "الموقع: {$zoneName}\n";
+        $message .= "النوع: {$shift->type}\n";
+        $message .= "تاريخ البدء: {$shift->start_date}\n";
+        $message .= "عدد الموظفين: {$shift->emp_no}\n";
+
+        $notificationService->sendNotification(
+            ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
+            'إضافة وردية جديدة',                // عنوان الإشعار
+            $message,                            // نص الإشعار المفصل
+            [
+                $notificationService->createAction('عرض الوردية', "/admin/shifts/{$shift->id}/edit", ''),
+                $notificationService->createAction('قائمة الورديات', '/admin/shifts', ''),
+            ]
+        );
+    }
 }

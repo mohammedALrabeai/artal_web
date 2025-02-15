@@ -87,11 +87,13 @@ class CreateZone extends CreateRecord
         $zoneRange = $zone->area ?? 'غير متوفر';
 
         // بناء رسالة الإشعار المفصلة
-        $message = "إضافة موقع جديد\n\n";
+        $message = '';
+        // $message = "إضافة موقع جديد\n\n";
         $message .= "تمت الإضافة بواسطة: {$addedBy}\n\n";
         $message .= "اسم الموقع: {$zone->name}\n";
         $message .= "النطاق: {$zoneRange}\n";
         $message .= "عدد الموظفين: {$employeesCount}\n";
+        $message .= "تاريخ البدء: {$zone->start_date}\n";
 
         // إنشاء رابط خرائط جوجل باستخدام الإحداثيات (يُستخدم في زر العرض فقط)
         $mapsUrl = "https://www.google.com/maps/search/?api=1&query={$zone->lat},{$zone->longg}";
