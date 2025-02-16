@@ -107,6 +107,37 @@ Route::post('/test-broadcast', function () {
     return response()->json(['status' => 'Event broadcasted successfully']);
 });
 
+use Pusher\Pusher;
+
+Route::post('/test-notification', function () {
+    // بيانات الإشعار التجريبي
+    $notificationData = [
+        'id' => rand(100, 999), // معرّف عشوائي
+        'title' => 'إشعار تجريبي',
+        'message' => '📢 لديك إشعار جديد تم إرساله عبر Pusher!',
+        'date' => now()->toDateTimeString(),
+        'employee_id' => 1,
+        'employee_name' => 'محمد عبدالله الربيعي',
+        'zone' => 'المنطقة الصناعية',
+    ];
+
+    // تهيئة `Pusher`
+    $pusher = new Pusher(
+        env('PUSHER_APP_KEY'),
+        env('PUSHER_APP_SECRET'),
+        env('PUSHER_APP_ID'),
+        [
+            'cluster' => env('PUSHER_APP_CLUSTER'),
+            'useTLS' => true,
+        ]
+    );
+
+    // إرسال الحدث إلى قناة `notifications`
+    $pusher->trigger('notifications', 'new-notification', $notificationData);
+
+    return response()->json(['status' => 'success', 'message' => 'تم إرسال الإشعار بنجاح!', 'data' => $notificationData]);
+});
+
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
 
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
