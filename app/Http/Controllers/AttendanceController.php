@@ -7,9 +7,11 @@ use App\Models\Attendance;
 use App\Models\EmployeeProjectRecord;
 use App\Models\User;
 use App\Models\Zone;
+use App\Notifications\CoverageRequestNotification;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class AttendanceController extends Controller
 {
@@ -176,16 +178,37 @@ class AttendanceController extends Controller
                 $notificationService->createAction('عرض سجل الحضور', '/admin/attendances', 'heroicon-s-calendar'),
             ]
         );
+        $managers = User::all();
+        // إرسال الإشعار لجميع المستخدمين باستثناء المدراء والموارد البشرية
+        // $users = User::whereNotIn('role', ['manager', 'general_manager', 'hr'])->get();
 
-        event(new NewNotification([
-            'title' => 'تسجيل تغطية جديدة',
-            'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",
-            'date' => now()->toDateTimeString(),
-            'employee_id' => $employee->id,
-            'employee_name' => $employeeName,
-            'zone' => $zoneName,
-            'attendance_id' => $attendance->id,
-        ]));
+        Notification::send($managers, new CoverageRequestNotification($attendance));
+
+        // event(new NewNotification([
+        //     'title' => 'تسجيل تغطية جديدة',
+        //     'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",
+        //     'date' => now()->toDateTimeString(),
+        //     'employee_id' => $employee->id,
+        //     'employee_name' => $employeeName,
+        //     'zone' => $zoneName,
+        //     'attendance_id' => $attendance->id,
+        // ]));
+
+        //    // إرسال الإشعار إلى جميع المدراء والموارد البشرية
+        //    $employeeName = $employee->name();
+        //    $zone = Zone::find($request->zone_id);
+        //    $zoneName = $zone ? $zone->name : 'غير محدد';
+
+        //    // بث الإشعار عبر Laravel Broadcasting باستخدام `NewNotification`
+        //    event(new NewNotification([
+        //        'title' => 'تسجيل تغطية جديدة',
+        //        'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",
+        //        'date' => now()->toDateTimeString(),
+        //        'employee_id' => $employee->id,
+        //        'employee_name' => $employeeName,
+        //        'zone' => $zoneName,
+        //        'attendance_id' => $attendance->id,
+        //    ]));
 
         return response()->json([
             'message' => 'Checked in successfully.',
