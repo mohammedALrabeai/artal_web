@@ -238,7 +238,7 @@ class Employee extends Model
         // إرسال إشعار عند التعديل فقط
         if ($eventName === 'updated') {
             $notificationService = new \App\Services\NotificationService;
-            $editedBy = auth()->user()->name;
+            $editedBy = auth()->user()->name??"api";
             $employee = $this;
 
             $changes = $employee->getChanges();
