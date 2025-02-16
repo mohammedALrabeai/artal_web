@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewNotification;
 use App\Models\Attendance;
 use App\Models\EmployeeProjectRecord;
 use App\Models\User;
@@ -9,7 +10,6 @@ use App\Models\Zone;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Pusher\Pusher;
 
 class AttendanceController extends Controller
 {
@@ -177,19 +177,7 @@ class AttendanceController extends Controller
             ]
         );
 
-        // إرسال الإشعار عبر `Pusher`
-        $pusher = new Pusher(
-            env('PUSHER_APP_KEY'),
-            env('PUSHER_APP_SECRET'),
-            env('PUSHER_APP_ID'),
-            [
-                'cluster' => env('PUSHER_APP_CLUSTER'),
-                'useTLS' => true,
-            ]
-        );
-
-        // بيانات الإشعار المرسلة
-        $notificationData = [
+        event(new NewNotification([
             'title' => 'تسجيل تغطية جديدة',
             'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",
             'date' => now()->toDateTimeString(),
@@ -197,10 +185,7 @@ class AttendanceController extends Controller
             'employee_name' => $employeeName,
             'zone' => $zoneName,
             'attendance_id' => $attendance->id,
-        ];
-
-        // إرسال الحدث إلى قناة `notifications`
-        $pusher->trigger('notifications', 'new-notification', $notificationData);
+        ]));
 
         return response()->json([
             'message' => 'Checked in successfully.',
