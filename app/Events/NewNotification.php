@@ -27,4 +27,11 @@ class NewNotification implements ShouldBroadcastNow
     {
         return 'new-notification'; // اسم الحدث الذي سيتم استقباله في Flutter
     }
+
+    public function broadcastWith()
+    {
+        return [
+            'notificationData' => json_encode($this->notificationData),
+        ];
+    }
 }
