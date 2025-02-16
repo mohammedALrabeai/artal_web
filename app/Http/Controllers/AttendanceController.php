@@ -184,6 +184,40 @@ class AttendanceController extends Controller
 
         Notification::send($managers, new CoverageRequestNotification($attendance));
 
+        // 🔹 إنشاء بيانات الإشعار وإرسالها لحظيًا عبر `NewNotification`
+        $notificationData = [
+            'id' => (string) \Str::uuid(),
+            'type' => 'App\\Notifications\\CoverageRequestNotification',
+            'title' => 'طلب تغطية جديد',
+            'message' => "📢 **طلب تغطية جديد**\n"
+                ."👤 **الموظف:** {$employee->first_name} {$employee->father_name} {$employee->family_name} "
+                ."(ID: {$employee->id})\n"
+                ."📅 **التاريخ:** {$attendance->date}\n"
+                .'⏰ **الحضور:** '.($attendance->check_in ?? 'غير متوفر')."\n"
+                .'🏁 **الانصراف:** '.($attendance->check_out ?? 'غير متوفر')."\n"
+                .'📍 **الموقع:** '.($attendance->zone->name ?? 'غير محدد')."\n"
+                .'📝 **السبب:** '.($attendance->notes ?? 'لا يوجد سبب محدد')."\n"
+                .'🔄 **الحالة:** '.($attendance->approval_status ?? 'في انتظار الموافقة')."\n"
+                .'🔄 **هل هي تغطية؟** '.($attendance->is_coverage ? 'نعم' : 'لا')."\n"
+                .'🚨 **خارج المنطقة؟** '.($attendance->out_of_zone ? 'نعم' : 'لا'),
+            'attendance_id' => $attendance->id,
+            'employee_id' => $attendance->employee->id,
+            'employee_name' => "{$attendance->employee->first_name} {$attendance->employee->father_name} {$attendance->employee->family_name}",
+            'date' => $attendance->date,
+            'check_in' => $attendance->check_in ?? 'غير متوفر',
+            'check_out' => $attendance->check_out ?? 'غير متوفر',
+            'zone' => $attendance->zone->name ?? 'غير محدد',
+            'reason' => $attendance->notes ?? 'لا يوجد سبب محدد',
+            'status' => $attendance->approval_status ?? 'في انتظار الموافقة',
+            'is_coverage' => $attendance->is_coverage ? 'نعم' : 'لا',
+            'out_of_zone' => $attendance->out_of_zone ? 'نعم' : 'لا',
+            'created_at' => now()->toDateTimeString(),
+            'read_at' => null,
+        ];
+
+        // 🔹 إرسال الإشعار عبر `Pusher` للجميع مرة واحدة فقط
+        event(new NewNotification($notificationData));
+
         // event(new NewNotification([
         //     'title' => 'تسجيل تغطية جديدة',
         //     'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",

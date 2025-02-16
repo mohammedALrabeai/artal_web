@@ -20,7 +20,9 @@ class CoverageRequestNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast']; // تخزين الإشعار في قاعدة البيانات + بثه
+        // return ['database', 'broadcast']; // تخزين الإشعار في قاعدة البيانات + بثه
+        return ['database']; // تخزين الإشعار في قاعدة البيانات + بثه
+
     }
 
     public function toDatabase($notifiable)
@@ -66,15 +68,7 @@ class CoverageRequestNotification extends Notification
     // }
     public function toBroadcast($notifiable)
     {
-        static $isBroadcasted = false;
-    
-        // إذا تم إرسال الإشعار بالفعل، لا تقم ببثه مرة أخرى
-        if ($isBroadcasted) {
-            return null;
-        }
-    
-        $isBroadcasted = true;
-    
+
         return new BroadcastMessage([
             'id' => (string) \Str::uuid(), // UUID لضمان التوافق مع Flutter
             'type' => 'App\\Notifications\\CoverageRequestNotification',
@@ -83,8 +77,8 @@ class CoverageRequestNotification extends Notification
             'title' => 'طلب تغطية جديد',
             'message' => $this->buildMessage(),
             'employee_id' => $this->attendance->employee->id,
-            'employee_name' => $this->attendance->employee->first_name . ' ' .
-                $this->attendance->employee->father_name . ' ' .
+            'employee_name' => $this->attendance->employee->first_name.' '.
+                $this->attendance->employee->father_name.' '.
                 $this->attendance->employee->family_name,
             'date' => $this->attendance->date,
             'check_in' => $this->attendance->check_in ?? 'غير متوفر',
@@ -99,8 +93,6 @@ class CoverageRequestNotification extends Notification
             'read_at' => null, // الإشعار غير مقروء عند الإرسال
         ]);
     }
-    
-
 
     private function buildMessage()
     {
