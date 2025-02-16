@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
@@ -29,8 +30,8 @@ class CoverageRequestNotification extends Notification
             'message' => $this->buildMessage(),
             'attendance_id' => $this->attendance->id,
             'employee_id' => $this->attendance->employee->id,
-            'employee_name' => $this->attendance->employee->first_name . ' ' .
-                $this->attendance->employee->father_name . ' ' .
+            'employee_name' => $this->attendance->employee->first_name.' '.
+                $this->attendance->employee->father_name.' '.
                 $this->attendance->employee->family_name,
             'date' => $this->attendance->date,
             'check_in' => $this->attendance->check_in ?? 'غير متوفر',
@@ -50,8 +51,8 @@ class CoverageRequestNotification extends Notification
             'message' => $this->buildMessage(),
             'attendance_id' => $this->attendance->id,
             'employee_id' => $this->attendance->employee->id,
-            'employee_name' => $this->attendance->employee->first_name . ' ' .
-                $this->attendance->employee->father_name . ' ' .
+            'employee_name' => $this->attendance->employee->first_name.' '.
+                $this->attendance->employee->father_name.' '.
                 $this->attendance->employee->family_name,
             'date' => $this->attendance->date,
             'check_in' => $this->attendance->check_in ?? 'غير متوفر',
@@ -67,17 +68,27 @@ class CoverageRequestNotification extends Notification
     private function buildMessage()
     {
         return "📢 **طلب تغطية جديد**\n"
-            . "👤 **الموظف:** {$this->attendance->employee->first_name} "
-            . "{$this->attendance->employee->father_name} "
-            . "{$this->attendance->employee->family_name} "
-            . "(ID: {$this->attendance->employee->id})\n"
-            . "📅 **التاريخ:** {$this->attendance->date}\n"
-            . "⏰ **الحضور:** " . ($this->attendance->check_in ?? 'غير متوفر') . "\n"
-            . "🏁 **الانصراف:** " . ($this->attendance->check_out ?? 'غير متوفر') . "\n"
-            . "📍 **الموقع:** " . ($this->attendance->zone->name ?? 'غير محدد') . "\n"
-            . "📝 **السبب:** " . ($this->attendance->notes ?? 'لا يوجد سبب محدد') . "\n"
-            . "🔄 **الحالة:** " . ($this->attendance->approval_status ?? 'في انتظار الموافقة') . "\n"
-            . "🔄 **هل هي تغطية؟** " . ($this->attendance->is_coverage ? 'نعم' : 'لا') . "\n"
-            . "🚨 **خارج المنطقة؟** " . ($this->attendance->out_of_zone ? 'نعم' : 'لا');
+            ."👤 **الموظف:** {$this->attendance->employee->first_name} "
+            ."{$this->attendance->employee->father_name} "
+            ."{$this->attendance->employee->family_name} "
+            ."(ID: {$this->attendance->employee->id})\n"
+            ."📅 **التاريخ:** {$this->attendance->date}\n"
+            .'⏰ **الحضور:** '.($this->attendance->check_in ?? 'غير متوفر')."\n"
+            .'🏁 **الانصراف:** '.($this->attendance->check_out ?? 'غير متوفر')."\n"
+            .'📍 **الموقع:** '.($this->attendance->zone->name ?? 'غير محدد')."\n"
+            .'📝 **السبب:** '.($this->attendance->notes ?? 'لا يوجد سبب محدد')."\n"
+            .'🔄 **الحالة:** '.($this->attendance->approval_status ?? 'في انتظار الموافقة')."\n"
+            .'🔄 **هل هي تغطية؟** '.($this->attendance->is_coverage ? 'نعم' : 'لا')."\n"
+            .'🚨 **خارج المنطقة؟** '.($this->attendance->out_of_zone ? 'نعم' : 'لا');
+    }
+
+    public function broadcastOn()
+    {
+        return new Channel('notifications'); // تأكد أن القناة صحيحة
+    }
+
+    public function broadcastAs()
+    {
+        return 'new-notification'; // تأكد أن الحدث هو نفسه الذي تستخدمه في Flutter
     }
 }
