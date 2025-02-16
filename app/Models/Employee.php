@@ -236,37 +236,39 @@ class Employee extends Model
     public function getDescriptionForEvent(string $eventName): string
     {
         // إرسال إشعار عند التعديل فقط
-        if ($eventName === 'updated') {
-            $notificationService = new \App\Services\NotificationService;
-            $editedBy = auth()->user()->name??"api";
-            $employee = $this;
+        if (auth()->check()) {
+            if ($eventName === 'updated') {
+                $notificationService = new \App\Services\NotificationService;
+                $editedBy = auth()->user()->name ?? 'api';
+                $employee = $this;
 
-            $changes = $employee->getChanges();
-            $original = $employee->getOriginal();
-            $ignoredFields = ['updated_at', 'created_at'];
-            $changeDetails = '';
+                $changes = $employee->getChanges();
+                $original = $employee->getOriginal();
+                $ignoredFields = ['updated_at', 'created_at'];
+                $changeDetails = '';
 
-            foreach ($changes as $field => $newValue) {
-                if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
-                    $changeDetails .= ucfirst(str_replace('_', ' ', $field)).": \"{$original[$field]}\" → \"{$newValue}\"\n";
+                foreach ($changes as $field => $newValue) {
+                    if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
+                        $changeDetails .= ucfirst(str_replace('_', ' ', $field)).": \"{$original[$field]}\" → \"{$newValue}\"\n";
+                    }
                 }
+
+                $message = "تم تعديل بيانات الموظف بنجاح\n\n";
+                $message .= "الموظف: {$employee->name()}\n";
+                $message .= "تم التعديل بواسطة: {$editedBy}\n\n";
+                $message .= "تفاصيل التعديل:\n";
+                $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
+
+                $notificationService->sendNotification(
+                    ['manager', 'general_manager', 'hr'],
+                    'تعديل بيانات الموظف',
+                    $message,
+                    [
+                        $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                        $notificationService->createAction('قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
+                    ]
+                );
             }
-
-            $message = "تم تعديل بيانات الموظف بنجاح\n\n";
-            $message .= "الموظف: {$employee->name()}\n";
-            $message .= "تم التعديل بواسطة: {$editedBy}\n\n";
-            $message .= "تفاصيل التعديل:\n";
-            $message .= ! empty($changeDetails) ? $changeDetails : "⚠️ لم يتم الكشف عن تغييرات كبيرة.\n";
-
-            $notificationService->sendNotification(
-                ['manager', 'general_manager', 'hr'],
-                'تعديل بيانات الموظف',
-                $message,
-                [
-                    $notificationService->createAction('عرض بيانات الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                    $notificationService->createAction('قائمة الموظفين', '/admin/employees', 'heroicon-s-users'),
-                ]
-            );
         }
 
         return "Employee record has been {$eventName}";
