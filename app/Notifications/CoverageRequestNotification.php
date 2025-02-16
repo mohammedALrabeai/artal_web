@@ -44,26 +44,53 @@ class CoverageRequestNotification extends Notification
         ];
     }
 
+    // public function toBroadcast($notifiable)
+    // {
+    //     return new BroadcastMessage([
+    //         'title' => 'طلب تغطية جديد',
+    //         'message' => $this->buildMessage(),
+    //         'attendance_id' => $this->attendance->id,
+    //         'employee_id' => $this->attendance->employee->id,
+    //         'employee_name' => $this->attendance->employee->first_name.' '.
+    //             $this->attendance->employee->father_name.' '.
+    //             $this->attendance->employee->family_name,
+    //         'date' => $this->attendance->date,
+    //         'check_in' => $this->attendance->check_in ?? 'غير متوفر',
+    //         'check_out' => $this->attendance->check_out ?? 'غير متوفر',
+    //         'zone' => $this->attendance->zone->name ?? 'غير محدد',
+    //         'reason' => $this->attendance->notes ?? 'لا يوجد سبب محدد',
+    //         'status' => $this->attendance->approval_status ?? 'في انتظار الموافقة',
+    //         'is_coverage' => $this->attendance->is_coverage ? 'نعم' : 'لا',
+    //         'out_of_zone' => $this->attendance->out_of_zone ? 'نعم' : 'لا',
+    //     ]);
+    // }
     public function toBroadcast($notifiable)
-    {
-        return new BroadcastMessage([
-            'title' => 'طلب تغطية جديد',
-            'message' => $this->buildMessage(),
-            'attendance_id' => $this->attendance->id,
-            'employee_id' => $this->attendance->employee->id,
-            'employee_name' => $this->attendance->employee->first_name.' '.
-                $this->attendance->employee->father_name.' '.
-                $this->attendance->employee->family_name,
-            'date' => $this->attendance->date,
-            'check_in' => $this->attendance->check_in ?? 'غير متوفر',
-            'check_out' => $this->attendance->check_out ?? 'غير متوفر',
-            'zone' => $this->attendance->zone->name ?? 'غير محدد',
-            'reason' => $this->attendance->notes ?? 'لا يوجد سبب محدد',
-            'status' => $this->attendance->approval_status ?? 'في انتظار الموافقة',
-            'is_coverage' => $this->attendance->is_coverage ? 'نعم' : 'لا',
-            'out_of_zone' => $this->attendance->out_of_zone ? 'نعم' : 'لا',
-        ]);
-    }
+{
+    return new BroadcastMessage([
+        'id' => (string) \Str::uuid(), // UUID لضمان التوافق مع Flutter
+        'type' => 'App\\Notifications\\CoverageRequestNotification',
+        'notifiable_id' => $notifiable->id,
+        'notifiable_type' => get_class($notifiable),
+        'title' => 'طلب تغطية جديد',
+        'message' => $this->buildMessage(),
+        'employee_id' => $this->attendance->employee->id,
+        'employee_name' => $this->attendance->employee->first_name . ' ' .
+            $this->attendance->employee->father_name . ' ' .
+            $this->attendance->employee->family_name,
+        'date' => $this->attendance->date,
+        'check_in' => $this->attendance->check_in ?? 'غير متوفر',
+        'check_out' => $this->attendance->check_out ?? 'غير متوفر',
+        'zone' => $this->attendance->zone->name ?? 'غير محدد',
+        'reason' => $this->attendance->notes ?? 'لا يوجد سبب محدد',
+        'status' => $this->attendance->approval_status ?? 'في انتظار الموافقة',
+        'is_coverage' => $this->attendance->is_coverage ? 'نعم' : 'لا',
+        'out_of_zone' => $this->attendance->out_of_zone ? 'نعم' : 'لا',
+        'attendance_id' => $this->attendance->id,
+        'created_at' => now()->toDateTimeString(),
+        'read_at' => null, // عند إرسال الإشعار يكون غير مقروء
+    ]);
+}
+
 
     private function buildMessage()
     {
