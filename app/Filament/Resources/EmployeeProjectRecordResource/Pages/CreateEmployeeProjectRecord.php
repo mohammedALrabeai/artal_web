@@ -4,11 +4,13 @@ namespace App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 
 use App\Filament\Resources\EmployeeProjectRecordResource;
 use App\Models\Employee;
+use App\Models\EmployeeProjectRecord;
 use App\Models\Project;
 use App\Models\Shift;
 use App\Models\Zone;
 use App\Services\NotificationService;
 use App\Services\OtpService;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateEmployeeProjectRecord extends CreateRecord
@@ -18,6 +20,27 @@ class CreateEmployeeProjectRecord extends CreateRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    /**
+     * ✅ التحقق قبل إنشاء السجل
+     */
+    protected function beforeCreate(): void
+    {
+        $shift = Shift::find($this->data['shift_id']); // جلب الوردية المحددة
+        $currentAssigned = EmployeeProjectRecord::where('shift_id', $this->data['shift_id'])
+            ->where('status', '1') // ✅ فقط الموظفين النشطين
+            ->count();
+
+        if ($shift && $currentAssigned >= $shift->emp_no) {
+            Notification::make()
+                ->title('⚠️ العدد مكتمل')
+                ->danger()
+                ->body("❌ لا يمكن إسناد الموظف! العدد المطلوب للوردية ({$shift->name}) مكتمل ({$shift->emp_no}).")
+                ->send();
+
+            $this->halt(); // ⛔ منع الإسناد
+        }
     }
 
     protected function afterCreate(): void

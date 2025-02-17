@@ -134,7 +134,8 @@ class EmployeeProjectRecordResource extends Resource
                 ->label(__('Status'))
                 ->onColor('success') // لون عند التفعيل
                 ->offColor('danger') // لون عند الإيقاف
-                ->required(),
+                ->required()
+                ->default(true),
 
         ]);
     }

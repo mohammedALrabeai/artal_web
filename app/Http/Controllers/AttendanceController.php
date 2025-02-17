@@ -88,17 +88,79 @@ class AttendanceController extends Controller
         $date = Carbon::now('Asia/Riyadh')->toDateString();
         $currentDateTime = Carbon::now('Asia/Riyadh');
 
-        // التحقق إذا كان الموظف قد سجل حضور طبيعي اليوم
+        // // التحقق إذا كان الموظف قد سجل حضور طبيعي اليوم
+        // $existingAttendance = Attendance::where('employee_id', $employee->id)
+        //     ->where('date', $date)
+        //     ->where('status', 'present')
+        //     ->first();
+
+        // if ($existingAttendance) {
+        //     return response()->json([
+        //         'message' => 'You have already checked in today.',
+        //         'attendance' => $existingAttendance,
+        //     ], 200);
+        // }
+
+        // البحث عن أي سجل حضور سابق لهذا اليوم
         $existingAttendance = Attendance::where('employee_id', $employee->id)
             ->where('date', $date)
-            ->where('status', 'present')
             ->first();
 
+        // البحث عن تغطية نشطة (لم يتم تسجيل انصراف لها)
+        $activeCoverage = Attendance::where('employee_id', $employee->id)
+            ->where('date', $date)
+            ->where('status', 'coverage')
+            ->whereNull('check_out') // لم يتم تسجيل انصراف
+            ->exists();
+
+        // إذا كان هناك سجل حضور سابق
         if ($existingAttendance) {
-            return response()->json([
-                'message' => 'You have already checked in today.',
-                'attendance' => $existingAttendance,
-            ], 200);
+            // إذا كان الحضور السابق هو تغطية ولم يتم تسجيل انصراف، لا يمكن تسجيل دخول جديد
+            if ($existingAttendance->status === 'coverage' && $activeCoverage) {
+                return response()->json([
+                    'message' => 'You are currently under a coverage session. Please check out first before checking in again.',
+                    'attendance' => $existingAttendance,
+                ], 400);
+            }
+
+            // التحقق من حالة الحضور السابقة
+            switch ($existingAttendance->status) {
+                case 'present':
+                    return response()->json([
+                        'message' => 'You have already checked in today.',
+                        'attendance' => $existingAttendance,
+                    ], 200);
+
+                case 'off':
+                    return response()->json([
+                        'message' => 'You are off today. No need to check in.',
+                        'attendance' => $existingAttendance,
+                    ], 400);
+
+                case 'M':
+                    return response()->json([
+                        'message' => 'You are on a Morbid leave today. No need to check in.',
+                        'attendance' => $existingAttendance,
+                    ], 400);
+
+                case 'absent':
+                    return response()->json([
+                        'message' => 'You have been marked as absent today. Please contact your supervisor if this is incorrect.',
+                        'attendance' => $existingAttendance,
+                    ], 400);
+
+                case 'leave':
+                    return response()->json([
+                        'message' => 'You are on a paid leave today. No need to check in.',
+                        'attendance' => $existingAttendance,
+                    ], 400);
+
+                case 'UV':
+                    return response()->json([
+                        'message' => 'You are on an unpaid leave today. No need to check in.',
+                        'attendance' => $existingAttendance,
+                    ], 400);
+            }
         }
 
         // تسجيل حضور طبيعي جديد
@@ -217,32 +279,6 @@ class AttendanceController extends Controller
 
         // 🔹 إرسال الإشعار عبر `Pusher` للجميع مرة واحدة فقط
         event(new NewNotification($notificationData));
-
-        // event(new NewNotification([
-        //     'title' => 'تسجيل تغطية جديدة',
-        //     'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",
-        //     'date' => now()->toDateTimeString(),
-        //     'employee_id' => $employee->id,
-        //     'employee_name' => $employeeName,
-        //     'zone' => $zoneName,
-        //     'attendance_id' => $attendance->id,
-        // ]));
-
-        //    // إرسال الإشعار إلى جميع المدراء والموارد البشرية
-        //    $employeeName = $employee->name();
-        //    $zone = Zone::find($request->zone_id);
-        //    $zoneName = $zone ? $zone->name : 'غير محدد';
-
-        //    // بث الإشعار عبر Laravel Broadcasting باستخدام `NewNotification`
-        //    event(new NewNotification([
-        //        'title' => 'تسجيل تغطية جديدة',
-        //        'message' => "📢 قام الموظف **{$employeeName}** بتسجيل تغطية جديدة في **{$zoneName}**.",
-        //        'date' => now()->toDateTimeString(),
-        //        'employee_id' => $employee->id,
-        //        'employee_name' => $employeeName,
-        //        'zone' => $zoneName,
-        //        'attendance_id' => $attendance->id,
-        //    ]));
 
         return response()->json([
             'message' => 'Checked in successfully.',
