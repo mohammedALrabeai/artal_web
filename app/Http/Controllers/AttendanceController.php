@@ -129,13 +129,13 @@ class AttendanceController extends Controller
                     return response()->json([
                         'message' => 'You have already checked in today.',
                         'attendance' => $existingAttendance,
-                    ], 200);
+                    ], 400);
 
                 case 'off':
                     return response()->json([
                         'message' => 'You are off today. No need to check in.',
                         'attendance' => $existingAttendance,
-                    ], 200);
+                    ], 400);
 
                 case 'M':
                     return response()->json([
@@ -147,7 +147,7 @@ class AttendanceController extends Controller
                     return response()->json([
                         'message' => 'You have been marked as absent today. Please contact your supervisor if this is incorrect.',
                         'attendance' => $existingAttendance,
-                    ], 200);
+                    ], 400);
 
                 case 'leave':
                     return response()->json([
