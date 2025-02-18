@@ -81,7 +81,7 @@ class AttachmentResource extends Resource
                 // ->preserveFilenames()
                 ->multiple()
                 ->maxFiles(5)
-                ->maxSize(10240),
+                ->maxSize(30720),
 
         ]);
     }

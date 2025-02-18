@@ -270,12 +270,23 @@ class Request extends Model
                     'request_id' => $this->id,
                 ]);
             }
+        } elseif ($this->type === 'coverage' && $this->coverage) {
+
+            // ✅ تحديث حالة التغطية إلى "rejected"
+            $this->coverage->update([
+                'status' => 'rejected',
+            ]);
+
+            // ✅ تحديث حالة الحضور المرتبط بالتغطية إلى "rejected"
+            $this->coverage->attendance()->update([
+                'approval_status' => 'rejected',
+            ]);
         }
 
-        // إشعار الموظف بالرفض
-        $this->employee()->notify(
-            new RequestStatusNotification($this, 'rejected', $approver, $comments)
-        );
+        // // إشعار الموظف بالرفض
+        // $this->employee()->notify(
+        //     new RequestStatusNotification($this, 'rejected', $approver, $comments)
+        // );
         \Log::info('Notification sent successfully.');
 
     }
