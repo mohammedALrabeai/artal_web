@@ -351,13 +351,14 @@ class AttendanceResource extends Resource
                             ->reactive(),
 
                         // اختيار الموظف البديل إذا كان السبب يتطلب ذلك
-                        Forms\Components\Select::make('absent_employee_id')
-                            ->label(__('Select Replacement Employee'))
-                            ->options(\App\Models\Employee::pluck('first_name', 'id'))
-                            ->searchable()
-                            ->required(fn ($get) => CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement() ?? false)
+                        // Forms\Components\Select::make('absent_employee_id')
+                        //     ->label(__('Select Replacement Employee'))
+                        //     ->options(\App\Models\Employee::pluck('first_name', 'id'))
+                        //     ->searchable()
+                        //     ->required(fn ($get) => CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement() ?? false)
+                        //     ->hidden(fn ($get) => ! CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement()),
+                        EmployeeSelect::make('absent_employee_id')
                             ->hidden(fn ($get) => ! CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement()),
-
                         // ملاحظات إضافية
                         Forms\Components\Textarea::make('notes')
                             ->label(__('Notes'))

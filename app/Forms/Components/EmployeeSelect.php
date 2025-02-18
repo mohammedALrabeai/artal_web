@@ -2,8 +2,8 @@
 
 namespace App\Forms\Components;
 
-use Filament\Forms\Components\Select;
 use App\Models\Employee;
+use Filament\Forms\Components\Select;
 
 class EmployeeSelect extends Select
 {
@@ -32,14 +32,14 @@ class EmployeeSelect extends Select
             ->limit(50)
             ->get()
             ->mapWithKeys(fn ($employee) => [
-                $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})"
+                $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})",
             ]);
     }
-    
 
     protected static function getEmployeeLabel($value)
     {
         $employee = Employee::active()->find($value);
+
         return $employee
             ? "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})"
             : null;
@@ -51,7 +51,7 @@ class EmployeeSelect extends Select
             ->limit(50) // تحميل أول 50 موظفًا بشكل افتراضي
             ->get()
             ->mapWithKeys(fn ($employee) => [
-                $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})"
+                $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})",
             ])
             ->toArray();
     }
