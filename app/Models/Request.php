@@ -274,7 +274,7 @@ class Request extends Model
 
             // ✅ تحديث حالة التغطية إلى "rejected"
             $this->coverage->update([
-                'status' => 'rejected',
+                'status' => 'cancelled',
             ]);
 
             // ✅ تحديث حالة الحضور المرتبط بالتغطية إلى "rejected"
