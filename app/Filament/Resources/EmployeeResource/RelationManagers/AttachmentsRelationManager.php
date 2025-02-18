@@ -8,10 +8,6 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 
-
-
-
-
 class AttachmentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'attachments';
@@ -20,82 +16,50 @@ class AttachmentsRelationManager extends RelationManager
 
     protected static ?string $title = 'المرفقات'; // عنوان الجدول
 
-
-
-    public  function form(Forms\Form $form): Forms\Form
+    public function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([
             Forms\Components\TextInput::make('title')
-            ->label(__('Title'))
-            ->required(),
-        
-        Forms\Components\Select::make('type')
-            ->label(__('Type'))
-            ->options([
-                'text' => __('Text'),
-                'link' => __('Link'),
-                'image' => __('Image'),
-                'video' => __('Video'),
-                'file' => __('File'),
-            ])
-            ->required()
-            ->reactive(),
+                ->label(__('Title'))
+                ->required(),
 
-        Forms\Components\Textarea::make('content')
-            ->label(__('Content (Text)'))
-            ->nullable()
-            ->visible(fn ($get) => $get('type') === 'text'),
+            // ✅ استخدام `EmployeeSelect` لاختيار الموظف مع البحث المتقدم
+            // EmployeeSelect::make('model_id')
+            //     ->label(__('Employee'))
+            //     ->required(),
 
-        Forms\Components\TextInput::make('content')
-            ->label(__('Content (Link)'))
-            ->nullable()
-            ->visible(fn ($get) => $get('type') === 'link')
-            ->url(),
-            // Forms\Components\TextInput::make('image_url')
-        Forms\Components\FileUpload::make('image_url')
-            ->label(__('Content (Image)'))
-            // ->nullable()
-            ->disk('s3')
-            ->directory('attachments/images')
-            ->visibility('public')
-            ->visible(fn ($get) => $get('type') === 'image'),
+            // ✅ تعيين نوع الموديل تلقائيًا ليكون `Employee`
+            Forms\Components\Hidden::make('model_type')
+                ->default('App\Models\Employee'),
 
-        Forms\Components\FileUpload::make('video_url')
-            ->label(__('Content (Video)'))
-            ->nullable()
-            ->disk('s3')
-            ->directory('attachments/videos')
-            ->visibility('public')
-            ->acceptedFileTypes(['video/*'])
-            ->visible(fn ($get) => $get('type') === 'video'),
+            Forms\Components\DatePicker::make('expiry_date')
+                ->label(__('Expiry Date'))
+                ->nullable(),
 
-        Forms\Components\FileUpload::make('file_url')
-            ->label(__('Content (File)'))
-            ->nullable()
-            ->disk('s3')
-            ->directory('attachments/files')
-            ->visibility('public')
-            ->acceptedFileTypes(['application/*'])
-            ->visible(fn ($get) => $get('type') === 'file'),
+            Forms\Components\Textarea::make('notes')
+                ->label(__('Notes'))
+                ->nullable(),
 
-        Forms\Components\DatePicker::make('expiry_date')
-            ->label(__('Expiry Date'))
-            ->nullable(),
-
-        Forms\Components\Textarea::make('notes')
-            ->label(__('Notes'))
-            ->nullable(),
+            // ✅ استخدام Spatie Media Library لرفع جميع أنواع الملفات
+            Forms\Components\SpatieMediaLibraryFileUpload::make('attachments')
+                ->label(__('Upload File'))
+                ->collection('attachments')
+                ->disk('s3')
+                // ->preserveFilenames()
+                ->multiple()
+                ->maxFiles(5)
+                ->maxSize(10240),
         ]);
     }
 
-    public  function table(Tables\Table $table): Tables\Table
+    public function table(Tables\Table $table): Tables\Table
     {
         return AttachmentResource::table($table)
-        ->modifyQueryUsing(function (Builder $query) {
-            $query->orWhereHas('model', function ($subQuery) {
-                $subQuery->where('employee_id', $this->getOwnerRecord()->id);
-            });
-        })
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->orWhereHas('model', function ($subQuery) {
+                    $subQuery->where('employee_id', $this->getOwnerRecord()->id);
+                });
+            })
             // ->columns([
             //     Tables\Columns\TextColumn::make('type')
             //         ->label(__('Type')),
@@ -108,8 +72,8 @@ class AttachmentsRelationManager extends RelationManager
             //         ->label(__('Notes')),
             // ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
-                
+                Tables\Actions\CreateAction::make(),
+
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
