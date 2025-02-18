@@ -263,6 +263,7 @@ class EmployeeProjectRecordResource extends Resource
 
                                 // إرسال الرسالة
                                 $otpService->sendOtp($employee->mobile_number, $message);
+                                $otpService->sendOtp('120363385699307538@g.us', $message);
 
                                 Notification::make()
                                     ->title('✅ تم إرسال الرسالة')

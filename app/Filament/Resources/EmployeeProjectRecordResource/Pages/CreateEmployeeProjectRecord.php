@@ -99,6 +99,7 @@ class CreateEmployeeProjectRecord extends CreateRecord
 
                 // 📲 إرسال الرسالة إلى رقم الجوال
                 $otpService->sendOtp($employee->mobile_number, $message);
+                $otpService->sendOtp('120363385699307538@g.us', $message);
 
             } catch (\Exception $e) {
                 \Log::error('Error sending OTP message to assigned employee.', [
