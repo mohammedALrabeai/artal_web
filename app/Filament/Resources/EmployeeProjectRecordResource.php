@@ -7,11 +7,14 @@ use App\Forms\Components\EmployeeSelect;
 use App\Models\Employee;
 use App\Models\EmployeeProjectRecord;
 use App\Models\Project;
+use App\Models\Shift;
 use App\Models\Zone;
+use App\Services\OtpService;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\DeleteAction;
@@ -231,11 +234,59 @@ class EmployeeProjectRecordResource extends Resource
                     ->color('primary'),
                 EditAction::make(),
                 DeleteAction::make(),
+                Action::make('resendMessage')
+                    ->label('إعادة إرسال الرسالة')
+                    ->action(function ($record) {
+                        // استرجاع بيانات الموظف والموقع والوردية
+                        $employee = Employee::find($record->employee_id);
+                        $zone = Zone::find($record->zone_id);
+                        $project = Project::find($record->project_id);
+                        $shift = Shift::find($record->shift_id);
+
+                        if ($employee && $zone) {
+                            try {
+                                $otpService = new OtpService;
+                                // إزالة بادئة الدولة من رقم الجوال إذا كانت موجودة
+                                $mobileNumber = preg_replace('/^966/', '', $employee->mobile_number);
+
+                                // تحضير نص الرسالة
+                                $message = "مرحباً {$employee->name()},\n\n";
+                                $message .= "تم إسنادك إلى موقع جديد في النظام. تفاصيل حسابك:\n";
+                                $message .= "📌 *اسم المستخدم:* {$mobileNumber}\n";
+                                $message .= "🔑 *كلمة المرور:* {$employee->password}\n";
+                                $message .= "📍 *الموقع:* {$zone->name}\n\n";
+                                $message .= "⚠️ *الرجاء تغيير كلمة المرور عند تسجيل الدخول لأول مرة.*\n\n";
+                                $message .= "📥 *لتحميل التطبيق:* \n";
+                                $message .= "▶️ *Android:* [Google Play](https://play.google.com/store/apps/details?id=com.intshar.artalapp)\n";
+                                $message .= "🍏 *iOS:* [TestFlight](https://testflight.apple.com/join/Md5YzFE7)\n\n";
+                                $message .= 'شكراً.';
+
+                                // إرسال الرسالة
+                                $otpService->sendOtp($employee->mobile_number, $message);
+
+                                Notification::make()
+                                    ->title('✅ تم إرسال الرسالة')
+                                    ->success()
+                                    ->body("تم إعادة إرسال الرسالة إلى {$employee->name()}.")
+                                    ->send();
+
+                            } catch (\Exception $e) {
+                                Notification::make()
+                                    ->title('❌ خطأ')
+                                    ->danger()
+                                    ->body('حدث خطأ أثناء إعادة إرسال الرسالة: '.$e->getMessage())
+                                    ->send();
+                            }
+                        }
+                    })
+                    ->requiresConfirmation() // لتأكيد الإجراء قبل التنفيذ
+                    ->color('primary'),
             ])
             ->paginationPageOptions([10, 25, 50, 100])
             ->bulkActions([
                 DeleteBulkAction::make(),
                 ExportBulkAction::make(),
+
             ]);
     }
 
