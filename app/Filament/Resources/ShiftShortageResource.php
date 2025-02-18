@@ -27,10 +27,10 @@ class ShiftShortageResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('zone.project.area.name')->label('المنطقة'),
-                Tables\Columns\TextColumn::make('zone.project.name')->label('المشروع'),
-                Tables\Columns\TextColumn::make('zone.name')->label('الموقع'),
-                Tables\Columns\TextColumn::make('name')->label('الوردية'),
+                Tables\Columns\TextColumn::make('zone.project.area.name')->label('المنطقة')->searchable(),
+                Tables\Columns\TextColumn::make('zone.project.name')->label('المشروع')->searchable(),
+                Tables\Columns\TextColumn::make('zone.name')->label('الموقع')->searchable(),
+                Tables\Columns\TextColumn::make('name')->label('الوردية')->searchable(),
                 Tables\Columns\TextColumn::make('emp_no')->label('الموظفين المطلوبين'),
 
                 Tables\Columns\TextColumn::make('assigned_employees')
@@ -80,7 +80,7 @@ class ShiftShortageResource extends Resource
                     ->relationship('zone', 'name'),
 
             ])
-            ->searchable()
+
             ->paginated();
     }
 
