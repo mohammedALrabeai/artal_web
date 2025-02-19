@@ -103,7 +103,8 @@ class ListEmployees extends ListRecords
                     );
 
                     return redirect($url);
-                }),
+                })
+                ->modalSubmitActionLabel('تصدير'),
 
             // Actions\Action::make('exportAll')
             // ->label(__('Export All'))

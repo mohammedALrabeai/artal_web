@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Enums;
 
 enum Bank: string
@@ -12,6 +13,7 @@ enum Bank: string
     case AlBilad = 'AlBilad';
     case AlInma = 'AlInma';
     case AlJazira = 'AlJazira';
+    case SABB2 = 'SABB2';
 
     public function label(): string
     {
@@ -25,6 +27,8 @@ enum Bank: string
             self::AlBilad => __('AlBilad Bank'),
             self::AlInma => __('AlInma Bank'),
             self::AlJazira => __('Bank AlJazira'),
+            self::SABB2 => __('Saudi British Bank'),
+
         };
     }
 }

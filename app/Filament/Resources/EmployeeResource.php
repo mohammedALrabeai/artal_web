@@ -1053,7 +1053,11 @@ class EmployeeResource extends Resource
                         );
 
                         return redirect($url);
-                    }),
+                    })
+                    ->modalSubmitActionLabel('تصدير')
+                // ->modalTitle('تصدير الحضور')
+                // ->modalButton('تصدير')           // اسم زر الإرسال
+                ,
 
                 // Tables\Actions\BulkAction::make('exportAll')
                 // ->label(__('Export All to PDF'))
