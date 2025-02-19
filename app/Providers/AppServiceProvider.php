@@ -2,17 +2,18 @@
 
 namespace App\Providers;
 
-use App\View\Components\NotificationBell;
-use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
 use Filament\Facades\Filament;
-use Filament\Notifications\Livewire\DatabaseNotifications;
-use Filament\Notifications\Notification;
 use Filament\Support\Assets\Js;
-use Filament\Support\Facades\FilamentAsset;
-use Illuminate\Support\Facades\Blade;
+use Filament\Support\Assets\Css;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Filament\Notifications\Notification;
+use App\View\Components\NotificationBell;
+use Filament\Support\Facades\FilamentAsset;
+use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
+use Filament\Notifications\Livewire\DatabaseNotifications;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
         //     ])->render();
         // });
         // Blade::component('notification-bell', NotificationBell::class);
+        // Filament::registerTheme(asset('css/filament-overrides.css'));
+        FilamentAsset::register([
+            Css::make('table-width-override', resource_path('css/filament-overrides.css')),
+        ]);
+
         FilamentAsset::register([
             Js::make('echo', Vite::asset('resources/js/echo.js'))->module(),
         ]);
