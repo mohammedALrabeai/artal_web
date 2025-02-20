@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\SlideController;
 use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ProjectController;
 use App\Services\AttendanceService;
@@ -38,8 +39,6 @@ Route::middleware('auth:employee')->group(function () {
 Route::middleware(['auth:employee'])->group(function () {
     Route::get('/employee/zones', [EmployeeController::class, 'getEmployeeZones']);
 });
-
-use App\Http\Controllers\Auth\EmployeeAuthController;
 
 Route::middleware('auth:employee')->get('/employee/notifications', [EmployeeNotificationController::class, 'getNotifications']);
 
