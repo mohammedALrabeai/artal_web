@@ -28,7 +28,6 @@ enum Bank: string
             self::AlInma => __('AlInma Bank'),
             self::AlJazira => __('Bank AlJazira'),
             self::SABB2 => __('Saudi British Bank'),
-
         };
     }
 }

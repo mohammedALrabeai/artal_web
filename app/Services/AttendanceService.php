@@ -24,33 +24,34 @@ class AttendanceService
                 Log::info('Processing employee', ['employee_id' => $record->employee_id]);
 
                 // التأكد إذا كان اليوم يوم عمل
-                if (!$record->isWorkingDay()) {
+                if (! $record->isWorkingDay()) {
                     Log::info('Not a working day', ['employee_id' => $record->employee_id]);
 
                     $this->markAttendance($record, 'off');
+
                     continue; // الانتقال إلى الموظف التالي
                 }
 
                 // استرجاع وقت الورديّة
                 $shift = $record->shift;
-                if (!$shift) {
+                if (! $shift) {
                     Log::info('No shift found', ['employee_id' => $record->employee_id]);
+
                     continue; // إذا لم تكن هناك وردية، تجاوز الموظف
                 }
-
 
                 $now = Carbon::now('Asia/Riyadh'); // الوقت الحالي بتوقيت الرياض
                 $today = Carbon::today('Asia/Riyadh'); // التاريخ الحالي بتوقيت الرياض
 
                 // وقت بداية الصباح مع التاريخ الحالي
                 $morningStart = $today->copy()->setTimeFrom(Carbon::createFromTimeString($shift->morning_start));
-                
+
                 // حساب وقت الدخول المبكر
                 $earlyEntryTime = $morningStart->copy()->subMinutes($shift->early_entry_time);
-                
+
                 // حساب وقت آخر دخول
                 $lastEntryTime = $morningStart->copy()->addMinutes($shift->last_entry_time);
-                
+
                 // التحقق من النتائج
                 // dd(   [
                 //     'morning_start' => $morningStart,
@@ -58,13 +59,13 @@ class AttendanceService
                 //     'last_entry_time' => $lastEntryTime,
                 //     'current_time' => Carbon::now('Asia/Riyadh'),
                 // ]);
-                  // عرض الأوقات المحسوبة للتأكد
-            Log::info('Calculated Times', [
-                'morning_start' => $morningStart,
-                'early_entry_time' => $earlyEntryTime,
-                'last_entry_time' => $lastEntryTime,
-                'current_time' => $now,
-            ]);
+                // عرض الأوقات المحسوبة للتأكد
+                Log::info('Calculated Times', [
+                    'morning_start' => $morningStart,
+                    'early_entry_time' => $earlyEntryTime,
+                    'last_entry_time' => $lastEntryTime,
+                    'current_time' => $now,
+                ]);
                 // التحقق إذا تم تحضير الموظف مسبقاً
                 $attendanceExists = Attendance::where('employee_id', $record->employee_id)
                     ->whereDate('date', $now->toDateString())
@@ -72,16 +73,17 @@ class AttendanceService
 
                 if ($attendanceExists) {
                     Log::info('Attendance already exists', ['employee_id' => $record->employee_id]);
+
                     continue; // إذا تم التحضير، تجاوز الموظف
                 }
-              // التحقق من حالة الحضور بناءً على الوقت
-            if ($now->between($earlyEntryTime, $lastEntryTime)) {
-                Log::info('Within shift time', ['employee_id' => $record->employee_id]);
-                // $this->markAttendance($record, 'present'); // تسجيل الحضور
-            } elseif ($now->greaterThan($lastEntryTime)) {
-                Log::info('Shift time exceeded', ['employee_id' => $record->employee_id]);
-                $this->markAttendance($record, 'absent'); // تسجيل الغياب
-            }
+                // التحقق من حالة الحضور بناءً على الوقت
+                if ($now->between($earlyEntryTime, $lastEntryTime)) {
+                    Log::info('Within shift time', ['employee_id' => $record->employee_id]);
+                    // $this->markAttendance($record, 'present'); // تسجيل الحضور
+                } elseif ($now->greaterThan($lastEntryTime)) {
+                    Log::info('Shift time exceeded', ['employee_id' => $record->employee_id]);
+                    $this->markAttendance($record, 'absent'); // تسجيل الغياب
+                }
             }
             Log::info('processAttendance completed successfully');
         } catch (\Exception $e) {
@@ -105,7 +107,16 @@ class AttendanceService
                 'employee_id' => $record->employee_id,
                 'status' => $status,
             ]);
+
             return; // لا تقم بتسجيل سجل جديد
+        }
+
+        // ✅ إذا كان الموظف غائبًا، تحديث الحقل `out_of_zone` إلى `false`
+        if ($status === 'absent') {
+            $record->employee->update(['out_of_zone' => false]);
+            Log::info('Employee marked as not out_of_zone', [
+                'employee_id' => $record->employee_id,
+            ]);
         }
 
         // إذا لم يكن هناك سجل موجود، قم بإنشاء سجل جديد

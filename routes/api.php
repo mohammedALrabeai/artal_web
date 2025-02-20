@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SlideController;
 use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\ProjectController;
 use App\Services\AttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Pusher\Pusher;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -39,7 +39,7 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::get('/employee/zones', [EmployeeController::class, 'getEmployeeZones']);
 });
 
-use App\Http\Controllers\EmployeeNotificationController;
+use App\Http\Controllers\Auth\EmployeeAuthController;
 
 Route::middleware('auth:employee')->get('/employee/notifications', [EmployeeNotificationController::class, 'getNotifications']);
 
@@ -51,7 +51,7 @@ Route::middleware('auth:employee')->group(function () {
     Route::get('employee/schedule', [EmployeeController::class, 'schedule']);
 });
 
-use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\EmployeeCoordinateController;
 
 Route::prefix('settings')->group(function () {
     Route::get('/', [SettingsController::class, 'index']); // الحصول على جميع الإعدادات
@@ -106,8 +106,6 @@ Route::post('/test-broadcast', function () {
 
     return response()->json(['status' => 'Event broadcasted successfully']);
 });
-
-use Pusher\Pusher;
 
 Route::post('/test-notification', function () {
     // بيانات الإشعار التجريبي
@@ -215,7 +213,7 @@ Route::prefix('admin')->group(function () {
     Route::delete('/notifications/all', [AdminNotificationController::class, 'deleteAllNotifications']);
 });
 
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\EmployeeNotificationController;
 
 Route::post('/login', function (Request $request) {
     $credentials = $request->validate([
@@ -240,9 +238,25 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return response()->json($request->user());
 });
 
-use App\Http\Controllers\Api\OperationNotificationController;
+use App\Http\Controllers\Api\AdminNotificationController;
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/operation-notifications', [OperationNotificationController::class, 'index']); // استرجاع الإشعارات
     Route::post('/operation-notifications/{id}/read', [OperationNotificationController::class, 'markAsRead']); // وضع علامة مقروء
 });
+
+use App\Http\Controllers\attendance\CoverageController;
+
+Route::prefix('coverage-requests')->group(function () {
+    // ✅ إرسال طلب تغطية جديد
+    Route::post('/', [CoverageController::class, 'submitCoverageRequest']);
+
+    // ✅ رفض طلب التغطية
+    Route::post('/{attendance_id}/reject', [CoverageController::class, 'rejectCoverageRequest']);
+
+    // ✅ الموافقة على طلب التغطية
+    Route::middleware('auth:sanctum')->post('/{attendance_id}/approve', [CoverageController::class, 'approveCoverageRequest']);
+});
+
+// ✅ إرجاع قائمة أسباب التغطية والموظفين المتاحين
+Route::get('/coverage-reasons', [CoverageController::class, 'getCoverageReasons']);
