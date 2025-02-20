@@ -14,6 +14,8 @@ enum Bank: string
     case AlInma = 'AlInma';
     case AlJazira = 'AlJazira';
     case SABB2 = 'SABB2';
+    case Meem = 'Meem'; // ✅ إضافة بنك ميم
+
 
     public function label(): string
     {
@@ -28,6 +30,8 @@ enum Bank: string
             self::AlInma => __('AlInma Bank'),
             self::AlJazira => __('Bank AlJazira'),
             self::SABB2 => __('Saudi British Bank'),
+            self::Meem => __('Meem Bank'), // ✅ إضافة تسمية بنك ميم
+
         };
     }
 }
