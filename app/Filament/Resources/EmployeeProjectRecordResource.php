@@ -2,31 +2,32 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
-use App\Forms\Components\EmployeeSelect;
-use App\Models\Employee;
-use App\Models\EmployeeProjectRecord;
-use App\Models\Project;
-use App\Models\Shift;
-use App\Models\Zone;
-use App\Services\OtpService;
 use Filament\Forms;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
+use App\Models\Zone;
+use App\Models\Shift;
+use App\Models\Project;
+use App\Models\Employee;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
+use Filament\Tables\Table;
+use App\Services\OtpService;
+use Illuminate\Support\Carbon;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\DeleteBulkAction;
+use App\Models\EmployeeProjectRecord;
+use Filament\Forms\Components\Select;
+use App\Tables\Filters\EmployeeFilter;
 use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Columns\TextColumn;
+use App\Forms\Components\EmployeeSelect;
+use Filament\Notifications\Notification;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Table;
-use Illuminate\Support\Carbon;
+use Filament\Tables\Actions\DeleteBulkAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 
 class EmployeeProjectRecordResource extends Resource
 {
@@ -210,7 +211,9 @@ class EmployeeProjectRecordResource extends Resource
             ->filters([
                 SelectFilter::make('project_id')
                     ->label(__('Project'))
-                    ->options(Project::all()->pluck('name', 'id')),
+                    ->options(Project::all()->pluck('name', 'id'))
+                    ->searchable()
+                    ->multiple(),
 
                 SelectFilter::make('zone_id')
                     ->label(__('Zone'))
@@ -218,9 +221,10 @@ class EmployeeProjectRecordResource extends Resource
                     ->searchable()
                     ->multiple(),
 
-                SelectFilter::make('employee_id')
-                    ->label(__('Employee'))
-                    ->options(Employee::all()->pluck('first_name', 'id')),
+                // SelectFilter::make('employee_id')
+                //     ->label(__('Employee'))
+                //     ->options(Employee::all()->pluck('first_name', 'id')),
+                EmployeeFilter::make('employee_filter'),
 
                 TernaryFilter::make('status')
                     ->label(__('Status'))
