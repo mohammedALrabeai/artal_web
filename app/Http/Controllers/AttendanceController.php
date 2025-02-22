@@ -524,66 +524,67 @@ class AttendanceController extends Controller
         $request->validate([
             'project_id' => 'required|integer',
             'zone_id' => 'required|integer',
-            'shift_id' => 'required|integer',
-            'date' => 'required|date', // تأكد أن التاريخ موجود وصحيح
+            'shift_id' => 'sometimes|nullable|integer', // السماح بعدم وجوده
+            'date' => 'required|date',
         ]);
 
         try {
             // جلب البيانات من المدخلات
             $projectId = $request->input('project_id');
             $zoneId = $request->input('zone_id');
-            $shiftId = $request->input('shift_id');
+            $shiftId = $request->input('shift_id', null); // استخدم null افتراضيًا إذا لم يتم تمريره
+
             $date = Carbon::parse($request->input('date'));
 
-            // جلب الموظفين المرتبطين بالمشروع، الموقع، والوردية
-            $employeeRecords = EmployeeProjectRecord::with('employee')
-                ->where('project_id', $projectId)
-                ->where('zone_id', $zoneId)
-                ->where('shift_id', $shiftId)
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('end_date')
-                        ->orWhere('end_date', '>=', $date);
-                })
-                ->where('start_date', '<=', $date)
-                ->get();
+            // إذا كان shift_id موجودًا، جلب الموظفين الأساسيين
+            $regularEmployees = collect(); // تهيئة قائمة الموظفين الأساسيين
 
-            // قائمة الموظفين
-            $employees = $employeeRecords->map(function ($record) {
-                return $record->employee;
-            });
+            if ($shiftId) {
+                $employeeRecords = EmployeeProjectRecord::with('employee')
+                    ->where('project_id', $projectId)
+                    ->where('zone_id', $zoneId)
+                    ->where('shift_id', $shiftId)
+                    ->where(function ($query) use ($date) {
+                        $query->whereNull('end_date')
+                            ->orWhere('end_date', '>=', $date);
+                    })
+                    ->where('start_date', '<=', $date)
+                    ->get();
 
-            // جلب حالات التحضير من جدول Attendance
-            $attendanceRecords = Attendance::where('zone_id', $zoneId)
-                ->where('shift_id', $shiftId)
-                ->whereDate('date', $date)
-                ->get();
+                $employees = $employeeRecords->map(function ($record) {
+                    return $record->employee;
+                });
+
+                $attendanceRecords = Attendance::where('zone_id', $zoneId)
+                    ->where('shift_id', $shiftId)
+                    ->whereDate('date', $date)
+                    ->get();
+
+                $regularEmployees = $employees->map(function ($employee) use ($attendanceRecords) {
+                    $attendance = $attendanceRecords->firstWhere('employee_id', $employee->id);
+
+                    return [
+                        'employee_id' => $employee->id,
+                        'employee_name' => $employee->first_name.' '.$employee->father_name.' '.$employee->family_name,
+                        'status' => $attendance ? $attendance->status : 'absent',
+                        'check_in' => $attendance ? $attendance->check_in : null,
+                        'check_out' => $attendance ? $attendance->check_out : null,
+                        'mobile_number' => $employee->mobile_number,
+                        'phone_number' => $employee->phone_number,
+                        'notes' => $attendance ? $attendance->notes : null,
+                        'is_coverage' => false,
+                        'out_of_zone' => $employee ? $employee->out_of_zone : false,
+                    ];
+                });
+            }
 
             // جلب موظفي التغطية الحاليين
             $coverageAttendances = Attendance::with('employee')
                 ->where('zone_id', $zoneId)
-                // ->where('shift_id', $shiftId)
                 ->where('status', 'coverage')
                 ->whereNull('check_out')
                 ->whereDate('date', $date)
                 ->get();
-
-            // تحضير النتيجة للموظفين الأساسيين
-            $regularEmployees = $employees->map(function ($employee) use ($attendanceRecords) {
-                $attendance = $attendanceRecords->firstWhere('employee_id', $employee->id);
-
-                return [
-                    'employee_id' => $employee->id,
-                    'employee_name' => $employee->first_name.' '.$employee->father_name.' '.$employee->family_name,
-                    'status' => $attendance ? $attendance->status : 'absent',
-                    'check_in' => $attendance ? $attendance->check_in : null,
-                    'check_out' => $attendance ? $attendance->check_out : null,
-                    'mobile_number' => $employee->mobile_number,
-                    'phone_number' => $employee->phone_number,
-                    'notes' => $attendance ? $attendance->notes : null,
-                    'is_coverage' => false,
-                    'out_of_zone' => $employee ? $employee->out_of_zone : false,
-                ];
-            });
 
             // تحضير النتيجة لموظفي التغطية
             $coverageEmployees = $coverageAttendances->map(function ($attendance) {
