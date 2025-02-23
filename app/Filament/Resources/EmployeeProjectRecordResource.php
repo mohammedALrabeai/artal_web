@@ -2,32 +2,32 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\Zone;
-use App\Models\Shift;
-use App\Models\Project;
+use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
+use App\Forms\Components\EmployeeSelect;
 use App\Models\Employee;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
+use App\Models\EmployeeProjectRecord;
+use App\Models\Project;
+use App\Models\Shift;
+use App\Models\Zone;
 use App\Services\OtpService;
-use Illuminate\Support\Carbon;
+use App\Tables\Filters\EmployeeFilter;
+use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
-use App\Models\EmployeeProjectRecord;
-use Filament\Forms\Components\Select;
-use App\Tables\Filters\EmployeeFilter;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Columns\TextColumn;
-use App\Forms\Components\EmployeeSelect;
-use Filament\Notifications\Notification;
-use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Columns\BooleanColumn;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\BooleanColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 
 class EmployeeProjectRecordResource extends Resource
 {
@@ -208,6 +208,9 @@ class EmployeeProjectRecordResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
             ])
+
+            // ->persistSearchInSession()
+            // ->persistColumnSearchesInSession()
             ->filters([
                 SelectFilter::make('project_id')
                     ->label(__('Project'))
