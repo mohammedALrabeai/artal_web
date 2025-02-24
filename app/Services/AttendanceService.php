@@ -43,29 +43,23 @@ class AttendanceService
                 $now = Carbon::now('Asia/Riyadh'); // الوقت الحالي بتوقيت الرياض
                 $today = Carbon::today('Asia/Riyadh'); // التاريخ الحالي بتوقيت الرياض
 
-                // وقت بداية الصباح مع التاريخ الحالي
-                $morningStart = $today->copy()->setTimeFrom(Carbon::createFromTimeString($shift->morning_start));
+                // تحديد الفترة حسب الدورة الزمنية (صباحية أو مسائية)
+                $shiftType = $this->getShiftTypeForToday($record);
 
-                // حساب وقت الدخول المبكر
-                $earlyEntryTime = $morningStart->copy()->subMinutes($shift->early_entry_time);
+                // تحديد مواعيد الوردية بناءً على نوع الفترة
+                if ($shiftType === 'morning') {
+                    $shiftStart = $today->copy()->setTimeFrom(Carbon::createFromTimeString($shift->morning_start));
+                    $lastEntryTime = $shiftStart->copy()->addMinutes($shift->last_entry_time);
+                } else {
+                    $shiftStart = $today->copy()->setTimeFrom(Carbon::createFromTimeString($shift->evening_start));
+                    $lastEntryTime = $shiftStart->copy()->addMinutes($shift->last_entry_time);
 
-                // حساب وقت آخر دخول
-                $lastEntryTime = $morningStart->copy()->addMinutes($shift->last_entry_time);
+                    // إذا تجاوزت النهاية منتصف الليل
+                    if ($lastEntryTime->lessThan($shiftStart)) {
+                        $lastEntryTime->addDay();
+                    }
+                }
 
-                // التحقق من النتائج
-                // dd(   [
-                //     'morning_start' => $morningStart,
-                //     'early_entry_time' => $earlyEntryTime,
-                //     'last_entry_time' => $lastEntryTime,
-                //     'current_time' => Carbon::now('Asia/Riyadh'),
-                // ]);
-                // عرض الأوقات المحسوبة للتأكد
-                Log::info('Calculated Times', [
-                    'morning_start' => $morningStart,
-                    'early_entry_time' => $earlyEntryTime,
-                    'last_entry_time' => $lastEntryTime,
-                    'current_time' => $now,
-                ]);
                 // التحقق إذا تم تحضير الموظف مسبقاً
                 $attendanceExists = Attendance::where('employee_id', $record->employee_id)
                     ->whereDate('date', $now->toDateString())
@@ -76,19 +70,36 @@ class AttendanceService
 
                     continue; // إذا تم التحضير، تجاوز الموظف
                 }
-                // التحقق من حالة الحضور بناءً على الوقت
-                if ($now->between($earlyEntryTime, $lastEntryTime)) {
-                    Log::info('Within shift time', ['employee_id' => $record->employee_id]);
-                    // $this->markAttendance($record, 'present'); // تسجيل الحضور
-                } elseif ($now->greaterThan($lastEntryTime)) {
-                    Log::info('Shift time exceeded', ['employee_id' => $record->employee_id]);
-                    $this->markAttendance($record, 'absent'); // تسجيل الغياب
+
+                // ✅ تسجيل الموظف كـ غائب إذا تجاوز الوقت الحالي وقت آخر دخول
+                if ($now->greaterThan($lastEntryTime)) {
+                    $this->markAttendance($record, 'absent');
                 }
             }
             Log::info('processAttendance completed successfully');
         } catch (\Exception $e) {
             Log::error('Error in processAttendance', ['message' => $e->getMessage()]);
         }
+    }
+
+    private function getShiftTypeForToday($record)
+    {
+        $pattern = $record->shift->zone->pattern;
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+
+        $startDate = Carbon::parse($record->shift->start_date);
+        $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
+        $cycleNumber = floor($daysSinceStart / $cycleLength) + 1;
+
+        $shiftType = $record->shift->type;
+
+        if ($shiftType === 'morning_evening') {
+            return ($cycleNumber % 2 == 1) ? 'morning' : 'evening';
+        } elseif ($shiftType === 'evening_morning') {
+            return ($cycleNumber % 2 == 1) ? 'evening' : 'morning';
+        }
+
+        return $shiftType;
     }
 
     /**
