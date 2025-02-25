@@ -2,24 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Area;
-use App\Models\Shift;
 use Carbon\Carbon;
-use App\Models\Zone;
-use App\Models\Project;
 use Exception;
 
 class AreaController extends Controller
 {
-
     public function getAssignedEmployeesForShifts()
     {
         // تعيين التوقيت إلى توقيت الرياض
         $currentTime = Carbon::now('Asia/Riyadh');
-    
+
         $areas = Area::with(['projects.zones.shifts'])->get();
-    
+
         $data = $areas->map(function ($area) {
             return [
                 'id' => $area->id,
@@ -33,11 +28,11 @@ class AreaController extends Controller
                             $shifts = $zone->shifts->map(function ($shift) use ($zone, $project) { // ← ثم نمرر $project هنا أيضًا
                                 // حساب عدد الموظفين المسندين إلى هذه الوردية بناءً على السجلات في EmployeeProjectRecord
                                 $assignedEmployeesCount = \App\Models\EmployeeProjectRecord::where('shift_id', $shift->id)
-                                ->where('zone_id', $zone->id)
-                                ->where('project_id', $project->id)
-                                ->where('status', 1) // ✅ تعديل هذا الجزء ليبحث عن 1 بدلاً من 'active'
-                                ->count();
-    
+                                    ->where('zone_id', $zone->id)
+                                    ->where('project_id', $project->id)
+                                    ->where('status', 1) // ✅ تعديل هذا الجزء ليبحث عن 1 بدلاً من 'active'
+                                    ->count();
+
                                 return [
                                     'id' => $shift->id,
                                     'name' => $shift->name,
@@ -46,7 +41,7 @@ class AreaController extends Controller
                                     'emp_no' => $shift->emp_no,
                                 ];
                             });
-    
+
                             return [
                                 'id' => $zone->id,
                                 'name' => $zone->name,
@@ -58,12 +53,9 @@ class AreaController extends Controller
                 }),
             ];
         });
-    
+
         return response()->json($data);
     }
-    
-    
-    
 
     public function getAreasWithDetails()
     {
@@ -88,7 +80,7 @@ class AreaController extends Controller
                                 $eveningStart = Carbon::createFromTimeString($shift->evening_start, 'Asia/Riyadh');
                                 $eveningEnd = Carbon::createFromTimeString($shift->evening_end, 'Asia/Riyadh');
 
-                                return ($currentTime->between($morningStart, $morningEnd) || $currentTime->between($eveningStart, $eveningEnd));
+                                return $currentTime->between($morningStart, $morningEnd) || $currentTime->between($eveningStart, $eveningEnd);
                             })->first();
 
                             // عدد الحاضرين في الشفت الحالي
@@ -114,6 +106,7 @@ class AreaController extends Controller
 
         return response()->json($data);
     }
+
     public function getAreasWithDetails2()
     {
         // تعيين التوقيت إلى توقيت الرياض
@@ -139,11 +132,31 @@ class AreaController extends Controller
                                     ->where('status', 'present')
                                     ->where('date', Carbon::today('Asia/Riyadh')->toDateString())
                                     ->count();
+                                // $today = $currentTime->toDateString();
+
+                                // // // إنشاء أوقات الوردية مع التاريخ
+                                // $morningStart = Carbon::parse("$today {$shift->morning_start}", 'Asia/Riyadh');
+                                // $morningEnd = Carbon::parse("$today {$shift->morning_end}", 'Asia/Riyadh');
+                                // $eveningStart = Carbon::parse("$today {$shift->evening_start}", 'Asia/Riyadh');
+                                // $eveningEnd = Carbon::parse("$today {$shift->evening_end}", 'Asia/Riyadh');
+                                // if ($eveningEnd->lessThan($eveningStart)) {
+                                //     $eveningEnd->addDay();
+                                // }
 
                                 return [
                                     'id' => $shift->id,
                                     'name' => $shift->name,
-                                    'type' => $shift->morning_start ? 'morning' : 'evening',
+                                    // 'isWorkingDay' => $shift->isWorkingDay(),
+                                    // 'current_time' => $currentTime->toTimeString(),
+                                    // 'morning_start2' => $shift->morning_start,
+                                    // 'morning_start' => $morningStart,
+                                    // 'morning_end' => $morningEnd,
+                                    // 'ism' => $currentTime->between($morningStart, $morningEnd),
+                                    // 'evening_start' => $eveningStart,
+                                    // 'evening_end' => $eveningEnd,
+                                    // 'ise' => $currentTime->between($eveningStart, $eveningEnd),
+                                    // 'type' => $shift->morning_start ? 'morning' : 'evening',
+                                    'type' => $shift->type,
                                     'is_current_shift' => $isCurrentShift,
                                     'attendees_count' => $attendanceCount,
                                     'emp_no' => $shift->emp_no,
@@ -158,16 +171,15 @@ class AreaController extends Controller
                                 ->whereDate('date', $currentTime->toDateString())
                                 ->count();
 
-                                   // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا وخرجوا عن الموقع
-                                   $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
-                                   ->where('status', 'present') // الحضور
-                                   ->where('check_out', null) // بدون انصراف
-                                   ->whereDate('date', $currentTime->toDateString())
-                                   ->whereHas('employee', function ($query) {
-                                       $query->where('out_of_zone', true); // التحقق من حالة الموظف خارج النطاق
-                                   })
-                                   ->count();
-
+                            // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا وخرجوا عن الموقع
+                            $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                ->where('status', 'present') // الحضور
+                                ->where('check_out', null) // بدون انصراف
+                                ->whereDate('date', $currentTime->toDateString())
+                                ->whereHas('employee', function ($query) {
+                                    $query->where('out_of_zone', true); // التحقق من حالة الموظف خارج النطاق
+                                })
+                                ->count();
 
                             return [
                                 'id' => $zone->id,
@@ -192,15 +204,26 @@ class AreaController extends Controller
         // تحقق من إذا كان اليوم يوم عمل
         $isWorkingDay = $shift->isWorkingDay();
 
-        // تحليل النوع وتحديد الوردية الحالية
-        $morningStart = Carbon::createFromTimeString($shift->morning_start, 'Asia/Riyadh');
-        $morningEnd = Carbon::createFromTimeString($shift->morning_end, 'Asia/Riyadh');
-        $eveningStart = Carbon::createFromTimeString($shift->evening_start, 'Asia/Riyadh');
-        $eveningEnd = Carbon::createFromTimeString($shift->evening_end, 'Asia/Riyadh');
+        // نحصل على تاريخ اليوم من $currentTime
+        $today = $currentTime->toDateString();
 
-        // التحقق من امتداد الفترة عبر منتصف الليل
+        // $morningStart = Carbon::parse("$today {$shift->morning_start}", 'Asia/Riyadh');
+        // $morningEnd = Carbon::parse("$today {$shift->morning_end}", 'Asia/Riyadh');
+        // $eveningStart = Carbon::parse("$today {$shift->evening_start}", 'Asia/Riyadh');
+        // $eveningEnd = Carbon::parse("$today {$shift->evening_end}", 'Asia/Riyadh');
+        // if ($eveningEnd->lessThan($eveningStart)) {
+        //     $eveningEnd->addDay();
+        // }
+
+        // إنشاء أوقات الوردية مع التاريخ
+        $morningStart = Carbon::parse("$today {$shift->morning_start}");
+        $morningEnd = Carbon::parse("$today {$shift->morning_end}");
+        $eveningStart = Carbon::parse("$today {$shift->evening_start}");
+        $eveningEnd = Carbon::parse("$today {$shift->evening_end}");
+
+        // التحقق من الفترة التي تمتد عبر منتصف الليل وإضافة يوم لنهاية الفترة إذا لزم الأمر
         if ($eveningEnd->lessThan($eveningStart)) {
-            $eveningEnd = $eveningEnd->addDay(); // إضافة يوم إلى وقت النهاية
+            $eveningEnd->addDay();
         }
         $isWithinShiftTime = false;
 
@@ -226,12 +249,11 @@ class AreaController extends Controller
         return $isWorkingDay && $isWithinShiftTime;
     }
 
-
     private function determineShiftCycle($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, $type)
     {
         // دورة العمل = عدد أيام العمل + الإجازة
 
-        if (!$shift->zone || !$shift->zone->pattern) {
+        if (! $shift->zone || ! $shift->zone->pattern) {
             // إذا لم تكن هناك بيانات كافية
             return false;
         }
@@ -253,7 +275,7 @@ class AreaController extends Controller
         $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
 
         // رقم الدورة الحالية
-        $currentCycleNumber = floor($daysSinceStart / $cycleLength) + 1;
+        $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
 
         // اليوم الحالي داخل الدورة
         $currentDayInCycle = $daysSinceStart % $cycleLength;
@@ -262,14 +284,17 @@ class AreaController extends Controller
         $isWorkingDayInCycle = $currentDayInCycle < $pattern->working_days;
 
         // تحديد إذا كانت الدورة الحالية فردية أو زوجية
-        $isOddCycle = $currentCycleNumber % 2 === 0;
+        $isOddCycle = $currentCycleNumber % 2 == 1;
+        // if ($shift->name == 'الوردية الاولى A' && $shift->zone->name == 'موقع شركة ENPPI الجعيمة') {
+        //     \Log::info('isOddCycle', ['isOddCycle' => $isOddCycle, 'currentCycleNumber' => $currentCycleNumber]);
+        // }
 
         // تحديد الوردية الحالية بناءً على نوعها
         if ($type === 'morning_evening') {
             // دورة فردية: صباحية، دورة زوجية: مسائية
             return $isWorkingDayInCycle && (
                 ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) ||
-                (!$isOddCycle && $currentTime->between($eveningStart, $eveningEnd))
+                ((! $isOddCycle) && $currentTime->between($eveningStart, $eveningEnd))
             );
         }
 
@@ -277,14 +302,10 @@ class AreaController extends Controller
             // دورة فردية: مسائية، دورة زوجية: صباحية
             return $isWorkingDayInCycle && (
                 ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) ||
-                (!$isOddCycle && $currentTime->between($morningStart, $morningEnd))
+                ((! $isOddCycle) && $currentTime->between($morningStart, $morningEnd))
             );
         }
 
         return false; // الأنواع الأخرى ليست متداخلة
     }
-
-  
-
-  
 }
