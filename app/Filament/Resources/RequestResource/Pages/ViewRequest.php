@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RequestResource\Pages;
 
+use App\Filament\Resources\EmployeeResource;
 use App\Filament\Resources\RequestResource;
 use Filament\Infolists\Components\Group;
 use Filament\Infolists\Components\Section;
@@ -17,6 +18,12 @@ class ViewRequest extends ViewRecord
     public function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('employee')
+                ->label(__('View Employee'))
+                 // ->icon('')
+                ->url(fn ($record) => EmployeeResource::getUrl('view', ['record' => $record->employee]))
+                ->openUrlInNewTab(true),
+
             Actions\EditAction::make(),
         ];
     }

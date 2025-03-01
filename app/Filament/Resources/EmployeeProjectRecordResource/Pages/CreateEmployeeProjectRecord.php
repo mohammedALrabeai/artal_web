@@ -31,6 +31,7 @@ class CreateEmployeeProjectRecord extends CreateRecord
         $currentAssigned = EmployeeProjectRecord::where('shift_id', $this->data['shift_id'])
             ->where('status', '1') // ✅ فقط الموظفين النشطين
             ->count();
+            
 
         if ($shift && $currentAssigned >= $shift->emp_no) {
             Notification::make()

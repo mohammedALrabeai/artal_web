@@ -19,7 +19,7 @@ class Request extends Model
         'current_approver_role',
         'status',
         'description',
-        'description',
+        // 'description',
         'duration',
         'amount',
         'additional_data',
