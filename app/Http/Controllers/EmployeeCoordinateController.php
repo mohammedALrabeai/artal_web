@@ -7,6 +7,7 @@ use App\Models\EmployeeCoordinate;
 use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeCoordinateController extends Controller
 {
@@ -117,7 +118,7 @@ class EmployeeCoordinateController extends Controller
         ]);
     }
 
-    public function getRecentEmployeeLocations()
+    public function getRecentEmployeeLocationsOld()
     {
         // وقت الحد الفاصل (10 دقائق)
         $thresholdTime = Carbon::now('Asia/Riyadh')->subMinutes(10);
@@ -158,6 +159,50 @@ class EmployeeCoordinateController extends Controller
         return response()->json([
             'active_employees' => $activeEmployeesData,
             'inactive_employees' => $inactiveEmployeesData,
+        ]);
+    }
+
+    public function getRecentEmployeeLocations()
+    {
+        $thresholdTime = Carbon::now('Asia/Riyadh')->subMinutes(10);
+
+        // ✅ استعلام واحد لاسترجاع بيانات الموظفين النشطين مع آخر موقع لهم
+        $activeEmployees = DB::table('employees')
+            ->join('employee_coordinates', function ($join) use ($thresholdTime) {
+                $join->on('employees.id', '=', 'employee_coordinates.employee_id')
+                    ->where('employee_coordinates.timestamp', '>=', $thresholdTime);
+            })
+            ->select('employees.id',
+                DB::raw("CONCAT(employees.first_name, ' ', employees.father_name, ' ', grandfather_name, ' ', employees.family_name) as full_name"),
+                'employees.national_id',
+                'employees.mobile_number',
+                'employees.out_of_zone',
+                'employee_coordinates.latitude',
+                'employee_coordinates.longitude',
+                'employee_coordinates.timestamp'
+            )
+            ->orderBy('employee_coordinates.timestamp', 'desc')
+            ->groupBy('employees.id')
+            ->get();
+
+        // ✅ استعلام واحد لاسترجاع الموظفين غير النشطين الذين لم يتم تسجيل مواقعهم خلال آخر 10 دقائق
+        $inactiveEmployees = DB::table('employees')
+            ->leftJoin('employee_coordinates', function ($join) use ($thresholdTime) {
+                $join->on('employees.id', '=', 'employee_coordinates.employee_id')
+                    ->where('employee_coordinates.timestamp', '>=', $thresholdTime);
+            })
+            ->whereNull('employee_coordinates.id') // لا يوجد لهم تسجيل موقع حديث
+            ->select('employees.id',
+                DB::raw("CONCAT(employees.first_name, ' ', employees.father_name, ' ', grandfather_name, ' ', employees.family_name) as full_name"),
+                'employees.national_id',
+                'employees.mobile_number',
+                'employees.out_of_zone'
+            )
+            ->get();
+
+        return response()->json([
+            'active_employees' => $activeEmployees,
+            'inactive_employees' => $inactiveEmployees,
         ]);
     }
 }
