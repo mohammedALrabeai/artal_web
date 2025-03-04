@@ -434,7 +434,8 @@ class EmployeeResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Full Name'))
                     ->getStateUsing(function ($record) {
