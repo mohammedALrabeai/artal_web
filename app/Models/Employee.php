@@ -225,6 +225,11 @@ class Employee extends Model
         return $latestExclusion->status === Exclusion::STATUS_REJECTED || $latestExclusion->exclusion_date < now();
     }
 
+    public function coordinates()
+{
+    return $this->hasMany(EmployeeCoordinate::class);
+}
+
     public function isExcluded(): bool
     {
         return $this->exclusions()

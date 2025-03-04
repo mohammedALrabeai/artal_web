@@ -79,6 +79,7 @@ Route::middleware('auth:employee')->group(function () {
 });
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employee-route/{employeeId}', [EmployeeCoordinateController::class, 'getEmployeeRoute']);
+    Route::get('/employee-locations', [EmployeeCoordinateController::class, 'getRecentEmployeeLocations']);
 
 });
 

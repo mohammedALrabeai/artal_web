@@ -116,4 +116,30 @@ if ($zone) {
             'zone' => $zone,
         ]);
     }
+
+
+
+
+    public function getRecentEmployeeLocations()
+    {
+        // وقت الحد الفاصل (10 دقائق)
+        $thresholdTime = Carbon::now('Asia/Riyadh')->subMinutes(10);
+
+        // الموظفون الذين تم تسجيل إحداثياتهم خلال آخر 10 دقائق
+        $activeEmployees = Employee::whereHas('coordinates', function ($query) use ($thresholdTime) {
+            $query->where('timestamp', '>=', $thresholdTime);
+        })->with(['coordinates' => function ($query) {
+            $query->latest('timestamp')->limit(1);
+        }])->get();
+
+        // الموظفون الذين تجاوز آخر تسجيل لهم أكثر من 10 دقائق
+        $inactiveEmployees = Employee::whereDoesntHave('coordinates', function ($query) use ($thresholdTime) {
+            $query->where('timestamp', '>=', $thresholdTime);
+        })->get();
+
+        return response()->json([
+            'active_employees' => $activeEmployees,
+            'inactive_employees' => $inactiveEmployees,
+        ]);
+    }
 }
