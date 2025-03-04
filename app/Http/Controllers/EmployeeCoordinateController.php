@@ -166,38 +166,39 @@ class EmployeeCoordinateController extends Controller
     {
         $thresholdTime = Carbon::now('Asia/Riyadh')->subMinutes(10);
 
-        // ✅ استعلام واحد لاسترجاع بيانات الموظفين النشطين مع آخر موقع لهم
+        // ✅ جلب آخر تسجيل لكل موظف نشط خلال آخر 10 دقائق
         $activeEmployees = DB::table('employees')
-            ->join('employee_coordinates', function ($join) use ($thresholdTime) {
-                $join->on('employees.id', '=', 'employee_coordinates.employee_id')
-                    ->where('employee_coordinates.timestamp', '>=', $thresholdTime);
-            })
-            ->select('employees.id',
-                DB::raw("CONCAT(employees.first_name, ' ', employees.father_name, ' ', grandfather_name, ' ', employees.family_name) as full_name"),
+            ->join('employee_coordinates', 'employees.id', '=', 'employee_coordinates.employee_id')
+            ->where('employee_coordinates.timestamp', '>=', $thresholdTime)
+            ->select(
+                'employees.id',
+                DB::raw("CONCAT(employees.first_name, ' ', employees.father_name, ' ', employees.grandfather_name, ' ', employees.family_name) as full_name"),
                 'employees.national_id',
                 'employees.mobile_number',
                 'employees.out_of_zone',
-                'employee_coordinates.latitude',
-                'employee_coordinates.longitude',
-                'employee_coordinates.timestamp'
+                DB::raw('MAX(employee_coordinates.latitude) as latitude'),
+                DB::raw('MAX(employee_coordinates.longitude) as longitude'),
+                DB::raw('MAX(employee_coordinates.timestamp) as last_seen')
             )
-            ->orderBy('employee_coordinates.timestamp', 'desc')
-            ->groupBy('employees.id')
+            ->groupBy('employees.id', 'employees.first_name', 'employees.father_name', 'employees.grandfather_name', 'employees.family_name', 'employees.national_id', 'employees.mobile_number', 'employees.out_of_zone')
+            ->orderByDesc('last_seen')
             ->get();
 
-        // ✅ استعلام واحد لاسترجاع الموظفين غير النشطين الذين لم يتم تسجيل مواقعهم خلال آخر 10 دقائق
+        // ✅ جلب الموظفين الذين لم يسجلوا أي إحداثيات خلال آخر 10 دقائق
         $inactiveEmployees = DB::table('employees')
             ->leftJoin('employee_coordinates', function ($join) use ($thresholdTime) {
                 $join->on('employees.id', '=', 'employee_coordinates.employee_id')
                     ->where('employee_coordinates.timestamp', '>=', $thresholdTime);
             })
-            ->whereNull('employee_coordinates.id') // لا يوجد لهم تسجيل موقع حديث
-            ->select('employees.id',
-                DB::raw("CONCAT(employees.first_name, ' ', employees.father_name, ' ', grandfather_name, ' ', employees.family_name) as full_name"),
+            ->whereNull('employee_coordinates.id') // لم يسجلوا موقعًا حديثًا
+            ->select(
+                'employees.id',
+                DB::raw("CONCAT(employees.first_name, ' ', employees.father_name, ' ', employees.grandfather_name, ' ', employees.family_name) as full_name"),
                 'employees.national_id',
                 'employees.mobile_number',
                 'employees.out_of_zone'
             )
+            ->groupBy('employees.id', 'employees.first_name', 'employees.father_name', 'employees.grandfather_name', 'employees.family_name', 'employees.national_id', 'employees.mobile_number', 'employees.out_of_zone')
             ->get();
 
         return response()->json([
