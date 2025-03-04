@@ -101,10 +101,10 @@ class EmployeeCoordinateController extends Controller
             $query->where('employee_id', $employeeId);
         })->first(['lat', 'longg', 'area']);
         // ✅ تحويل القيم إلى double قبل الإرجاع
-if ($zone) {
-    $zone->lat = (double) $zone->lat;
-    $zone->longg = (double) $zone->longg;
-}
+        if ($zone) {
+            $zone->lat = (float) $zone->lat;
+            $zone->longg = (float) $zone->longg;
+        }
 
         return response()->json([
             'status' => 'success',
@@ -117,9 +117,6 @@ if ($zone) {
         ]);
     }
 
-
-
-
     public function getRecentEmployeeLocations()
     {
         // وقت الحد الفاصل (10 دقائق)
@@ -130,16 +127,37 @@ if ($zone) {
             $query->where('timestamp', '>=', $thresholdTime);
         })->with(['coordinates' => function ($query) {
             $query->latest('timestamp')->limit(1);
-        }])->get();
+        }])->get(['id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'national_id', 'mobile_number', 'out_of_zone']);
 
         // الموظفون الذين تجاوز آخر تسجيل لهم أكثر من 10 دقائق
         $inactiveEmployees = Employee::whereDoesntHave('coordinates', function ($query) use ($thresholdTime) {
             $query->where('timestamp', '>=', $thresholdTime);
-        })->get();
+        })->get(['id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'national_id', 'mobile_number', 'out_of_zone']);
+
+        // تحويل البيانات إلى JSON مع **full_name**
+        $activeEmployeesData = $activeEmployees->map(function ($employee) {
+            return [
+                'id' => $employee->id,
+                'full_name' => "{$employee->first_name} {$employee->father_name} {$employee->grandfather_name} {$employee->family_name}",
+                'national_id' => $employee->national_id,
+                'mobile_number' => $employee->mobile_number,
+                'out_of_zone' => $employee->out_of_zone,
+            ];
+        });
+
+        $inactiveEmployeesData = $inactiveEmployees->map(function ($employee) {
+            return [
+                'id' => $employee->id,
+                'full_name' => "{$employee->first_name} {$employee->father_name} {$employee->grandfather_name} {$employee->family_name}",
+                'national_id' => $employee->national_id,
+                'mobile_number' => $employee->mobile_number,
+                'out_of_zone' => $employee->out_of_zone,
+            ];
+        });
 
         return response()->json([
-            'active_employees' => $activeEmployees,
-            'inactive_employees' => $inactiveEmployees,
+            'active_employees' => $activeEmployeesData,
+            'inactive_employees' => $inactiveEmployeesData,
         ]);
     }
 }
