@@ -6,6 +6,11 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use App\Models\EmployeeCoordinate;
 
+
+use App\Models\Zone;
+
+use Illuminate\Support\Carbon;
+
 class EmployeeCoordinateController extends Controller
 {
     /**
@@ -69,6 +74,48 @@ class EmployeeCoordinateController extends Controller
             'success' => true,
             'message' => 'تم تحديث حالة الموظف بنجاح.',
             'data' => $employee,
+        ]);
+    }
+
+
+     /**
+     * ✅ جلب مسار الموظف ليوم معين
+     */
+    public function getEmployeeRoute(Request $request, $employeeId)
+    {
+        // ✅ التحقق من صحة المدخلات
+        $request->validate([
+            'date' => 'nullable|date', // يمكن إرسال التاريخ أو أخذ اليوم الحالي
+        ]);
+
+        // ✅ تعيين التاريخ الافتراضي لليوم الحالي إذا لم يتم تمريره
+        $date = $request->input('date', Carbon::now()->toDateString());
+
+        // ✅ البحث عن الموظف
+        $employee = Employee::find($employeeId);
+        if (!$employee) {
+            return response()->json(['error' => 'Employee not found'], 404);
+        }
+
+        // ✅ جلب بيانات التحركات (المسار)
+        $coordinates = EmployeeCoordinate::where('employee_id', $employeeId)
+            ->whereDate('timestamp', $date)
+            ->orderBy('timestamp', 'asc')
+            ->get(['latitude', 'longitude', 'timestamp']);
+
+        // ✅ جلب بيانات المنطقة (Zone) الخاصة بالموظف
+        $zone = Zone::whereHas('employees', function ($query) use ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        })->first(['latitude', 'longitude', 'area']);
+
+        return response()->json([
+            'status' => 'success',
+            'employee' => [
+                'id' => $employee->id,
+                'name' => "{$employee->first_name} {$employee->family_name}",
+            ],
+            'route' => $coordinates,
+            'zone' => $zone,
         ]);
     }
 }

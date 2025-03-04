@@ -77,6 +77,10 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 
 });
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/employee-route/{employeeId}', [EmployeeCoordinateController::class, 'getEmployeeRoute']);
+
+});
 
 Route::middleware('auth:employee')->group(function () {
     Route::post('/coordinates', [EmployeeCoordinateController::class, 'store']);
