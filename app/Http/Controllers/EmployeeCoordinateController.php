@@ -100,6 +100,11 @@ class EmployeeCoordinateController extends Controller
         $zone = Zone::whereHas('employees', function ($query) use ($employeeId) {
             $query->where('employee_id', $employeeId);
         })->first(['lat', 'longg', 'area']);
+        // ✅ تحويل القيم إلى double قبل الإرجاع
+if ($zone) {
+    $zone->lat = (double) $zone->lat;
+    $zone->longg = (double) $zone->longg;
+}
 
         return response()->json([
             'status' => 'success',

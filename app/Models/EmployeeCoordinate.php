@@ -20,6 +20,12 @@ class EmployeeCoordinate extends Model
         'distance',
     ];
 
+    protected $casts = [
+        'latitude' => 'double',
+        'longitude' => 'double',
+        // 'timestamp' => 'datetime',
+    ];
+
     // العلاقات
     public function employee()
     {
