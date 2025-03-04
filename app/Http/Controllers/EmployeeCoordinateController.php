@@ -3,12 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
-use Illuminate\Http\Request;
 use App\Models\EmployeeCoordinate;
-
-
 use App\Models\Zone;
-
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class EmployeeCoordinateController extends Controller
@@ -34,7 +31,7 @@ class EmployeeCoordinateController extends Controller
         $employee = Employee::find($validated['employee_id']);
         if ($employee) {
             $employee->update([
-               'out_of_zone' => $validated['status'] === 'outside',
+                'out_of_zone' => $validated['status'] === 'outside',
             ]);
         }
 
@@ -57,17 +54,14 @@ class EmployeeCoordinateController extends Controller
         ]);
     }
 
-
-
-
-    public function updateZoneStatus(Request $request,)
+    public function updateZoneStatus(Request $request)
     {
         $validated = $request->validate([
             'out_of_zone' => 'required|boolean',
         ]);
 
-    //  $employee = Employee::find($request->user()->id);
-    $employee=$request->user();
+        //  $employee = Employee::find($request->user()->id);
+        $employee = $request->user();
         $employee->update(['out_of_zone' => $validated['out_of_zone']]);
 
         return response()->json([
@@ -77,8 +71,7 @@ class EmployeeCoordinateController extends Controller
         ]);
     }
 
-
-     /**
+    /**
      * ✅ جلب مسار الموظف ليوم معين
      */
     public function getEmployeeRoute(Request $request, $employeeId)
@@ -93,7 +86,7 @@ class EmployeeCoordinateController extends Controller
 
         // ✅ البحث عن الموظف
         $employee = Employee::find($employeeId);
-        if (!$employee) {
+        if (! $employee) {
             return response()->json(['error' => 'Employee not found'], 404);
         }
 
@@ -106,7 +99,7 @@ class EmployeeCoordinateController extends Controller
         // ✅ جلب بيانات المنطقة (Zone) الخاصة بالموظف
         $zone = Zone::whereHas('employees', function ($query) use ($employeeId) {
             $query->where('employee_id', $employeeId);
-        })->first(['latitude', 'longitude', 'area']);
+        })->first(['lat', 'longg', 'area']);
 
         return response()->json([
             'status' => 'success',
