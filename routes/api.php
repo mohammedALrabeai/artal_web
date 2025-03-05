@@ -80,7 +80,7 @@ Route::middleware('auth:employee')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employee-route/{employeeId}', [EmployeeCoordinateController::class, 'getEmployeeRoute']);
     Route::get('/employee-locations', [EmployeeCoordinateController::class, 'getRecentEmployeeLocations']);
-
+    Route::get('/employee-locations2', [EmployeeCoordinateController::class, 'getActiveAndInactiveEmployees']);
 });
 
 Route::middleware('auth:employee')->group(function () {
