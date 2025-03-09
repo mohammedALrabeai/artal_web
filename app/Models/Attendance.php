@@ -4,10 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-
-
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Attendance extends Model
 {
@@ -26,10 +24,20 @@ class Attendance extends Model
         'check_out_datetime',
         'status',
         'work_hours', 'notes', 'is_late',
-        "approval_status",
-        "coverage_id",
-        "is_coverage",
-        "out_of_zone"
+        'approval_status',
+        'coverage_id',
+        'is_coverage',
+        'out_of_zone',
+    ];
+
+    protected $casts = [
+        // 'check_in_datetime' => 'datetime',
+        // 'check_out_datetime' => 'datetime',
+        // 'date' => 'date',
+        'ismorning' => 'boolean',
+        'is_late' => 'boolean',
+        'is_coverage' => 'boolean',
+        'out_of_zone' => 'boolean',
     ];
 
     public function employee()
@@ -47,30 +55,28 @@ class Attendance extends Model
         return $this->belongsTo(Shift::class);
     }
 
-     // ✅ علاقة الحضور مع التغطية (إذا كان هناك سجل تغطية مرتبط بالحضور)
-     public function coverage()
-     {
-         return $this->belongsTo(Coverage::class, 'coverage_id');
-     }
-
-
+    // ✅ علاقة الحضور مع التغطية (إذا كان هناك سجل تغطية مرتبط بالحضور)
+    public function coverage()
+    {
+        return $this->belongsTo(Coverage::class, 'coverage_id');
+    }
 
     //   // تفعيل تسجيل التغييرات
     //   protected static $logAttributes = ['*'];
     //   protected static $logOnlyDirty = true;
     //   protected static $submitEmptyLogs = false;
     //   protected static $logName = 'attendance';
-  
-      public function getDescriptionForEvent(string $eventName): string
-      {
-          return "Attendance record has been {$eventName}";
-      }
 
-      public function getActivitylogOptions(): LogOptions
-{
-    return LogOptions::defaults()
-        ->logAll() // تسجيل جميع الحقول
-        ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
-        ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
-}
+    public function getDescriptionForEvent(string $eventName): string
+    {
+        return "Attendance record has been {$eventName}";
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll() // تسجيل جميع الحقول
+            ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
+            ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
+    }
 }
