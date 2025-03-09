@@ -216,10 +216,10 @@ class AreaController extends Controller
         // }
 
         // إنشاء أوقات الوردية مع التاريخ
-        $morningStart = Carbon::parse("$today {$shift->morning_start}");
-        $morningEnd = Carbon::parse("$today {$shift->morning_end}");
-        $eveningStart = Carbon::parse("$today {$shift->evening_start}");
-        $eveningEnd = Carbon::parse("$today {$shift->evening_end}");
+        $morningStart = Carbon::parse("$today {$shift->morning_start}", 'Asia/Riyadh');
+        $morningEnd = Carbon::parse("$today {$shift->morning_end}", 'Asia/Riyadh');
+        $eveningStart = Carbon::parse("$today {$shift->evening_start}", 'Asia/Riyadh');
+        $eveningEnd = Carbon::parse("$today {$shift->evening_end}", 'Asia/Riyadh');
 
         // التحقق من الفترة التي تمتد عبر منتصف الليل وإضافة يوم لنهاية الفترة إذا لزم الأمر
         if ($eveningEnd->lessThan($eveningStart)) {
@@ -269,7 +269,8 @@ class AreaController extends Controller
         }
 
         // تاريخ بداية الوردية
-        $startDate = Carbon::parse($shift->start_date)->startOfDay();
+        // $startDate = Carbon::parse($shift->start_date)->startOfDay();
+        $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh')->startOfDay();
 
         // عدد الأيام منذ تاريخ البداية
         $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));

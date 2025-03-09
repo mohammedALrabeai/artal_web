@@ -325,22 +325,33 @@ class AttendanceController extends Controller
         $employee = $request->user();
         $currentDateTime = Carbon::now('Asia/Riyadh');
 
-        // تحديد اليوم الحالي واليوم السابق
-        $today = $currentDateTime->toDateString();
-        $yesterday = $currentDateTime->copy()->subDay()->toDateString();
+        // إذا تم استلام المتغير main_attendance_id، استرجع السجل بناءً عليه
+        if ($request->has('main_attendance_id')) {
+            $attendance = Attendance::where('id', $request->input('main_attendance_id'))
+                ->where('employee_id', $employee->id)
+                ->first();
 
-        // البحث عن الحضور لهذا اليوم أو اليوم السابق
-        $attendance = Attendance::where('employee_id', $employee->id)
-            ->where(function ($query) use ($today, $yesterday) {
-                $query->where('date', $today)
-                    ->orWhere('date', $yesterday);
-            })
-            ->whereNotNull('check_in_datetime') // التأكد من وجود وقت الحضور
-            ->latest('check_in_datetime') // جلب آخر سجل حضور
-            ->first();
+            if (! $attendance) {
+                return response()->json(['message' => 'Attendance record not found.'], 400);
+            }
+        } else {
+            // تحديد اليوم الحالي واليوم السابق
+            $today = $currentDateTime->toDateString();
+            $yesterday = $currentDateTime->copy()->subDay()->toDateString();
 
-        if (! $attendance) {
-            return response()->json(['message' => 'Cannot check-out without check-in.'], 400);
+            // البحث عن الحضور لهذا اليوم أو اليوم السابق
+            $attendance = Attendance::where('employee_id', $employee->id)
+                ->where(function ($query) use ($today, $yesterday) {
+                    $query->where('date', $today)
+                        ->orWhere('date', $yesterday);
+                })
+                ->whereNotNull('check_in_datetime') // التأكد من وجود وقت الحضور
+                ->latest('check_in_datetime') // جلب آخر سجل حضور
+                ->first();
+
+            if (! $attendance) {
+                return response()->json(['message' => 'Cannot check-out without check-in.'], 400);
+            }
         }
 
         if ($attendance->check_out || $attendance->check_out_datetime) {
