@@ -88,18 +88,18 @@ class AttendanceController extends Controller
         $date = Carbon::now('Asia/Riyadh')->toDateString();
         $currentDateTime = Carbon::now('Asia/Riyadh');
 
-        // // التحقق إذا كان الموظف قد سجل حضور طبيعي اليوم
-        // $existingAttendance = Attendance::where('employee_id', $employee->id)
-        //     ->where('date', $date)
-        //     ->where('status', 'present')
-        //     ->first();
+        // التحقق إذا كان الموظف قد سجل حضور طبيعي اليوم
+        $existingAttendance = Attendance::where('employee_id', $employee->id)
+            ->where('date', $date)
+            ->where('status', 'present')
+            ->first();
 
-        // if ($existingAttendance) {
-        //     return response()->json([
-        //         'message' => 'You have already checked in today.',
-        //         'attendance' => $existingAttendance,
-        //     ], 200);
-        // }
+        if ($existingAttendance) {
+            return response()->json([
+                'message' => 'You have already checked in today.',
+                'attendance' => $existingAttendance,
+            ], 200);
+        }
 
         // البحث عن أي سجل حضور سابق لهذا اليوم
         $existingAttendance = Attendance::where('employee_id', $employee->id)
