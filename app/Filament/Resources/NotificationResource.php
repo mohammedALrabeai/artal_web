@@ -67,6 +67,7 @@ class NotificationResource extends Resource
                     ->label('تاريخ الإنشاء')
                     ->dateTime(),
             ])
+            ->paginationPageOptions([10, 25, 50, 100])
             ->filters([
                 // SelectFilter::make('read')
                 // ->label('حالة القراءة')
