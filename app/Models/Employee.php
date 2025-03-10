@@ -75,7 +75,7 @@ class Employee extends Model
 
     protected $casts = [
         'out_of_zone' => 'boolean',
-        'status' => 'boolean',
+        // 'status' => 'boolean',
     ];
 
     // علاقة مع المستخدم الذي أضاف الموظف
@@ -227,9 +227,9 @@ class Employee extends Model
     }
 
     public function coordinates()
-{
-    return $this->hasMany(EmployeeCoordinate::class);
-}
+    {
+        return $this->hasMany(EmployeeCoordinate::class);
+    }
 
     public function isExcluded(): bool
     {
