@@ -26,6 +26,18 @@ class EmployeeCoordinate extends Model
         // 'timestamp' => 'datetime',
     ];
 
+    protected $guarded = [];
+
+    protected static function booted()
+    {
+        static::created(function ($coordinate) {
+            // تحديث last_active في جدول الموظفين
+            $coordinate->employee->update([
+                'last_active' => $coordinate->created_at
+            ]);
+        });
+    }
+
     // العلاقات
     public function employee()
     {
