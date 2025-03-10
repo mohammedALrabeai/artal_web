@@ -75,6 +75,7 @@ class Employee extends Model
 
     protected $casts = [
         'out_of_zone' => 'boolean',
+        'status' => 'boolean',
     ];
 
     // علاقة مع المستخدم الذي أضاف الموظف
