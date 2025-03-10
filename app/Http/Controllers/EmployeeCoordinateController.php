@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Zone;
-use App\Models\Shift;
-use App\Models\Employee;
 use App\Models\Attendance;
+use App\Models\Employee;
+use App\Models\EmployeeCoordinate;
+use App\Models\EmployeeProjectRecord;
+use App\Models\Shift;
+use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use App\Models\EmployeeCoordinate;
 use Illuminate\Support\Facades\DB;
-use App\Models\EmployeeProjectRecord;
+
+// use Carbon\Carbon;
 
 class EmployeeCoordinateController extends Controller
 {
@@ -23,25 +25,30 @@ class EmployeeCoordinateController extends Controller
             'employee_id' => 'required|exists:employees,id',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
-            'timestamp' => 'required|date',
+            // تمت إزالة حقل timestamp من القواعد
             'status' => 'required|in:inside,outside',
             'shift_id' => 'nullable|exists:shifts,id',
             'zone_id' => 'nullable|exists:zones,id',
             'distance' => 'nullable|numeric|min:0',
         ]);
 
+        // إضافة التوقيت الحالي من السيرفر بتوقيت الرياض
+        $validated['timestamp'] = Carbon::now('Asia/Riyadh');
+
         $coordinate = EmployeeCoordinate::create($validated);
 
         $employee = Employee::find($validated['employee_id']);
         if ($employee) {
-            $employee->update([
+            $employee->updateQuietly([
                 'out_of_zone' => $validated['status'] === 'outside',
+                'last_active' => $validated['timestamp'],
             ]);
         }
 
         return response()->json([
             'success' => true,
             'data' => $coordinate,
+            'timestamp' => $validated['timestamp'],
         ], 201);
     }
 
@@ -211,69 +218,68 @@ class EmployeeCoordinateController extends Controller
     }
 
     public function getActiveAndInactiveEmployees()
-{
-    $currentTime = Carbon::now('Asia/Riyadh');
-    $today = $currentTime->toDateString();
+    {
+        $currentTime = Carbon::now('Asia/Riyadh');
+        $today = $currentTime->toDateString();
 
-    // جلب جميع الورديات النشطة حاليًا
-    $currentShifts = Shift::whereHas('zone.pattern', function ($query) use ($currentTime) {
-        $query->whereRaw('(DATEDIFF(?, start_date) % (working_days + off_days)) < working_days', [$currentTime]);
-    })->get();
+        // جلب جميع الورديات النشطة حاليًا
+        $currentShifts = Shift::whereHas('zone.pattern', function ($query) use ($currentTime) {
+            $query->whereRaw('(DATEDIFF(?, start_date) % (working_days + off_days)) < working_days', [$currentTime]);
+        })->get();
 
-    // جلب الموظفين المتوقع عملهم في الورديات الحالية
-    $expectedEmployees = EmployeeProjectRecord::whereIn('shift_id', $currentShifts->pluck('id'))
-        ->where(function ($query) use ($today) {
-            $query->whereNull('end_date')->orWhere('end_date', '>=', $today);
-        })
-        ->with('employee')
-        ->get()
-        ->map(function ($record) {
-            return [
-                'id' => $record->employee->id,
-                'full_name' => "{$record->employee->first_name} {$record->employee->father_name} {$record->employee->grandfather_name} {$record->employee->family_name}",
-                'national_id' => $record->employee->national_id,
-                'mobile_number' => $record->employee->mobile_number,
-                'out_of_zone' => $record->employee->out_of_zone,
-                'shift_id' => $record->shift_id,
-                'zone_id' => $record->zone_id,
-            ];
-        });
+        // جلب الموظفين المتوقع عملهم في الورديات الحالية
+        $expectedEmployees = EmployeeProjectRecord::whereIn('shift_id', $currentShifts->pluck('id'))
+            ->where(function ($query) use ($today) {
+                $query->whereNull('end_date')->orWhere('end_date', '>=', $today);
+            })
+            ->with('employee')
+            ->get()
+            ->map(function ($record) {
+                return [
+                    'id' => $record->employee->id,
+                    'full_name' => "{$record->employee->first_name} {$record->employee->father_name} {$record->employee->grandfather_name} {$record->employee->family_name}",
+                    'national_id' => $record->employee->national_id,
+                    'mobile_number' => $record->employee->mobile_number,
+                    'out_of_zone' => $record->employee->out_of_zone,
+                    'shift_id' => $record->shift_id,
+                    'zone_id' => $record->zone_id,
+                ];
+            });
 
-    // جلب بيانات الحضور للموظفين المتوقعين
-    $attendances = Attendance::whereIn('employee_id', $expectedEmployees->pluck('id'))
-        ->whereDate('date', $today)
-        ->get()
-        ->keyBy('employee_id');
+        // جلب بيانات الحضور للموظفين المتوقعين
+        $attendances = Attendance::whereIn('employee_id', $expectedEmployees->pluck('id'))
+            ->whereDate('date', $today)
+            ->get()
+            ->keyBy('employee_id');
 
-    // جلب آخر إحداثيات لكل موظف خلال آخر 10 دقائق
-    $lastCoordinates = EmployeeCoordinate::whereIn('employee_id', $expectedEmployees->pluck('id'))
-        ->where('timestamp', '>=', Carbon::now('Asia/Riyadh')->subMinutes(10))
-        ->orderBy('timestamp', 'desc')
-        ->get()
-        ->keyBy('employee_id');
+        // جلب آخر إحداثيات لكل موظف خلال آخر 10 دقائق
+        $lastCoordinates = EmployeeCoordinate::whereIn('employee_id', $expectedEmployees->pluck('id'))
+            ->where('timestamp', '>=', Carbon::now('Asia/Riyadh')->subMinutes(10))
+            ->orderBy('timestamp', 'desc')
+            ->get()
+            ->keyBy('employee_id');
 
-    $activeEmployees = [];
-    $inactiveEmployees = [];
+        $activeEmployees = [];
+        $inactiveEmployees = [];
 
-    foreach ($expectedEmployees as $employee) {
-        $attendance = $attendances->get($employee['id']);
-        $coordinate = $lastCoordinates->get($employee['id']);
+        foreach ($expectedEmployees as $employee) {
+            $attendance = $attendances->get($employee['id']);
+            $coordinate = $lastCoordinates->get($employee['id']);
 
-        if ($attendance && $attendance->status == 'present' && $coordinate) {
-            $activeEmployees[] = array_merge($employee, [
-                'latitude' => $coordinate->latitude,
-                'longitude' => $coordinate->longitude,
-                'last_seen' => $coordinate->timestamp,
-            ]);
-        } else {
-            $inactiveEmployees[] = $employee;
+            if ($attendance && $attendance->status == 'present' && $coordinate) {
+                $activeEmployees[] = array_merge($employee, [
+                    'latitude' => $coordinate->latitude,
+                    'longitude' => $coordinate->longitude,
+                    'last_seen' => $coordinate->timestamp,
+                ]);
+            } else {
+                $inactiveEmployees[] = $employee;
+            }
         }
+
+        return response()->json([
+            'active_employees' => $activeEmployees,
+            'inactive_employees' => $inactiveEmployees,
+        ]);
     }
-
-    return response()->json([
-        'active_employees' => $activeEmployees,
-        'inactive_employees' => $inactiveEmployees,
-    ]);
-}
-
 }

@@ -71,6 +71,7 @@ class Employee extends Model
         'insurance_start_date',
         'insurance_end_date',
         'contract_type',
+        'last_active',
     ];
 
     protected $casts = [
@@ -126,6 +127,20 @@ class Employee extends Model
     }
 
     public function name()
+    {
+        return $this->first_name.' '.$this->father_name.' '.$this->family_name;
+    }
+
+    public function __call($method, $parameters)
+    {
+        if ($method === 'name') {
+            return $this->getNameAttribute();
+        }
+
+        return parent::__call($method, $parameters);
+    }
+
+    public function getNameAttribute()
     {
         return $this->first_name.' '.$this->father_name.' '.$this->family_name;
     }
