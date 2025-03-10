@@ -6,14 +6,12 @@ use App\Filament\Resources\ShiftShortageResource\Pages;
 use App\Filament\Resources\ShiftShortageResource\Widgets\ShiftEmployeeShortageOverview;
 use App\Models\Attendance;
 use App\Models\EmployeeProjectRecord;
-// use Illuminate\Support\Facades\DB;
 use App\Models\Shift;
-// use Illuminate\Database\Eloquent\Builder;
-// use Illuminate\Database\Eloquent\Builder;
-
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ShiftShortageResource extends Resource
 {
@@ -32,18 +30,16 @@ class ShiftShortageResource extends Resource
                 Tables\Columns\TextColumn::make('zone.name')->label('الموقع')->searchable(),
                 Tables\Columns\TextColumn::make('name')->label('الوردية')->searchable(),
                 Tables\Columns\TextColumn::make('emp_no')->label('الموظفين المطلوبين'),
-
                 Tables\Columns\TextColumn::make('assigned_employees')
                     ->label('الموظفين الحاليين')
                     ->getStateUsing(fn ($record) => EmployeeProjectRecord::where('shift_id', $record->id)
-                        ->where('status', 1) // جلب الموظفين النشطين فقط
+                        ->where('status', 1)
                         ->count()
                     ),
-
                 Tables\Columns\TextColumn::make('shortage')
                     ->label('النقص')
                     ->getStateUsing(fn ($record) => max(0, $record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)
-                        ->where('status', 1) // جلب الموظفين النشطين فقط
+                        ->where('status', 1)
                         ->count())
                     )
                     ->color(fn ($record) => ($record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)->where('status', 1)->count()) > 0 ? 'danger' : 'success')
@@ -51,36 +47,51 @@ class ShiftShortageResource extends Resource
                         ? max(0, $record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)->where('status', 1)->count()).' ⛔'
                         : 'مكتمل ✅'
                     ),
-
                 Tables\Columns\TextColumn::make('absent_employees')
                     ->label('عدد الغياب')
                     ->getStateUsing(fn ($record) => Attendance::where('shift_id', $record->id)
                         ->where('status', 'absent')
-                        ->whereDate('date', today()) // ✅ تصفية على تاريخ اليوم فقط
+                        ->whereDate('date', today())
                         ->count()
                     )
                     ->color('danger')
                     ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} ⛔" : 'لا يوجد غياب ✅'),
-
-                // ✅ **عمود عدد المغطيين في الموقع**
                 Tables\Columns\TextColumn::make('coverage_employees')
                     ->label('عدد المغطيين')
                     ->getStateUsing(fn ($record) => Attendance::where('shift_id', $record->id)
                         ->where('status', 'coverage')
-                        ->whereDate('date', today()) // ✅ تصفية على تاريخ اليوم فقط
+                        ->whereDate('date', today())
                         ->count()
                     )
                     ->color('success')
                     ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} ✅" : 'لا يوجد تغطية'),
-
             ])
             ->filters([
+                SelectFilter::make('shortage_filter')
+                    ->label('عرض الورديات')
+                    ->options([
+                        'with_shortage' => 'مع النقص فقط',
+                        'all' => 'جميع الورديات',
+                    ])
+                    ->default('with_shortage')
+                    ->query(function (Builder $query, array $data) {
+                        if ($data['value'] === 'with_shortage') {
+                            $query->whereRaw('emp_no > (
+                                SELECT COUNT(*)
+                                FROM employee_project_records
+                                WHERE employee_project_records.shift_id = shifts.id
+                                AND employee_project_records.status = 1
+                            )');
+                        }
+                        // عند اختيار 'all'، لا يتم تطبيق أي شرط إضافي
+                    }),
                 Tables\Filters\SelectFilter::make('zone_id')
                     ->label('الموقع')
+                    ->searchable()
+                    ->multiple()
+                    ->preload()
                     ->relationship('zone', 'name'),
-
             ])
-
             ->paginated();
     }
 
@@ -88,8 +99,6 @@ class ShiftShortageResource extends Resource
     {
         return [
             'index' => Pages\ListShiftShortages::route('/'),
-            // 'create' => Pages\CreateShift::route('/create'),
-            // 'edit' => Pages\EditShift::route('/{record}/edit'),
         ];
     }
 
