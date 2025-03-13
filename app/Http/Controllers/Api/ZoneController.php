@@ -126,11 +126,13 @@ class ZoneController extends Controller
                         'id' => $shift->id,
                         'name' => $shift->name,
                         'type' => $shift->type,
+                        'current_shift_type' => $shift->shift_type,
                         'morning_start' => $shift->morning_start,
                         'morning_end' => $shift->morning_end,
                         'evening_start' => $shift->evening_start,
                         'evening_end' => $shift->evening_end,
                         'required_employees' => $shift->emp_no, // ✅ عدد الموظفين المطلوبين
+                        'start_date' => $shift->start_date,
                         'present_employees' => $shift->attendances->where('status', 'present')->count(), // ✅ عدد الحاضرين فقط
                     ];
                 })->values(),
