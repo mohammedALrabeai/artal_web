@@ -116,6 +116,7 @@ class ZoneController extends Controller
                     'created_at' => $zone->project->created_at,
                     'updated_at' => $zone->project->updated_at,
                     'emp_no' => $zone->project->emp_no,
+                    'hours_no' => $zone->pattern->hours_cat,
                 ] : null,
 
                 // ✅ إرجاع الورديات الحالية فقط
