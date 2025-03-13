@@ -147,6 +147,90 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
+    // في ملف App\Models\Shift
+
+    public function isCurrent(?Carbon $currentTime = null): bool
+    {
+        // استخدام التوقيت الحالي إذا لم يتم توفيره
+        $currentTime = $currentTime ?: Carbon::now('Asia/Riyadh');
+
+        // تحقق من إذا كان اليوم يوم عمل
+        if (! $this->isWorkingDay()) {
+            return false;
+        }
+
+        $today = $currentTime->toDateString();
+
+        // إنشاء أوقات الوردية
+        $morningStart = Carbon::parse("$today {$this->morning_start}", 'Asia/Riyadh');
+        $morningEnd = Carbon::parse("$today {$this->morning_end}", 'Asia/Riyadh');
+        $eveningStart = Carbon::parse("$today {$this->evening_start}", 'Asia/Riyadh');
+        $eveningEnd = Carbon::parse("$today {$this->evening_end}", 'Asia/Riyadh');
+
+        // تعديل الوقت إذا تجاوز منتصف الليل
+        if ($eveningEnd->lessThan($eveningStart)) {
+            $eveningEnd->addDay();
+        }
+
+        // تحديد نوع الوردية
+        switch ($this->type) {
+            case 'morning':
+                return $currentTime->between($morningStart, $morningEnd);
+
+            case 'evening':
+                return $currentTime->between($eveningStart, $eveningEnd);
+
+            case 'morning_evening':
+            case 'evening_morning':
+                return $this->checkShiftCycle($currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd);
+
+            default:
+                return false;
+        }
+    }
+
+    protected function checkShiftCycle(
+        Carbon $currentTime,
+        Carbon $morningStart,
+        Carbon $morningEnd,
+        Carbon $eveningStart,
+        Carbon $eveningEnd
+    ): bool {
+        if (! $this->zone || ! $this->zone->pattern) {
+            return false;
+        }
+
+        $pattern = $this->zone->pattern;
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+
+        if ($cycleLength <= 0) {
+            throw new \Exception('Invalid cycle length');
+        }
+
+        $startDate = Carbon::parse($this->start_date, 'Asia/Riyadh')->startOfDay();
+        $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
+        $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+        $isWorkingDay = $currentDayInCycle < $pattern->working_days;
+        $isOddCycle = $currentCycleNumber % 2 === 1;
+
+        if (! $isWorkingDay) {
+            return false;
+        }
+
+        if ($this->type === 'morning_evening') {
+            return ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) ||
+                   (! $isOddCycle && $currentTime->between($eveningStart, $eveningEnd));
+        }
+
+        if ($this->type === 'evening_morning') {
+            return ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) ||
+                   (! $isOddCycle && $currentTime->between($morningStart, $morningEnd));
+        }
+
+        return false;
+    }
+
     public function getDescriptionForEvent(string $eventName): string
     {
         if ($eventName === 'updated') {

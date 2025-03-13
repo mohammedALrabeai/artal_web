@@ -73,6 +73,7 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/attendances/coverage/check-out', [AttendanceController::class, 'checkOutCoverage']);
 
     Route::post('/zones/nearby', [ZoneController::class, 'nearbyZones']);
+    Route::post('/zones/nearby-with-shift', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
 
     Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 
