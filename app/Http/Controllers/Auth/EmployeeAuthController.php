@@ -144,6 +144,8 @@ class EmployeeAuthController extends Controller
                     'device_id' => $deviceId,
                     'status' => 'pending',
                 ]);
+                $apiToken = Str::random(60);
+                $employee->update(['api_token' => $apiToken]);
 
                 return response()->json([
                     'message' => 'New device registered and is pending approval. Login denied.',
@@ -275,40 +277,35 @@ class EmployeeAuthController extends Controller
         return response()->json(['message' => 'Password changed successfully'], 200);
     }
 
-
-
     public function simpleLogin(Request $request)
-{
-    $request->validate([
-        'phone' => 'required|string',
-        'password' => 'required|string',
-    ]);
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'password' => 'required|string',
+        ]);
 
-    $employee = Employee::where('mobile_number', $request->phone)
-        ->where('password', $request->password)
-        ->first();
+        $employee = Employee::where('mobile_number', $request->phone)
+            ->where('password', $request->password)
+            ->first();
 
-    if (!$employee) {
-        return response()->json(['message' => 'Invalid credentials'], 401);
+        if (! $employee) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        // الاحتفاظ بالتوكن القديم إذا كان موجودًا
+        $apiToken = $employee->api_token;
+
+        // إذا لم يكن هناك توكن، يتم إنشاء واحد جديد
+        if (! $apiToken) {
+            $apiToken = Str::random(60);
+            $employee->update(['api_token' => $apiToken]);
+        }
+
+        return response()->json([
+            'message' => 'Login successful',
+            'token' => $apiToken,
+            'employee' => $employee,
+            'new_device_registered' => false,
+        ]);
     }
-
-    // الاحتفاظ بالتوكن القديم إذا كان موجودًا
-    $apiToken = $employee->api_token;
-
-    // إذا لم يكن هناك توكن، يتم إنشاء واحد جديد
-    if (!$apiToken) {
-        $apiToken = Str::random(60);
-        $employee->update(['api_token' => $apiToken]);
-    }
-
-  
-
-    return response()->json([
-        'message' => 'Login successful',
-        'token' => $apiToken,
-        'employee' => $employee,
-        'new_device_registered' => false,
-    ]);
-}
-
 }
