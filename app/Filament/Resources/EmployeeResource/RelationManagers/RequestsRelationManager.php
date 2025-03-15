@@ -15,6 +15,8 @@ class RequestsRelationManager extends RelationManager
 {
     protected static string $relationship = 'requests';
 
+    protected static ?string $title = 'الطلبات';
+
     public function form(Form $form): Form
     {
         return RequestResource::form($form);

@@ -1102,7 +1102,7 @@ class EmployeeResource extends Resource
             RelationManagers\LoansRelationManager::class,
             RelationManagers\ResignationsRelationManager::class,
             RelationManagers\RequestsRelationManager::class,
-            //  RelationManagers\MediaRelationManager::class,
+            RelationManagers\AssetAssignmentsRelationManager::class,
 
         ];
     }

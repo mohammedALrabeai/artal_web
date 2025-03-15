@@ -227,6 +227,11 @@ class Employee extends Model
         return $this->attachments->merge($this->requestAttachments);
     }
 
+    public function assetAssignments()
+    {
+        return $this->hasMany(AssetAssignment::class);
+    }
+
     public function isActive(): bool
     {
         // جلب آخر استبعاد إذا كان موجودًا

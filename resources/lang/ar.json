@@ -542,6 +542,29 @@
     "Meem Bank": "بنك ميم",
 
     "View Employee": "عرض الموظف",
+    "Asset Name": "اسم العُهد",
+
+    "Serial Number": "الرقم التسلسلي",
+    "Purchase Date": "تاريخ الشراء",
+    "Asset Value": "القيمة المالية",
+    "Condition": "الحالة الفيزيائية",
+    "Asset Status": "حالة العُهد",
+    "Assets": "العُهد",
+    "Asset": "العُهد",
+
+    "Assigned Date": "تاريخ التسليم",
+    "Expected Return Date": "تاريخ الاسترجاع المتوقع",
+    "Returned Date": "تاريخ الاسترجاع",
+    "Condition at Assignment": "حالة العُهد عند التسليم",
+    "Condition at Return": "حالة العُهد عند الاسترجاع",
+
+    "Asset Assignments": "تعيينات العُهد",
+    "Asset Assignment": "تعيين العُهد",
+    "Assets Management": "إدارة العُهد",
+
+
+    "Asset has been saved successfully.": "تم حفظ العهد بنجاح.",
+    "Asset has been deleted successfully.": "تم حذف العهد بنجاح.",
    
 
     "Number of all registered employees": "عدد جميع الموظفين المسجلين",
