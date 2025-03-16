@@ -423,6 +423,7 @@ class EmployeeResource extends Resource
                 ->label(__('Active'))
                 ->onColor('success')
                 ->offColor('danger')
+                ->default(true)
                 ->required(),
 
         ])
