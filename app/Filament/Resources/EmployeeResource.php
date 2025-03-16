@@ -340,12 +340,10 @@ class EmployeeResource extends Resource
                             ->required(),
 
                         Forms\Components\TextInput::make('street')
-                            ->label(__('Street'))
-                            ->required(),
+                            ->label(__('Street')),
 
                         Forms\Components\TextInput::make('building_number')
-                            ->label(__('Building Number'))
-                            ->required(),
+                            ->label(__('Building Number')),
 
                         Forms\Components\TextInput::make('apartment_number')
                             ->label(__('Apartment Number')),
