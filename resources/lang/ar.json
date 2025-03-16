@@ -2,7 +2,7 @@
     "Dashboard": "لوحة القيادة",
     "Users": "المستخدمين",
     "Name": "الاسم",
-    "Email": "البريد الإلكتروني",
+
     "Phone": "رقم الهاتف",
     "Role": "الدور",
     "Password": "كلمة المرور",
@@ -17,15 +17,15 @@
     "Has Off Days": "يوجد أيام إجازة",
     "Manage Patterns": "إدارة الأنماط",
     "Start Date": "تاريخ البدء",
-    "Pattern": "النمط",
+ 
     "Latitude": "خط العرض",
     "Longitude": "خط الطول",
 
-    "Active": "نشط",
+
   
     "Range (meter)": "النطاق (متر)",
     "Manage Zones": "إدارة المناطق",
-    "Zone": "المنطقة",
+
     "Type": "النوع",
     "Morning Start": "بداية الصباح",
     "Morning End": "نهاية الصباح",
@@ -35,10 +35,10 @@
     "Last Entry Time (Minutes)": "آخر وقت للدخول (بالدقائق)",
     "Early Exit Time (Minutes)": "الوقت المبكر للخروج (بالدقائق)",
     "Last Time Out (Minutes)": "آخر وقت للخروج (بالدقائق)",
-    "Start Date": "تاريخ البدء",
+
     "Number of Employees": "عدد الموظفين",
     "Number of Employees (All shifts included)": "عدد الموظفين (شامل جميع الورديات)",
-    "Active": "نشط",
+  
     "Inactive": "غير نشط",
     "Morning": "صباحي",
     "Evening": "مسائي",
@@ -66,9 +66,9 @@
     "Specialization": "التخصص",
     "Mobile Number": "رقم الجوال",
     "Phone Number": "رقم الهاتف",
-    "Email": "البريد الإلكتروني",
+
     "Region": "المنطقة",
-    "City": "المدينة",
+  
     "Street": "الشارع",
     "Building Number": "رقم المبنى",
     "Apartment Number": "رقم الشقة",
@@ -81,13 +81,13 @@
     "Personal Information": "المعلومات الشخصية",
     "Job Information": "المعلومات الوظيفية",
     "Contact Information": "معلومات الاتصال",
-    "Address": "العنوان",
+
     "Social Media": "وسائل التواصل الاجتماعي",
     "Security": "الأمان",
     "Personal Information": "المعلومات الشخصية",
     "Job Information": "المعلومات الوظيفية",
     "Contact Information": "معلومات الاتصال",
-    "Address": "العنوان",
+ 
     "Social Media": "وسائل التواصل الاجتماعي",
     "Security": "الأمان",
     "Bank Account": "الحساب البنكي",
@@ -98,7 +98,7 @@
     "Attachments": "المرفقات",
     "Content": "المحتوى",
     "Expiry Date": "تاريخ الانتهاء",
-    "Notes": "الملاحظات",
+
     "Employee": "الموظف",
     "Added By": "أضيف بواسطة",
     "Text": "نص",
@@ -124,8 +124,8 @@
     "Sick": "مرضية",
     "Unpaid": "بدون راتب",
     "Employee": "الموظف",
-    "Zone": "المنطقة",
-    "Date": "التاريخ",
+
+
     "Check In": "وقت الحضور",
     "Check Out": "وقت الانصراف",
     "Present": "حاضر",
@@ -135,9 +135,8 @@
     "From": "من",
     "To": "إلى",
     "Employee": "الموظف",
-    "Zone": "الموقع",
-    "Start Date": "تاريخ البدء",
-    "End Date": "تاريخ الانتهاء",
+
+
     "Active": "نشط",
     "Absent": "غائب",
     "Transferred": "منقول",
@@ -162,7 +161,7 @@
     "Employees": "الموظفين",
     "Employee": "موظف",
     "Zones": "المواقع",
-    "Zone": "موقع",
+ "Identifier (leave empty to auto-generate)": "الرقم الوظيفي (اتركه فارغًا لإنشاءه تلقائيًا)",
     "Shifts": "الورديات",
     "Shift": "ورديه",
     "Attachments": "المرفقات",
@@ -223,11 +222,11 @@
     "Status": "الحالة",
     "Employee": "الموظف",
     "Request Type": "نوع الطلب",
-    "Start Date": "تاريخ البدء",
-    "End Date": "تاريخ الانتهاء",
+   
+   
     "Created By": "أنشئ بواسطة",
     "Reason": "السبب",
-    "Notes": "ملاحظات",
+   
     "Approval History": "سجل الموافقات",
     "Add Approval": "إضافة موافقة",
     "Edit Approval": "تعديل الموافقة",
@@ -252,7 +251,7 @@
     "Projects": "المشاريع",
     "Employee Project Records": "مواقع الموظفين",
     "Project": "المشروع",
-    "Zone": "الموقع",
+   
     "Shift": "الوردية",
     "Start Date": "تاريخ البدء",
     "Banks": "البنوك",

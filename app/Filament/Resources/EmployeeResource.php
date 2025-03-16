@@ -100,6 +100,9 @@ class EmployeeResource extends Resource
             Forms\Components\Wizard::make([
                 Forms\Components\Wizard\Step::make(__('Personal Information'))
                     ->schema([
+                        Forms\Components\TextInput::make('id')
+                            ->label(__('Identifier (leave empty to auto-generate)'))
+                            ->visible(fn (string $context): bool => $context === 'create'),
                         Forms\Components\TextInput::make('first_name')
                             ->label(__('First Name'))
                             ->required(),
