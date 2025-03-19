@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\EmployeeNotificationController;
+use App\Http\Controllers\EmployeeStatusController;
 use App\Http\Controllers\ProjectController;
 use App\Services\AttendanceService;
 use Illuminate\Http\Request;
@@ -263,3 +264,11 @@ Route::prefix('coverage-requests')->group(function () {
 
 // ✅ إرجاع قائمة أسباب التغطية والموظفين المتاحين
 Route::get('/coverage-reasons', [CoverageController::class, 'getCoverageReasons']);
+
+
+
+
+
+Route::middleware('auth:employee')->group(function () {
+    Route::post('employee/status', [EmployeeStatusController::class, 'updateStatus']);
+});

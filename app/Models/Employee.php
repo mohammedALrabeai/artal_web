@@ -251,6 +251,14 @@ class Employee extends Model
         return $this->hasMany(EmployeeCoordinate::class);
     }
 
+    /**
+     * الحصول على الحالة اللحظية للموظف.
+     */
+    public function employeeStatus()
+    {
+        return $this->hasOne(EmployeeStatus::class);
+    }
+
     public function isExcluded(): bool
     {
         return $this->exclusions()

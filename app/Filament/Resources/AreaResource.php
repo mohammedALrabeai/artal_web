@@ -2,51 +2,47 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\Area;
-use Filament\Tables;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\AreaResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\AreaResource\RelationManagers;
+use App\Models\Area;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class AreaResource extends Resource
 {
     protected static ?string $model = Area::class;
-    protected static ?int $navigationSort = -11; 
+
+    protected static ?int $navigationSort = -11;
 
     protected static ?string $navigationIcon = 'heroicon-o-map';
 
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
         return __('Areas');
     }
-    
+
     public static function getPluralLabel(): string
     {
         return __('Areas');
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Zone & Project Management');
     }
-    
 
     public static function form(Form $form): Form
     {
@@ -57,7 +53,7 @@ class AreaResource extends Resource
                     ->label(__('Name'))
                     ->maxLength(255),
                 Forms\Components\Textarea::make('description')
-                ->label(__('Description'))
+                    ->label(__('Description'))
                     ->columnSpanFull(),
             ]);
     }
@@ -67,17 +63,17 @@ class AreaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                ->label(__('Name'))
+                    ->label(__('Name'))
                     ->searchable(),
-                    Tables\Columns\TextColumn::make('description')->label(__('Description'))->toggleable(),
+                Tables\Columns\TextColumn::make('description')->label(__('Description'))->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
-                ->label(__('Created At'))
+                    ->label(__('Created At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                ->label(__('Updated At'))
+                    ->label(__('Updated At'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -92,7 +88,7 @@ class AreaResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-                ExportBulkAction::make()
+                ExportBulkAction::make(),
             ]);
     }
 
