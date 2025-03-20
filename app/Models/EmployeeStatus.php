@@ -18,6 +18,8 @@ class EmployeeStatus extends Model
         'gps_enabled',
         'last_gps_status_at',
         'last_location',
+        'is_inside',
+        'notification_enabled'
     ];
 
     /**
@@ -27,6 +29,8 @@ class EmployeeStatus extends Model
         'last_seen_at' => 'datetime',
         'last_gps_status_at' => 'datetime',
         'gps_enabled' => 'boolean',
+        'is_inside' => 'boolean',
+        'notification_enabled' => 'boolean',
         'last_location' => 'array', // يمكن تخزين الإحداثيات كـ JSON
     ];
 
