@@ -27,6 +27,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class EmployeeProjectRecordResource extends Resource
@@ -234,6 +235,60 @@ class EmployeeProjectRecordResource extends Resource
                     ->nullable(),
             ])
             ->actions([
+
+                Action::make('replace_employee')
+                    ->label('استبدال الموظف')
+                    // ->icon('heroicon-o-user-switch')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->form([
+                        // Select::make('new_employee_id')
+                        //     ->label('اختر الموظف البديل')
+                        //     ->options(Employee::all()->mapWithKeys(function ($employee) {
+                        //         return [$employee->id => $employee->name ?? 'موظف غير معروف'];
+                        //     }))
+                        //     ->searchable()
+                        //     ->required(),
+                        EmployeeSelect::make('new_employee_id')
+                            ->label('اختر الموظف البديل')
+                            ->required(),
+                    ])
+                    ->action(function ($record, array $data) {
+                        DB::transaction(function () use ($record, $data) {
+                            $newEmployeeId = $data['new_employee_id'];
+                            $currentDate = now()->toDateString();
+
+                            // ✅ تحديث السجل القديم بإضافة تاريخ نهاية
+                            $record->update([
+                                'end_date' => $currentDate,
+                                'status' => false, // تعطيل السجل القديم
+                            ]);
+
+                            // ✅ إنشاء سجل جديد بنفس بيانات الموقع والوردية
+                            EmployeeProjectRecord::create([
+                                'employee_id' => $newEmployeeId,
+                                'project_id' => $record->project_id,
+                                'zone_id' => $record->zone_id,
+                                'shift_id' => $record->shift_id,
+                                'start_date' => $currentDate,
+                                'status' => true, // تنشيط السجل الجديد
+                            ]);
+
+                            // ✅ إرسال إشعار إلى الموظف الجديد
+                            $newEmployee = Employee::find($newEmployeeId);
+                            Notification::make()
+                                ->title('📢 تم إسنادك إلى موقع جديد')
+                                ->success()
+                                ->body("📌 تم إسنادك إلى موقع **{$record->zone->name}** ضمن الوردية **{$record->shift->name}** ابتداءً من اليوم.");
+                            // ->sendToDatabase($newEmployee)
+                        });
+
+                        Notification::make()
+                            ->title('✅ تم استبدال الموظف بنجاح')
+                            ->success()
+                            ->body("تم استبدال الموظف **{$record->employee->full_name}** بموظف جديد.")
+                            ->send();
+                    }),
                 Action::make('print')
                     ->label(__('Print Contract'))
                     ->icon('heroicon-o-printer')
