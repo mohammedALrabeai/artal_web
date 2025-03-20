@@ -9,15 +9,35 @@ use Illuminate\Support\Facades\Auth;
 
 class EmployeeStatusController extends Controller
 {
+    /**
+     * جلب بيانات حالات الموظفين مع بيانات الموظف المختصرة.
+     */
     public function index(Request $request)
     {
-        // نحدد العتبة الزمنية بـ15 دقيقة من الوقت الحالي
+        // تحديد العتبة الزمنية (15 دقيقة)
         $threshold = now()->subMinutes(15);
 
-        $employeeStatuses = EmployeeStatus::with('employee')
+        // استرجاع بيانات حالات الموظفين مع علاقة الموظف مع تحديد أعمدة محددة
+        $employeeStatuses = EmployeeStatus::with([
+            'employee:id,first_name,father_name,grandfather_name,family_name,mobile_number',
+        ])
             ->orderByRaw('CASE WHEN gps_enabled = 0 OR last_seen_at < ? THEN 1 ELSE 0 END DESC', [$threshold])
             ->orderBy('last_seen_at', 'desc')
             ->paginate(20);
+
+        // تحويل بيانات الموظف بحيث تشتمل على الاسم الكامل، الرقم الوظيفي (نعتبره الـ id) ورقم الجوال فقط
+        $employeeStatuses->getCollection()->transform(function ($status) {
+            if ($status->employee) {
+                $employee = $status->employee;
+                $status->employee = [
+                    'full_name' => trim("{$employee->first_name} {$employee->father_name} {$employee->grandfather_name} {$employee->family_name}"),
+                    'job_number' => $employee->id,  // يمكن تعديل هذا الحقل إذا كان هناك عمود آخر للرقم الوظيفي
+                    'mobile_number' => $employee->mobile_number,
+                ];
+            }
+
+            return $status;
+        });
 
         return response()->json($employeeStatuses);
     }
