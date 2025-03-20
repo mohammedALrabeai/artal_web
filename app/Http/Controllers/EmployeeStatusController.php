@@ -9,6 +9,19 @@ use Illuminate\Support\Facades\Auth;
 
 class EmployeeStatusController extends Controller
 {
+    public function index(Request $request)
+    {
+        // نحدد العتبة الزمنية بـ15 دقيقة من الوقت الحالي
+        $threshold = now()->subMinutes(15);
+
+        $employeeStatuses = EmployeeStatus::with('employee')
+            ->orderByRaw('CASE WHEN gps_enabled = 0 OR last_seen_at < ? THEN 1 ELSE 0 END DESC', [$threshold])
+            ->orderBy('last_seen_at', 'desc')
+            ->paginate(20);
+
+        return response()->json($employeeStatuses);
+    }
+
     /**
      * تحديث حالة الموظف بناءً على بيانات heartbeat.
      *

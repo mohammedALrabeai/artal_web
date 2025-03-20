@@ -265,10 +265,9 @@ Route::prefix('coverage-requests')->group(function () {
 // ✅ إرجاع قائمة أسباب التغطية والموظفين المتاحين
 Route::get('/coverage-reasons', [CoverageController::class, 'getCoverageReasons']);
 
-
-
-
-
 Route::middleware('auth:employee')->group(function () {
     Route::post('employee/status', [EmployeeStatusController::class, 'updateStatus']);
 });
+// Route::middleware('auth:sanctum')->group(function () {
+Route::get('/employee-statuses', [EmployeeStatusController::class, 'index']);
+// });
