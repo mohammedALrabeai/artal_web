@@ -12,26 +12,30 @@ class EmployeeStatusController extends Controller
     /**
      * جلب بيانات حالات الموظفين مع بيانات الموظف المختصرة.
      */
+    /**
+     * استرجاع بيانات حالات الموظفين مع بيانات الموظف المحدودة (الاسم الكامل، رقم الوظيفة ورقم الجوال)
+     * وترتيب النتائج بحيث تظهر أولاً الحالات التي يكون فيها GPS مُغلق أو أن آخر تواجد تجاوز 15 دقيقة.
+     */
     public function index(Request $request)
     {
-        // تحديد العتبة الزمنية (15 دقيقة)
+        // تحديد العتبة الزمنية: 15 دقيقة من الآن
         $threshold = now()->subMinutes(15);
 
-        // استرجاع بيانات حالات الموظفين مع علاقة الموظف مع تحديد أعمدة محددة
         $employeeStatuses = EmployeeStatus::with([
+            // تحميل بيانات الموظف مع الأعمدة المطلوبة فقط
             'employee:id,first_name,father_name,grandfather_name,family_name,mobile_number',
         ])
             ->orderByRaw('CASE WHEN gps_enabled = 0 OR last_seen_at < ? THEN 1 ELSE 0 END DESC', [$threshold])
             ->orderBy('last_seen_at', 'desc')
             ->paginate(20);
 
-        // تحويل بيانات الموظف بحيث تشتمل على الاسم الكامل، الرقم الوظيفي (نعتبره الـ id) ورقم الجوال فقط
+        // تحويل بيانات الموظف لتظهر الاسم الكامل ورقم الوظيفة (هنا نستخدم الـ id) ورقم الجوال فقط
         $employeeStatuses->getCollection()->transform(function ($status) {
             if ($status->employee) {
                 $employee = $status->employee;
                 $status->employee = [
                     'full_name' => trim("{$employee->first_name} {$employee->father_name} {$employee->grandfather_name} {$employee->family_name}"),
-                    'job_number' => $employee->id,  // يمكن تعديل هذا الحقل إذا كان هناك عمود آخر للرقم الوظيفي
+                    'job_number' => $employee->id, // أو استخدم حقل آخر إذا كان موجوداً لرقم الوظيفة
                     'mobile_number' => $employee->mobile_number,
                 ];
             }
