@@ -70,6 +70,7 @@ class AttendanceExport2Controller extends Controller
             'leave' => '4CAF50',    // أخضر داكن
             'UV' => 'FFB74D',       // برتقالي
             'W' => 'FFA07A',        // برتقالي محمر (انسحاب)
+            'off' => 'BBDEFB',      // أزرق فاتح
         ];
 
         // تحقق من صحة التواريخ
