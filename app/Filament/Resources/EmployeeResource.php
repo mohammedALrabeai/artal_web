@@ -910,9 +910,10 @@ class EmployeeResource extends Resource
                             return redirect($url);
                         })
                         ->form([
-                            Forms\Components\TextInput::make('year')
+                            Forms\Components\Select::make('year')
                                 ->label('السنة')
-                                ->default(date('Y'))
+                                ->options(array_combine(range(2024, 2035), range(2024, 2035)))
+                                ->default(date('Y') >= 2024 && date('Y') <= 2035 ? date('Y') : 2024)
                                 ->required(),
                         ]),
                     Tables\Actions\EditAction::make(),
