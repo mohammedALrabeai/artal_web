@@ -18,14 +18,25 @@ class EmployeeStatusController extends Controller
      */
     public function index(Request $request)
     {
-        // تحديد العتبة الزمنية: 15 دقيقة من الآن
-        $threshold = now()->subMinutes(15);
+        // تحديد العتبة الزمنية: 12 ساعة من الآن
+        $threshold = now()->subHours(12);
 
         $employeeStatuses = EmployeeStatus::with([
             // تحميل بيانات الموظف مع الأعمدة المطلوبة فقط
             'employee:id,first_name,father_name,grandfather_name,family_name,mobile_number',
         ])
-            ->orderByRaw('CASE WHEN gps_enabled = 0 OR last_seen_at < ? THEN 1 ELSE 0 END DESC', [$threshold])
+            ->whereHas('employee.attendances', function ($query) use ($threshold) {
+                $query->where(function ($q) use ($threshold) {
+                    // شرط التحضير: تحقق من check_in_datetime خلال الـ 12 ساعة الماضية
+                    $q->where('check_in_datetime', '>=', $threshold)
+                      // أو شرط التغطية: attendance تكون تغطية (is_coverage = true) وتم إنشاؤها خلال الـ 12 ساعة
+                        ->orWhere(function ($q2) use ($threshold) {
+                            $q2->where('is_coverage', true)
+                                ->where('created_at', '>=', $threshold);
+                        });
+                });
+            })
+            ->orderByRaw('CASE WHEN gps_enabled = 0 OR last_seen_at < ? THEN 1 ELSE 0 END DESC', [now()->subMinutes(15)])
             ->orderBy('last_seen_at', 'desc')
             ->paginate(20);
 
@@ -35,7 +46,7 @@ class EmployeeStatusController extends Controller
                 $employee = $status->employee;
                 $status->employee = [
                     'full_name' => trim("{$employee->first_name} {$employee->father_name} {$employee->grandfather_name} {$employee->family_name}"),
-                    'job_number' => $employee->id, // أو استخدم حقل آخر إذا كان موجوداً لرقم الوظيفة
+                    'job_number' => $employee->id, // أو استخدم حقل آخر إذا كان موجوداً
                     'mobile_number' => $employee->mobile_number,
                 ];
             }
