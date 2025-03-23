@@ -160,9 +160,9 @@ class RequestResource extends Resource
                                 ->label(__('Exclusion Date'))
                                 ->required(),
 
-                            Forms\Components\Textarea::make('exclusion_reason')
-                                ->label(__('Reason'))
-                                ->nullable(),
+                            // Forms\Components\Textarea::make('exclusion_reason')
+                            //     ->label(__('Reason'))
+                            //     ->nullable(),
 
                             // Forms\Components\FileUpload::make('exclusion_attachment')
                             //     ->label(__('Attachment'))
@@ -180,9 +180,9 @@ class RequestResource extends Resource
                             // ->minItems(1) // الحد الأدنى للمرفقات
                             // ->maxItems(5), // الحد الأقصى للمرفقات
 
-                            Forms\Components\Textarea::make('exclusion_notes')
-                                ->label(__('Notes'))
-                                ->nullable(),
+                            // Forms\Components\Textarea::make('exclusion_notes')
+                            //     ->label(__('Notes'))
+                            //     ->nullable(),
                         ])
                         ->columns(2)
                         ->visible(fn ($get) => $get('type') === 'exclusion'), // يظهر فقط إذا كان نوع الطلب استبعاد
@@ -218,13 +218,13 @@ class RequestResource extends Resource
                                         ->maxFiles(5)
                                         ->maxSize(10240),
 
-                                    Forms\Components\DatePicker::make('expiry_date')
-                                        ->label(__('Expiry Date'))
-                                        ->nullable(),
+                                    // Forms\Components\DatePicker::make('expiry_date')
+                                    //     ->label(__('Expiry Date'))
+                                    //     ->nullable(),
 
-                                    Forms\Components\Textarea::make('notes')
-                                        ->label(__('Notes'))
-                                        ->nullable(),
+                                    // Forms\Components\Textarea::make('notes')
+                                    //     ->label(__('Notes'))
+                                    //     ->nullable(),
 
                                     // ✅ **إضافة حقل مخفي لتمرير employee_id تلقائيًا**
                                     // Forms\Components\Select::make('employee_id')

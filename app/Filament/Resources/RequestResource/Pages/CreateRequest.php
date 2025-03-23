@@ -176,9 +176,9 @@ class CreateRequest extends CreateRecord
                         'employee_id' => $data['employee_id'],
                         'type' => $data['exclusion_type'],
                         'exclusion_date' => $data['exclusion_date'],
-                        'reason' => $data['exclusion_reason'],
+                        'reason' => $data['description'],  // $data['exclusion_reason'],
                         'attachment' => $data['exclusion_attachment'] ?? null,
-                        'notes' => $data['exclusion_notes'] ?? null,
+                        'notes' => $data['description'], // $data['exclusion_notes'] ?? null,
                     ]);
 
                     $data['exclusion_id'] = $exclusion->id; // ربط الطلب بسجل الاستبعاد
@@ -198,7 +198,6 @@ class CreateRequest extends CreateRecord
                     dd($e->getMessage());
                 }
                 break;
-               
 
             case 'compensation': // طلب تعويض
                 if (! isset($data['additional_data']['documentation'])) {
