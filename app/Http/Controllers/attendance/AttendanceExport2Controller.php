@@ -330,6 +330,8 @@ class AttendanceExport2Controller extends Controller
             // الانتقال للموظف التالي
             $rowIndex += 3; // ثلاث صفوف لكل موظف
         }
+        // $sheet->freezePane('A2');
+        $sheet->freezePane('J2');
 
         // إعداد تنزيل الملف
         $fileName = "Attendance_Report_{$startDate}_to_{$endDate}.xlsx";
