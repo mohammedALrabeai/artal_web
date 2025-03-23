@@ -67,6 +67,27 @@ class ShiftShortageResource extends Resource
                     ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} ✅" : 'لا يوجد تغطية'),
             ])
             ->filters([
+                // فلتر لحالة المشروع (نشط / معطل / الكل)
+                SelectFilter::make('project_status')
+                    ->label('حالة المشروع')
+                    ->default('active')
+                    ->options([
+                        'active' => 'المشاريع النشطة',
+                        'inactive' => 'المشاريع المعطلة',
+                        'all' => 'الكل',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if ($data['value'] === 'active') {
+                            $query->whereHas('zone.project', function ($q) {
+                                $q->where('status', true);
+                            });
+                        } elseif ($data['value'] === 'inactive') {
+                            $query->whereHas('zone.project', function ($q) {
+                                $q->where('status', false);
+                            });
+                        }
+                        // عند اختيار 'all' لا يتم تطبيق أي شرط
+                    }),
                 SelectFilter::make('shortage_filter')
                     ->label('عرض الورديات')
                     ->options([
@@ -94,6 +115,13 @@ class ShiftShortageResource extends Resource
             ])
             ->paginated();
     }
+
+    // public static function getEloquentQuery(): Builder
+    // {
+    //     return parent::getEloquentQuery()->whereHas('zone.project', function ($query) {
+    //         $query->where('status', true); // استخدم true أو 1 حسب نوع البيانات في العمود
+    //     });
+    // }
 
     public static function getPages(): array
     {

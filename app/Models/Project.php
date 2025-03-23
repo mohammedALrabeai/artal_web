@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,8 @@ class Project extends Model
         'area_id',
         'start_date',
         'end_date',
-        'emp_no'
+        'emp_no',
+        'status',
     ];
 
     // علاقة مع المنطقة

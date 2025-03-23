@@ -75,6 +75,9 @@ class ProjectResource extends Resource
                     ->label(__('Number of Employees (All shifts included)')) // التسمية موجودة بالفعل
                     ->numeric()
                     ->required(),
+                Forms\Components\Toggle::make('status')
+                    ->label(__('Status'))
+                    ->default(false),
             ]);
     }
 
@@ -101,6 +104,9 @@ class ProjectResource extends Resource
                 Tables\Columns\TextColumn::make('emp_no')
                     ->label(__('Number of Employees')) // التسمية موجودة بالفعل
                     ->sortable(),
+                Tables\Columns\IconColumn::make('status')
+                    ->boolean()
+                    ->label(__('Status')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -123,16 +129,16 @@ class ProjectResource extends Resource
                     ->placeholder(__('All Areas')),
             ])
             ->actions([
-                        Tables\Actions\EditAction::make(),
-                    ])
+                Tables\Actions\EditAction::make(),
+            ])
             ->bulkActions([
-                        Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->label(__('Delete Selected')), // إضافة تسمية مترجمة
-                        ]),
-                        ExportBulkAction::make()
+                ]),
+                ExportBulkAction::make()
                     ->label(__('Export')),
-                    ]);
+            ]);
     }
 
     public static function getRelations(): array
