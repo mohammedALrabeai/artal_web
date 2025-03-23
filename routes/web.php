@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\EmployeePaths;
 use App\Http\Controllers\attendance\AttendanceExport2Controller;
+use App\Http\Controllers\attendance\AttendanceYearlyExportController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FileUploadController2;
 use App\Http\Controllers\ReportController;
@@ -69,6 +70,9 @@ Route::get('/export-attendance', [AttendanceExport2Controller::class, 'export2']
 Route::get('/export-attendance-filtered', [AttendanceExport2Controller::class, 'exportFiltered'])
     ->name('export.attendance.filtered')
     ->middleware('signed'); // ✅ تأمين الطلبات الموقعة
+Route::get('/export-attendance-yearly', [AttendanceYearlyExportController::class, 'exportYearly'])
+    ->name('export.attendance.yearly')
+    ->middleware('signed');
 
 Route::get('/export-projects-zones-report', [ReportController::class, 'exportProjectsZonesReport'])
     ->name('export.projects.zones.report')

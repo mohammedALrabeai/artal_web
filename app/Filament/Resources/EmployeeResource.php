@@ -891,6 +891,30 @@ class EmployeeResource extends Resource
                         ->icon('heroicon-o-eye')
                         ->url(fn ($record) => static::getUrl('view', ['record' => $record->id]))
                         ->openUrlInNewTab(false),
+                    Tables\Actions\Action::make('exportYearly')
+                        ->label('تصدير الحضور السنوي')
+                    // ->icon('heroicon-o-document-download')
+                        ->action(function ($record, array $data) {
+                            // الحصول على السنة المُدخلة في النموذج
+                            $year = $data['year'];
+                            // إنشاء رابط مؤقت لدالة التصدير مع تمرير معرّف الموظف والسنة
+                            $url = URL::temporarySignedRoute(
+                                'export.attendance.yearly', // تأكد من تعريف هذا الاسم في ملف routes
+                                now()->addMinutes(5),
+                                [
+                                    'employee_id' => $record->id,
+                                    'year' => $year,
+                                ]
+                            );
+
+                            return redirect($url);
+                        })
+                        ->form([
+                            Forms\Components\TextInput::make('year')
+                                ->label('السنة')
+                                ->default(date('Y'))
+                                ->required(),
+                        ]),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
                 ]),
