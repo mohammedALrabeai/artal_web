@@ -38,7 +38,7 @@ class EmployeeStatusController extends Controller
             })
             ->orderByRaw('CASE WHEN gps_enabled = 0 OR last_seen_at < ? THEN 1 ELSE 0 END DESC', [now()->subMinutes(15)])
             ->orderBy('last_seen_at', 'desc')
-            ->paginate(20);
+            ->paginate(100);
 
         // تحويل بيانات الموظف لتظهر الاسم الكامل ورقم الوظيفة (هنا نستخدم الـ id) ورقم الجوال فقط
         $employeeStatuses->getCollection()->transform(function ($status) {
