@@ -405,18 +405,25 @@ class AreaController extends Controller
 
     private function isCurrentShift3($shift, $currentTime, $zone)
     {
-        // ✅ تحديد ما إذا كان هذا الوقت هو يوم عمل فعليًا بناءً على نمط الوردية
+        // ✅ تحديد ما إذا كان اليوم يوم عمل فعليًا حسب نمط الوردية
         $isWorkingDay = $shift->isWorkingDay2($currentTime);
 
-        // ✅ إنشاء أوقات الوردية بناءً على تاريخ الوقت الحالي (ديناميكي)
+        // ✅ إنشاء توقيتات الصباحية
         $morningStart = Carbon::parse($shift->morning_start, 'Asia/Riyadh')->setDateFrom($currentTime);
         $morningEnd = Carbon::parse($shift->morning_end, 'Asia/Riyadh')->setDateFrom($currentTime);
-        $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh')->setDateFrom($currentTime);
-        $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh')->setDateFrom($currentTime);
-
-        // ✅ إذا كانت نهاية الوردية أقل من بدايتها، يعني أنها تمتد لليوم التالي
         if ($morningEnd->lessThan($morningStart)) {
             $morningEnd->addDay();
+        }
+
+        // ✅ إنشاء توقيتات المسائية بناءً على الوقت الحالي
+        if ($currentTime->hour < 6) {
+            // نحن بعد منتصف الليل وقبل 6 صباحًا → الوردية المسائية بدأت أمس
+            $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh')->setDateFrom($currentTime)->subDay();
+            $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh')->setDateFrom($currentTime);
+        } else {
+            // الوقت طبيعي → الورديات تبدأ اليوم
+            $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh')->setDateFrom($currentTime);
+            $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh')->setDateFrom($currentTime);
         }
         if ($eveningEnd->lessThan($eveningStart)) {
             $eveningEnd->addDay();
@@ -446,17 +453,6 @@ class AreaController extends Controller
                 );
                 break;
         }
-
-        // \Log::info('Shift Times', [
-        //     'shift_id' => $shift->id,
-        //     'type' => $shift->type,
-        //     'now' => $currentTime->format('Y-m-d H:i:s'),
-        //     'morning_start' => $morningStart->format('Y-m-d H:i'),
-        //     'morning_end' => $morningEnd->format('Y-m-d H:i'),
-        //     'evening_start' => $eveningStart->format('Y-m-d H:i'),
-        //     'evening_end' => $eveningEnd->format('Y-m-d H:i'),
-        //     'result' => $isWithinShiftTime,
-        // ]);
 
         return $isWorkingDay && $isWithinShiftTime;
     }
