@@ -273,7 +273,8 @@ class AreaController extends Controller
         $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh')->startOfDay();
 
         // عدد الأيام منذ تاريخ البداية
-        $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
+        // $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
+        $daysSinceStart = $startDate->diffInDays($currentTime->copy()->startOfDay());
 
         // رقم الدورة الحالية
         $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
