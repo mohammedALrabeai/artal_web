@@ -147,6 +147,47 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
+ 
+
+public function isWorkingDay2(Carbon $referenceDateTime = null): ?bool
+{
+    $referenceDateTime = $referenceDateTime ?? Carbon::now('Asia/Riyadh');
+
+    // استرجاع المنطقة المرتبطة بالوردية
+    $zone = $this->zone;
+
+    if (! $zone || ! $zone->pattern) {
+        return null;
+    }
+
+    $pattern = $zone->pattern;
+    $workingDays = (int) $pattern->working_days;
+    $offDays = (int) $pattern->off_days;
+
+    // تأكد من صلاحية البيانات
+    if ($workingDays <= 0 || $offDays < 0) {
+        return null;
+    }
+
+    $cycleLength = $workingDays + $offDays;
+
+    // تاريخ بداية الوردية
+    $startDate = Carbon::parse($this->start_date)->startOfDay();
+
+    // التاريخ المستهدف لاحتساب نمط اليوم
+    $targetDate = $referenceDateTime->copy()->startOfDay();
+
+    // عدد الأيام منذ البداية
+    $daysSinceStart = $startDate->diffInDays($targetDate);
+
+    // موقع اليوم داخل الدورة
+    $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+    // إذا كان ضمن أيام العمل
+    return $currentDayInCycle < $workingDays;
+}
+
+
     // ✅ دالة لحساب نوع الوردية الحالية (صباح / مساء)
     // echo $shift->shift_type; // سيطبع 1 إذا كانت صباحية، أو 2 إذا كانت مسائية
     public function getShiftTypeAttribute()

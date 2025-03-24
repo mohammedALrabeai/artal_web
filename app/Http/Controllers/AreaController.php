@@ -404,22 +404,19 @@ class AreaController extends Controller
 
     private function isCurrentShift3($shift, $currentTime, $zone)
     {
-        $isWorkingDay = $shift->isWorkingDay();
+        // ✅ تحديد ما إذا كان هذا الوقت هو يوم عمل فعليًا بناءً على نمط الوردية
+        $isWorkingDay = $shift->isWorkingDay2($currentTime);
 
-        // $referenceDate = $currentTime->copy()->toDateString();
+        // ✅ إنشاء أوقات الوردية بناءً على تاريخ الوقت الحالي (ديناميكي)
+        $morningStart = Carbon::parse($shift->morning_start, 'Asia/Riyadh')->setDateFrom($currentTime);
+        $morningEnd = Carbon::parse($shift->morning_end, 'Asia/Riyadh')->setDateFrom($currentTime);
+        $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh')->setDateFrom($currentTime);
+        $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh')->setDateFrom($currentTime);
 
-        // ✅ إنشاء أوقات الوردية بشكل ذكي ومستقل عن "اليوم فقط"
-        $morningStart = Carbon::parse("{$shift->morning_start}", 'Asia/Riyadh')->setDateFrom($currentTime);
-        $morningEnd = Carbon::parse("{$shift->morning_end}", 'Asia/Riyadh')->setDateFrom($currentTime);
-
-        $eveningStart = Carbon::parse("{$shift->evening_start}", 'Asia/Riyadh')->setDateFrom($currentTime);
-        $eveningEnd = Carbon::parse("{$shift->evening_end}", 'Asia/Riyadh')->setDateFrom($currentTime);
-
-        // ✅ إذا كانت النهاية أقل من البداية → وردية ممتدة لليوم التالي
+        // ✅ إذا كانت نهاية الوردية أقل من بدايتها، يعني أنها تمتد لليوم التالي
         if ($morningEnd->lessThan($morningStart)) {
             $morningEnd->addDay();
         }
-
         if ($eveningEnd->lessThan($eveningStart)) {
             $eveningEnd->addDay();
         }
