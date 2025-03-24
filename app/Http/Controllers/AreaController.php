@@ -446,6 +446,17 @@ class AreaController extends Controller
                 break;
         }
 
+        \Log::info('Shift Times', [
+            'shift_id' => $shift->id,
+            'type' => $shift->type,
+            'now' => $currentTime->format('Y-m-d H:i:s'),
+            'morning_start' => $morningStart->format('Y-m-d H:i'),
+            'morning_end' => $morningEnd->format('Y-m-d H:i'),
+            'evening_start' => $eveningStart->format('Y-m-d H:i'),
+            'evening_end' => $eveningEnd->format('Y-m-d H:i'),
+            'result' => $isWithinShiftTime,
+        ]);
+
         return $isWorkingDay && $isWithinShiftTime;
     }
 }
