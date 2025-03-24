@@ -600,7 +600,7 @@ class AreaController extends Controller
 
     private function isCurrentShiftDynamic($shift, $currentTime, $zone)
     {
-        $isWorkingDay = $shift->isWorkingDay();
+        $isWorkingDay = $shift->isWorkingDayDynamic(Carbon::now('Asia/Riyadh'));
 
         $morningStart = Carbon::parse($shift->morning_start, 'Asia/Riyadh');
         $morningEnd = Carbon::parse($shift->morning_end, 'Asia/Riyadh');
