@@ -600,36 +600,41 @@ class AreaController extends Controller
 
     private function isCurrentShiftDynamic($shift, $currentTime, $zone)
     {
-        $isWorkingDay = $shift->isWorkingDayDynamic(Carbon::now('Asia/Riyadh'));
+        // التحقق مما إذا كان اليوم ضمن أيام العمل
+        $isWorkingDay = $shift->isWorkingDayDynamic($currentTime);
+        if (! $isWorkingDay) {
+            return false;
+        }
 
+        // تحديد توقيت الوردية
         $morningStart = Carbon::parse($shift->morning_start, 'Asia/Riyadh');
         $morningEnd = Carbon::parse($shift->morning_end, 'Asia/Riyadh');
         $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh');
         $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh');
 
-        // تعديل نهاية الوردية إذا كانت تمتد عبر منتصف الليل
+        // تعديل نهاية الوردية المسائية إذا كانت تمتد عبر منتصف الليل
         if ($eveningEnd < $eveningStart) {
             $eveningEnd->addDay();
         }
 
         $isWithinShiftTime = false;
 
+        // تحديد ما إذا كان الوقت الحالي ضمن نطاق الوردية بناءً على نوعها
         switch ($shift->type) {
             case 'morning':
                 $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd);
                 break;
-
             case 'evening':
                 $isWithinShiftTime = $currentTime->between($eveningStart, $eveningEnd);
                 break;
-
             case 'morning_evening':
             case 'evening_morning':
-                $isWithinShiftTime = $this->determineShiftCycleDynamic($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, $shift->type);
+                $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd) ||
+                                    $currentTime->between($eveningStart, $eveningEnd);
                 break;
         }
 
-        return $isWorkingDay && $isWithinShiftTime;
+        return $isWithinShiftTime;
     }
 
     private function determineShiftCycleDynamic($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, $type)

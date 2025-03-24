@@ -189,45 +189,43 @@ class Shift extends Model
 
         return $currentDayInCycle < $workingDays;
     }
-    public function isWorkingDayDynamic(?Carbon $referenceDateTime = null): ?bool
-{
-    $referenceDateTime = $referenceDateTime ? $referenceDateTime->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
-
-    $zone = $this->zone;
-    if (! $zone || ! $zone->pattern) {
-        return null;
-    }
-
-    $pattern = $zone->pattern;
-    $workingDays = (int) $pattern->working_days;
-    $offDays = (int) $pattern->off_days;
-
-    if ($workingDays <= 0 || $offDays < 0) {
-        return null;
-    }
-
-    $cycleLength = $workingDays + $offDays;
-    if ($cycleLength <= 0) {
-        return null;
-    }
-
-    $startDate = Carbon::parse($this->start_date, 'Asia/Riyadh');
-
-    // تعديل ديناميكي للورديات المسائية
-    if ($this->type === 'evening' || $this->type === 'evening_morning') {
-        if ($referenceDateTime->hour < 12) { // الصباح الباكر
-            $startDate->subDay(); // اعتبار اليوم السابق كمرجع
+    public function isWorkingDayDynamic(Carbon $referenceDateTime): bool
+    {
+        $zone = $this->zone;
+        if (!$zone || !$zone->pattern) {
+            return false;
         }
+    
+        $pattern = $zone->pattern;
+        $workingDays = (int) $pattern->working_days;
+        $offDays = (int) $pattern->off_days;
+    
+        if ($workingDays <= 0 || $offDays < 0) {
+            return false;
+        }
+    
+        $cycleLength = $workingDays + $offDays;
+        if ($cycleLength <= 0) {
+            return false;
+        }
+    
+        // تحديد تاريخ بداية الوردية
+        $startDate = Carbon::parse($this->start_date, 'Asia/Riyadh');
+    
+        // تعديل تاريخ البداية للورديات المسائية التي تمتد عبر منتصف الليل
+        if ($this->type === 'evening' || $this->type === 'evening_morning') {
+            $eveningStart = Carbon::parse($this->evening_start, 'Asia/Riyadh');
+            if ($eveningStart->hour >= 12 && $referenceDateTime->hour < 12) {
+                $startDate->subDay(); // نعتبرها من اليوم السابق إذا كنا في الصباح الباكر
+            }
+        }
+    
+        // حساب الفرق بالأيام وتحديد موقع اليوم في الدورة
+        $daysSinceStart = $startDate->diffInDays($referenceDateTime->copy()->startOfDay());
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+    
+        return $currentDayInCycle < $workingDays;
     }
-
-    $daysSinceStart = $startDate->diffInDays($referenceDateTime, false);
-    if ($daysSinceStart < 0) {
-        return false;
-    }
-
-    $currentDayInCycle = $daysSinceStart % $cycleLength;
-    return $currentDayInCycle < $workingDays;
-}
 
     // ✅ دالة لحساب نوع الوردية الحالية (صباح / مساء)
     // echo $shift->shift_type; // سيطبع 1 إذا كانت صباحية، أو 2 إذا كانت مسائية
