@@ -273,8 +273,7 @@ class AreaController extends Controller
         $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh')->startOfDay();
 
         // عدد الأيام منذ تاريخ البداية
-        // $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
-        $daysSinceStart = $startDate->diffInDays($currentTime->copy()->startOfDay());
+        $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
 
         // رقم الدورة الحالية
         $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
@@ -451,7 +450,7 @@ class AreaController extends Controller
 
             case 'morning_evening':
             case 'evening_morning':
-                $isWithinShiftTime = $this->determineShiftCycle(
+                $isWithinShiftTime = $this->determineShiftCycle2(
                     $shift,
                     $currentTime,
                     $morningStart,
@@ -468,6 +467,61 @@ class AreaController extends Controller
 
         return [
             'is_current' => $isWorkingDay && $isWithinShiftTime,
+            'start_date' => $shiftStartDate,
+        ];
+    }
+
+    private function determineShiftCycle2($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, $type)
+    {
+        $pattern = $shift->zone->pattern;
+        $workingDays = $pattern->working_days;
+        $offDays = $pattern->off_days;
+        $cycleLength = $workingDays + $offDays;
+
+        // تاريخ بداية الدورة مع وقت الوردية
+        $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh');
+
+        // تعديل بداية الدورة لورديات المساء
+        if ($shift->type === 'evening' || $shift->type === 'evening_morning') {
+            $startDate->subHours(4);
+        }
+
+        // عدد الأيام منذ بداية الدورة (مع الوقت)
+        $daysSinceStart = $startDate->diffInDays($currentTime, false);
+
+        if ($daysSinceStart < 0) {
+            return ['is_current' => false, 'start_date' => null];
+        }
+
+        $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+        $isWorkingDayInCycle = $currentDayInCycle < $workingDays;
+        $isOddCycle = $currentCycleNumber % 2 == 1;
+
+        $isCurrent = false;
+        $shiftStartDate = null;
+
+        if ($type === 'morning_evening') {
+            if ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) {
+                $isCurrent = true;
+                $shiftStartDate = $morningStart->toDateString();
+            } elseif (! $isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) {
+                $isCurrent = true;
+                $shiftStartDate = $eveningStart->toDateString();
+            }
+        } elseif ($type === 'evening_morning') {
+            if ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) {
+                $isCurrent = true;
+                $shiftStartDate = $eveningStart->toDateString();
+            } elseif (! $isOddCycle && $currentTime->between($morningStart, $morningEnd)) {
+                $isCurrent = true;
+                $shiftStartDate = $morningStart->toDateString();
+            }
+        }
+
+        return [
+            'is_current' => $isWorkingDayInCycle && $isCurrent,
             'start_date' => $shiftStartDate,
         ];
     }

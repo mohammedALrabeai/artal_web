@@ -147,53 +147,55 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
- 
+    public function isWorkingDay2(?Carbon $referenceDateTime = null): ?bool
+    {
+        $referenceDateTime = $referenceDateTime ? $referenceDateTime->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
 
-public function isWorkingDay2(Carbon $referenceDateTime = null): ?bool
-{
-    $referenceDateTime = $referenceDateTime ?? Carbon::now('Asia/Riyadh');
+        $zone = $this->zone;
+        if (! $zone || ! $zone->pattern) {
+            return null;
+        }
 
-    // استرجاع المنطقة المرتبطة بالوردية
-    $zone = $this->zone;
+        $pattern = $zone->pattern;
+        $workingDays = (int) $pattern->working_days;
+        $offDays = (int) $pattern->off_days;
 
-    if (! $zone || ! $zone->pattern) {
-        return null;
+        if ($workingDays <= 0 || $offDays < 0) {
+            return null;
+        }
+
+        $cycleLength = $workingDays + $offDays;
+        if ($cycleLength <= 0) {
+            return null;
+        }
+
+        // تاريخ ووقت بداية الدورة (مع مراعاة وقت الوردية)
+        $startDate = Carbon::parse($this->start_date, 'Asia/Riyadh');
+
+        // إذا كانت الوردية مسائية وتمتد إلى اليوم التالي:
+        if ($this->type === 'evening' || $this->type === 'evening_morning') {
+            $startDate->subHours(4); // تعديل لاحتساب بداية الدورة من الليلة السابقة
+        }
+
+        // الفرق بالأيام مع مراعاة الوقت الدقيق
+        $daysSinceStart = $startDate->diffInDays($referenceDateTime, false);
+
+        // إذا كان التاريخ المرجعي قبل بداية الدورة
+        if ($daysSinceStart < 0) {
+            return false;
+        }
+
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+        return $currentDayInCycle < $workingDays;
     }
-
-    $pattern = $zone->pattern;
-    $workingDays = (int) $pattern->working_days;
-    $offDays = (int) $pattern->off_days;
-
-    // تأكد من صلاحية البيانات
-    if ($workingDays <= 0 || $offDays < 0) {
-        return null;
-    }
-
-    $cycleLength = $workingDays + $offDays;
-
-    // تاريخ بداية الوردية
-    $startDate = Carbon::parse($this->start_date)->startOfDay();
-
-    // التاريخ المستهدف لاحتساب نمط اليوم
-    $targetDate = $referenceDateTime->copy()->startOfDay();
-
-    // عدد الأيام منذ البداية
-    $daysSinceStart = $startDate->diffInDays($targetDate);
-
-    // موقع اليوم داخل الدورة
-    $currentDayInCycle = $daysSinceStart % $cycleLength;
-
-    // إذا كان ضمن أيام العمل
-    return $currentDayInCycle < $workingDays;
-}
-
 
     // ✅ دالة لحساب نوع الوردية الحالية (صباح / مساء)
     // echo $shift->shift_type; // سيطبع 1 إذا كانت صباحية، أو 2 إذا كانت مسائية
     public function getShiftTypeAttribute()
     {
         // ✅ التحقق من وجود المنطقة ونمط العمل
-        if (!$this->zone || !$this->zone->pattern) {
+        if (! $this->zone || ! $this->zone->pattern) {
             return null;
         }
 
@@ -365,4 +367,7 @@ public function isWorkingDay2(Carbon $referenceDateTime = null): ?bool
             ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
             ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
     }
+
+
+    
 }
