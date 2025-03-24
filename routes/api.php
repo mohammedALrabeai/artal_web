@@ -147,7 +147,7 @@ Route::post('/test-notification', function () {
 });
 
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
-Route::get('/areas-with-details2', [AreaController::class, 'getAreasWithDetails3']);
+Route::get('/areas-with-details2', [AreaController::class, 'getAreasWithDetailsDynamic']);
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 
