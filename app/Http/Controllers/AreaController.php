@@ -543,37 +543,37 @@ class AreaController extends Controller
                         'emp_no' => $project->emp_no,
                         'zones' => $project->zones->map(function ($zone) use ($currentTime) {
                             $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
-                                $isCurrentShift = $this->isCurrentShiftDynamic($shift, $currentTime, $zone);
+                                // الحصول على حالة الوردية وتاريخ الحضور
+                                $shiftInfo = $this->determineCurrentShift($shift, $currentTime, $zone);
 
-                                // تحديد تاريخ الحضور بناءً على الوردية
-                                $attendanceDate = $this->getAttendanceDate($shift, $currentTime);
-
-                                // احتساب عدد الحضور للوردية الحالية فقط
-                                $attendanceCount = $isCurrentShift ? $shift->attendances
+                                // تعداد الحضور بناءً على تاريخ الوردية
+                                $attendanceCount = $shift->attendances
                                     ->where('status', 'present')
-                                    ->where('date', $attendanceDate)
-                                    ->count() : 0;
+                                    ->where('date', $shiftInfo['attendance_date'] ?? null)
+                                    ->count();
 
                                 return [
                                     'id' => $shift->id,
                                     'name' => $shift->name,
                                     'type' => $shift->type,
-                                    'is_current_shift' => $isCurrentShift,
+                                    'is_current_shift' => $shiftInfo['is_current'],
                                     'attendees_count' => $attendanceCount,
                                     'emp_no' => $shift->emp_no,
                                 ];
                             });
 
                             $currentShift = $shifts->where('is_current_shift', true)->first();
+
+                            // حسابات التغطيات والخروج عن النطاق
                             $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
                                 ->where('status', 'coverage')
-                                ->where('check_out', null)
+                                ->whereNull('check_out')
                                 ->whereDate('date', $currentTime->toDateString())
                                 ->count();
 
                             $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
                                 ->where('status', 'present')
-                                ->where('check_out', null)
+                                ->whereNull('check_out')
                                 ->whereDate('date', $currentTime->toDateString())
                                 ->whereHas('employee', function ($query) {
                                     $query->where('out_of_zone', true);
@@ -598,93 +598,135 @@ class AreaController extends Controller
         return response()->json($data);
     }
 
-    private function isCurrentShiftDynamic($shift, $currentTime, $zone)
+    /**
+     * تحديد إذا كانت الوردية حالية مع تاريخ الحضور المناسب
+     */
+    private function determineCurrentShift($shift, $currentTime, $zone)
     {
-        // التحقق مما إذا كان اليوم ضمن أيام العمل
-        $isWorkingDay = $shift->isWorkingDayDynamic($currentTime);
-        if (! $isWorkingDay) {
-            return false;
-        }
+        $isWorkingDay = $shift->isWorkingDay();
+        $today = $currentTime->toDateString();
+        $attendanceDate = $today;
+        $isCurrent = false;
 
-        // تحديد توقيت الوردية
-        $morningStart = Carbon::parse($shift->morning_start, 'Asia/Riyadh');
-        $morningEnd = Carbon::parse($shift->morning_end, 'Asia/Riyadh');
-        $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh');
-        $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh');
+        // تحليل أوقات الورديات
+        $morningStart = Carbon::parse("$today {$shift->morning_start}", 'Asia/Riyadh');
+        $morningEnd = Carbon::parse("$today {$shift->morning_end}", 'Asia/Riyadh');
 
-        // تعديل نهاية الوردية المسائية إذا كانت تمتد عبر منتصف الليل
-        if ($eveningEnd < $eveningStart) {
+        $eveningStart = Carbon::parse("$today {$shift->evening_start}", 'Asia/Riyadh');
+        $eveningEnd = Carbon::parse("$today {$shift->evening_end}", 'Asia/Riyadh');
+
+        if ($eveningEnd->lessThan($eveningStart)) {
             $eveningEnd->addDay();
         }
 
-        $isWithinShiftTime = false;
-
-        // تحديد ما إذا كان الوقت الحالي ضمن نطاق الوردية بناءً على نوعها
         switch ($shift->type) {
             case 'morning':
-                $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd);
+                $isCurrent = $isWorkingDay && $currentTime->between($morningStart, $morningEnd);
                 break;
+
             case 'evening':
-                $isWithinShiftTime = $currentTime->between($eveningStart, $eveningEnd);
+                // التحقق من الوردية اليوم أو الأمس
+                $yesterday = $currentTime->copy()->subDay()->toDateString();
+                $yesterdayEveningStart = Carbon::parse("$yesterday {$shift->evening_start}", 'Asia/Riyadh');
+                $yesterdayEveningEnd = Carbon::parse("$yesterday {$shift->evening_end}", 'Asia/Riyadh');
+
+                if ($yesterdayEveningEnd->lessThan($yesterdayEveningStart)) {
+                    $yesterdayEveningEnd->addDay();
+                }
+
+                $isCurrent = $isWorkingDay && (
+                    $currentTime->between($eveningStart, $eveningEnd) ||
+                    $currentTime->between($yesterdayEveningStart, $yesterdayEveningEnd)
+                );
+
+                // تحديد تاريخ الحضور
+                if ($currentTime->between($yesterdayEveningStart, $yesterdayEveningEnd)) {
+                    $attendanceDate = $yesterday;
+                }
                 break;
+
             case 'morning_evening':
             case 'evening_morning':
-                $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd) ||
-                                    $currentTime->between($eveningStart, $eveningEnd);
+                $cycleCheck = $this->checkShiftCycle($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd);
+                $isCurrent = $isWorkingDay && $cycleCheck['is_current'];
+                $attendanceDate = $cycleCheck['attendance_date'];
                 break;
         }
 
-        return $isWithinShiftTime;
+        return [
+            'is_current' => $isCurrent,
+            'attendance_date' => $attendanceDate,
+        ];
     }
 
-    private function determineShiftCycleDynamic($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd, $type)
+    /**
+     * التحقق من دورة العمل المعقدة (صباحية/مسائية)
+     */
+    private function checkShiftCycle($shift, $currentTime, $morningStart, $morningEnd, $eveningStart, $eveningEnd)
     {
         if (! $shift->zone || ! $shift->zone->pattern) {
-            return false;
+            return ['is_current' => false, 'attendance_date' => null];
         }
 
         $pattern = $shift->zone->pattern;
         $cycleLength = $pattern->working_days + $pattern->off_days;
 
         if ($cycleLength <= 0) {
-            throw new Exception('Cycle length must be greater than zero.');
+            return ['is_current' => false, 'attendance_date' => null];
         }
 
-        $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh')->startOfDay();
-        $daysSinceStart = $startDate->diffInDays(Carbon::today('Asia/Riyadh'));
-        $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+        $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh');
+        $daysSinceStart = $startDate->diffInDays($currentTime);
+        $currentCycle = (int) floor($daysSinceStart / $cycleLength) + 1;
         $currentDayInCycle = $daysSinceStart % $cycleLength;
-        $isWorkingDayInCycle = $currentDayInCycle < $pattern->working_days;
-        $isOddCycle = $currentCycleNumber % 2 == 1;
+        $isWorkingDay = $currentDayInCycle < $pattern->working_days;
+        $isOddCycle = $currentCycle % 2 == 1;
 
-        if ($type === 'morning_evening') {
-            return $isWorkingDayInCycle && (
-                ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) ||
-                ((! $isOddCycle) && $currentTime->between($eveningStart, $eveningEnd))
-            );
-        }
+        $attendanceDate = $currentTime->toDateString();
+        $isCurrent = false;
 
-        if ($type === 'evening_morning') {
-            return $isWorkingDayInCycle && (
-                ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) ||
-                ((! $isOddCycle) && $currentTime->between($morningStart, $morningEnd))
-            );
-        }
+        // تحديد نوع الوردية بناءً على الدورة
+        if ($shift->type === 'morning_evening') {
+            if ($isOddCycle) {
+                $isCurrent = $currentTime->between($morningStart, $morningEnd);
+            } else {
+                // التحقق من الوردية المسائية (اليوم أو الأمس)
+                $yesterday = $currentTime->copy()->subDay()->toDateString();
+                $yesterdayEveningStart = Carbon::parse("$yesterday {$shift->evening_start}", 'Asia/Riyadh');
+                $yesterdayEveningEnd = Carbon::parse("$yesterday {$shift->evening_end}", 'Asia/Riyadh');
 
-        return false;
-    }
+                if ($yesterdayEveningEnd->lessThan($yesterdayEveningStart)) {
+                    $yesterdayEveningEnd->addDay();
+                }
 
-    private function getAttendanceDate($shift, $currentTime)
-    {
-        $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh');
-        $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh');
+                $isCurrent = $currentTime->between($yesterdayEveningStart, $yesterdayEveningEnd);
+                if ($isCurrent) {
+                    $attendanceDate = $yesterday;
+                }
+            }
+        } elseif ($shift->type === 'evening_morning') {
+            if ($isOddCycle) {
+                // التحقق من الوردية المسائية (اليوم أو الأمس)
+                $yesterday = $currentTime->copy()->subDay()->toDateString();
+                $yesterdayEveningStart = Carbon::parse("$yesterday {$shift->evening_start}", 'Asia/Riyadh');
+                $yesterdayEveningEnd = Carbon::parse("$yesterday {$shift->evening_end}", 'Asia/Riyadh');
 
-        if ($eveningEnd < $eveningStart) {
-            if ($currentTime->hour < 12) {
-                return Carbon::yesterday('Asia/Riyadh')->toDateString();
+                if ($yesterdayEveningEnd->lessThan($yesterdayEveningStart)) {
+                    $yesterdayEveningEnd->addDay();
+                }
+
+                $isCurrent = $currentTime->between($yesterdayEveningStart, $yesterdayEveningEnd);
+                if ($isCurrent) {
+                    $attendanceDate = $yesterday;
+                }
+            } else {
+                $isCurrent = $currentTime->between($morningStart, $morningEnd);
             }
         }
 
-        return Carbon::today('Asia/Riyadh')->toDateString();
+        return [
+            'is_current' => $isWorkingDay && $isCurrent,
+            'attendance_date' => $attendanceDate,
+        ];
     }
 }
