@@ -329,13 +329,18 @@ class AreaController extends Controller
                         'emp_no' => $project->emp_no,
                         'zones' => $project->zones->map(function ($zone) use ($currentTime) {
                             $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
-                                $isCurrentShift = $this->isCurrentShift3($shift, $currentTime, $zone);
+                                $shiftStatus = $this->isCurrentShift3($shift, $currentTime, $zone);
+                                $isCurrentShift = $shiftStatus['is_current'];
+                                $shiftStartDate = $shiftStatus['start_date'];
 
-                                // تعداد الحضور في الشفت الحالي لهذا اليوم
-                                $attendanceCount = $shift->attendances
-                                    ->where('status', 'present')
-                                    ->where('date', Carbon::today('Asia/Riyadh')->toDateString())
-                                    ->count();
+                                $attendanceCount = 0;
+
+                                if ($isCurrentShift && $shiftStartDate) {
+                                    $attendanceCount = $shift->attendances
+                                        ->where('status', 'present')
+                                        ->where('date', $shiftStartDate)
+                                        ->count();
+                                }
                                 // $today = $currentTime->toDateString();
 
                                 // // // إنشاء أوقات الوردية مع التاريخ
@@ -403,25 +408,22 @@ class AreaController extends Controller
         return response()->json($data);
     }
 
-    private function isCurrentShift3($shift, $currentTime, $zone)
+    private function isCurrentShift3($shift, $currentTime, $zone): array
     {
-        // ✅ تحديد ما إذا كان اليوم يوم عمل فعليًا حسب نمط الوردية
         $isWorkingDay = $shift->isWorkingDay2($currentTime);
 
-        // ✅ إنشاء توقيتات الصباحية
+        // أوقات الصباح
         $morningStart = Carbon::parse($shift->morning_start, 'Asia/Riyadh')->setDateFrom($currentTime);
         $morningEnd = Carbon::parse($shift->morning_end, 'Asia/Riyadh')->setDateFrom($currentTime);
         if ($morningEnd->lessThan($morningStart)) {
             $morningEnd->addDay();
         }
 
-        // ✅ إنشاء توقيتات المسائية بناءً على الوقت الحالي
+        // أوقات المساء
         if ($currentTime->hour < 6) {
-            // نحن بعد منتصف الليل وقبل 6 صباحًا → الوردية المسائية بدأت أمس
             $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh')->setDateFrom($currentTime)->subDay();
             $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh')->setDateFrom($currentTime);
         } else {
-            // الوقت طبيعي → الورديات تبدأ اليوم
             $eveningStart = Carbon::parse($shift->evening_start, 'Asia/Riyadh')->setDateFrom($currentTime);
             $eveningEnd = Carbon::parse($shift->evening_end, 'Asia/Riyadh')->setDateFrom($currentTime);
         }
@@ -430,14 +432,21 @@ class AreaController extends Controller
         }
 
         $isWithinShiftTime = false;
+        $shiftStartDate = null;
 
         switch ($shift->type) {
             case 'morning':
                 $isWithinShiftTime = $currentTime->between($morningStart, $morningEnd);
+                if ($isWithinShiftTime) {
+                    $shiftStartDate = $morningStart->toDateString();
+                }
                 break;
 
             case 'evening':
                 $isWithinShiftTime = $currentTime->between($eveningStart, $eveningEnd);
+                if ($isWithinShiftTime) {
+                    $shiftStartDate = $eveningStart->toDateString();
+                }
                 break;
 
             case 'morning_evening':
@@ -451,9 +460,15 @@ class AreaController extends Controller
                     $eveningEnd,
                     $shift->type
                 );
+                if ($isWithinShiftTime) {
+                    $shiftStartDate = $eveningStart->toDateString(); // أو morningStart حسب نوع الدورة
+                }
                 break;
         }
 
-        return $isWorkingDay && $isWithinShiftTime;
+        return [
+            'is_current' => $isWorkingDay && $isWithinShiftTime,
+            'start_date' => $shiftStartDate,
+        ];
     }
 }
