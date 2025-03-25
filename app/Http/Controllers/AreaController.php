@@ -550,6 +550,7 @@ class AreaController extends Controller
                                 $attendanceCount = $shift->attendances
                                     ->where('status', 'present')
                                     ->where('date', $shiftInfo['attendance_date'] ?? null)
+                                    ->whereNull('check_out')
                                     ->count();
 
                                 return [
