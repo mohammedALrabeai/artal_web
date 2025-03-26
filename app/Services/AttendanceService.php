@@ -21,11 +21,11 @@ class AttendanceService
             Log::info('Active employees retrieved', ['count' => $activeEmployees->count()]);
 
             foreach ($activeEmployees as $record) {
-                Log::info('Processing employee', ['employee_id' => $record->employee_id]);
+                // Log::info('Processing employee', ['employee_id' => $record->employee_id]);
 
                 // التأكد إذا كان اليوم يوم عمل
                 if (! $record->isWorkingDay()) {
-                    Log::info('Not a working day', ['employee_id' => $record->employee_id]);
+                    // Log::info('Not a working day', ['employee_id' => $record->employee_id]);
 
                     $this->markAttendance($record, 'off');
 
@@ -66,7 +66,7 @@ class AttendanceService
                     ->exists();
 
                 if ($attendanceExists) {
-                    Log::info('Attendance already exists', ['employee_id' => $record->employee_id]);
+                    // Log::info('Attendance already exists', ['employee_id' => $record->employee_id]);
 
                     continue; // إذا تم التحضير، تجاوز الموظف
                 }
@@ -114,10 +114,10 @@ class AttendanceService
             ->exists();
 
         if ($existingAttendance) {
-            Log::info('Attendance already recorded', [
-                'employee_id' => $record->employee_id,
-                'status' => $status,
-            ]);
+            // Log::info('Attendance already recorded', [
+            //     'employee_id' => $record->employee_id,
+            //     'status' => $status,
+            // ]);
 
             return; // لا تقم بتسجيل سجل جديد
         }
@@ -125,9 +125,9 @@ class AttendanceService
         // ✅ إذا كان الموظف غائبًا، تحديث الحقل `out_of_zone` إلى `false`
         if ($status === 'absent') {
             $record->employee->update(['out_of_zone' => false]);
-            Log::info('Employee marked as not out_of_zone', [
-                'employee_id' => $record->employee_id,
-            ]);
+            // Log::info('Employee marked as not out_of_zone', [
+            //     'employee_id' => $record->employee_id,
+            // ]);
         }
 
         // إذا لم يكن هناك سجل موجود، قم بإنشاء سجل جديد
