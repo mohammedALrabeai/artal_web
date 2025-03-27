@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 
 class OtpService
 {
-    protected $baseUrl = 'https://login.isender360.com/api/sync/message/send';
+    protected $baseUrl = 'https://wappi.pro/api/sync/message/send';
 
     // protected $profileId = 'aedd0dc2-8453';
     // protected $profileId = '35ab7ec0-63dd';
