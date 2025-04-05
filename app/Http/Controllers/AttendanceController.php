@@ -646,13 +646,13 @@ class AttendanceController extends Controller
             'zone_id' => 'required|integer',
             'date' => 'required|date',
         ]);
-
+    
         try {
             $projectId = $request->input('project_id');
             $zoneId = $request->input('zone_id');
             $date = Carbon::parse($request->input('date'))->toDateString();
             $currentTime = Carbon::now('Asia/Riyadh');
-
+    
             // جلب بيانات الحالة اللحظية للموظفين الذين حضروا أو لديهم تغطية اليوم
             $threshold = now()->subHours(12);
             $employeeStatuses = EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
@@ -667,14 +667,14 @@ class AttendanceController extends Controller
                 })
                 ->get()
                 ->keyBy('employee_id');
-
+    
             // جلب الورديات المرتبطة بالموقع
             $shifts = Shift::with('attendances.employee')
                 ->where('zone_id', $zoneId)
                 ->get();
-
+    
             $dataByShift = [];
-
+    
             foreach ($shifts as $shift) {
                 // جلب الموظفين المرتبطين بالسجل في هذا التاريخ
                 $employeeRecords = EmployeeProjectRecord::with('employee')
@@ -686,14 +686,14 @@ class AttendanceController extends Controller
                     })
                     ->where('start_date', '<=', $date)
                     ->get();
-
+    
                 $attendances = $shift->attendances->where('date', $date);
-
+    
                 $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses) {
                     $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
                     $employee = $record->employee;
                     $statusData = $employeeStatuses[$employee->id] ?? null;
-
+    
                     return [
                         'employee_id' => $record->employee_id,
                         'employee_name' => $employee->name(),
@@ -707,22 +707,22 @@ class AttendanceController extends Controller
                         'out_of_zone' => $employee->out_of_zone,
                         'is_checked_in' => $attendance !== null,
                         'is_late' => $attendance?->is_late ?? false,
-                        'gps_enabled' => $statusData?->gps_enabled,
-                        'is_inside' => $statusData?->is_inside,
+                        'gps_enabled' => $statusData?->gps_enabled ?? null,
+                        'is_inside' => $statusData?->is_inside ?? null,
                         'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
                     ];
                 });
-
+    
                 // تحديد نوع الوردية (1 = صباح، 2 = مساء)
                 $shiftType = $shift->shift_type;
                 $startTime = $shiftType === 1 ? $shift->morning_start : $shift->evening_start;
                 $endTime = $shiftType === 1 ? $shift->morning_end : $shift->evening_end;
-
+    
                 // هل هو يوم عمل؟
                 $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($date.' 00:00:00', 'Asia/Riyadh'));
-
+    
                 $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $shift->zone);
-
+    
                 $dataByShift[] = [
                     'shift_id' => $shift->id,
                     'shift_name' => $shift->name,
@@ -733,18 +733,18 @@ class AttendanceController extends Controller
                     'employees' => $employees,
                 ];
             }
-
+    
             // التغطيات النشطة
             $coverageAttendances = Attendance::with('employee')
                 ->where('zone_id', $zoneId)
                 ->where('status', 'coverage')
                 ->whereDate('date', $date)
                 ->get();
-
+    
             $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses) {
                 $employee = $attendance->employee;
                 $statusData = $employeeStatuses[$employee->id] ?? null;
-
+    
                 return [
                     'employee_id' => $attendance->employee_id,
                     'employee_name' => $employee->name(),
@@ -758,12 +758,12 @@ class AttendanceController extends Controller
                     'out_of_zone' => $employee->out_of_zone,
                     'is_checked_in' => true,
                     'is_late' => false,
-                    'gps_enabled' => $statusData?->gps_enabled,
-                    'is_inside' => $statusData?->is_inside,
+                    'gps_enabled' => $statusData?->gps_enabled ?? null,
+                    'is_inside' => $statusData?->is_inside ?? null,
                     'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
                 ];
             });
-
+    
             return response()->json([
                 'status' => 'success',
                 'date' => $date,
@@ -773,7 +773,7 @@ class AttendanceController extends Controller
                     'coverage' => $coverageEmployees,
                 ],
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -782,6 +782,7 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+    
 
     private function isCurrentShift($shift, $currentTime, $zone)
     {
