@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\NewNotification;
 use App\Models\Attendance;
 use App\Models\EmployeeProjectRecord;
+use App\Models\EmployeeStatus;
 use App\Models\Shift;
 use App\Models\User;
 use App\Models\Zone;
@@ -652,6 +653,21 @@ class AttendanceController extends Controller
             $date = Carbon::parse($request->input('date'))->toDateString();
             $currentTime = Carbon::now('Asia/Riyadh');
 
+            // جلب بيانات الحالة اللحظية للموظفين الذين حضروا أو لديهم تغطية اليوم
+            $threshold = now()->subHours(12);
+            $employeeStatuses = EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
+                ->whereHas('employee.attendances', function ($query) use ($threshold) {
+                    $query->where(function ($q) use ($threshold) {
+                        $q->where('check_in_datetime', '>=', $threshold)
+                            ->orWhere(function ($q2) use ($threshold) {
+                                $q2->where('is_coverage', true)
+                                    ->where('created_at', '>=', $threshold);
+                            });
+                    });
+                })
+                ->get()
+                ->keyBy('employee_id');
+
             // جلب الورديات المرتبطة بالموقع
             $shifts = Shift::with('attendances.employee')
                 ->where('zone_id', $zoneId)
@@ -673,9 +689,10 @@ class AttendanceController extends Controller
 
                 $attendances = $shift->attendances->where('date', $date);
 
-                $employees = $employeeRecords->map(function ($record) use ($attendances) {
+                $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses) {
                     $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
                     $employee = $record->employee;
+                    $statusData = $employeeStatuses[$employee->id] ?? null;
 
                     return [
                         'employee_id' => $record->employee_id,
@@ -690,6 +707,9 @@ class AttendanceController extends Controller
                         'out_of_zone' => $employee->out_of_zone,
                         'is_checked_in' => $attendance !== null,
                         'is_late' => $attendance?->is_late ?? false,
+                        'gps_enabled' => $statusData?->gps_enabled,
+                        'is_inside' => $statusData?->is_inside,
+                        'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
                     ];
                 });
 
@@ -721,8 +741,9 @@ class AttendanceController extends Controller
                 ->whereDate('date', $date)
                 ->get();
 
-            $coverageEmployees = $coverageAttendances->map(function ($attendance) {
+            $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses) {
                 $employee = $attendance->employee;
+                $statusData = $employeeStatuses[$employee->id] ?? null;
 
                 return [
                     'employee_id' => $attendance->employee_id,
@@ -737,6 +758,9 @@ class AttendanceController extends Controller
                     'out_of_zone' => $employee->out_of_zone,
                     'is_checked_in' => true,
                     'is_late' => false,
+                    'gps_enabled' => $statusData?->gps_enabled,
+                    'is_inside' => $statusData?->is_inside,
+                    'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
                 ];
             });
 
