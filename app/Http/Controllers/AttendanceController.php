@@ -630,102 +630,108 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
     /**
      * جلب حالة الحضور للموظفين في مشروع معين ومنطقة معينة.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getAttendanceStatusV2(Request $request)
-{
-    $request->validate([
-        'project_id' => 'required|integer',
-        'zone_id' => 'required|integer',
-        'date' => 'required|date',
-    ]);
-
-    try {
-        $projectId = $request->input('project_id');
-        $zoneId = $request->input('zone_id');
-        $date = Carbon::parse($request->input('date'));
-
-        // جلب جميع سجلات الربط بين الموظفين والمشروع والمنطقة والتاريخ المحدد
-        $employeeRecords = EmployeeProjectRecord::with('employee')
-            ->where('project_id', $projectId)
-            ->where('zone_id', $zoneId)
-            ->where(function ($query) use ($date) {
-                $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', $date);
-            })
-            ->where('start_date', '<=', $date)
-            ->get();
-
-        $employees = $employeeRecords->map(function ($record) {
-            return $record->employee;
-        });
-
-        // جلب كل سجلات الحضور لهذا اليوم والمنطقة (بكل الورديات)
-        $attendanceRecords = Attendance::where('zone_id', $zoneId)
-            ->whereDate('date', $date)
-            ->get();
-
-        $regularEmployees = $employees->map(function ($employee) use ($attendanceRecords) {
-            $attendance = $attendanceRecords->firstWhere('employee_id', $employee->id);
-
-            return [
-                'employee_id' => $employee->id,
-                'employee_name' => $employee->first_name.' '.$employee->father_name.' '.$employee->family_name,
-                'status' => $attendance ? $attendance->status : 'absent',
-                'check_in' => $attendance ? $attendance->check_in : null,
-                'check_out' => $attendance ? $attendance->check_out : null,
-                'shift_id' => $attendance ? $attendance->shift_id : null,
-                'mobile_number' => $employee->mobile_number,
-                'phone_number' => $employee->phone_number,
-                'notes' => $attendance ? $attendance->notes : null,
-                'is_coverage' => $attendance && $attendance->status === 'coverage',
-                'out_of_zone' => $employee ? $employee->out_of_zone : false,
-            ];
-        });
-
-        // جلب موظفي التغطية الذين لم يتم تسجيلهم في EmployeeProjectRecord (ربما غير مرتبطين بالمشروع)
-        $coverageAttendances = Attendance::with('employee')
-            ->where('zone_id', $zoneId)
-            ->where('status', 'coverage')
-            ->whereDate('date', $date)
-            ->get();
-
-        $coverageEmployees = $coverageAttendances->map(function ($attendance) {
-            $employee = $attendance->employee;
-
-            return [
-                'employee_id' => $employee->id,
-                'employee_name' => $employee->first_name.' '.$employee->father_name.' '.$employee->family_name,
-                'status' => 'coverage',
-                'check_in' => $attendance->check_in,
-                'check_out' => $attendance->check_out,
-                'shift_id' => $attendance->shift_id,
-                'mobile_number' => $employee->mobile_number,
-                'phone_number' => $employee->phone_number,
-                'notes' => $attendance->notes,
-                'is_coverage' => true,
-                'out_of_zone' => $employee ? $employee->out_of_zone : false,
-            ];
-        });
-
-        // دمج النتائج وإزالة التكرار إن وجد
-        $allEmployees = $regularEmployees->merge($coverageEmployees)->unique('employee_id')->values();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $allEmployees,
+    {
+        $request->validate([
+            'project_id' => 'required|integer',
+            'zone_id' => 'required|integer',
+            'date' => 'required|date',
         ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
 
+        try {
+            $projectId = $request->input('project_id');
+            $zoneId = $request->input('zone_id');
+            $date = Carbon::parse($request->input('date'))->toDateString();
+            $currentTime = Carbon::now('Asia/Riyadh');
+
+            // جلب الورديات المرتبطة بالموقع
+            $shifts = Shift::with('attendances.employee')
+                ->where('zone_id', $zoneId)
+                ->get();
+
+            $dataByShift = [];
+
+            foreach ($shifts as $shift) {
+                // جلب الموظفين المرتبطين بالسجل في هذا التاريخ
+                $employeeRecords = EmployeeProjectRecord::with('employee')
+                    ->where('project_id', $projectId)
+                    ->where('zone_id', $zoneId)
+                    ->where('shift_id', $shift->id)
+                    ->where(function ($query) use ($date) {
+                        $query->whereNull('end_date')->orWhere('end_date', '>=', $date);
+                    })
+                    ->where('start_date', '<=', $date)
+                    ->get();
+
+                $attendances = $shift->attendances->where('date', $date);
+
+                $employees = $employeeRecords->map(function ($record) use ($attendances) {
+                    $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
+
+                    return [
+                        'employee_id' => $record->employee_id,
+                        'employee_name' => $record->employee->name(),
+                        'status' => $attendance?->status ?? 'absent',
+                        'check_in' => $attendance?->check_in,
+                        'check_out' => $attendance?->check_out,
+                        'notes' => $attendance?->notes,
+                        'is_coverage' => false,
+                        'out_of_zone' => $record->employee->out_of_zone,
+                    ];
+                });
+
+                $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $shift->zone);
+
+                $dataByShift[] = [
+                    'shift_id' => $shift->id,
+                    'shift_name' => $shift->name,
+                    'is_current_shift' => $isCurrentShift,
+                    'employees' => $employees,
+                ];
+            }
+
+            // التغطيات النشطة
+            $coverageAttendances = Attendance::with('employee')
+                ->where('zone_id', $zoneId)
+                ->where('status', 'coverage')
+                ->whereDate('date', $date)
+                ->get();
+
+            $coverageEmployees = $coverageAttendances->map(function ($attendance) {
+                return [
+                    'employee_id' => $attendance->employee_id,
+                    'employee_name' => $attendance->employee->name(),
+                    'status' => 'coverage',
+                    'check_in' => $attendance->check_in,
+                    'check_out' => $attendance->check_out,
+                    'notes' => $attendance->notes,
+                    'is_coverage' => true,
+                    'out_of_zone' => $attendance->employee->out_of_zone,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'date' => $date,
+                'zone_id' => $zoneId,
+                'data' => [
+                    'shifts' => $dataByShift,
+                    'coverage' => $coverageEmployees,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
