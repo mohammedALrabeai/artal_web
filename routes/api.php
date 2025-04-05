@@ -150,6 +150,7 @@ Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2'
 Route::get('/areas-with-details2', [AreaController::class, 'getAreasWithDetailsDynamic']);
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
+Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2']);
 
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
 
