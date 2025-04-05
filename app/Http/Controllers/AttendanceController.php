@@ -675,18 +675,31 @@ class AttendanceController extends Controller
 
                 $employees = $employeeRecords->map(function ($record) use ($attendances) {
                     $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
+                    $employee = $record->employee;
 
                     return [
                         'employee_id' => $record->employee_id,
-                        'employee_name' => $record->employee->name(),
+                        'employee_name' => $employee->name(),
                         'status' => $attendance?->status ?? 'absent',
                         'check_in' => $attendance?->check_in,
                         'check_out' => $attendance?->check_out,
                         'notes' => $attendance?->notes,
+                        'mobile_number' => $employee->mobile_number,
+                        'phone_number' => $employee->phone_number,
                         'is_coverage' => false,
-                        'out_of_zone' => $record->employee->out_of_zone,
+                        'out_of_zone' => $employee->out_of_zone,
+                        'is_checked_in' => $attendance !== null,
+                        'is_late' => $attendance?->is_late ?? false,
                     ];
                 });
+
+                // تحديد نوع الوردية (1 = صباح، 2 = مساء)
+                $shiftType = $shift->shift_type;
+                $startTime = $shiftType === 1 ? $shift->morning_start : $shift->evening_start;
+                $endTime = $shiftType === 1 ? $shift->morning_end : $shift->evening_end;
+
+                // هل هو يوم عمل؟
+                $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($date.' 00:00:00', 'Asia/Riyadh'));
 
                 $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $shift->zone);
 
@@ -694,6 +707,9 @@ class AttendanceController extends Controller
                     'shift_id' => $shift->id,
                     'shift_name' => $shift->name,
                     'is_current_shift' => $isCurrentShift,
+                    'is_working_day' => $isWorkingDay,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
                     'employees' => $employees,
                 ];
             }
@@ -706,15 +722,21 @@ class AttendanceController extends Controller
                 ->get();
 
             $coverageEmployees = $coverageAttendances->map(function ($attendance) {
+                $employee = $attendance->employee;
+
                 return [
                     'employee_id' => $attendance->employee_id,
-                    'employee_name' => $attendance->employee->name(),
+                    'employee_name' => $employee->name(),
                     'status' => 'coverage',
                     'check_in' => $attendance->check_in,
                     'check_out' => $attendance->check_out,
                     'notes' => $attendance->notes,
+                    'mobile_number' => $employee->mobile_number,
+                    'phone_number' => $employee->phone_number,
                     'is_coverage' => true,
-                    'out_of_zone' => $attendance->employee->out_of_zone,
+                    'out_of_zone' => $employee->out_of_zone,
+                    'is_checked_in' => true,
+                    'is_late' => false,
                 ];
             });
 
