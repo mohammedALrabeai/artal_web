@@ -256,8 +256,7 @@ class EmployeeResource extends Resource
                             ->required(),
 
                         Forms\Components\DatePicker::make('contract_start')
-                            ->label(__('Contract Start'))
-                            ->required(),
+                            ->label(__('Contract Start')),
 
                         Forms\Components\DatePicker::make('contract_end')
                             ->label(__('Contract End'))
