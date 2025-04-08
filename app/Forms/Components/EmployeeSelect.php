@@ -63,7 +63,7 @@ class EmployeeSelect extends Select
 
         return $query->get()
             ->mapWithKeys(fn ($employee) => [
-                $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})",
+                $employee->id => "{$employee->name} - {$employee->national_id} ({$employee->id})",
             ])
             ->toArray();
     }

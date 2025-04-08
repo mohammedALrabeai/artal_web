@@ -207,6 +207,16 @@ class EmployeeProjectRecordResource extends Resource
                     ->getStateUsing(fn ($record) => self::calculateWorkPattern($record))
                     ->html()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('created_at')
+                    ->label(__('Created At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->label(__('Updated At'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
             ])
 
@@ -276,10 +286,10 @@ class EmployeeProjectRecordResource extends Resource
 
                             // ✅ إرسال إشعار إلى الموظف الجديد
                             $newEmployee = Employee::find($newEmployeeId);
-                            Notification::make()
-                                ->title('📢 تم إسنادك إلى موقع جديد')
-                                ->success()
-                                ->body("📌 تم إسنادك إلى موقع **{$record->zone->name}** ضمن الوردية **{$record->shift->name}** ابتداءً من اليوم.");
+                            // Notification::make()
+                            //     ->title('📢 تم إسنادك إلى موقع جديد')
+                            //     ->success()
+                            //     ->body("📌 تم إسنادك إلى موقع **{$record->zone->name}** ضمن الوردية **{$record->shift->name}** ابتداءً من اليوم.");
                             // ->sendToDatabase($newEmployee)
                         });
 
