@@ -23,9 +23,11 @@ use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
@@ -234,6 +236,21 @@ class EmployeeProjectRecordResource extends Resource
                     ->options(Zone::all()->pluck('name', 'id'))
                     ->searchable()
                     ->multiple(),
+
+                Filter::make('multi_active_assignments')
+                    ->label('موظفون لديهم أكثر من إسناد نشط')
+                    ->query(function (Builder $query) {
+                        // أولًا نحصل على معرّفات الموظفين اللي عندهم أكثر من إسناد نشط
+                        $employeeIds = EmployeeProjectRecord::select('employee_id')
+                            ->where('status', true)
+                            ->groupBy('employee_id')
+                            ->havingRaw('COUNT(*) > 1')
+                            ->pluck('employee_id');
+
+                        // ثم نعرض فقط السجلات اللي تخصهم
+                        $query->whereIn('employee_id', $employeeIds);
+                    })
+                    ->indicator('إسنادات نشطة متعددة'),
 
                 // SelectFilter::make('employee_id')
                 //     ->label(__('Employee'))
