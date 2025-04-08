@@ -167,10 +167,40 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
         DB::transaction(function () use (&$created, &$updated, &$updatWitLoc) {
             $existingIds = collect($this->records)->pluck('employee_id')->filter();
 
-            // تعطيل الموظفين الذين لم يعودوا ضمن القائمة الجديدة
-            EmployeeProjectRecord::where('project_id', $this->projectId)
+            // 🔍 جلب السجلات التي سيتم تعطيلها
+            $toBeDisabled = EmployeeProjectRecord::where('project_id', $this->projectId)
                 ->whereNotIn('employee_id', $existingIds)
+                ->where('status', true) // فقط النشطين
+                ->get();
+
+            // ⛔ تعطيلهم فعليًا
+            EmployeeProjectRecord::whereIn('id', $toBeDisabled->pluck('id'))
                 ->update(['status' => false, 'end_date' => now()]);
+
+            // 🛎️ إرسال إشعارات داخلية
+            $notificationService = new \App\Services\NotificationService;
+
+            foreach ($toBeDisabled as $record) {
+                $employee = $record->employee;
+                $zone = $record->zone;
+                $project = $record->project;
+                $shift = $record->shift;
+
+                $notificationService->sendNotification(
+                    ['manager', 'general_manager', 'hr'],
+                    '🚫 إنهاء إسناد موظف',
+                    "👤 *اسم الموظف:* {$employee->name()}\n".
+                    "📍 *الموقع:* {$zone->name} - {$project->name}\n".
+                    "🕒 *الوردية:* {$shift->name}\n".
+                    '📅 *تاريخ الإنهاء:* '.now()->toDateString()."\n\n".
+                    '📢 *تم الإنهاء ضمن عملية التحديث الجماعي.*',
+                    [
+                        $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                        $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
+                    ]
+                );
+            }
+
             // dd($this->records);
             foreach ($this->records as $data) {
                 // $record = EmployeeProjectRecord::firstWhere([
@@ -257,12 +287,14 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
 
             }
         });
+       
 
         Notification::make()
             ->title('✅ تم حفظ التعديلات')
             ->body("📌 تم  موظف، إضافة {$created} موظف جديد ,{$updatWitLoc} نقل")
             ->success()
             ->send();
+            $this->reset(['projectId', 'records']);
     }
 
     protected function loadProjectEmployees($projectId): void
