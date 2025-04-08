@@ -354,6 +354,59 @@ class EmployeeProjectRecordResource extends Resource
                     })
                     ->requiresConfirmation() // لتأكيد الإجراء قبل التنفيذ
                     ->color('primary'),
+
+                Action::make('send_location')
+                    ->label('📍 إرسال الموقع')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('تأكيد الإرسال')
+                    ->modalDescription('هل تريد إرسال موقع الموظف والوردية عبر واتساب؟')
+                    ->action(function ($record) {
+                        $zone = $record->zone;
+                        $shift = $record->shift;
+                        $employee = $record->employee;
+
+                        if (! $zone || ! $shift || ! $employee) {
+                            Notification::make()
+                                ->title('❌ البيانات غير مكتملة')
+                                ->body('لم يتم العثور على معلومات الموقع أو الوردية أو الموظف.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $googleMapsUrl = "https://www.google.com/maps?q={$zone->lat},{$zone->longg}";
+
+                        $message = "👷‍♂️ الموظف: {$employee->name()}\n";
+                        $message .= "📌 الموقع: {$zone->name}\n";
+                        $message .= "🕒 الوردية: {$shift->name}\n";
+                        $message .= "🌍 الموقع على الخريطة:\n{$googleMapsUrl}";
+
+                        try {
+                            $otpService = new OtpService;
+
+                            // إرسال للموظف
+                            $otpService->sendOtp($employee->mobile_number, $message);
+
+                            // إرسال للجروب الإداري
+                            $otpService->sendOtp('120363385699307538@g.us', $message);
+
+                            Notification::make()
+                                ->title('✅ تم إرسال الموقع')
+                                ->body('تم إرسال الموقع إلى الموظف والجروب بنجاح.')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('❌ خطأ في الإرسال')
+                                ->body('حدث خطأ أثناء إرسال الموقع: '.$e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
             ])
             ->paginationPageOptions([10, 25, 50, 100])
             ->bulkActions([
