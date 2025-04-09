@@ -152,6 +152,7 @@ Route::get('/areas/details/improved', [AreaController::class, 'getAreasWithDetai
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2']);
+Route::get('/attendance3', [AttendanceController::class, 'getAttendanceStatusV3']);
 
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
 
