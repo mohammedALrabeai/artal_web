@@ -786,13 +786,14 @@ class AreaController extends Controller
                                     'shift_cycle_info' => $isCurrentShift ? $shiftInfo['cycle_info'] : null,
                                 ];
                             });
-
+                            $timezone = 'Asia/Riyadh';
+                            $nowInRiyadh = Carbon::now($timezone);
                             // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا في اليوم الحالي أو السابق
                             $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
                                 ->where('status', 'coverage')
                                 ->whereNull('check_out')
                                 ->whereIn('date', [$today, $yesterday])
-                                ->where('check_in', '>=', now()->subHours(16)) // فقط التغطيات التي مضى عليها أقل من 12 ساعة
+                                ->where('check_in', '>=', $nowInRiyadh->subHours(16)->timezone('UTC')) // فقط التغطيات التي مضى عليها أقل من 12 ساعة
                                 ->count();
 
                             // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا وخرجوا عن الموقع

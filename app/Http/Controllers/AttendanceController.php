@@ -1011,14 +1011,15 @@ class AttendanceController extends Controller
 
                 return 0;
             });
-
+            $timezone = 'Asia/Riyadh';
+            $nowInRiyadh = Carbon::now($timezone);
             // التغطيات النشطة - جلب التغطيات من اليوم الحالي واليوم السابق
             $coverageAttendances = Attendance::with('employee')
                 ->where('zone_id', $zoneId)
                 ->where('status', 'coverage')
                 ->whereIn('date', [$requestDate, $previousDate])
                 ->whereNull('check_out') // فقط التغطيات النشطة (بدون تسجيل انصراف)
-                ->where('check_in', '>=', now()->subHours(16)) // فقط التغطيات التي مضى عليها أقل من 12 ساعة
+                ->where('check_in', '>=', $nowInRiyadh->subHours(16)->timezone('UTC')) // فقط التغطيات التي مضى عليها أقل من 12 ساعة
                 ->get();
 
             $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses) {
