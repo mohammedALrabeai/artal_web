@@ -730,4 +730,282 @@ class AreaController extends Controller
             'attendance_date' => $attendanceDate,
         ];
     }
+
+    /**
+     * دالة محسنة لعرض الورديات في شاشة المراقبة
+     * تعالج مشكلة الورديات التي تمتد عبر منتصف الليل وأنماط العمل المختلفة
+     */
+    public function getAreasWithDetailsImproved()
+    {
+        // تعيين التوقيت إلى توقيت الرياض
+        $currentTime = Carbon::now('Asia/Riyadh');
+        $today = $currentTime->toDateString();
+        $yesterday = $currentTime->copy()->subDay()->toDateString();
+
+        $areas = Area::with(['projects.zones.shifts.attendances'])->get();
+
+        $data = $areas->map(function ($area) use ($currentTime, $today, $yesterday) {
+            return [
+                'id' => $area->id,
+                'name' => $area->name,
+                'projects' => $area->projects->map(function ($project) use ($currentTime, $today, $yesterday) {
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'emp_no' => $project->emp_no,
+                        'zones' => $project->zones->map(function ($zone) use ($currentTime, $today, $yesterday) {
+                            // الحصول على جميع الورديات النشطة حالياً (من اليوم الحالي واليوم السابق)
+                            $activeShifts = $this->getActiveShifts($zone->shifts, $currentTime, $zone);
+
+                            $shifts = $zone->shifts->map(function ($shift) use ($activeShifts) {
+                                // التحقق مما إذا كانت الوردية نشطة حالياً
+                                $shiftInfo = $activeShifts->firstWhere('shift_id', $shift->id);
+                                $isCurrentShift = ! is_null($shiftInfo);
+
+                                // تحديد تاريخ الحضور المناسب للوردية
+                                $attendanceDate = $isCurrentShift ? $shiftInfo['attendance_date'] : null;
+
+                                // تعداد الحضور في الوردية الحالية
+                                $attendanceCount = 0;
+                                if ($isCurrentShift) {
+                                    $attendanceCount = $shift->attendances
+                                        ->where('status', 'present')
+                                        ->where('date', $attendanceDate)
+                                        ->whereNull('check_out')
+                                        ->count();
+                                }
+
+                                return [
+                                    'id' => $shift->id,
+                                    'name' => $shift->name,
+                                    'type' => $shift->type,
+                                    'is_current_shift' => $isCurrentShift,
+                                    'attendees_count' => $attendanceCount,
+                                    'emp_no' => $shift->emp_no,
+                                    'attendance_date' => $attendanceDate,
+                                    'shift_cycle_info' => $isCurrentShift ? $shiftInfo['cycle_info'] : null,
+                                ];
+                            });
+
+                            // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا في اليوم الحالي أو السابق
+                            $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                ->where('status', 'coverage')
+                                ->whereNull('check_out')
+                                ->whereIn('date', [$today, $yesterday])
+                                ->count();
+
+                            // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا وخرجوا عن الموقع
+                            $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                ->where('status', 'present')
+                                ->whereNull('check_out')
+                                ->whereIn('date', [$today, $yesterday])
+                                ->whereHas('employee', function ($query) {
+                                    $query->where('out_of_zone', true);
+                                })
+                                ->count();
+
+                            // الحصول على الوردية الحالية لعرض عدد الموظفين المطلوبين
+                            $currentShift = $shifts->where('is_current_shift', true)->first();
+
+                            return [
+                                'id' => $zone->id,
+                                'name' => $zone->name,
+                                'emp_no' => $zone->emp_no,
+                                'shifts' => $shifts,
+                                'current_shift_emp_no' => $currentShift ? $currentShift['emp_no'] : 0,
+                                'active_coverages_count' => $activeCoveragesCount,
+                                'out_of_zone_count' => $outOfZoneCount,
+                            ];
+                        }),
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * الحصول على جميع الورديات النشطة حالياً
+     * تعالج الورديات من اليوم الحالي واليوم السابق
+     */
+    private function getActiveShifts($shifts, $currentTime, $zone)
+    {
+        $today = $currentTime->toDateString();
+        $yesterday = $currentTime->copy()->subDay()->toDateString();
+        $activeShifts = collect();
+
+        foreach ($shifts as $shift) {
+            // التحقق من الورديات النشطة من اليوم الحالي
+            $todayShiftInfo = $this->checkShiftActive($shift, $currentTime, $zone, $today);
+            if ($todayShiftInfo['is_active']) {
+                $activeShifts->push([
+                    'shift_id' => $shift->id,
+                    'attendance_date' => $todayShiftInfo['attendance_date'],
+                    'cycle_info' => $todayShiftInfo['cycle_info'],
+                ]);
+
+                continue; // إذا كانت الوردية نشطة اليوم، لا داعي للتحقق من الأمس
+            }
+
+            // التحقق من الورديات النشطة من اليوم السابق
+            $yesterdayShiftInfo = $this->checkShiftActive($shift, $currentTime, $zone, $yesterday);
+            if ($yesterdayShiftInfo['is_active']) {
+                $activeShifts->push([
+                    'shift_id' => $shift->id,
+                    'attendance_date' => $yesterdayShiftInfo['attendance_date'],
+                    'cycle_info' => $yesterdayShiftInfo['cycle_info'],
+                ]);
+            }
+        }
+
+        return $activeShifts;
+    }
+
+    /**
+     * التحقق مما إذا كانت الوردية نشطة في تاريخ محدد
+     */
+    private function checkShiftActive($shift, $currentTime, $zone, $checkDate)
+    {
+        // التحقق من إذا كان اليوم يوم عمل بناءً على نمط العمل
+        $isWorkingDay = $this->isWorkingDayInPattern($shift, $checkDate);
+        if (! $isWorkingDay) {
+            return ['is_active' => false, 'attendance_date' => null, 'cycle_info' => null];
+        }
+
+        // إنشاء أوقات الوردية مع التاريخ المحدد
+        $morningStart = Carbon::parse("$checkDate {$shift->morning_start}", 'Asia/Riyadh');
+        $morningEnd = Carbon::parse("$checkDate {$shift->morning_end}", 'Asia/Riyadh');
+        $eveningStart = Carbon::parse("$checkDate {$shift->evening_start}", 'Asia/Riyadh');
+        $eveningEnd = Carbon::parse("$checkDate {$shift->evening_end}", 'Asia/Riyadh');
+
+        // التعامل مع الورديات التي تمتد عبر منتصف الليل
+        if ($eveningEnd->lessThan($eveningStart)) {
+            $eveningEnd->addDay();
+        }
+
+        // الحصول على معلومات دورة العمل
+        $cycleInfo = $this->getShiftCycleInfo($shift, $checkDate);
+        $isOddCycle = $cycleInfo['is_odd_cycle'];
+        $currentCycleNumber = $cycleInfo['current_cycle_number'];
+        $currentDayInCycle = $cycleInfo['current_day_in_cycle'];
+
+        $isActive = false;
+        $attendanceDate = $checkDate;
+
+        switch ($shift->type) {
+            case 'morning':
+                $isActive = $currentTime->between($morningStart, $morningEnd);
+                break;
+
+            case 'evening':
+                $isActive = $currentTime->between($eveningStart, $eveningEnd);
+                break;
+
+            case 'morning_evening':
+                // دورة فردية: صباحية، دورة زوجية: مسائية
+                if ($isOddCycle) {
+                    $isActive = $currentTime->between($morningStart, $morningEnd);
+                } else {
+                    $isActive = $currentTime->between($eveningStart, $eveningEnd);
+                }
+                break;
+
+            case 'evening_morning':
+                // دورة فردية: مسائية، دورة زوجية: صباحية
+                if ($isOddCycle) {
+                    $isActive = $currentTime->between($eveningStart, $eveningEnd);
+                } else {
+                    $isActive = $currentTime->between($morningStart, $morningEnd);
+                }
+                break;
+        }
+
+        return [
+            'is_active' => $isActive,
+            'attendance_date' => $isActive ? $attendanceDate : null,
+            'cycle_info' => [
+                'is_odd_cycle' => $isOddCycle,
+                'current_cycle_number' => $currentCycleNumber,
+                'current_day_in_cycle' => $currentDayInCycle,
+            ],
+        ];
+    }
+
+    /**
+     * التحقق مما إذا كان اليوم يوم عمل بناءً على نمط العمل
+     */
+    private function isWorkingDayInPattern($shift, $checkDate)
+    {
+        if (! $shift->zone || ! $shift->zone->pattern) {
+            return false;
+        }
+
+        $pattern = $shift->zone->pattern;
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+
+        if ($cycleLength <= 0) {
+            return false;
+        }
+
+        // تاريخ بداية الوردية
+        $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh')->startOfDay();
+        $checkDateObj = Carbon::parse($checkDate, 'Asia/Riyadh')->startOfDay();
+
+        // عدد الأيام منذ تاريخ البداية
+        $daysSinceStart = $startDate->diffInDays($checkDateObj);
+
+        // اليوم الحالي داخل الدورة
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+        // إذا كان اليوم الحالي داخل أيام العمل
+        return $currentDayInCycle < $pattern->working_days;
+    }
+
+    /**
+     * الحصول على معلومات دورة العمل للوردية
+     */
+    private function getShiftCycleInfo($shift, $checkDate)
+    {
+        if (! $shift->zone || ! $shift->zone->pattern) {
+            return [
+                'is_odd_cycle' => false,
+                'current_cycle_number' => 0,
+                'current_day_in_cycle' => 0,
+            ];
+        }
+
+        $pattern = $shift->zone->pattern;
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+
+        if ($cycleLength <= 0) {
+            return [
+                'is_odd_cycle' => false,
+                'current_cycle_number' => 0,
+                'current_day_in_cycle' => 0,
+            ];
+        }
+
+        // تاريخ بداية الوردية
+        $startDate = Carbon::parse($shift->start_date, 'Asia/Riyadh')->startOfDay();
+        $checkDateObj = Carbon::parse($checkDate, 'Asia/Riyadh')->startOfDay();
+
+        // عدد الأيام منذ تاريخ البداية
+        $daysSinceStart = $startDate->diffInDays($checkDateObj);
+
+        // رقم الدورة الحالية
+        $currentCycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+
+        // اليوم الحالي داخل الدورة
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+
+        // تحديد إذا كانت الدورة الحالية فردية أو زوجية
+        $isOddCycle = $currentCycleNumber % 2 == 1;
+
+        return [
+            'is_odd_cycle' => $isOddCycle,
+            'current_cycle_number' => $currentCycleNumber,
+            'current_day_in_cycle' => $currentDayInCycle,
+        ];
+    }
 }

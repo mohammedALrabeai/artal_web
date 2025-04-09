@@ -213,11 +213,57 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                 }
 
                 if ($record) {
-                    $hasChanged = $record->zone_id !== $data['zone_id']
-                        || $record->shift_id !== $data['shift_id']
-                        || $record->start_date !== $data['start_date'];
+                     // ✅ إذا تغيّر الموظف نفسه (يعني صف تم فيه استبدال موظف بآخر)
+        if ($record->employee_id != $data['employee_id']) {
+            // إنهاء الإسناد السابق
+            $record->update([
+                'status' => false,
+                'end_date' => now()->toDateString(),
+            ]);
 
-                    if ($hasChanged) {
+            // إضافة سجل جديد للموظف الجديد
+            $newRecord = EmployeeProjectRecord::create([
+                'employee_id' => $data['employee_id'],
+                'project_id' => $this->projectId,
+                'zone_id' => $data['zone_id'],
+                'shift_id' => $data['shift_id'],
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'] ?? null,
+                'status' => true,
+            ]);
+
+            $updatWitLoc++;
+
+            $employee = \App\Models\Employee::find($data['employee_id']);
+            $zone = \App\Models\Zone::find($data['zone_id']);
+            $shift = \App\Models\Shift::find($data['shift_id']);
+            $project = \App\Models\Project::find($this->projectId);
+            $assignedBy = auth()->user()?->name ?? 'نظام';
+
+            $notificationService->sendNotification(
+                ['manager', 'general_manager', 'hr'],
+                '📌 نقل موظف إلى موقع جديد (تغيير موظف)',
+                "👤 *اسم الموظف الجديد:* {$employee->name()}\n".
+                "📌 *الموقع:* {$zone->name} - {$project->name}\n".
+                "🕒 *الوردية:* {$shift->name}\n".
+                "📅 *تاريخ البدء:* {$newRecord->start_date}\n".
+                '📅 *تاريخ الانتهاء:* '.($newRecord->end_date ?? 'غير محدد')."\n\n".
+                "🆔 *رقم الهوية:* {$employee->national_id}\n".
+                "📞 *الجوال:* {$employee->mobile_number}\n".
+                "📢 *تم النقل بواسطة:* {$assignedBy}",
+                [
+                    $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                    $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
+                ]
+            );
+        }
+
+        // ✅ إذا لم يتغير الموظف، ولكن تغيّر الموقع أو الوردية
+        elseif (
+            $record->zone_id !== $data['zone_id'] ||
+            $record->shift_id !== $data['shift_id'] ||
+            $record->start_date !== $data['start_date']
+        ) {
                         // تعطيل السجل القديم
                         $record->update([
                             'status' => false,
