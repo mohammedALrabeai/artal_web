@@ -1018,6 +1018,7 @@ class AttendanceController extends Controller
                 ->where('status', 'coverage')
                 ->whereIn('date', [$requestDate, $previousDate])
                 ->whereNull('check_out') // فقط التغطيات النشطة (بدون تسجيل انصراف)
+                ->where('check_in', '>=', now()->subHours(16)) // فقط التغطيات التي مضى عليها أقل من 12 ساعة
                 ->get();
 
             $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses) {

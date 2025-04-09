@@ -792,6 +792,7 @@ class AreaController extends Controller
                                 ->where('status', 'coverage')
                                 ->whereNull('check_out')
                                 ->whereIn('date', [$today, $yesterday])
+                                ->where('check_in', '>=', now()->subHours(16)) // فقط التغطيات التي مضى عليها أقل من 12 ساعة
                                 ->count();
 
                             // عدد الموظفين الذين قاموا بتغطية ولم يسجلوا انصرافًا وخرجوا عن الموقع
