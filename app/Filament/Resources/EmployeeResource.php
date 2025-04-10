@@ -950,8 +950,15 @@ class EmployeeResource extends Resource
                             ->disk('s3')
                             ->visibility('public')
                             ->directory('notifications/attachments')
-                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif']) // قبول الصور فقط
-                            ->placeholder('أرفق صورة إذا لزم الأمر'),
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/gif',
+                                'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            ])
+                            ->placeholder('أرفق ملف (صورة أو وثيقة) إذا لزم الأمر'),
                         Forms\Components\Checkbox::make('send_via_whatsapp')
                             ->label('إرسال عبر WhatsApp')
                             ->default(false),
@@ -983,7 +990,12 @@ class EmployeeResource extends Resource
                             if (! empty($data['attachment'])) {
                                 // $attachmentUrl = asset('storage/' . $data['attachment']); // تحويل المسار إلى URL
                                 $attachmentUrl = Storage::disk('s3')->url($data['attachment']); // تحويل المسار إلى URL
-                                $payload['big_picture'] = $attachmentUrl; // حقل الصورة في OneSignal
+                                $mimeType = \Illuminate\Support\Facades\Storage::disk('s3')->mimeType($data['attachment']);
+                                if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif'])) {
+                                    // إرسال الصورة مع الإشعار عبر OneSignal باستخدام المفتاح big_picture
+                                    $payload['big_picture'] = $attachmentUrl;
+                                }
+                                // $payload['big_picture'] = $attachmentUrl; // حقل الصورة في OneSignal
                                 $payload['data']['attachment_url'] = $attachmentUrl; // تخزين المسار في البيانات
 
                                 //   dd($attachmentUrl);
@@ -1019,33 +1031,26 @@ class EmployeeResource extends Resource
                             if ($data['send_via_whatsapp']) {
                                 $phone = $employee->mobile_number;
                                 if ($phone) {
-                                    $imageBase64 = null;
-
+                                    $attachmentBase64 = null;
+                                    $fileName = null;
                                     if (! empty($data['attachment'])) {
-                                        $imagePath = $data['attachment'];
-
-                                        if (Storage::disk('s3')->exists($imagePath)) {
-                                            $imageContent = Storage::disk('s3')->get($imagePath);
-                                            $tempFilePath = tempnam(sys_get_temp_dir(), 's3_image_');
-                                            file_put_contents($tempFilePath, $imageContent);
-                                            $mimeType = mime_content_type($tempFilePath);
-
-                                            if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif'])) {
-                                                $imageBase64 = base64_encode($imageContent);
-                                            }
-
-                                            unlink($tempFilePath);
+                                        // التأكد من وجود الملف على S3 ثم تحويل محتواه إلى base64 واستخراج اسم الملف
+                                        if (\Illuminate\Support\Facades\Storage::disk('s3')->exists($data['attachment'])) {
+                                            $fileContent = \Illuminate\Support\Facades\Storage::disk('s3')->get($data['attachment']);
+                                            $attachmentBase64 = base64_encode($fileContent);
+                                            $fileName = pathinfo($data['attachment'], PATHINFO_BASENAME);
                                         }
                                     }
 
-                                    // إرسال الرسالة عبر WhatsApp
+                                    // استدعاء خدمة OtpService لإرسال الإشعار عبر WhatsApp مع المرفق (صورة أو ملف)
                                     $otpService = new \App\Services\OtpService;
-                                    $otpService->sendViaWhatsappWithImage(
+                                    $otpService->sendViaWhatsappWithAttachment(
                                         $phone,
                                         $data['type'],
                                         $data['title'],
                                         $data['message'],
-                                        $imageBase64 ?? null
+                                        $attachmentBase64,
+                                        $fileName
                                     );
                                 }
                             }

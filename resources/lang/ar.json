@@ -21,7 +21,12 @@
     "Latitude": "خط العرض",
     "Longitude": "خط الطول",
 
-
+"general": "تعميم",
+    "notification": "إخطار",
+    "warning": "إنذار",
+    "violation": "مخالفة",
+    "summons": "استدعاء",
+    "other": "",
   
     "Range (meter)": "النطاق (متر)",
     "Manage Zones": "إدارة المناطق",

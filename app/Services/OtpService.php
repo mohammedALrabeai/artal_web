@@ -132,4 +132,73 @@ class OtpService
 
         return $response->ok();
     }
+
+    public function sendViaWhatsappWithAttachment(
+        string $phone,
+        string $type,
+        string $title,
+        string $message,
+        ?string $attachmentBase64 = null,
+        ?string $fileName = null
+    ): bool {
+        // التحقق من صحة رقم الهاتف
+        if (empty($phone)) {
+            \Log::error('رقم الهاتف مفقود أو غير صالح.', ['phone' => $phone]);
+
+            return false;
+        }
+        if ($type == 'notification') {
+            $type = 'إخطار';
+        }
+        $type_tr = __($type);
+        $caption = "{$type_tr}\n{$title}\n{$message}";
+
+        // تحضير الحمولة (Payload) الأساسيّة
+        $payload = [
+            'recipient' => $phone,
+            'caption' => $caption,
+        ];
+
+        // إذا كان هناك مرفق مع الإشعار، نقوم بتحديد نوعه حسب امتداد اسم الملف
+        if (! empty($attachmentBase64) && ! empty($fileName)) {
+            // استخراج امتداد الملف والحول إلى حروف صغيرة
+            $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            // إذا كان الامتداد من ضمن الصور نستخدم نقطة النهاية الخاصة بالصور
+            if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                $payload['b64_file'] = $attachmentBase64;
+                // تعيين نقطة النهاية الخاصة بالصور
+                $endpoint = 'https://wappi.pro/api/sync/message/img/send?profile_id='.$this->profileId;
+            } else {
+                // خلاف ذلك نفترض أنه ملف (وثيقة)
+                $payload['b64_file'] = $attachmentBase64;
+                $payload['file_name'] = $fileName;
+                // تعيين نقطة النهاية الخاصة بالوثائق
+                $endpoint = 'https://wappi.pro/api/sync/message/document/send?profile_id='.$this->profileId;
+            }
+        } else {
+            // إذا لم يُقدم مرفق، يمكن إرسال رسالة نصية دون مرفق أو التعامل مع الحالة حسب الاحتياج
+            // في هذا المثال نقوم بإرسال رسالة نصية عبر نقطة النهاية المخصصة (إذا توفرت)
+            $payload['body'] = $caption;
+            $endpoint = 'https://wappi.pro/api/sync/message/send?profile_id='.$this->profileId;
+        }
+
+        \Log::info('إرسال رسالة واتساب مع مرفق...', [
+            'phone' => $phone,
+            'endpoint' => $endpoint,
+            'payload' => $payload,
+        ]);
+
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'Authorization' => '40703bb7812b727ec01c24f2da518c407342559c', // تأكد من ضبط التوكن المناسب في البيئة
+            'Content-Type' => 'application/json',
+        ])->post($endpoint, $payload);
+
+        \Log::info('استجابة واتساب API', [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        return $response->ok();
+    }
 }
