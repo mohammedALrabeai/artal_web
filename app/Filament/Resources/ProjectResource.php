@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ProjectResource extends Resource
@@ -132,10 +133,34 @@ class ProjectResource extends Resource
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->label(__('Delete Selected')), // إضافة تسمية مترجمة
-                ]),
+                Tables\Actions\BulkAction::make('export_employees')
+                    ->label('تصدير موظفي المشاريع المحددة')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('primary')
+                    ->form([
+                        Forms\Components\Select::make('status')
+                            ->label('اختر نوع السجلات')
+                            ->options([
+                                'active' => 'الموظفين النشطين فقط',
+                                'all' => 'جميع الموظفين',
+                            ])
+                            ->default('active')
+                            ->required(),
+                    ])
+                    ->action(function (Collection $records, array $data) {
+                        $projectIds = $records->pluck('id')->toArray();
+                        $onlyActive = $data['status'] === 'active';
+
+                        return \Maatwebsite\Excel\Facades\Excel::download(
+                            new \App\Exports\SelectedProjectsEmployeeExport($projectIds, $onlyActive),
+                            'selected_projects_employees.xlsx'
+                        );
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('تأكيد التصدير')
+                    ->modalDescription('اختر هل تريد تصدير الموظفين النشطين فقط أم جميعهم')
+                    ->deselectRecordsAfterCompletion(),
+
                 ExportBulkAction::make()
                     ->label(__('Export')),
             ]);

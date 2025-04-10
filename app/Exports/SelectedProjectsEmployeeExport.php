@@ -3,39 +3,36 @@
 namespace App\Exports;
 
 use App\Models\EmployeeProjectRecord;
-use Maatwebsite\Excel\Concerns\Exportable;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCustomCsvSettings, WithHeadings, WithMapping, WithStyles
+class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
-    use Exportable;
+    protected Collection $records;
 
     protected array $workPatternValues = [];
 
-    protected $onlyActive;
-
-    public function __construct(bool $onlyActive = true)
+    public function __construct(array $projectIds, bool $onlyActive = true)
     {
-        $this->onlyActive = $onlyActive;
-    }
+        $query = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
+            ->whereIn('project_id', $projectIds);
 
-    public function query()
-    {
-        $query = EmployeeProjectRecord::query()
-            ->with(['employee', 'project', 'zone', 'shift']);
-
-        if ($this->onlyActive) {
+        if ($onlyActive) {
             $query->where('status', true);
         }
 
-        return $query;
+        $this->records = $query->get();
+    }
+
+    public function collection()
+    {
+        return $this->records;
     }
 
     public function headings(): array
@@ -45,36 +42,33 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
             'تاريخ البدء', 'تاريخ الانتهاء', 'الحالة',
         ];
 
-        // توليد رؤوس التواريخ (30 يوم قادم)
-        $dates = collect(range(0, 29))->map(function ($i) {
-            return now('Asia/Riyadh')->copy()->addDays($i)->format('d M');
-        });
+        $dates = collect(range(0, 29))->map(fn ($i) => now('Asia/Riyadh')->addDays($i)->format('d M'));
 
         return array_merge($baseHeadings, $dates->toArray());
     }
 
     public function map($record): array
     {
-        $fullName = trim(implode(' ', array_filter([
-            $record->employee->first_name ?? '',
-            $record->employee->father_name ?? '',
-            $record->employee->grandfather_name ?? '',
-            $record->employee->family_name ?? '',
-        ])));
+        $fullName = implode(' ', array_filter([
+            $record->employee->first_name,
+            $record->employee->father_name,
+            $record->employee->grandfather_name,
+            $record->employee->family_name,
+        ]));
 
         $base = [
             $fullName,
-            $record->employee->national_id ?? 'غير متوفر',
-            $record->project->name ?? 'غير متوفر',
-            $record->zone->name ?? 'غير متوفر',
-            $record->shift->name ?? 'غير متوفر',
+            $record->employee->national_id,
+            $record->project->name,
+            $record->zone->name,
+            $record->shift->name,
             $record->start_date,
             $record->end_date ?? 'غير محدد',
             $record->status ? 'نشط' : 'غير نشط',
         ];
 
         $workPattern = $this->getWorkPatternDays($record);
-        $this->workPatternValues[] = $workPattern; // نحفظ القيم لاستعمالها في التنسيق
+        $this->workPatternValues[] = $workPattern;
 
         return array_merge($base, $workPattern);
 
@@ -82,8 +76,8 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
 
     public function styles(Worksheet $sheet)
     {
-        $startRow = 2; // الصف الأول يحتوي على العناوين
-        $startCol = 9; // أول عمود لليوم (بعد 8 أعمدة رئيسية)
+        $startRow = 2; // أول صف يحتوي على بيانات فعلية
+        $startCol = 9; // أول عمود يمثل الأيام بعد 8 أعمدة رئيسية
 
         foreach ($this->workPatternValues as $rowIndex => $days) {
             foreach ($days as $colOffset => $value) {
@@ -92,22 +86,15 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
 
                 if ($value === '-') {
                     $style->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('FFC7CE'); // أحمر
+                        ->getStartColor()->setRGB('FFC7CE'); // خلفية حمراء
                 } else {
                     $style->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('C6EFCE'); // أخضر
+                        ->getStartColor()->setRGB('C6EFCE'); // خلفية خضراء
                 }
             }
         }
 
         return [];
-    }
-
-    public function getCsvSettings(): array
-    {
-        return [
-            'delimiter' => ',',
-        ];
     }
 
     protected function getWorkPatternDays($record): array
@@ -139,14 +126,11 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
                 $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
 
                 switch ($record->shift->type) {
-                    case 'morning':
-                        $shiftType = 'ص';
+                    case 'morning': $shiftType = 'ص';
                         break;
-                    case 'evening':
-                        $shiftType = 'م';
+                    case 'evening': $shiftType = 'م';
                         break;
-                    case 'evening_morning':
-                        $shiftType = ($cycleNumber % 2 == 1) ? 'م' : 'ص';
+                    case 'evening_morning': $shiftType = ($cycleNumber % 2 == 1) ? 'م' : 'ص';
                         break;
                 }
             }
