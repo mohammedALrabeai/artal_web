@@ -76,23 +76,47 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
 
     public function styles(Worksheet $sheet)
     {
-        $startRow = 2; // أول صف يحتوي على بيانات فعلية
-        $startCol = 9; // أول عمود يمثل الأيام بعد 8 أعمدة رئيسية
+        $highestRow = $sheet->getHighestDataRow();
+        $highestCol = $sheet->getHighestDataColumn();
+
+        // ✅ 1. تنسيق رؤوس الأعمدة
+        $headerStyle = $sheet->getStyle("A1:{$highestCol}1");
+        $headerStyle->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1F4E78');
+        $headerStyle->getAlignment()->setHorizontal('center');
+
+        // ✅ 2. محاذاة كل الجدول للوسط + حجم الخط
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
+            ->getAlignment()->setHorizontal('center')->setVertical('center');
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
+            ->getFont()->setSize(12);
+
+        // ✅ 3. إضافة حدود بسيطة لكل الخلايا
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
+            ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
+            ->getColor()->setRGB('DDDDDD');
+
+        // ✅ 4. تلوين خلايا الأيام القادمة حسب الرمز
+        $startRow = 2; // من بعد الهيدر
+        $startCol = 9; // أول عمود لنمط العمل
 
         foreach ($this->workPatternValues as $rowIndex => $days) {
             foreach ($days as $colOffset => $value) {
                 $cell = $sheet->getCellByColumnAndRow($startCol + $colOffset, $startRow + $rowIndex);
                 $style = $cell->getStyle();
 
-                if ($value === '-') {
-                    $style->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('FFC7CE'); // خلفية حمراء
-                } else {
-                    $style->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('C6EFCE'); // خلفية خضراء
-                }
+                $color = match ($value) {
+                    'OFF' => 'FFC7CE', // أحمر
+                    'N' => '999999', // رمادي غامق
+                    'M' => 'D9D9D9', // رمادي فاتح
+                    default => 'FFFFFF',
+                };
+
+                $style->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB($color);
             }
         }
+        $sheet->freezePane('B2');
 
         return [];
     }
@@ -135,7 +159,13 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
                 }
             }
 
-            $days[] = $shiftType;
+            $days[] = match ($shiftType) {
+                'ص' => 'M',
+                'م' => 'N',
+                '-' => 'OFF',
+                default => '--',
+            };
+
         }
 
         return $days;

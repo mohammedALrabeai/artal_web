@@ -77,28 +77,55 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
         $this->workPatternValues[] = $workPattern; // نحفظ القيم لاستعمالها في التنسيق
 
         return array_merge($base, $workPattern);
-
     }
 
     public function styles(Worksheet $sheet)
     {
-        $startRow = 2; // الصف الأول يحتوي على العناوين
-        $startCol = 9; // أول عمود لليوم (بعد 8 أعمدة رئيسية)
+        $highestRow = $sheet->getHighestDataRow();
+        $highestCol = $sheet->getHighestDataColumn();
+
+        // ✅ 1. تنسيق رؤوس الأعمدة
+        $headerStyle = $sheet->getStyle("A1:{$highestCol}1");
+        $headerStyle->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1F4E78');
+        $headerStyle->getAlignment()->setHorizontal('center');
+        $headerStyle->getAlignment()->setVertical('center');
+
+        // ✅ 2. توسيط وتنسيق كل الخلايا
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
+            ->getAlignment()->setHorizontal('center')->setVertical('center');
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
+            ->getFont()->setSize(12);
+
+        // ✅ 3. إضافة حدود بسيطة لجميع الخلايا
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
+            ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN)
+            ->getColor()->setRGB('DDDDDD');
+
+        // ✅ 4. تلوين الأعمدة حسب نوع العمل
+        $startRow = 2;
+        $startCol = 9;
 
         foreach ($this->workPatternValues as $rowIndex => $days) {
             foreach ($days as $colOffset => $value) {
                 $cell = $sheet->getCellByColumnAndRow($startCol + $colOffset, $startRow + $rowIndex);
                 $style = $cell->getStyle();
 
-                if ($value === '-') {
-                    $style->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('FFC7CE'); // أحمر
-                } else {
-                    $style->getFill()->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('C6EFCE'); // أخضر
-                }
+                $color = match ($value) {
+                    'OFF' => 'FFC7CE', // أحمر
+                    'N' => '999999', // رمادي غامق
+                    'M' => 'D9D9D9', // رمادي فاتح
+                    default => 'FFFFFF',
+                };
+
+                $style->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB($color);
             }
         }
+
+        // ✅ 5. تجميد أول 8 أعمدة (A → H)
+        // $sheet->freezePane('I2');
+        $sheet->freezePane('B2');
 
         return [];
     }
@@ -113,7 +140,7 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
     protected function getWorkPatternDays($record): array
     {
         if (! $record->shift || ! $record->shift->zone || ! $record->shift->zone->pattern) {
-            return array_fill(0, 30, '❌');
+            return array_fill(0, 30, 'OFF');
         }
 
         $pattern = $record->shift->zone->pattern;
@@ -133,20 +160,20 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
             $cycleNumber = (int) floor($totalDays / $cycleLength) + 1;
 
             $isWorkDay = $currentDayInCycle < $workingDays;
-            $shiftType = '-';
+            $shiftType = 'OFF';
 
             if ($isWorkDay) {
-                $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
+                $shiftType = ($cycleNumber % 2 == 1) ? 'M' : 'N';
 
                 switch ($record->shift->type) {
                     case 'morning':
-                        $shiftType = 'ص';
+                        $shiftType = 'M';
                         break;
                     case 'evening':
-                        $shiftType = 'م';
+                        $shiftType = 'N';
                         break;
                     case 'evening_morning':
-                        $shiftType = ($cycleNumber % 2 == 1) ? 'م' : 'ص';
+                        $shiftType = ($cycleNumber % 2 == 1) ? 'N' : 'M';
                         break;
                 }
             }

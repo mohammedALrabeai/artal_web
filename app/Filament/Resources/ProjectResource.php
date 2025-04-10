@@ -133,33 +133,51 @@ class ProjectResource extends Resource
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('export_employees')
-                    ->label('تصدير موظفي المشاريع المحددة')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('primary')
-                    ->form([
-                        Forms\Components\Select::make('status')
-                            ->label('اختر نوع السجلات')
-                            ->options([
-                                'active' => 'الموظفين النشطين فقط',
-                                'all' => 'جميع الموظفين',
-                            ])
-                            ->default('active')
-                            ->required(),
-                    ])
-                    ->action(function (Collection $records, array $data) {
-                        $projectIds = $records->pluck('id')->toArray();
-                        $onlyActive = $data['status'] === 'active';
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('export_employees')
+                        ->label('تصدير موظفي المشاريع المحددة')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('primary')
+                        ->form([
+                            Forms\Components\Select::make('status')
+                                ->label('اختر نوع السجلات')
+                                ->options([
+                                    'active' => 'الموظفين النشطين فقط',
+                                    'all' => 'جميع الموظفين',
+                                ])
+                                ->default('active')
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $projectIds = $records->pluck('id')->toArray();
+                            $onlyActive = $data['status'] === 'active';
 
-                        return \Maatwebsite\Excel\Facades\Excel::download(
-                            new \App\Exports\SelectedProjectsEmployeeExport($projectIds, $onlyActive),
-                            'selected_projects_employees.xlsx'
-                        );
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('تأكيد التصدير')
-                    ->modalDescription('اختر هل تريد تصدير الموظفين النشطين فقط أم جميعهم')
-                    ->deselectRecordsAfterCompletion(),
+                            return \Maatwebsite\Excel\Facades\Excel::download(
+                                new \App\Exports\SelectedProjectsEmployeeExport($projectIds, $onlyActive),
+                                'selected_projects_employees.xlsx'
+                            );
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('تأكيد التصدير')
+                        ->modalDescription('اختر هل تريد تصدير الموظفين النشطين فقط أم جميعهم')
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('export_pdf')
+                        ->label('📄 تصدير PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        // ->requiresConfirmation()
+                        // ->modalHeading('تأكيد التصدير')
+                        // ->modalDescription('هل تريد تصدير تقرير الموظفين للمشاريع المحددة؟')
+                        ->openUrlInNewTab()
+                        ->action(function ($records) {
+                            $ids = $records->pluck('id')->toArray();
+                            $query = http_build_query(['ids' => implode(',', $ids)]);
+
+                            return redirect()->away(route('projects.export.pdf').'?'.$query);
+                        })
+                        ->color('primary'),
+                ])
+                    ->label('تصدير موظفي المشاريع المحددة'),
 
                 ExportBulkAction::make()
                     ->label(__('Export')),

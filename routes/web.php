@@ -11,6 +11,7 @@ use App\Models\Employee;
 use App\Models\EmployeeCoordinate;
 use App\Models\EmployeeProjectRecord;
 use App\Services\EmployeePdfService;
+use App\Services\ProjectEmployeesPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -82,6 +83,20 @@ Route::get('/upload', [FileUploadController2::class, 'showForm'])->name('upload.
 Route::post('/upload', [FileUploadController2::class, 'uploadFile'])->name('upload.file');
 
 Route::get('/test-s3', [S3TestController::class, 'testS3']);
+
+Route::get('/admin/projects/export/pdf', function () {
+    $ids = request()->input('ids');
+    $ids = explode(',', $ids);
+
+    $records = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
+        ->whereIn('project_id', $ids)
+        ->where('status', true)
+        ->get();
+
+    $pdfService = new ProjectEmployeesPdfService;
+
+    return $pdfService->generate($records);
+})->name('projects.export.pdf')->middleware(['web', 'auth']);
 
 // Route::get('/filament/employee-route/{employeeId}', function ($employeeId) {
 //     $coordinates = EmployeeCoordinate::where('employee_id', $employeeId)

@@ -669,7 +669,14 @@ class AttendanceController extends Controller
                 ->keyBy('employee_id');
 
             // جلب الورديات المرتبطة بالموقع
-            $shifts = Shift::with('attendances.employee')
+            $shifts = Shift::with(['attendances.employee', 'zone.project'])
+                ->whereHas('zone', function ($query) use ($projectId) {
+                    $query->where('status', 1)
+                        ->where('project_id', $projectId)
+                        ->whereHas('project', function ($q) {
+                            $q->where('status', 1);
+                        });
+                })
                 ->where('zone_id', $zoneId)
                 ->get();
 
@@ -685,6 +692,9 @@ class AttendanceController extends Controller
                         $query->whereNull('end_date')->orWhere('end_date', '>=', $date);
                     })
                     ->where('start_date', '<=', $date)
+                    ->whereHas('employee', function ($q) {
+                        $q->where('status', 1);
+                    })
                     ->get();
 
                 $attendances = $shift->attendances->where('date', $date);
@@ -702,7 +712,6 @@ class AttendanceController extends Controller
                         'check_out' => $attendance?->check_out,
                         'notes' => $attendance?->notes,
                         'mobile_number' => $employee->mobile_number,
-                        // 'phone_number' => $employee->phone_number,
                         'is_coverage' => false,
                         'out_of_zone' => $employee->out_of_zone,
                         'is_checked_in' => $attendance !== null,
@@ -739,6 +748,9 @@ class AttendanceController extends Controller
                 ->where('zone_id', $zoneId)
                 ->where('status', 'coverage')
                 ->whereDate('date', $date)
+                ->whereHas('employee', function ($q) {
+                    $q->where('status', 1);
+                })
                 ->get();
 
             $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses) {
@@ -753,7 +765,6 @@ class AttendanceController extends Controller
                     'check_out' => $attendance->check_out,
                     'notes' => $attendance->notes,
                     'mobile_number' => $employee->mobile_number,
-                    // 'phone_number' => $employee->phone_number,
                     'is_coverage' => true,
                     'out_of_zone' => $employee->out_of_zone,
                     'is_checked_in' => true,
