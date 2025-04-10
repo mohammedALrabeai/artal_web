@@ -1052,6 +1052,14 @@ class EmployeeResource extends Resource
                                         $attachmentBase64,
                                         $fileName
                                     );
+                                    $otpService->sendViaWhatsappWithAttachment(
+                                        '120363419182449313@g.us',
+                                        $data['type'],
+                                        $data['title'],
+                                        $data['message'],
+                                        $attachmentBase64,
+                                        $fileName
+                                    );
                                 }
                             }
                         }
