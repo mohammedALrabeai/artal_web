@@ -131,7 +131,7 @@ class NotificationResource extends Resource
     {
         return [
             'index' => Pages\ListNotifications::route('/'),
-            'create' => Pages\CreateNotification::route('/create'),
+            // 'create' => Pages\CreateNotification::route('/create'),
             'edit' => Pages\EditNotification::route('/{record}/edit'),
         ];
     }

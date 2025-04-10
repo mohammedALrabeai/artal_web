@@ -2,16 +2,16 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\EmployeeNotificationResource\Pages;
 use App\Models\EmployeeNotification;
 use Filament\Forms;
-use Filament\Tables;
 use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Resources\Resource;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use App\Filament\Resources\EmployeeNotificationResource\Pages;
+use Illuminate\Support\Facades\Storage;
+
 
 class EmployeeNotificationResource extends Resource
 {
@@ -22,13 +22,12 @@ class EmployeeNotificationResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         // ✅ إخفاء العدد عن المستخدمين غير الإداريين
-        if (!auth()->user()?->hasRole('admin')) {
+        if (! auth()->user()?->hasRole('admin')) {
             return null;
         }
-    
+
         return static::getModel()::count();
     }
-    
 
     public static function getNavigationLabel(): string
     {
@@ -93,13 +92,30 @@ class EmployeeNotificationResource extends Resource
                 Tables\Columns\TextColumn::make('message')
                     ->label(__('Message'))
                     ->toggleable()
-                    ->searchable()
-                ,
-                    Tables\Columns\ImageColumn::make('attachment')
-                    ->label(__('Image URL'))
-                    ->toggleable()
-                    ->url(fn ($record) => $record->image_url, true),
-                    Tables\Columns\IconColumn::make('is_read')
+                    ->searchable(),
+                    Tables\Columns\TextColumn::make('attachment')
+                    ->label(__('Attachment'))
+                    ->disableClick() // لتعطيل حدث النقر الافتراضي على الصف
+                    ->formatStateUsing(function ($state, $record) {
+                        // الحصول على رابط الملف من S3 باستخدام المسار المخزن في الحقل attachment
+                        $url = Storage::disk('s3')->url($record->attachment);
+                        // استخراج امتداد الملف من اسم الملف المخزن في attachment
+                        $extension = strtolower(pathinfo($record->attachment, PATHINFO_EXTENSION));
+                        
+                        // إذا كان الملف صورة (jpg, jpeg, png, gif)
+                        if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                            // عرض صورة مصغرة داخل رابط يفتح في تبويب جديد
+                            return '<a href="' . e($url) . '" target="_blank">
+                                        <img src="' . e($url) . '" style="max-height:50px;" />
+                                    </a>';
+                        }
+                        // وإلا نعرض أيقونة أو نص مع اسم الملف داخل رابط
+                        return '<a href="' . e($url) . '" target="_blank">
+                                    <i class="fi fi-rr-file"></i> ' . e($record->attachment) . '
+                                </a>';
+                    })
+                    ->html(),
+                Tables\Columns\IconColumn::make('is_read')
                     ->label(__('Read'))
                     ->boolean()
                     ->sortable(),
@@ -124,7 +140,7 @@ class EmployeeNotificationResource extends Resource
                         'summons' => __('Summons'),
                         'other' => __('Other'),
                     ]),
-                    Tables\Filters\SelectFilter::make('is_read')
+                Tables\Filters\SelectFilter::make('is_read')
                     ->label(__('Read Status'))
                     ->options([
                         true => __('Read'),
