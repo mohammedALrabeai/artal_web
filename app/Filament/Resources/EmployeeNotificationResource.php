@@ -10,8 +10,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use Illuminate\Support\Facades\Storage;
-
 
 class EmployeeNotificationResource extends Resource
 {
@@ -93,25 +91,26 @@ class EmployeeNotificationResource extends Resource
                     ->label(__('Message'))
                     ->toggleable()
                     ->searchable(),
-                    Tables\Columns\TextColumn::make('attachment')
+                Tables\Columns\TextColumn::make('attachment')
                     ->label(__('Attachment'))
                     ->disableClick() // لتعطيل حدث النقر الافتراضي على الصف
                     ->formatStateUsing(function ($state, $record) {
                         // الحصول على رابط الملف من S3 باستخدام المسار المخزن في الحقل attachment
-                        $url = Storage::disk('s3')->url($record->attachment);
+                        $url = $record->attachment;
                         // استخراج امتداد الملف من اسم الملف المخزن في attachment
                         $extension = strtolower(pathinfo($record->attachment, PATHINFO_EXTENSION));
-                        
+
                         // إذا كان الملف صورة (jpg, jpeg, png, gif)
                         if (in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
                             // عرض صورة مصغرة داخل رابط يفتح في تبويب جديد
-                            return '<a href="' . e($url) . '" target="_blank">
-                                        <img src="' . e($url) . '" style="max-height:50px;" />
+                            return '<a href="'.e($url).'" target="_blank">
+                                        <img src="'.e($url).'" style="max-height:50px;" />
                                     </a>';
                         }
+
                         // وإلا نعرض أيقونة أو نص مع اسم الملف داخل رابط
-                        return '<a href="' . e($url) . '" target="_blank">
-                                    <i class="fi fi-rr-file"></i> ' . e($record->attachment) . '
+                        return '<a href="'.e($url).'" target="_blank">
+                                    <i class="fi fi-rr-file"></i> فتح الملف
                                 </a>';
                     })
                     ->html(),
