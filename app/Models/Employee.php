@@ -128,7 +128,7 @@ class Employee extends Model
 
     public function name()
     {
-        return $this->first_name.' '.$this->father_name.' '.$this->family_name;
+        return $this->first_name.' '.$this->father_name.' '.$this->grandfather_name.' '.$this->family_name;
     }
 
     public function __call($method, $parameters)
@@ -142,7 +142,7 @@ class Employee extends Model
 
     public function getNameAttribute()
     {
-        return $this->first_name.' '.$this->father_name.' '.$this->family_name;
+        return $this->first_name.' '.$this->father_name.' '.$this->grandfather_name.' '.$this->family_name;
     }
 
     public function resignations()
