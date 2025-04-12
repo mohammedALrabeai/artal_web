@@ -267,6 +267,21 @@ class AttendanceExport2Controller extends Controller
                         ],
                     ]);
                 }
+                // إذا كانت حالة الحضور "present" (أو "حضور")
+                if ($statusAttendance && ($statusAttendance->status === 'present' || $statusAttendance->status === 'حضور')) {
+                    // استخراج التفاصيل الخاصة بالحضور
+                    $siteName = (isset($statusAttendance->zone) && isset($statusAttendance->zone->name)) ? $statusAttendance->zone->name : 'غير محدد';
+                    $checkIn = $statusAttendance->check_in ?? 'غير محدد';
+                    $checkOut = $statusAttendance->check_out ?? 'غير محدد';
+                    $workHoursDetail = $statusAttendance->work_hours ?? '0';
+                    $presentComment = "الموقع: {$siteName} - دخول: {$checkIn} - خروج: {$checkOut} - ساعات: {$workHoursDetail}";
+
+                    // تحديد موقع الخلية المعنية في الصف الأول (التي تحتوي على الحالة)
+                    $cellCoordinatePresent = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex).$rowIndex;
+
+                    // إضافة التعليق إلى الخلية
+                    $sheet->getComment($cellCoordinatePresent)->getText()->createTextRun($presentComment);
+                }
 
                 // هنا نضيف كود التعليق الخاص بالتغطيات المتعددة:
                 $coverages = $dailyAttendances->filter(function ($attendance) {
