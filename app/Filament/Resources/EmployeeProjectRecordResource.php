@@ -399,7 +399,11 @@ class EmployeeProjectRecordResource extends Resource
                         $message = "👷‍♂️ الموظف: {$employee->name()}\n";
                         $message .= "📌 الموقع: {$zone->name}\n";
                         $message .= "🕒 الوردية: {$shift->name}\n";
-                        $message .= "🌍 الموقع على الخريطة:\n{$googleMapsUrl}";
+                        $message .= "📍 الموقع على الخريطة:\n{$googleMapsUrl}\n\n";
+                        $message .= "📞 بيانات الاتصال:\n";
+                        $message .= "- قسم الموارد البشرية: hradmin@artalgroup.net | 0598161013\n";
+                        $message .= "- العمليات: 0595639648\n";
+                        $message .= '- الدعم الفني: 0593222287';
 
                         try {
                             $otpService = new OtpService;
