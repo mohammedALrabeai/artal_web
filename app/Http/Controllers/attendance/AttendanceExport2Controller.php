@@ -240,32 +240,26 @@ class AttendanceExport2Controller extends Controller
                 $dailyAttendances = $employee->attendances->where('date', $date);
 
                 // تحديد التغطية والحالة الأساسية وساعات العمل
-                $coverage = $dailyAttendances->firstWhere('is_coverage', true); // تغطية اليوم
+                $coverage = $dailyAttendances->firstWhere('is_coverage', true); // للإشارة إلى التغطية في حال واحد
                 $statusAttendance = $dailyAttendances->firstWhere('is_coverage', false); // الحضور الأساسي
+                $coverageStatus = $coverage ? $coverage->status : '';
+                $status = $statusAttendance ? $statusAttendance->status : 'N/A';
+                $workHours = $dailyAttendances->sum('work_hours');
 
-                $coverageStatus = $coverage ? $coverage->status : ''; // حالة التغطية
-                $status = $statusAttendance ? $statusAttendance->status : 'N/A'; // حالة الحضور الأساسي
-                $workHours = $dailyAttendances->sum('work_hours'); // مجموع ساعات العمل
-
-                // **تحديث حالة "انسحاب" في السطر الأول بدلًا من "حضور"**
+                // تحديث حالة "انسحاب" إذا كان مسجل دخول بدون خروج
                 if ($statusAttendance && $statusAttendance->status === 'present' && $statusAttendance->check_in && ! $statusAttendance->check_out) {
-                    $status = 'W'; // انسحاب بدلاً من حضور
+                    $status = 'W';
                 }
 
-                // $attendance = $employee->attendances->firstWhere('date', $date);
-                // $coverage = $attendance ? ($attendance->is_coverage ? 'COV' : '') : '';
-                // $workHours = $attendance ? $attendance->work_hours : '';
-                // $status = $attendance ? $attendance->status : 'N/A';
                 // إدراج البيانات في الأعمدة
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex, $status);
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
                 $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverageStatus);
 
-                // **تطبيق الألوان بناءً على الحالة**
+                // تطبيق الألوان على الخلية الخاصة بالحالة
                 if (isset($attendanceColors[$status])) {
-                    $color = $attendanceColors[$status]; // استرجاع اللون من المصفوفة
+                    $color = $attendanceColors[$status];
                     $cellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex).$rowIndex;
-
                     $sheet->getStyle($cellCoordinate)->applyFromArray([
                         'fill' => [
                             'fillType' => Fill::FILL_SOLID,
@@ -274,22 +268,37 @@ class AttendanceExport2Controller extends Controller
                     ]);
                 }
 
-                // **تلوين خلايا التغطية COV**
-                if (! empty($coverageStatus) && isset($attendanceColors['coverage'])) {
+                // هنا نضيف كود التعليق الخاص بالتغطيات المتعددة:
+                $coverages = $dailyAttendances->filter(function ($attendance) {
+                    return $attendance->is_coverage;
+                });
+                if ($coverages->isNotEmpty() && isset($attendanceColors['coverage'])) {
                     $color = $attendanceColors['coverage'];
                     $coverageCellCoordinate = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnIndex).($rowIndex + 2);
 
+                    // تطبيق اللون على الخلية
                     $sheet->getStyle($coverageCellCoordinate)->applyFromArray([
                         'fill' => [
                             'fillType' => Fill::FILL_SOLID,
                             'startColor' => ['rgb' => $color],
                         ],
                     ]);
+
+                    // بناء نص التعليق مع تفاصيل التغطيات
+                    $commentLines = [];
+                    foreach ($coverages as $cov) {
+                        // استخدام علاقة zone للحصول على اسم الموقع
+                        $siteName = (isset($cov->zone) && isset($cov->zone->name)) ? $cov->zone->name : 'غير محدد';
+                        $checkIn = $cov->check_in ?? 'غير محدد';
+                        $checkOut = $cov->check_out ?? 'غير محدد';
+                        $hours = $cov->work_hours ?? '0';
+                        $commentLines[] = "الموقع: {$siteName} - دخول: {$checkIn} - خروج: {$checkOut} - ساعات: {$hours}";
+                    }
+                    $commentText = implode("\n", $commentLines);
+
+                    // إضافة التعليق إلى الخلية
+                    $sheet->getComment($coverageCellCoordinate)->getText()->createTextRun($commentText);
                 }
-                // // إدراج البيانات المكدسة
-                // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex,$status );
-                // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 1, $workHours);
-                // $sheet->setCellValueByColumnAndRow($columnIndex, $rowIndex + 2, $coverage);
 
                 $currentDate = strtotime('+1 day', $currentDate);
                 $columnIndex++;
