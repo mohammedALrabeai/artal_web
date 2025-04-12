@@ -13,13 +13,17 @@ class OtpService
     // protected $profileId = '2fdc9526-cccd'; //4c4327c7-ed84
     protected $profileId = '4c4327c7-ed84';
 
+    protected $apiToken = '40703bb7812b727ec01c24f2da518c407342559c';
+
     public function sendOtp(string $phone, string $message): bool
     {
-        $response = Http::asForm()->post($this->baseUrl.'?profile_id='.$this->profileId, [
-
-            'recipient' => $phone,
-
+        $response = Http::withHeaders([
+            'accept' => 'application/json',
+            'Authorization' => '40703bb7812b727ec01c24f2da518c407342559c',
+            'Content-Type' => 'application/json',
+        ])->post($this->baseUrl.'?profile_id='.$this->profileId, [
             'body' => $message,
+            'recipient' => $phone,
         ]);
 
         return $response->ok();
