@@ -28,7 +28,8 @@ class ProcessAttendanceJob implements ShouldQueue
     public function handle()
     {
         $otpService = new OtpService;
-        $phone = '966571718153';
+        // $phone = '966571718153';
+        $phone = '120363419460071587@g.us';
         $time = Carbon::now()->toDateTimeString();
 
         try {
