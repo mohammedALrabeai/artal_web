@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Jobs\ProcessAttendanceJob;
+use Illuminate\Console\Command;
 
 class ProcessAttendanceCommand extends Command
 {
@@ -27,13 +27,15 @@ class ProcessAttendanceCommand extends Command
     public function handle()
     {
         try {
-        // استدعاء الـJob
+            // استدعاء الخدمة والحصول على الإحصائيات
+            $stats = app(\App\Services\AttendanceService::class)->processAttendance();
 
-        app(\App\Services\AttendanceService::class)->processAttendance();
-        ProcessAttendanceJob::dispatch();
-        $this->info('Attendance processing job dispatched successfully.');
-    } catch (\Exception $e) {
-        $this->error('Error processing attendance: ' . $e->getMessage());
-    }
+            // تمرير الإحصائية إلى Job
+            ProcessAttendanceJob::dispatch($stats);
+
+            $this->info('Attendance processing dispatched successfully.');
+        } catch (\Exception $e) {
+            $this->error('Error processing attendance: '.$e->getMessage());
+        }
     }
 }
