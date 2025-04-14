@@ -746,13 +746,13 @@ class AreaController extends Controller
         $today = $currentTime->toDateString();
         $yesterday = $currentTime->copy()->subDay()->toDateString();
 
-        $areas = Area::with(['projects.zones.shifts.attendances'])->get();
+        $areas = Area::with(['activeProjects.zones.shifts.attendances'])->get();
 
         $data = $areas->map(function ($area) use ($currentTime, $today, $yesterday) {
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projects->map(function ($project) use ($currentTime, $today, $yesterday) {
+                'projects' => $area->activeProjects->map(function ($project) use ($currentTime, $today, $yesterday) {
                     return [
                         'id' => $project->id,
                         'name' => $project->name,

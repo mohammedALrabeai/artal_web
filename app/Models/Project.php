@@ -42,4 +42,6 @@ class Project extends Model
         return $this->belongsToMany(Employee::class, 'employee_project_records')
             ->withPivot('start_date', 'end_date', 'zone_id', 'shift_id', 'status');
     }
+
+
 }

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,5 +18,10 @@ class Area extends Model
     public function projects()
     {
         return $this->hasMany(Project::class);
+    }
+
+    public function activeProjects()
+    {
+        return $this->hasMany(Project::class)->where('status', 1);
     }
 }
