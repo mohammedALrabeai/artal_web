@@ -530,16 +530,14 @@ class AreaController extends Controller
     {
         $currentTime = Carbon::now('Asia/Riyadh');
 
-        $areas = Area::with(['projects.zones.shifts.attendances'])->get();
+        $areas = Area::with(['activeProjects.zones.shifts.attendances'])->get();
 
         $data = $areas->map(function ($area) use ($currentTime) {
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projects
-                    // ->filter(function ($project) {
-                    //     return isset($project->status) && $project->status == 1;
-                    // })
+                'projects' => $area->activeProjects
+
                     ->map(function ($project) use ($currentTime) {
                         return [
                             'id' => $project->id,
@@ -746,13 +744,13 @@ class AreaController extends Controller
         $today = $currentTime->toDateString();
         $yesterday = $currentTime->copy()->subDay()->toDateString();
 
-        $areas = Area::with(['activeProjects.zones.shifts.attendances'])->get();
+        $areas = Area::with(['projects.zones.shifts.attendances'])->get();
 
         $data = $areas->map(function ($area) use ($currentTime, $today, $yesterday) {
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->activeProjects->map(function ($project) use ($currentTime, $today, $yesterday) {
+                'projects' => $area->projects->map(function ($project) use ($currentTime, $today, $yesterday) {
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
