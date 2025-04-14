@@ -537,9 +537,9 @@ class AreaController extends Controller
                 'id' => $area->id,
                 'name' => $area->name,
                 'projects' => $area->projects
-                    ->filter(function ($project) {
-                        return isset($project->status) && $project->status == 1;
-                    })
+                    // ->filter(function ($project) {
+                    //     return isset($project->status) && $project->status == 1;
+                    // })
                     ->map(function ($project) use ($currentTime) {
                         return [
                             'id' => $project->id,
