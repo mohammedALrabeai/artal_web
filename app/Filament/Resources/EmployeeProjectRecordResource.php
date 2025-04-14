@@ -344,7 +344,7 @@ class EmployeeProjectRecordResource extends Resource
                                 $message .= "📌 *اسم المستخدم:* {$mobileNumber}\n";
                                 $message .= "🔑 *كلمة المرور:* {$employee->password}\n";
                                 $message .= "📍 *الموقع:* {$zone->name}\n\n";
-                                $message .= "⚠️ *الرجاء تغيير كلمة المرور عند تسجيل الدخول لأول مرة.*\n\n";
+                         
                                 $message .= "📥 *لتحميل التطبيق:* \n";
                                 $message .= "▶️ *Android:* [Google Play](https://play.google.com/store/apps/details?id=com.intshar.artalapp)\n";
                                 $message .= "🍏 *iOS:* [TestFlight](https://testflight.apple.com/join/Md5YzFE7)\n\n";
