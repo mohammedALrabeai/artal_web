@@ -536,7 +536,7 @@ class AreaController extends Controller
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projectss->map(function ($project) use ($currentTime) {
+                'projects' => $area->projects->map(function ($project) use ($currentTime) {
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
