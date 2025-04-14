@@ -536,63 +536,67 @@ class AreaController extends Controller
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projects->map(function ($project) use ($currentTime) {
-                    return [
-                        'id' => $project->id,
-                        'name' => $project->name,
-                        'emp_no' => $project->emp_no,
-                        'zones' => $project->zones->map(function ($zone) use ($currentTime) {
-                            $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
-                                // الحصول على حالة الوردية وتاريخ الحضور
-                                $shiftInfo = $this->determineCurrentShift($shift, $currentTime, $zone);
+                'projects' => $area->projects
+                    ->filter(function ($project) {
+                        return isset($project->status) && $project->status == 1;
+                    })
+                    ->map(function ($project) use ($currentTime) {
+                        return [
+                            'id' => $project->id,
+                            'name' => $project->name,
+                            'emp_no' => $project->emp_no,
+                            'zones' => $project->zones->map(function ($zone) use ($currentTime) {
+                                $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
+                                    // الحصول على حالة الوردية وتاريخ الحضور
+                                    $shiftInfo = $this->determineCurrentShift($shift, $currentTime, $zone);
 
-                                // تعداد الحضور بناءً على تاريخ الوردية
-                                $attendanceCount = $shift->attendances
-                                    ->where('status', 'present')
-                                    ->where('date', $shiftInfo['attendance_date'] ?? null)
+                                    // تعداد الحضور بناءً على تاريخ الوردية
+                                    $attendanceCount = $shift->attendances
+                                        ->where('status', 'present')
+                                        ->where('date', $shiftInfo['attendance_date'] ?? null)
+                                        ->whereNull('check_out')
+                                        ->count();
+
+                                    return [
+                                        'id' => $shift->id,
+                                        'name' => $shift->name,
+                                        'type' => $shift->type,
+                                        'is_current_shift' => $shiftInfo['is_current'],
+                                        'attendees_count' => $attendanceCount,
+                                        'emp_no' => $shift->emp_no,
+                                    ];
+                                });
+
+                                $currentShift = $shifts->where('is_current_shift', true)->first();
+
+                                // حسابات التغطيات والخروج عن النطاق
+                                $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                    ->where('status', 'coverage')
                                     ->whereNull('check_out')
+                                    ->whereDate('date', $currentTime->toDateString())
+                                    ->count();
+
+                                $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                    ->where('status', 'present')
+                                    ->whereNull('check_out')
+                                    ->whereDate('date', $currentTime->toDateString())
+                                    ->whereHas('employee', function ($query) {
+                                        $query->where('out_of_zone', true);
+                                    })
                                     ->count();
 
                                 return [
-                                    'id' => $shift->id,
-                                    'name' => $shift->name,
-                                    'type' => $shift->type,
-                                    'is_current_shift' => $shiftInfo['is_current'],
-                                    'attendees_count' => $attendanceCount,
-                                    'emp_no' => $shift->emp_no,
+                                    'id' => $zone->id,
+                                    'name' => $zone->name,
+                                    'emp_no' => $zone->emp_no,
+                                    'shifts' => $shifts,
+                                    'current_shift_emp_no' => $currentShift ? $currentShift['emp_no'] : 0,
+                                    'active_coverages_count' => $activeCoveragesCount,
+                                    'out_of_zone_count' => $outOfZoneCount,
                                 ];
-                            });
-
-                            $currentShift = $shifts->where('is_current_shift', true)->first();
-
-                            // حسابات التغطيات والخروج عن النطاق
-                            $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
-                                ->where('status', 'coverage')
-                                ->whereNull('check_out')
-                                ->whereDate('date', $currentTime->toDateString())
-                                ->count();
-
-                            $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
-                                ->where('status', 'present')
-                                ->whereNull('check_out')
-                                ->whereDate('date', $currentTime->toDateString())
-                                ->whereHas('employee', function ($query) {
-                                    $query->where('out_of_zone', true);
-                                })
-                                ->count();
-
-                            return [
-                                'id' => $zone->id,
-                                'name' => $zone->name,
-                                'emp_no' => $zone->emp_no,
-                                'shifts' => $shifts,
-                                'current_shift_emp_no' => $currentShift ? $currentShift['emp_no'] : 0,
-                                'active_coverages_count' => $activeCoveragesCount,
-                                'out_of_zone_count' => $outOfZoneCount,
-                            ];
-                        }),
-                    ];
-                }),
+                            }),
+                        ];
+                    }),
             ];
         });
 
