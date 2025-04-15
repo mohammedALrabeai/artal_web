@@ -6,16 +6,17 @@ use Carbon\Carbon;
 
 class ProjectEmployeesPdfService
 {
-    public function generate($records, string $title = 'تقرير نمط العمل - الموظفين'): void
+    public function generate($records, string $title = 'تقرير نمط العمل - الموظفين', ?string $startDate = null): void
     {
+        $start = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
+        $dates = collect(range(0, 30))->map(fn ($i) => $start->copy()->addDays($i));
+
         $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->SetTitle($title);
         $pdf->SetMargins(10, 10, 10);
         $pdf->SetAutoPageBreak(true, 10);
         $pdf->AddPage();
         $pdf->SetFont('aealarabiya', '', 10, '', true);
-
-        $dates = collect(range(0, 29))->map(fn ($i) => Carbon::now('Asia/Riyadh')->addDays($i));
 
         // ✅ تجميع الموظفين حسب المشروع
         $grouped = $records->groupBy(fn ($r) => $r->project->name ?? 'مشروع غير معروف');
@@ -42,7 +43,7 @@ class ProjectEmployeesPdfService
                 $working = (int) ($pattern->working_days ?? 0);
                 $off = (int) ($pattern->off_days ?? 0);
                 $cycle = $working + $off;
-                $start = Carbon::parse($shift->start_date);
+                $shiftStartDate = Carbon::parse($shift->start_date);
 
                 $html .= '<tr>';
                 $html .= '<td style="width: 37mm;">'.$employee->name().'</td>';
@@ -50,7 +51,7 @@ class ProjectEmployeesPdfService
                 $html .= '<td style="width: 28mm;">'.($shift->name ?? '-').'</td>';
 
                 foreach ($dates as $target) {
-                    $days = $start->diffInDays($target);
+                    $days = $shiftStartDate->diffInDays($target);
                     $inCycle = $days % $cycle;
                     $cycleNum = floor($days / $cycle) + 1;
                     $isWorkDay = $inCycle < $working;

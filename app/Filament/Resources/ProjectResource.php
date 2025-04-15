@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ProjectResource extends Resource
@@ -147,35 +148,61 @@ class ProjectResource extends Resource
                                 ])
                                 ->default('active')
                                 ->required(),
+
+                            Forms\Components\DatePicker::make('start_date')
+                                ->label('تاريخ البداية')
+                                ->required()
+                                ->default(now('Asia/Riyadh')->toDateString()),
                         ])
                         ->action(function (Collection $records, array $data) {
                             $projectIds = $records->pluck('id')->toArray();
                             $onlyActive = $data['status'] === 'active';
+                            $startDate = $data['start_date'];
 
                             return \Maatwebsite\Excel\Facades\Excel::download(
-                                new \App\Exports\SelectedProjectsEmployeeExport($projectIds, $onlyActive),
+                                new \App\Exports\SelectedProjectsEmployeeExport($projectIds, $onlyActive, $startDate),
                                 'selected_projects_employees.xlsx'
                             );
                         })
                         ->requiresConfirmation()
                         ->modalHeading('تأكيد التصدير')
-                        ->modalDescription('اختر هل تريد تصدير الموظفين النشطين فقط أم جميعهم')
+                        ->modalDescription('اختر نوع السجلات وتاريخ البداية لتصدير تقرير الموظفين')
                         ->deselectRecordsAfterCompletion(),
 
                     Tables\Actions\BulkAction::make('export_pdf')
                         ->label('📄 تصدير PDF')
                         ->icon('heroicon-o-document-arrow-down')
-                        // ->requiresConfirmation()
-                        // ->modalHeading('تأكيد التصدير')
-                        // ->modalDescription('هل تريد تصدير تقرير الموظفين للمشاريع المحددة؟')
-                        ->openUrlInNewTab()
-                        ->action(function ($records) {
-                            $ids = $records->pluck('id')->toArray();
-                            $query = http_build_query(['ids' => implode(',', $ids)]);
+                        ->color('primary')
+                        ->form([
+                            Forms\Components\DatePicker::make('start_date')
+                                ->label('تاريخ البداية')
+                                ->default(now('Asia/Riyadh')->startOfDay())
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data) {
+                            // نحفظ التاريخ والـ ids في session مؤقتًا
+                            session()->put('export_pdf_ids', $records->pluck('id')->toArray());
+                            session()->put('export_pdf_start_date', $data['start_date']);
 
-                            return redirect()->away(route('projects.export.pdf').'?'.$query);
+                            // لا نُرجع أي شيء هنا، نكتفي بالإشعار
+                            \Filament\Notifications\Notification::make()
+                                ->title('📄 يمكنك الآن الضغط على زر التصدير')
+                                ->success()
+                                ->send();
                         })
-                        ->color('primary'),
+                        ->after(function () {
+                            // نعطي تعليمات للمستخدم ليفتح التبويب بنفسه (لأن Livewire لا يدعم window.open)
+                            \Filament\Notifications\Notification::make()
+                                ->title('🔗 اضغط هنا لفتح التقرير')
+                                ->actions([
+                                    \Filament\Notifications\Actions\Action::make('pdf')
+                                        ->label('فتح التقرير')
+                                        ->url(route('projects.export.pdf'), shouldOpenInNewTab: true),
+                                ])
+                                ->send()
+                                ->sendToDatabase(Auth::user());
+                        }),
+
                 ])
                     ->label('تصدير موظفي المشاريع المحددة'),
 

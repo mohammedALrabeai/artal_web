@@ -58,7 +58,8 @@ class ListEmployees extends ListRecords
                     // Filament::notify('success', 'تم تحليل البيانات وعرضها في السجل (log)!');
                 })
                 ->color('success'),
-            ExportAction::make(),
+            ExportAction::make()
+                ->visible(fn () => auth()->user()?->hasRole('super_admin')),
             // Actions\Action::make('exportAttendance')
             // ->label('Export Attendance')
             // ->form([

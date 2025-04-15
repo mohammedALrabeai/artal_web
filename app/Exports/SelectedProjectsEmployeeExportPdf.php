@@ -9,6 +9,7 @@ use Codedge\Fpdf\Fpdf\Fpdf;
 class SelectedProjectsEmployeeExportPdf
 {
     protected array $projectIds;
+
     protected bool $onlyActive;
 
     public function __construct(array $projectIds, bool $onlyActive = true)
@@ -21,7 +22,7 @@ class SelectedProjectsEmployeeExportPdf
     {
         $records = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
             ->whereIn('project_id', $this->projectIds)
-            ->when($this->onlyActive, fn($q) => $q->where('status', true))
+            ->when($this->onlyActive, fn ($q) => $q->where('status', true))
             ->get();
 
         $pdf = new Fpdf('L', 'mm', 'A4');
@@ -29,7 +30,7 @@ class SelectedProjectsEmployeeExportPdf
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->Cell(0, 8, 'Employee Work Pattern Report', 0, 1, 'C');
         $pdf->SetFont('Arial', '', 7);
-        $pdf->Cell(0, 5, 'Generated on: ' . now()->format('Y-m-d H:i'), 0, 1, 'C');
+        $pdf->Cell(0, 5, 'Generated on: '.now()->format('Y-m-d H:i'), 0, 1, 'C');
         $pdf->Ln(2);
 
         $pdf->SetFont('Arial', '', 5.5);
@@ -115,9 +116,12 @@ class SelectedProjectsEmployeeExportPdf
                 $shiftType = ($cycleNumber % 2 === 1) ? 'M' : 'N';
 
                 switch ($record->shift->type) {
-                    case 'morning': $shiftType = 'M'; break;
-                    case 'evening': $shiftType = 'N'; break;
-                    case 'evening_morning': $shiftType = ($cycleNumber % 2 === 1) ? 'N' : 'M'; break;
+                    case 'morning': $shiftType = 'M';
+                        break;
+                    case 'evening': $shiftType = 'N';
+                        break;
+                    case 'evening_morning': $shiftType = ($cycleNumber % 2 === 1) ? 'N' : 'M';
+                        break;
                 }
             }
 

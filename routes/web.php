@@ -11,7 +11,6 @@ use App\Models\Employee;
 use App\Models\EmployeeCoordinate;
 use App\Models\EmployeeProjectRecord;
 use App\Services\EmployeePdfService;
-use App\Services\ProjectEmployeesPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -85,17 +84,20 @@ Route::post('/upload', [FileUploadController2::class, 'uploadFile'])->name('uplo
 Route::get('/test-s3', [S3TestController::class, 'testS3']);
 
 Route::get('/admin/projects/export/pdf', function () {
-    $ids = request()->input('ids');
-    $ids = explode(',', $ids);
+    $ids = session('export_pdf_ids');
+    $startDate = session('export_pdf_start_date');
 
-    $records = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
+    if (! $ids || ! $startDate) {
+        abort(403, 'بيانات التصدير غير متوفرة');
+    }
+
+    $records = \App\Models\EmployeeProjectRecord::with(['employee', 'project', 'zone.pattern', 'shift'])
         ->whereIn('project_id', $ids)
         ->where('status', true)
         ->get();
 
-    $pdfService = new ProjectEmployeesPdfService;
-
-    return $pdfService->generate($records);
+    $service = new \App\Services\ProjectEmployeesPdfService;
+    $service->generate($records, 'تقرير نمط العمل - الموظفين', $startDate);
 })->name('projects.export.pdf')->middleware(['web', 'auth']);
 
 // Route::get('/filament/employee-route/{employeeId}', function ($employeeId) {

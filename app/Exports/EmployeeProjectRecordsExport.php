@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\EmployeeProjectRecord;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -21,9 +22,13 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
 
     protected $onlyActive;
 
-    public function __construct(bool $onlyActive = true)
+    protected Carbon $startDate;
+
+    public function __construct(bool $onlyActive = true, ?string $startDate = null)
     {
         $this->onlyActive = $onlyActive;
+        $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
+
     }
 
     public function query()
@@ -46,9 +51,7 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
         ];
 
         // توليد رؤوس التواريخ (30 يوم قادم)
-        $dates = collect(range(0, 29))->map(function ($i) {
-            return now('Asia/Riyadh')->copy()->addDays($i)->format('d M');
-        });
+        $dates = collect(range(0, 30))->map(fn ($i) => $this->startDate->copy()->addDays($i)->format('d M'));
 
         return array_merge($baseHeadings, $dates->toArray());
     }

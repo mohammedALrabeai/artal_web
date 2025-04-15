@@ -11,14 +11,17 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Carbon\Carbon;
+
 
 class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
     protected Collection $records;
 
     protected array $workPatternValues = [];
+    protected Carbon $startDate;
 
-    public function __construct(array $projectIds, bool $onlyActive = true)
+    public function __construct(array $projectIds, bool $onlyActive = true, ?string $startDate = null)
     {
         $query = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
             ->whereIn('project_id', $projectIds);
@@ -28,6 +31,8 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
         }
 
         $this->records = $query->get();
+        $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
+
     }
 
     public function collection()
@@ -42,8 +47,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             'تاريخ البدء', 'تاريخ الانتهاء', 'الحالة',
         ];
 
-        $dates = collect(range(0, 29))->map(fn ($i) => now('Asia/Riyadh')->addDays($i)->format('d M'));
-
+        $dates = collect(range(0, 30))->map(fn ($i) => $this->startDate->copy()->addDays($i)->format('d M'));
         return array_merge($baseHeadings, $dates->toArray());
     }
 
@@ -133,12 +137,12 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
         $cycleLength = $workingDays + $offDays;
 
         $startDate = \Carbon\Carbon::parse($record->shift->start_date);
-        $currentDate = \Carbon\Carbon::now('Asia/Riyadh');
+        // $currentDate = \Carbon\Carbon::now('Asia/Riyadh');
 
         $days = [];
 
         for ($i = 0; $i < 30; $i++) {
-            $targetDate = $currentDate->copy()->addDays($i);
+            $targetDate = $this->startDate->copy()->addDays($i);
             $totalDays = $startDate->diffInDays($targetDate);
             $currentDayInCycle = $totalDays % $cycleLength;
             $cycleNumber = (int) floor($totalDays / $cycleLength) + 1;

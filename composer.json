@@ -7,7 +7,6 @@
     "require": {
         "php": "^8.2",
         "aws/aws-sdk-php": "^3.336",
-        "barryvdh/laravel-dompdf": "^3.1",
         "berkayk/onesignal-laravel": "^2.1",
         "bezhansalleh/filament-language-switch": "*",
         "bezhansalleh/filament-shield": "^3.3",
