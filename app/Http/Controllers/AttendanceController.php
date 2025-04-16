@@ -753,9 +753,19 @@ class AttendanceController extends Controller
                 })
                 ->get();
 
-            $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses) {
+            $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date) {
                 $employee = $attendance->employee;
                 $statusData = $employeeStatuses[$employee->id] ?? null;
+
+                // جلب سجل الإسناد الصحيح بناءً على تاريخ الحضور
+                $assignment = \App\Models\EmployeeProjectRecord::with(['project', 'zone', 'shift'])
+                    ->where('employee_id', $employee->id)
+                    ->where('start_date', '<=', $date)
+                    ->where(function ($q) use ($date) {
+                        $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
+                    })
+                    ->latest('start_date') // في حال وجود أكثر من سجل، نأخذ الأحدث
+                    ->first();
 
                 return [
                     'employee_id' => $attendance->employee_id,
@@ -772,6 +782,11 @@ class AttendanceController extends Controller
                     'gps_enabled' => $statusData?->gps_enabled ?? null,
                     'is_inside' => $statusData?->is_inside ?? null,
                     'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
+
+                    // ✅ معلومات الإسناد الرسمي، وليس الموقع الفعلي للتغطية
+                    'project_name' => $assignment?->project?->name ?? 'غير معروف',
+                    'zone_name' => $assignment?->zone?->name ?? 'غير معروف',
+                    'shift_name' => $assignment?->shift?->name ?? 'غير معروف',
                 ];
             });
 
