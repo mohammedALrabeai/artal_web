@@ -699,10 +699,26 @@ class AttendanceController extends Controller
 
                 $attendances = $shift->attendances->where('date', $date);
 
-                $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses) {
+                $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses, $date) {
                     $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
                     $employee = $record->employee;
                     $statusData = $employeeStatuses[$employee->id] ?? null;
+
+                    // ⬅️ جلب جميع التغطيات التي قام بها الموظف اليوم (حتى لو مكررة)
+                    $coveragesToday = \App\Models\Attendance::with('zone.project', 'shift')
+                        ->where('employee_id', $record->employee_id)
+                        ->where('status', 'coverage')
+                        ->whereDate('date', $date)
+                        ->get()
+                        ->map(function ($cov) {
+                            return [
+                                'zone_name' => $cov->zone->name ?? 'غير معروف',
+                                'project_name' => $cov->zone->project->name ?? 'غير معروف',
+                                'shift_name' => $cov->shift->name ?? 'غير معروف',
+                                'check_in' => $cov->check_in,
+                                'check_out' => $cov->check_out,
+                            ];
+                        });
 
                     return [
                         'employee_id' => $record->employee_id,
@@ -719,6 +735,8 @@ class AttendanceController extends Controller
                         'gps_enabled' => $statusData?->gps_enabled ?? null,
                         'is_inside' => $statusData?->is_inside ?? null,
                         'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
+                        // ✅ التغطيات التي قام بها الموظف اليوم
+                        'coverages_today' => $coveragesToday,
                     ];
                 });
 
