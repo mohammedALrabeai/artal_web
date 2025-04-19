@@ -399,7 +399,7 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                 $message .= "📅 *تاريخ البدء:* {$record->start_date}\n";
                 $message .= "\n📥 لتحميل التطبيق:\n";
                 $message .= "▶️ Android: https://play.google.com/store/apps/details?id=com.intshar.artalapp\n";
-                $message .= "🍏 iOS: https://testflight.apple.com/join/Md5YzFE7\n";
+                $message .= "🍏 iOS: https://apps.apple.com/us/app/artal/id6740813953\n";
                 $message .= "\nشكراً.";
 
                 $otpService->sendOtp($employee->mobile_number, $message);

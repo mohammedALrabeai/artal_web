@@ -31,7 +31,6 @@ class CreateEmployeeProjectRecord extends CreateRecord
         $currentAssigned = EmployeeProjectRecord::where('shift_id', $this->data['shift_id'])
             ->where('status', '1') // ✅ فقط الموظفين النشطين
             ->count();
-            
 
         if ($shift && $currentAssigned >= $shift->emp_no) {
             Notification::make()
@@ -89,12 +88,11 @@ class CreateEmployeeProjectRecord extends CreateRecord
                 $message .= "📌 *اسم المستخدم:* {$mobileNumber}\n";
                 $message .= "🔑 *كلمة المرور:* {$employee->password}\n";
                 $message .= "📍 *الموقع:* {$zone->name}\n\n";
-            
 
                 // 📱 روابط تحميل التطبيق لأنظمة التشغيل المختلفة
                 $message .= "📥 *لتحميل التطبيق:* \n";
                 $message .= "▶️ *Android:* [Google Play](https://play.google.com/store/apps/details?id=com.intshar.artalapp)\n";
-                $message .= "🍏 *iOS:* [TestFlight](https://testflight.apple.com/join/Md5YzFE7)\n\n";
+                $message .= "🍏 *iOS:* [App Store](https://apps.apple.com/us/app/artal/id6740813953)\n\n";
 
                 $message .= 'شكراً.';
 

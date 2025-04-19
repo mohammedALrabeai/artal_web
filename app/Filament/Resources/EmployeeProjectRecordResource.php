@@ -347,7 +347,7 @@ class EmployeeProjectRecordResource extends Resource
                          
                                 $message .= "📥 *لتحميل التطبيق:* \n";
                                 $message .= "▶️ *Android:* [Google Play](https://play.google.com/store/apps/details?id=com.intshar.artalapp)\n";
-                                $message .= "🍏 *iOS:* [TestFlight](https://testflight.apple.com/join/Md5YzFE7)\n\n";
+                                $message .= "🍏 *iOS:* [App Store](https://apps.apple.com/us/app/artal/id6740813953)\n\n";
                                 $message .= 'شكراً.';
 
                                 // إرسال الرسالة
