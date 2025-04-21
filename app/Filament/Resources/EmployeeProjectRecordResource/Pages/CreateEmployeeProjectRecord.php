@@ -41,6 +41,30 @@ class CreateEmployeeProjectRecord extends CreateRecord
 
             $this->halt(); // ⛔ منع الإسناد
         }
+
+        $zone = Zone::find($this->data['zone_id']);
+$project = Project::find($this->data['project_id']);
+
+if ($shift && $zone && $project && $shift->zone_id !== $zone->id) {
+    Notification::make()
+        ->title('⚠️ وردية لا تتبع الموقع المحدد')
+        ->danger()
+        ->body("❌ الوردية المختارة ({$shift->name}) لا تتبع الموقع المحدد ({$zone->name}). يرجى اختيار وردية تابعة للموقع.")
+        ->send();
+
+    $this->halt(); // ⛔ منع الإسناد
+}
+
+if ($zone && $project && $zone->project_id !== $project->id) {
+    Notification::make()
+        ->title('⚠️ الموقع لا يتبع المشروع المحدد')
+        ->danger()
+        ->body("❌ الموقع المحدد ({$zone->name}) لا يتبع المشروع المحدد ({$project->name}).")
+        ->send();
+
+    $this->halt(); // ⛔ منع الإسناد
+}
+
     }
 
     protected function afterCreate(): void
@@ -53,10 +77,10 @@ class CreateEmployeeProjectRecord extends CreateRecord
 
         $project = Project::find($this->record->project_id);
         $shift = Shift::find($this->record->shift_id);
-// ✅ إذا كان الموظف غير نشط نقوم بتفعيله
-if ($employee && $employee->status != 1) {
-    $employee->update(['status' => 1]);
-}
+        // ✅ إذا كان الموظف غير نشط نقوم بتفعيله
+        if ($employee && $employee->status != 1) {
+            $employee->update(['status' => 1]);
+        }
         if ($employee && $zone) {
 
             // ✅ **إرسال إشعار إلى المسؤولين عند إسناد الموظف**
