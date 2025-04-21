@@ -65,6 +65,7 @@ class ZoneResource extends Resource
                 ->label(__('Project'))
                 ->options(Project::all()->pluck('name', 'id'))
                 ->searchable()
+                ->disabled(fn ($record) => $record !== null)
                 ->required(),
 
             Forms\Components\TextInput::make('lat')
@@ -150,6 +151,58 @@ class ZoneResource extends Resource
                     ->label(__('View'))
                     ->icon('heroicon-o-eye')
                     ->url(fn (Zone $record) => ZoneResource::getUrl('view', ['record' => $record->id])), // ربط زر العرض بصفحة التفاصيل
+                Tables\Actions\Action::make('transferProject')
+                    ->label('نقل الموقع إلى مشروع آخر')
+                    ->icon('heroicon-o-arrow-path')
+                    ->form([
+                        Forms\Components\Select::make('new_project_id')
+                            ->label('المشروع الجديد')
+                            ->options(Project::pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (Zone $record, array $data) {
+                        $newProjectId = $data['new_project_id'];
+
+                        $oldProjectName = $record->project->name; // حفظ المشروع القديم قبل التحديث
+
+                        // تحديث المشروع للموقع
+                        $record->update([
+                            'project_id' => $newProjectId,
+                        ]);
+
+                        // تحديث كل سجلات الموظفين المرتبطين بهذا الموقع
+                        \App\Models\EmployeeProjectRecord::where('zone_id', $record->id)
+                            ->update(['project_id' => $newProjectId]);
+
+                        // إشعار باستخدام NotificationService
+                        $notificationService = new \App\Services\NotificationService;
+                        $userName = auth()->user()?->name ?? 'مستخدم غير معروف';
+
+                        $message = '';
+                        $message .= "تم النقل بواسطة: {$userName}\n\n";
+                        $message .= "اسم الموقع: {$record->name}\n";
+                        $message .= "المشروع السابق: {$oldProjectName}\n";
+                        $message .= "المشروع الجديد: {$record->project->name}\n";
+
+                        $notificationService->sendNotification(
+                            ['manager', 'general_manager', 'hr'],
+                            '🔁 نقل موقع إلى مشروع آخر',
+                            $message,
+                            [
+                                $notificationService->createAction('عرض الموقع', "/admin/zones/{$record->id}", ''),
+                                $notificationService->createAction('قائمة المواقع', '/admin/zones', ''),
+                            ]
+                        );
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('✅ تم نقل الموقع بنجاح')
+                            ->body('تم تحديث المشروع وجميع الموظفين المرتبطين بالموقع.')
+                            ->success()
+                            ->send();
+                    })
+                    ->color('warning')
+                    ->visible(fn () => auth()->user()?->hasAnyRole(['super_admin', 'manager', 'hr_manager', 'general_manager'])),
 
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
