@@ -72,6 +72,8 @@
     "Specialization": "التخصص",
     "Mobile Number": "رقم الجوال",
     "Phone Number": "رقم الهاتف",
+    "Employees currently working and available for assignment": "الموظفون النشطون والمتاحون للعمل",
+    "Employees who are not currently active or available": "الموظفون غير النشطين أو غير المتاحين حاليًا",
 
     "Region": "المنطقة",
     "Ended: :ended | Excluded: :excluded" : "منتهية عقودهم: :ended | مستبعدون: :excluded",

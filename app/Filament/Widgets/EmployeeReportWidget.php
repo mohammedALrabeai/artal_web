@@ -23,24 +23,12 @@ class EmployeeReportWidget extends StatsOverviewWidget
 
             // ✅ الموظفون النشطون
             Card::make(__('Active Employees'), $this->getActiveEmployeesCount())
-                ->description(__(
-                    'Ended: :ended | Excluded: :excluded',
-                    [
-                        'ended' => $this->getEndedContractCount(),
-                        'excluded' => $this->getActiveExcludedCount(),
-                    ]
-                ))
+                ->description(__('Employees currently working and available for assignment'))
                 ->descriptionIcon('heroicon-o-check-circle')
                 ->color('success'),
 
-            // ❌ الموظفون غير النشطين
             Card::make(__('Inactive Employees'), $this->getInactiveEmployeesCount())
-                ->description(__(
-                    'Excluded: :excluded',
-                    [
-                        'excluded' => $this->getInactiveExcludedCount(),
-                    ]
-                ))
+                ->description(__('Employees who are not currently active or available'))
                 ->descriptionIcon('heroicon-o-x-circle')
                 ->color('danger'),
         ];
