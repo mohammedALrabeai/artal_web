@@ -74,6 +74,9 @@
     "Phone Number": "رقم الهاتف",
 
     "Region": "المنطقة",
+    "Ended: :ended | Excluded: :excluded" : "منتهية عقودهم: :ended | مستبعدون: :excluded",
+"Excluded: :excluded" :"مستبعدون: :excluded",
+"Inactive Employees": "الموظفين غير النشطين",
   
     "Street": "الشارع",
     "Building Number": "رقم المبنى",

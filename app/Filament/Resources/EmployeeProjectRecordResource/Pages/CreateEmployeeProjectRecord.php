@@ -53,7 +53,10 @@ class CreateEmployeeProjectRecord extends CreateRecord
 
         $project = Project::find($this->record->project_id);
         $shift = Shift::find($this->record->shift_id);
-
+// ✅ إذا كان الموظف غير نشط نقوم بتفعيله
+if ($employee && $employee->status != 1) {
+    $employee->update(['status' => 1]);
+}
         if ($employee && $zone) {
 
             // ✅ **إرسال إشعار إلى المسؤولين عند إسناد الموظف**

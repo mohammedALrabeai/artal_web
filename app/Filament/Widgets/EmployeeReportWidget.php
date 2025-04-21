@@ -23,44 +23,64 @@ class EmployeeReportWidget extends StatsOverviewWidget
 
             // ✅ الموظفون النشطون
             Card::make(__('Active Employees'), $this->getActiveEmployeesCount())
-                ->description(__('Employees currently active'))
+                ->description(__(
+                    'Ended: :ended | Excluded: :excluded',
+                    [
+                        'ended' => $this->getEndedContractCount(),
+                        'excluded' => $this->getActiveExcludedCount(),
+                    ]
+                ))
                 ->descriptionIcon('heroicon-o-check-circle')
                 ->color('success'),
 
-            // ✅ الموظفون المستبعدون
-            Card::make(__('Excluded Employees'), $this->getExcludedEmployeesCount())
-                ->description(__('Employees who are currently excluded'))
+            // ❌ الموظفون غير النشطين
+            Card::make(__('Inactive Employees'), $this->getInactiveEmployeesCount())
+                ->description(__(
+                    'Excluded: :excluded',
+                    [
+                        'excluded' => $this->getInactiveExcludedCount(),
+                    ]
+                ))
                 ->descriptionIcon('heroicon-o-x-circle')
                 ->color('danger'),
         ];
     }
 
-    /**
-     * 🔍 حساب عدد الموظفين النشطين
-     */
     private function getActiveEmployeesCount(): int
     {
+        return Employee::where('status', true)->count();
+    }
+
+    private function getEndedContractCount(): int
+    {
         return Employee::where('status', true)
-            ->where(function ($query) {
-                $query->whereNull('contract_end') // لا يوجد نهاية عقد
-                    ->orWhere('contract_end', '>', now()); // أو العقد لم ينتهِ
-            })
-            ->whereDoesntHave('exclusions', function ($query) {
+            ->whereNotNull('contract_end')
+            ->where('contract_end', '<=', now())
+            ->count();
+    }
+
+    private function getActiveExcludedCount(): int
+    {
+        return Employee::where('status', true)
+            ->whereHas('exclusions', function ($query) {
                 $query->where('status', Exclusion::STATUS_APPROVED)
                     ->where('exclusion_date', '<=', now());
             })
             ->count();
     }
 
-    /**
-     * ❌ حساب عدد الموظفين المستبعدين
-     */
-    private function getExcludedEmployeesCount(): int
+    private function getInactiveEmployeesCount(): int
     {
-        return Employee::whereHas('exclusions', function ($query) {
-            $query->where('status', Exclusion::STATUS_APPROVED)
-                ->where('exclusion_date', '<=', now());
-        })
+        return Employee::where('status', false)->count();
+    }
+
+    private function getInactiveExcludedCount(): int
+    {
+        return Employee::where('status', false)
+            ->whereHas('exclusions', function ($query) {
+                $query->where('status', Exclusion::STATUS_APPROVED)
+                    ->where('exclusion_date', '<=', now());
+            })
             ->count();
     }
 }
