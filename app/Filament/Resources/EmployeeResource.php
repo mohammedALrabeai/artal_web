@@ -1004,11 +1004,11 @@ class EmployeeResource extends Resource
                             // إرسال الطلب
                             $response = Http::withHeaders($headers)->post('https://onesignal.com/api/v1/notifications', $payload);
 
-                            // تسجيل الاستجابة
-                            Log::info('OneSignal Response:', [
-                                'external_user_ids' => $externalUserIds,
-                                'response' => $response->json(),
-                            ]);
+                            // // تسجيل الاستجابة
+                            // Log::info('OneSignal Response:', [
+                            //     'external_user_ids' => $externalUserIds,
+                            //     'response' => $response->json(),
+                            // ]);
                         } else {
                             Log::warning('No valid external_user_ids found for sending notifications.');
                         }

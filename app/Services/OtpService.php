@@ -188,11 +188,11 @@ class OtpService
             $endpoint = 'https://wappi.pro/api/sync/message/send?profile_id='.$this->profileId;
         }
 
-        \Log::info('إرسال رسالة واتساب مع مرفق...', [
-            'phone' => $phone,
-            'endpoint' => $endpoint,
-            'payload' => $payload,
-        ]);
+        // \Log::info('إرسال رسالة واتساب مع مرفق...', [
+        //     'phone' => $phone,
+        //     'endpoint' => $endpoint,
+        //     'payload' => $payload,
+        // ]);
 
         $response = \Illuminate\Support\Facades\Http::withHeaders([
             'Authorization' => '40703bb7812b727ec01c24f2da518c407342559c', // تأكد من ضبط التوكن المناسب في البيئة
