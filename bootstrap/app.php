@@ -13,9 +13,24 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
+
     ->withMiddleware(function (Middleware $middleware) {
         // لتطبيق الـ CORS على جميع مسارات الويب فقط:
         $middleware->web(\App\Http\Middleware\CorsMiddleware::class);
+        $middleware->redirectTo(function ($request) {
+            if (
+                $request->expectsJson() ||
+                $request->is('api/*') ||
+                $request->header('X-Requested-With') === 'XMLHttpRequest'
+            ) {
+                abort(response()->json([
+                    'message' => 'Unauthenticated.',
+                    'code' => 401,
+                ], 401));
+            }
+
+            return '/login'; // أو '/admin/login' لو تستخدم Filament فقط
+        });
     })
 
     ->withCommands([
