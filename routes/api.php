@@ -146,8 +146,8 @@ Route::post('/test-notification', function () {
     return response()->json(['status' => 'success', 'message' => 'تم إرسال الإشعار بنجاح!', 'data' => $notificationData]);
 });
 
-Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
-Route::get('/areas-with-details2', [AreaController::class, 'getAreasWithDetailsDynamic']);
+// Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2'])->middleware('auth:sanctum');
+Route::get('/areas-with-details2', [AreaController::class, 'getAreasWithDetailsDynamic'])->middleware('auth:sanctum');
 Route::get('/areas/details/improved', [AreaController::class, 'getAreasWithDetailsImproved']);
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
