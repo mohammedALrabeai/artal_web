@@ -147,7 +147,7 @@ Route::post('/test-notification', function () {
 });
 
 Route::get('/areas-with-details', [AreaController::class, 'getAreasWithDetails2']);
-Route::middleware('auth:sanctum')->get('/areas-with-details2', [AreaController::class, 'getAreasWithDetailsDynamic']);
+Route::get('/areas-with-details2', [AreaController::class, 'getAreasWithDetailsDynamic']);
 Route::get('/areas/details/improved', [AreaController::class, 'getAreasWithDetailsImproved']);
 Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesForShifts']);
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
