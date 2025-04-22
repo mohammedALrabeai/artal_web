@@ -38,7 +38,14 @@ class ProcessAttendanceJob implements ShouldQueue
 
             $message = "✔️ تم تنفيذ معالجة الحضور بنجاح عند $time\n"
             ."📌 عدد الغياب: $absents";
+            if ($absents == 0 && $offs == 0) {
+                // $message = "❌ لا توجد سجلات غياب أو إجازات.";
+                $phone = '966571718153';
+                $otpService->sendOtp($phone, $message);
+                Log::info($message);
 
+                return;
+            }
             if ($offs > 0) {
                 $message .= "\n📎 عدد الموظفين خارج جدول العمل اليوم: $offs";
             }
