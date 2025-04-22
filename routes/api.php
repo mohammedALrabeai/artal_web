@@ -155,6 +155,7 @@ Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2'
 Route::get('/attendance3', [AttendanceController::class, 'getAttendanceStatusV3']);
 
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
+Route::get('/test-email', [\App\Http\Controllers\TestEmailController::class, 'send']);
 
 Route::post('/run-migrations', function (Request $request) {
     // حماية الوصول بكلمة مرور أو توكن
