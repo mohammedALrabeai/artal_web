@@ -209,6 +209,10 @@ class EmployeeProjectRecordResource extends Resource
                     ->getStateUsing(fn ($record) => self::calculateWorkPattern($record))
                     ->html()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('assignedBy.name')
+                    ->label(__('Assigned By'))
+                    ->toggleable(isToggledHiddenByDefault: true), // مخفي افتراضيًا
+
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime()
@@ -344,7 +348,7 @@ class EmployeeProjectRecordResource extends Resource
                                 $message .= "📌 *اسم المستخدم:* {$mobileNumber}\n";
                                 $message .= "🔑 *كلمة المرور:* {$employee->password}\n";
                                 $message .= "📍 *الموقع:* {$zone->name}\n\n";
-                         
+
                                 $message .= "📥 *لتحميل التطبيق:* \n";
                                 $message .= "▶️ *Android:* [Google Play](https://play.google.com/store/apps/details?id=com.intshar.artalapp)\n";
                                 $message .= "🍏 *iOS:* [App Store](https://apps.apple.com/us/app/artal/id6740813953)\n\n";

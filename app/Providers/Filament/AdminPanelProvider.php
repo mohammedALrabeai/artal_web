@@ -86,6 +86,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->databaseNotifications()
+            
             ->databaseNotificationsPolling(null);
         // ->renderHook( PanelsRenderHook::USER_MENU_BEFORE, function () {
         //     return view('components.notification-bell', [
