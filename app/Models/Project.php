@@ -43,5 +43,8 @@ class Project extends Model
             ->withPivot('start_date', 'end_date', 'zone_id', 'shift_id', 'status');
     }
 
-
+    public function activeZones()
+    {
+        return $this->hasMany(Zone::class)->where('status', 1);
+    }
 }

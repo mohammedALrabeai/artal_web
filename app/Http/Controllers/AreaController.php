@@ -530,7 +530,7 @@ class AreaController extends Controller
     {
         $currentTime = Carbon::now('Asia/Riyadh');
 
-        $areas = Area::with(['activeProjects.zones.shifts.attendances'])->get();
+        $areas = Area::with(['activeProjects.activeZones.shifts.attendances'])->get();
 
         $data = $areas->map(function ($area) use ($currentTime) {
             return [
@@ -543,7 +543,7 @@ class AreaController extends Controller
                             'id' => $project->id,
                             'name' => $project->name,
                             'emp_no' => $project->emp_no,
-                            'zones' => $project->zones->map(function ($zone) use ($currentTime) {
+                            'zones' => $project->activeZones->map(function ($zone) use ($currentTime) {
                                 $shifts = $zone->shifts->map(function ($shift) use ($currentTime, $zone) {
                                     // الحصول على حالة الوردية وتاريخ الحضور
                                     $shiftInfo = $this->determineCurrentShift($shift, $currentTime, $zone);
@@ -567,7 +567,6 @@ class AreaController extends Controller
 
                                 $currentShift = $shifts->where('is_current_shift', true)->first();
 
-                                // حسابات التغطيات والخروج عن النطاق
                                 $activeCoveragesCount = \App\Models\Attendance::where('zone_id', $zone->id)
                                     ->where('status', 'coverage')
                                     ->whereNull('check_out')
