@@ -85,6 +85,7 @@ class ZoneController extends Controller
             ->having('distance', '<=', $radius) // ✅ تحديد النطاق المسموح به
             ->orderBy('distance') // ✅ ترتيب النتائج حسب الأقرب
             ->with(['project', 'shifts.attendances']) // ✅ تحميل المشروع والورديات
+            ->where('status', 1)
             ->get();
 
         // ✅ معالجة البيانات وإرجاعها
