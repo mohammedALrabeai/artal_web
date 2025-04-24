@@ -79,6 +79,8 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 
 });
+
+Route::post('/zones/nearby-with-shift-operation', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/employee-route/{employeeId}', [EmployeeCoordinateController::class, 'getEmployeeRoute']);
     Route::get('/employee-locations', [EmployeeCoordinateController::class, 'getRecentEmployeeLocations']);
