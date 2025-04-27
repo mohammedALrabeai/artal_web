@@ -53,6 +53,7 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             'مكان الميلاد',
             'رقم المشترك بالتأمينات',
             'اسم الموقع الحالي',
+            'الحالة',
         ];
     }
 
@@ -87,6 +88,7 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             $employee->birth_place,
             $employee->insurance_number,
             optional($employee->currentZone)->name,
+            $employee->status == 1 ? 'نشط' : 'غير نشط',
         ];
     }
 }
