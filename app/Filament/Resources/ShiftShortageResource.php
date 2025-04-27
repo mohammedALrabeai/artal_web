@@ -65,6 +65,26 @@ class ShiftShortageResource extends Resource
                     )
                     ->color('success')
                     ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} ✅" : 'لا يوجد تغطية'),
+
+                Tables\Columns\TextColumn::make('status_summary')
+                    ->label('حالة الربط')
+                    ->getStateUsing(function ($record) {
+                        $shiftStatus = $record->status ? '✅ وردية نشطة' : '❌ وردية معطلة';
+                        $zoneStatus = optional($record->zone)->status ? '✅ موقع نشط' : '❌ موقع معطل';
+                        $projectStatus = optional($record->zone?->project)->status ? '✅ مشروع نشط' : '❌ مشروع معطل';
+
+                        return "{$shiftStatus} | {$zoneStatus} | {$projectStatus}";
+                    })
+                    ->badge()
+                    ->color(function ($record) {
+                        $isAllActive = $record->status
+                            && optional($record->zone)->status
+                            && optional($record->zone?->project)->status;
+
+                        return $isAllActive ? 'success' : 'danger';
+                    })
+                    ->sortable(),
+
             ])
             ->filters([
                 // فلتر لحالة المشروع (نشط / معطل / الكل)
@@ -122,6 +142,18 @@ class ShiftShortageResource extends Resource
     //         $query->where('status', true); // استخدم true أو 1 حسب نوع البيانات في العمود
     //     });
     // }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('status', 1) // حالة الوردية نفسها
+            ->whereHas('zone', function ($zoneQuery) {
+                $zoneQuery->where('status', 1)
+                    ->whereHas('project', function ($projectQuery) {
+                        $projectQuery->where('status', 1);
+                    });
+            });
+    }
 
     public static function getPages(): array
     {
