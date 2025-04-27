@@ -123,6 +123,26 @@ class ShiftShortageResource extends Resource
     //     });
     // }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $filter = request()->input('tableFilters.project_status.value');
+
+        if ($filter === 'inactive') {
+            $query->whereHas('zone.project', function ($q) {
+                $q->where('status', false);
+            });
+        } elseif ($filter === 'active' || is_null($filter)) {
+            $query->whereHas('zone.project', function ($q) {
+                $q->where('status', true);
+            });
+        }
+        // في حالة 'all' لا نضيف شروط إضافية.
+
+        return $query;
+    }
+
     public static function getPages(): array
     {
         return [

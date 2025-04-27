@@ -1,22 +1,46 @@
 <?php
 
 namespace App\Filament\Resources\ShiftShortageResource\Widgets;
+
 // namespace App\Filament\Widgets;
 
+use App\Models\EmployeeProjectRecord;
+use App\Models\Shift;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Card;
-use App\Models\Shift;
-use App\Models\EmployeeProjectRecord;
 
 class ShiftEmployeeShortageOverview extends StatsOverviewWidget
 {
     protected function getCards(): array
     {
-        $totalShortage = Shift::all()->sum(fn ($shift) => 
-            max(0, $shift->emp_no - EmployeeProjectRecord::where('shift_id', $shift->id)
+        // قراءة قيمة الفلتر المختارة من الطلب الحالي
+        $projectStatus = request()->input('tableFilters.project_status.value', 'active');
+
+        // تجهيز الاستعلام مع الفلترة المناسبة
+        $query = Shift::query();
+
+        if ($projectStatus === 'inactive') {
+            $query->whereHas('zone.project', function ($q) {
+                $q->where('status', false);
+            });
+        } elseif ($projectStatus === 'active') {
+            $query->whereHas('zone.project', function ($q) {
+                $q->where('status', true);
+            });
+        }
+        // لو 'all' لا نضيف أي شرط
+
+        // جلب الورديات بعد الفلترة
+        $shifts = $query->get();
+
+        // حساب إجمالي النقص
+        $totalShortage = $shifts->sum(function ($shift) {
+            $assigned = EmployeeProjectRecord::where('shift_id', $shift->id)
                 ->where('status', 1)
-                ->count())
-        );
+                ->count();
+
+            return max(0, $shift->emp_no - $assigned);
+        });
 
         return [
             Card::make('إجمالي نقص الموظفين في جميع الورديات', $totalShortage)
