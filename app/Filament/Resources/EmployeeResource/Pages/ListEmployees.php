@@ -62,8 +62,36 @@ class ListEmployees extends ListRecords
                 ->label(__('Export Employees'))
                 ->color('warning')
                 ->icon('heroicon-o-arrow-up-tray')
-                ->action(function () {
-                    return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\EmployeesExport, 'employees_export.xlsx');
+                ->form([
+                    Forms\Components\Select::make('tab')
+                        ->label('Select Tab')
+                        ->options([
+                            'all' => __('All Employees'),
+                            'with_insurance' => __('With Insurance'),
+                            'without_insurance' => __('Without Insurance'),
+                            'unassigned_employees' => __('Unassigned Employees'),
+                            'assigned_employees' => __('Assigned Employees'),
+                            'onboarding_employees' => __('Onboarding Employees'),
+                            'excluded_employees' => __('Excluded Employees'),
+                        ])
+                        ->default('all')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $query = \App\Models\Employee::query();
+
+                    // تطبيق الفلتر حسب التبويبة
+                    match ($data['tab']) {
+                        'with_insurance' => $query->whereNotNull('commercial_record_id'),
+                        'without_insurance' => $query->whereNull('commercial_record_id'),
+                        'unassigned_employees' => $query->whereDoesntHave('projectRecords'),
+                        'assigned_employees' => $query->whereHas('currentZone'),
+                        'onboarding_employees' => $query->whereHas('currentZone')->whereDoesntHave('attendances', fn ($q) => $q->where('status', 'present')),
+                        'excluded_employees' => $query->whereHas('exclusions', fn ($q) => $q->where('status', \App\Models\Exclusion::STATUS_APPROVED)),
+                        default => $query,
+                    };
+
+                    return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\EmployeesExport($query), 'employees_export.xlsx');
                 }),
 
             ExportAction::make()

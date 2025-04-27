@@ -9,9 +9,17 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class EmployeesExport implements FromCollection, WithHeadings, WithMapping
 {
+    protected $query;
+
+    public function __construct($query = null)
+    {
+        // إذا لم يتم تمرير استعلام نستخدم الكل
+        $this->query = $query ?? Employee::with('currentZone')->latest();
+    }
+
     public function collection()
     {
-        return Employee::with('currentZone')->get();
+        return $this->query->get();
     }
 
     public function headings(): array
