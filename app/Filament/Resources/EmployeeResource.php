@@ -457,6 +457,17 @@ class EmployeeResource extends Resource
                     ->sortable()
                     // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('latest_project')
+                    ->label(__('Latest Project'))
+                    ->getStateUsing(function ($record) {
+                        $currentProjectRecord = $record->latestZone; // استدعاء العلاقة الحالية
+
+                        return $currentProjectRecord ? $currentProjectRecord->name : __('Not Assigned');
+                    })
+                    ->sortable()
+                // ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+
                 Tables\Columns\TextColumn::make('current_project')
                     ->label(__('Current Project'))
                     ->getStateUsing(function ($record) {
@@ -466,7 +477,7 @@ class EmployeeResource extends Resource
                     })
                     ->sortable()
                     // ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('first_name')
                     ->label(__('First Name'))
