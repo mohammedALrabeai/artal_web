@@ -88,6 +88,14 @@ class ShiftShortageResource extends Resource
                         }
                         // عند اختيار 'all' لا يتم تطبيق أي شرط
                     }),
+                    SelectFilter::make('zone_id')
+    ->label('الموقع')
+    ->searchable()
+    ->multiple()
+    ->preload()
+    ->default(fn (Builder $query) => $query->where('status', true))
+    ->relationship('zone', 'name', fn ($query) => $query->where('status', true)->whereHas('project', fn ($q) => $q->where('status', true))),
+
                 SelectFilter::make('shortage_filter')
                     ->label('عرض الورديات')
                     ->options([
