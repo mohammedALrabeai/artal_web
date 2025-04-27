@@ -111,6 +111,7 @@ class Employee extends Model
         return $this->hasMany(EmployeeProjectRecord::class, 'employee_id');
     }
 
+
     public function attendances()
     {
         return $this->hasMany(Attendance::class);

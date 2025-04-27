@@ -84,7 +84,8 @@ class ListEmployees extends ListRecords
                     match ($data['tab']) {
                         'with_insurance' => $query->whereNotNull('commercial_record_id'),
                         'without_insurance' => $query->whereNull('commercial_record_id'),
-                        'unassigned_employees' => $query->whereDoesntHave('projectRecords'),
+                        'unassigned_employees' => $query->active()->whereDoesntHave('projectRecords'),
+
                         'assigned_employees' => $query->whereHas('currentZone'),
                         'onboarding_employees' => $query->whereHas('currentZone')->whereDoesntHave('attendances', fn ($q) => $q->where('status', 'present')),
                         'excluded_employees' => $query->whereHas('exclusions', fn ($q) => $q->where('status', \App\Models\Exclusion::STATUS_APPROVED)),
@@ -198,7 +199,9 @@ class ListEmployees extends ListRecords
             //     }),
             'unassigned_employees' => Tab::make(__('Unassigned Employees'))
                 ->modifyQueryUsing(function ($query) {
-                    return $query->whereDoesntHave('projectRecords');
+                    return $query
+                        ->active() // 🔥 الموظفين النشطين فقط
+                        ->whereDoesntHave('projectRecords'); // 🔥 الذين لا يملكون أي سجل إسناد
                 }),
 
             'assigned_employees' => Tab::make(__('Assigned Employees'))
