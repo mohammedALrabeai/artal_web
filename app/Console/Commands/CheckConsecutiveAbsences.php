@@ -6,7 +6,7 @@ use App\Exports\ConsecutiveAbsenceExport;
 use App\Mail\ConsecutiveAbsenceReportMail;
 use App\Models\Attendance;
 use App\Models\Employee;
-use App\Services\OtpService;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
@@ -15,104 +15,112 @@ class CheckConsecutiveAbsences extends Command
 {
     protected $signature = 'attendance:check-absences';
 
-    protected $description = 'Check employees with consecutive absences and send Excel report';
+    protected $description = 'Check employees with pure consecutive absences ignoring OFF days';
 
     public function handle()
     {
-        try {
-            $targetDays = 3;
-            $today = now()->startOfDay();
-            $exportData = collect();
+        $targetWorkDays = 3; // عدد أيام العمل المطلوبة
+        $today = now()->startOfDay();
+        $yesterday = now()->subDay()->startOfDay();
+        $exportData = collect();
 
-            Employee::where('status', true)
-                ->whereHas('projectRecords', function ($q) use ($today) {
-                    $q->where('status', 1)
-                        ->where(function ($query) use ($today) {
-                            $query->whereNull('end_date')
-                                ->orWhere('end_date', '>=', $today);
-                        })
-                        ->where('start_date', '<=', $today);
-                })
-                ->with(['projectRecords.zone.pattern', 'projectRecords.project', 'projectRecords.zone', 'projectRecords.shift'])
-                ->chunk(100, function ($employees) use (&$exportData, $today, $targetDays) {
-                    foreach ($employees as $employee) {
-                        $record = $employee->projectRecords
-                            ->where('status', 1)
-                            ->filter(fn ($r) => (! $r->end_date || $r->end_date >= $today) && $r->start_date <= $today)
-                            ->sortByDesc('start_date')
-                            ->first();
+        // تحميل الموظفين النشطين مع مشروع فعلي
+        $employees = Employee::where('status', true)
+        
+            ->whereHas('projectRecords', function ($q) use ($today) {
+                $q->where('status', 1)
+                    ->where(function ($query) use ($today) {
+                        $query->whereNull('end_date')->orWhere('end_date', '>=', $today);
+                    })
+                    ->where('start_date', '<=', $today);
+            })
+            ->with(['projectRecords.zone.pattern', 'projectRecords.project', 'projectRecords.zone', 'projectRecords.shift'])
+            ->get();
 
-                        if (! $record || ! $record->zone || ! $record->zone->pattern) {
-                            continue;
-                        }
-
-                        $pattern = $record->zone->pattern;
-
-                        $workDays = collect();
-                        $checkDate = $today->copy();
-                        while ($workDays->count() < $targetDays) {
-                            $dayIndex = $checkDate->dayOfWeekIso;
-                            $isWorking = $pattern->{'day_'.$dayIndex} ?? false;
-                            if ($isWorking) {
-                                $workDays->push($checkDate->copy());
-                            }
-                            $checkDate->subDay();
-                        }
-
-                        $absentConsecutively = $workDays->every(function ($day) use ($employee) {
-                            return ! Attendance::where('employee_id', $employee->id)
-                                ->whereDate('date', $day)
-                                ->exists();
-                        });
-
-                        if ($absentConsecutively) {
-                            $exportData->push([
-                                $employee->full_name,
-                                $employee->id,
-                                $employee->national_id,
-                                $employee->mobile_number,
-                                optional($record->project)->name,
-                                optional($record->zone)->name,
-                                optional($record->shift)->name,
-                                $targetDays,
-                                $workDays->first()->toDateString(),
-                            ]);
-                        }
-                    }
+        // تحميل الحضور دفعة واحدة
+        $attendanceData = Attendance::whereIn('employee_id', $employees->pluck('id'))
+            ->whereDate('date', '<=', $yesterday)
+            ->whereDate('date', '>=', $yesterday->copy()->subDays(10)) // تغطية نطاق زمني مناسب
+            ->get()
+            ->groupBy('employee_id')
+            ->map(function ($attendances) {
+                return $attendances->keyBy(function ($att) {
+                    return Carbon::parse($att->date)->toDateString();
                 });
+            });
 
-            if ($exportData->isNotEmpty()) {
-                $fileName = 'consecutive_absences_'.now()->format('Y_m_d_His').'.xlsx';
-                $filePath = 'exports/'.$fileName;
-                Excel::store(new ConsecutiveAbsenceExport($exportData), $filePath, 'local');
+        foreach ($employees as $employee) {
+            $record = $employee->projectRecords
+                ->where('status', 1)
+                ->filter(fn ($r) => (! $r->end_date || $r->end_date >= $today) && $r->start_date <= $today)
+                ->sortByDesc('start_date')
+                ->first();
 
-                $emails = [
-                    // 'legal@artalgroup.net',
-                    // 'admin2@artalgroup.net',
-                    // 'sultan@artalgroup.net',
-                    // 'hradmin@artalgroup.net',
-                    'mohammedalrabeai@gmail.com',
-                ];
-
-                foreach ($emails as $email) {
-                    Mail::to($email)->queue(new ConsecutiveAbsenceReportMail($filePath));
-                }
-                $otpService = new OtpService;
-                $phone = '966571718153';
-                $message = 'تقرير الغياب المتتالي للموظفين مرفق في البريد الإلكتروني.';
-                $otpService->sendOtp($phone, $message);
-                $this->info('تم إرسال التقرير إلى: '.implode(', ', $emails));
-            } else {
-                $this->info('لا يوجد موظفون تغيبوا بشكل متتالي.');
+            if (! $record || ! $record->zone || ! $record->zone->pattern) {
+                continue;
             }
-        } catch (\Throwable $e) {
-            \Log::error('فشل تنفيذ تقرير الغياب المتتالي: '.$e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-            $otpService = new OtpService;
-            $phone = '966571718153';
-            $message = 'فشل تنفيذ تقرير الغياب المتتالي: '.$e->getMessage();
-            $otpService->sendOtp($phone, $message);
+
+            $pattern = $record->zone->pattern;
+            $workDays = collect();
+            $checkDate = $yesterday->copy();
+
+            while ($workDays->count() < $targetWorkDays) {
+                $dayIndex = $checkDate->dayOfWeekIso;
+                $isWorkingDay = $pattern->{'day_'.$dayIndex} ?? false;
+
+                if ($isWorkingDay) {
+                    $workDays->push($checkDate->copy());
+                }
+                $checkDate->subDay();
+            }
+
+            $sequence = [];
+            foreach ($workDays as $workDay) {
+                $dateString = $workDay->toDateString();
+                $attendance = $attendanceData[$employee->id][$dateString] ?? null;
+
+                if ($attendance) {
+                    // حاضر أو تغطية
+                    $sequence[] = 'P';
+                } else {
+                    // غائب
+                    $sequence[] = 'A';
+                }
+            }
+
+            // الآن نحكم على السلسلة
+            if (! in_array('P', $sequence)) {
+                $exportData->push([
+                    $employee->full_name,
+                    $employee->id,
+                    $employee->national_id,
+                    $employee->mobile_number,
+                    optional($record->project)->name,
+                    optional($record->zone)->name,
+                    optional($record->shift)->name,
+                    $targetWorkDays,
+                    $workDays->first()->toDateString(),
+                ]);
+            }
+        }
+
+        // تصدير إلى ملف Excel
+        if ($exportData->isNotEmpty()) {
+            $fileName = 'consecutive_absences_'.now()->format('Y_m_d_His').'.xlsx';
+            $filePath = 'exports/'.$fileName;
+            Excel::store(new ConsecutiveAbsenceExport($exportData), $filePath, 'local');
+
+            $emails = [
+                'mohammedalrabeai@gmail.com',
+            ];
+
+            foreach ($emails as $email) {
+                Mail::to($email)->queue(new ConsecutiveAbsenceReportMail($filePath));
+            }
+
+            $this->info('✅ تم إرسال تقرير الغياب المتتالي.');
+        } else {
+            $this->info('✅ لا يوجد موظفون متغيبون متتاليون.');
         }
     }
 }

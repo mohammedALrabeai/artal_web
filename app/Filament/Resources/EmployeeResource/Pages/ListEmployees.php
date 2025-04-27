@@ -170,8 +170,7 @@ class ListEmployees extends ListRecords
             //     }),
             'unassigned_employees' => Tab::make(__('Unassigned Employees'))
                 ->modifyQueryUsing(function ($query) {
-                    // استخدام علاقة currentZone للتأكد من عدم وجود سجل تعيين نشط
-                    return $query->whereDoesntHave('currentZone');
+                    return $query->whereDoesntHave('projectRecords');
                 }),
 
             'assigned_employees' => Tab::make(__('Assigned Employees'))
