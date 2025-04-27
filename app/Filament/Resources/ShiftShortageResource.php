@@ -88,14 +88,6 @@ class ShiftShortageResource extends Resource
                         }
                         // عند اختيار 'all' لا يتم تطبيق أي شرط
                     }),
-                SelectFilter::make('zone_id')
-                    ->label('الموقع')
-                    ->searchable()
-                    ->multiple()
-                    ->preload()
-                    ->default(fn (Builder $query) => $query->where('status', true))
-                    ->relationship('zone', 'name', fn ($query) => $query->where('status', true)->whereHas('project', fn ($q) => $q->where('status', true))),
-
                 SelectFilter::make('shortage_filter')
                     ->label('عرض الورديات')
                     ->options([
@@ -130,36 +122,6 @@ class ShiftShortageResource extends Resource
     //         $query->where('status', true); // استخدم true أو 1 حسب نوع البيانات في العمود
     //     });
     // }
-
-    public static function getEloquentQuery(): Builder
-    {
-        $query = parent::getEloquentQuery();
-
-        $projectStatus = request()->input('tableFilters.project_status.value');
-
-        if ($projectStatus === 'inactive') {
-            $query->whereHas('zone.project', function ($q) {
-                $q->where('status', false);
-            });
-        } elseif ($projectStatus === 'active' || is_null($projectStatus)) {
-            $query->whereHas('zone.project', function ($q) {
-                $q->where('status', true);
-            });
-        }
-
-        $query->whereHas('zone', function ($q) {
-            $q->where('status', true);
-        });
-
-        // إضافة withCount لسرعة الأداء
-        $query->withCount([
-            'employeeProjectRecords as assigned_count' => function ($q) {
-                $q->where('status', 1);
-            },
-        ]);
-
-        return $query;
-    }
 
     public static function getPages(): array
     {
