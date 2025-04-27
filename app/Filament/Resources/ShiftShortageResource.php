@@ -88,13 +88,13 @@ class ShiftShortageResource extends Resource
                         }
                         // عند اختيار 'all' لا يتم تطبيق أي شرط
                     }),
-                    SelectFilter::make('zone_id')
-    ->label('الموقع')
-    ->searchable()
-    ->multiple()
-    ->preload()
-    ->default(fn (Builder $query) => $query->where('status', true))
-    ->relationship('zone', 'name', fn ($query) => $query->where('status', true)->whereHas('project', fn ($q) => $q->where('status', true))),
+                SelectFilter::make('zone_id')
+                    ->label('الموقع')
+                    ->searchable()
+                    ->multiple()
+                    ->preload()
+                    ->default(fn (Builder $query) => $query->where('status', true))
+                    ->relationship('zone', 'name', fn ($query) => $query->where('status', true)->whereHas('project', fn ($q) => $q->where('status', true))),
 
                 SelectFilter::make('shortage_filter')
                     ->label('عرض الورديات')
@@ -135,18 +135,28 @@ class ShiftShortageResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        $filter = request()->input('tableFilters.project_status.value');
+        $projectStatus = request()->input('tableFilters.project_status.value');
 
-        if ($filter === 'inactive') {
+        if ($projectStatus === 'inactive') {
             $query->whereHas('zone.project', function ($q) {
                 $q->where('status', false);
             });
-        } elseif ($filter === 'active' || is_null($filter)) {
+        } elseif ($projectStatus === 'active' || is_null($projectStatus)) {
             $query->whereHas('zone.project', function ($q) {
                 $q->where('status', true);
             });
         }
-        // في حالة 'all' لا نضيف شروط إضافية.
+
+        $query->whereHas('zone', function ($q) {
+            $q->where('status', true);
+        });
+
+        // إضافة withCount لسرعة الأداء
+        $query->withCount([
+            'employeeProjectRecords as assigned_count' => function ($q) {
+                $q->where('status', 1);
+            },
+        ]);
 
         return $query;
     }

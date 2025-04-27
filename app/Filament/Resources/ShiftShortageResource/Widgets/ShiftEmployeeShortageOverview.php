@@ -13,39 +13,39 @@ class ShiftEmployeeShortageOverview extends StatsOverviewWidget
 {
     protected function getCards(): array
     {
-        // قراءة قيمة الفلتر المختارة من الطلب الحالي
         $projectStatus = request()->input('tableFilters.project_status.value', 'active');
-
-        // تجهيز الاستعلام مع الفلترة المناسبة
-        $query = Shift::query();
-
-        if ($projectStatus === 'inactive') {
-            $query->whereHas('zone.project', function ($q) {
-                $q->where('status', false);
+    
+        // تجهيز استعلام الورديات
+        $query = Shift::query()
+            ->whereHas('zone', function ($q) use ($projectStatus) {
+                $q->where('status', true)
+                  ->whereHas('project', function ($q2) use ($projectStatus) {
+                      if ($projectStatus === 'inactive') {
+                          $q2->where('status', false);
+                      } elseif ($projectStatus === 'active' || is_null($projectStatus)) {
+                          $q2->where('status', true);
+                      }
+                  });
             });
-        } elseif ($projectStatus === 'active') {
-            $query->whereHas('zone.project', function ($q) {
-                $q->where('status', true);
-            });
-        }
-        // لو 'all' لا نضيف أي شرط
-
-        // جلب الورديات بعد الفلترة
-        $shifts = $query->get();
-
+    
+        // جلب الورديات مع عدد الموظفين المسندين دفعة واحدة
+        $shifts = $query->withCount([
+            'employeeProjectRecords as assigned_count' => function ($q) {
+                $q->where('status', 1);
+            },
+        ])->get();
+    
         // حساب إجمالي النقص
         $totalShortage = $shifts->sum(function ($shift) {
-            $assigned = EmployeeProjectRecord::where('shift_id', $shift->id)
-                ->where('status', 1)
-                ->count();
-
-            return max(0, $shift->emp_no - $assigned);
+            return max(0, $shift->emp_no - $shift->assigned_count);
         });
-
+    
         return [
-            Card::make('إجمالي نقص الموظفين في جميع الورديات', $totalShortage)
+            Card::make('إجمالي نقص الموظفين', $totalShortage)
                 ->color($totalShortage > 0 ? 'danger' : 'success')
-                ->description($totalShortage > 0 ? 'هناك نقص في الموظفين يجب تغطيته!' : 'كل الورديات مكتملة ✅'),
+                ->description($totalShortage > 0 ? 'هناك نقص يجب تغطيته!' : 'كل الورديات مكتملة ✅')
+                ->icon('heroicon-o-user-minus'),
         ];
     }
+    
 }

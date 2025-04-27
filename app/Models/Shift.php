@@ -36,6 +36,11 @@ class Shift extends Model
         return $this->belongsTo(Zone::class);
     }
 
+    public function employeeProjectRecords()
+    {
+        return $this->hasMany(\App\Models\EmployeeProjectRecord::class, 'shift_id');
+    }
+
     // تخزين القيم بالدقائق كوقت
     public function setEarlyEntryTimeAttribute($value)
     {
@@ -189,29 +194,30 @@ class Shift extends Model
 
         return $currentDayInCycle < $workingDays;
     }
+
     public function isWorkingDayDynamic(Carbon $referenceDateTime): bool
     {
         $zone = $this->zone;
-        if (!$zone || !$zone->pattern) {
+        if (! $zone || ! $zone->pattern) {
             return false;
         }
-    
+
         $pattern = $zone->pattern;
         $workingDays = (int) $pattern->working_days;
         $offDays = (int) $pattern->off_days;
-    
+
         if ($workingDays <= 0 || $offDays < 0) {
             return false;
         }
-    
+
         $cycleLength = $workingDays + $offDays;
         if ($cycleLength <= 0) {
             return false;
         }
-    
+
         // تحديد تاريخ بداية الوردية
         $startDate = Carbon::parse($this->start_date, 'Asia/Riyadh');
-    
+
         // تعديل تاريخ البداية للورديات المسائية التي تمتد عبر منتصف الليل
         if ($this->type === 'evening' || $this->type === 'evening_morning') {
             $eveningStart = Carbon::parse($this->evening_start, 'Asia/Riyadh');
@@ -219,11 +225,11 @@ class Shift extends Model
                 $startDate->subDay(); // نعتبرها من اليوم السابق إذا كنا في الصباح الباكر
             }
         }
-    
+
         // حساب الفرق بالأيام وتحديد موقع اليوم في الدورة
         $daysSinceStart = $startDate->diffInDays($referenceDateTime->copy()->startOfDay());
         $currentDayInCycle = $daysSinceStart % $cycleLength;
-    
+
         return $currentDayInCycle < $workingDays;
     }
 
@@ -404,7 +410,4 @@ class Shift extends Model
             ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
             ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
     }
-
-
-    
 }
