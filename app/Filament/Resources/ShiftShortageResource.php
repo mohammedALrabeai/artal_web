@@ -127,25 +127,18 @@ class ShiftShortageResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        $projectStatus = request()->input('tableFilters.project_status.value', 'active');
+        $filter = request()->input('tableFilters.project_status.value');
 
-        if ($projectStatus === 'inactive') {
+        if ($filter === 'inactive') {
             $query->whereHas('zone.project', function ($q) {
                 $q->where('status', false);
             });
-        } elseif ($projectStatus === 'active' || is_null($projectStatus)) {
+        } elseif ($filter === 'active' || is_null($filter)) {
             $query->whereHas('zone.project', function ($q) {
                 $q->where('status', true);
             });
         }
-
-        // الفلترة على المواقع النشطة فقط
-        $query->whereHas('zone', function ($q) {
-            $q->where('status', true);
-        });
-
-        // الفلترة على الورديات النشطة فقط (لو عندك حقل حالة للوردية)
-        $query->where('status', true); // اختياري: إذا الورديات لها حالة نشطة
+        // في حالة 'all' لا نضيف شروط إضافية.
 
         return $query;
     }

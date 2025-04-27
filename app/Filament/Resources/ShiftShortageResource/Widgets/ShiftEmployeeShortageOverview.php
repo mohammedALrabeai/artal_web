@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ShiftShortageResource\Widgets;
 
 // namespace App\Filament\Widgets;
 
+use App\Models\EmployeeProjectRecord;
 use App\Models\Shift;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Card;
@@ -12,40 +13,33 @@ class ShiftEmployeeShortageOverview extends StatsOverviewWidget
 {
     protected function getCards(): array
     {
-        // قراءة قيمة الفلتر من الطلب الحالي
+        // قراءة قيمة الفلتر المختارة من الطلب الحالي
         $projectStatus = request()->input('tableFilters.project_status.value', 'active');
 
+        // تجهيز الاستعلام مع الفلترة المناسبة
         $query = Shift::query();
 
-        // فلترة المشاريع حسب الفلتر المختار
         if ($projectStatus === 'inactive') {
             $query->whereHas('zone.project', function ($q) {
                 $q->where('status', false);
             });
-        } elseif ($projectStatus === 'active' || is_null($projectStatus)) {
+        } elseif ($projectStatus === 'active') {
             $query->whereHas('zone.project', function ($q) {
                 $q->where('status', true);
             });
         }
+        // لو 'all' لا نضيف أي شرط
 
-        // فلترة المواقع النشطة
-        $query->whereHas('zone', function ($q) {
-            $q->where('status', true);
-        });
-
-        // فلترة الورديات النشطة (لو عندك حقل status)
-        // $query->where('status', true);
-
-        // جلب الورديات مع عدد الموظفين المسندين لكل وردية دفعة وحدة
-        $shifts = $query->withCount([
-            'employeeProjectRecords as assigned_count' => function ($q) {
-                $q->where('status', 1);
-            },
-        ])->get();
+        // جلب الورديات بعد الفلترة
+        $shifts = $query->get();
 
         // حساب إجمالي النقص
         $totalShortage = $shifts->sum(function ($shift) {
-            return max(0, $shift->emp_no - $shift->assigned_count);
+            $assigned = EmployeeProjectRecord::where('shift_id', $shift->id)
+                ->where('status', 1)
+                ->count();
+
+            return max(0, $shift->emp_no - $assigned);
         });
 
         return [
