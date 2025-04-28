@@ -30,6 +30,12 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
 
     protected static ?int $navigationSort = 0;
 
+    public int $requiredEmployees = 0;
+
+    public int $assignedEmployees = 0;
+
+    public int $missingEmployees = 0;
+
     public static function getNavigationLabel(): string
     {
         return __('إسناد الموظفين');
@@ -77,7 +83,12 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                         ->reactive()
                         ->searchable()
                         ->required()
-                        ->afterStateUpdated(fn (callable $set) => $set('records', []))
+                        ->afterStateUpdated(function (callable $set) {
+                            $set('records', []);
+                            $this->requiredEmployees = 0;
+                            $this->assignedEmployees = 0;
+                            $this->missingEmployees = 0;
+                        })
                         ->columnSpan(10),
 
                     Forms\Components\Placeholder::make('load_button')
@@ -90,6 +101,25 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                         ->visible(fn (callable $get) => $get('projectId')) // يظهر فقط إذا تم اختيار مشروع
                         ->columnSpan(2),
                 ]),
+
+            Forms\Components\Grid::make(3)
+                ->schema([
+                    Forms\Components\Placeholder::make('required_employees')
+                        ->label('العدد المطلوب')
+                        ->content(fn () => $this->requiredEmployees)
+                        ->columnSpan(1),
+
+                    Forms\Components\Placeholder::make('assigned_employees')
+                        ->label('الموظفين المسندين')
+                        ->content(fn () => $this->assignedEmployees)
+                        ->columnSpan(1),
+
+                    Forms\Components\Placeholder::make('missing_employees')
+                        ->label('النقص')
+                        ->content(fn () => $this->missingEmployees)
+                        ->columnSpan(1),
+                ])
+                ->visible(fn (callable $get) => $get('projectId') !== null),
 
             Repeater::make('records')
                 ->label('الموظفون')
@@ -213,57 +243,57 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                 }
 
                 if ($record) {
-                     // ✅ إذا تغيّر الموظف نفسه (يعني صف تم فيه استبدال موظف بآخر)
-        if ($record->employee_id != $data['employee_id']) {
-            // إنهاء الإسناد السابق
-            $record->update([
-                'status' => false,
-                'end_date' => now()->toDateString(),
-            ]);
+                    // ✅ إذا تغيّر الموظف نفسه (يعني صف تم فيه استبدال موظف بآخر)
+                    if ($record->employee_id != $data['employee_id']) {
+                        // إنهاء الإسناد السابق
+                        $record->update([
+                            'status' => false,
+                            'end_date' => now()->toDateString(),
+                        ]);
 
-            // إضافة سجل جديد للموظف الجديد
-            $newRecord = EmployeeProjectRecord::create([
-                'employee_id' => $data['employee_id'],
-                'project_id' => $this->projectId,
-                'zone_id' => $data['zone_id'],
-                'shift_id' => $data['shift_id'],
-                'start_date' => $data['start_date'],
-                'end_date' => $data['end_date'] ?? null,
-                'status' => true,
-            ]);
+                        // إضافة سجل جديد للموظف الجديد
+                        $newRecord = EmployeeProjectRecord::create([
+                            'employee_id' => $data['employee_id'],
+                            'project_id' => $this->projectId,
+                            'zone_id' => $data['zone_id'],
+                            'shift_id' => $data['shift_id'],
+                            'start_date' => $data['start_date'],
+                            'end_date' => $data['end_date'] ?? null,
+                            'status' => true,
+                        ]);
 
-            $updatWitLoc++;
+                        $updatWitLoc++;
 
-            $employee = \App\Models\Employee::find($data['employee_id']);
-            $zone = \App\Models\Zone::find($data['zone_id']);
-            $shift = \App\Models\Shift::find($data['shift_id']);
-            $project = \App\Models\Project::find($this->projectId);
-            $assignedBy = auth()->user()?->name ?? 'نظام';
+                        $employee = \App\Models\Employee::find($data['employee_id']);
+                        $zone = \App\Models\Zone::find($data['zone_id']);
+                        $shift = \App\Models\Shift::find($data['shift_id']);
+                        $project = \App\Models\Project::find($this->projectId);
+                        $assignedBy = auth()->user()?->name ?? 'نظام';
 
-            $notificationService->sendNotification(
-                ['manager', 'general_manager', 'hr'],
-                '📌 نقل موظف إلى موقع جديد (تغيير موظف)',
-                "👤 *اسم الموظف الجديد:* {$employee->name()}\n".
-                "📌 *الموقع:* {$zone->name} - {$project->name}\n".
-                "🕒 *الوردية:* {$shift->name}\n".
-                "📅 *تاريخ البدء:* {$newRecord->start_date}\n".
-                '📅 *تاريخ الانتهاء:* '.($newRecord->end_date ?? 'غير محدد')."\n\n".
-                "🆔 *رقم الهوية:* {$employee->national_id}\n".
-                "📞 *الجوال:* {$employee->mobile_number}\n".
-                "📢 *تم النقل بواسطة:* {$assignedBy}",
-                [
-                    $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                    $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
-                ]
-            );
-        }
+                        $notificationService->sendNotification(
+                            ['manager', 'general_manager', 'hr'],
+                            '📌 نقل موظف إلى موقع جديد (تغيير موظف)',
+                            "👤 *اسم الموظف الجديد:* {$employee->name()}\n".
+                            "📌 *الموقع:* {$zone->name} - {$project->name}\n".
+                            "🕒 *الوردية:* {$shift->name}\n".
+                            "📅 *تاريخ البدء:* {$newRecord->start_date}\n".
+                            '📅 *تاريخ الانتهاء:* '.($newRecord->end_date ?? 'غير محدد')."\n\n".
+                            "🆔 *رقم الهوية:* {$employee->national_id}\n".
+                            "📞 *الجوال:* {$employee->mobile_number}\n".
+                            "📢 *تم النقل بواسطة:* {$assignedBy}",
+                            [
+                                $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
+                                $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
+                            ]
+                        );
+                    }
 
-        // ✅ إذا لم يتغير الموظف، ولكن تغيّر الموقع أو الوردية
-        elseif (
-            $record->zone_id !== $data['zone_id'] ||
-            $record->shift_id !== $data['shift_id'] ||
-            $record->start_date !== $data['start_date']
-        ) {
+                    // ✅ إذا لم يتغير الموظف، ولكن تغيّر الموقع أو الوردية
+                    elseif (
+                        $record->zone_id !== $data['zone_id'] ||
+                        $record->shift_id !== $data['shift_id'] ||
+                        $record->start_date !== $data['start_date']
+                    ) {
                         // تعطيل السجل القديم
                         $record->update([
                             'status' => false,
@@ -333,23 +363,25 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
 
             }
         });
-       
 
         Notification::make()
             ->title('✅ تم حفظ التعديلات')
             ->body("📌 تم  موظف، إضافة {$created} موظف جديد ,{$updatWitLoc} نقل")
             ->success()
             ->send();
-            $this->reset(['projectId', 'records']);
+        $this->reset(['projectId', 'records']);
     }
 
     protected function loadProjectEmployees($projectId): void
     {
+        $project = Project::findOrFail($projectId);
+
+        $this->requiredEmployees = $project->emp_no ?? 0;
+
         $this->records = EmployeeProjectRecord::where('project_id', $projectId)
             ->where('status', true)
             ->get()
             ->map(fn ($record) => [
-
                 'employee_id' => $record->employee_id,
                 'zone_id' => $record->zone_id,
                 'shift_id' => $record->shift_id,
@@ -358,6 +390,9 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                 'id' => $record->id,
             ])
             ->toArray();
+
+        $this->assignedEmployees = count($this->records);
+        $this->missingEmployees = max(0, $this->requiredEmployees - $this->assignedEmployees);
     }
 
     protected function sendAssignmentNotification(EmployeeProjectRecord $record): void
