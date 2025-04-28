@@ -446,7 +446,9 @@ class EmployeeResource extends Resource
                             $record->family_name;
                     })
                     // ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
                 Tables\Columns\TextColumn::make('current_zone')
                     ->label(__('Current Zone'))
                     ->getStateUsing(function ($record) {
@@ -454,6 +456,8 @@ class EmployeeResource extends Resource
 
                         return $currentZone ? $currentZone->name : __('Not Assigned');
                     })
+                    ->copyable()
+                    ->copyMessageDuration(1500)
                     ->sortable()
                     // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -465,6 +469,8 @@ class EmployeeResource extends Resource
                         return $currentProjectRecord ? $currentProjectRecord->name : __('Not Assigned');
                     })
                     ->sortable()
+                    ->copyable()
+                    ->copyMessageDuration(1500)
                 // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
 
@@ -475,6 +481,8 @@ class EmployeeResource extends Resource
 
                         return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
                     })
+                    ->copyable()
+                    ->copyMessageDuration(1500)
                     ->sortable()
                     // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),

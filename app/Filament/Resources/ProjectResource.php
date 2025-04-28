@@ -90,7 +90,9 @@ class ProjectResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->label(__('Name')), // إضافة تسمية مترجمة
+                    ->label(__('Name'))
+                    ->copyable()
+                    ->copyMessageDuration(1500), // إضافة تسمية مترجمة
                 Tables\Columns\TextColumn::make('area.name')
                     ->numeric()
                     ->sortable()

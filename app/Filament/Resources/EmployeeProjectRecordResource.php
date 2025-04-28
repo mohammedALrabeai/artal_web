@@ -170,24 +170,34 @@ class EmployeeProjectRecordResource extends Resource
                                 ->orWhere('family_name', 'like', "%{$search}%")
                                 ->orWhere('national_id', 'like', "%{$search}%");
                         });
-                    }),
+                    })
+                    ->copyable()
+                    ->copyMessageDuration(1500),
                 TextColumn::make('employee.national_id')
                     ->label(__('National ID'))
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 TextColumn::make('project.name')
                     ->label(__('Project'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 TextColumn::make('zone.name')
                     ->label(__('Zone'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
                 TextColumn::make('shift.name')
                     ->label(__('Shift'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 TextColumn::make('start_date')
                     ->label(__('Start Date'))

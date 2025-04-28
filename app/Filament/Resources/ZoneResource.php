@@ -106,7 +106,9 @@ class ZoneResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Name'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 Tables\Columns\TextColumn::make('pattern.name')
                     ->label(__('Pattern'))
@@ -115,7 +117,9 @@ class ZoneResource extends Resource
                 Tables\Columns\TextColumn::make('project.name')
                     ->label(__('Project'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 Tables\Columns\TextColumn::make('start_date')
                     ->label(__('Start Date'))

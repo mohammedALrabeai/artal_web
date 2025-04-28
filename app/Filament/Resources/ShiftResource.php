@@ -2,17 +2,17 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\ShiftResource\Pages;
+use App\Models\Shift;
+use App\Models\Zone;
 use Carbon\Carbon;
 use Filament\Forms;
-use App\Models\Zone;
-use Filament\Tables;
-use App\Models\Shift;
 use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use App\Filament\Resources\ShiftResource\Pages;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ShiftResource extends Resource
@@ -125,12 +125,16 @@ class ShiftResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label(__('Name'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 Tables\Columns\TextColumn::make('zone.name')
                     ->label(__('Zone'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessageDuration(1500),
 
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
