@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 
 class ShiftShortageResource extends Resource
 {
@@ -132,6 +133,23 @@ class ShiftShortageResource extends Resource
                     ->multiple()
                     ->preload()
                     ->relationship('zone', 'name'),
+            ])
+            ->headerActions([
+                // ExportAction::make()
+                //     ->label('تصدير إلى Excel')
+                //     ->fileName('ShiftShortagesExport') // فقط هذا مدعوم
+                //     ->only([
+                //         'zone.project.area.name',
+                //         'zone.project.name',
+                //         'zone.name',
+                //         'name',
+                //         'emp_no',
+                //         'assigned_employees',
+                //         'shortage',
+                //         'absent_employees',
+                //         'coverage_employees',
+                //     ]),
+
             ])
             ->paginated();
     }
