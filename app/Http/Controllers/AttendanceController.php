@@ -180,6 +180,24 @@ class AttendanceController extends Controller
             'notes' => $request->input('notes'),
         ]);
 
+        $isFirstRealAttendance = Attendance::where('employee_id', $employee->id)
+            ->whereIn('status', ['present', 'coverage']) // فقط نبحث عن حضور أو تغطية
+            ->where('id', '!=', $attendance->id) // استثناء السجل الحالي (اللي سجلناه للتو)
+            ->doesntExist();
+
+        if ($isFirstRealAttendance) {
+            try {
+                dispatch(new \App\Jobs\SendFirstAttendanceEmail($employee, $attendance->zone, $attendance->date));
+            } catch (\Throwable $e) {
+                // سجل الخطأ في اللوج بدون أن توقف العملية
+                \Log::error('فشل إرسال إشعار مباشرة الموظف: '.$e->getMessage(), [
+                    'employee_id' => $employee->id,
+                    'zone_id' => $attendance->zone->id ?? null,
+                    'date' => $attendance->date,
+                ]);
+            }
+        }
+
         return response()->json([
             'message' => 'Checked in successfully.',
             'attendance' => $attendance,
@@ -279,7 +297,23 @@ class AttendanceController extends Controller
             'created_at' => now()->toDateTimeString(),
             'read_at' => null,
         ];
+        $isFirstRealAttendance = Attendance::where('employee_id', $employee->id)
+            ->whereIn('status', ['present', 'coverage']) // فقط نبحث عن حضور أو تغطية
+            ->where('id', '!=', $attendance->id) // استثناء السجل الحالي (اللي سجلناه للتو)
+            ->doesntExist();
 
+        if ($isFirstRealAttendance) {
+            try {
+                dispatch(new \App\Jobs\SendFirstAttendanceEmail($employee, $attendance->zone, $attendance->date));
+            } catch (\Throwable $e) {
+                // سجل الخطأ في اللوج بدون أن توقف العملية
+                \Log::error('فشل إرسال إشعار مباشرة الموظف: '.$e->getMessage(), [
+                    'employee_id' => $employee->id,
+                    'zone_id' => $attendance->zone->id ?? null,
+                    'date' => $attendance->date,
+                ]);
+            }
+        }
         // 🔹 إرسال الإشعار عبر `Pusher` للجميع مرة واحدة فقط
         event(new NewNotification($notificationData));
 
