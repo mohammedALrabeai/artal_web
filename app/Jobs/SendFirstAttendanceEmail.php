@@ -42,6 +42,7 @@ class SendFirstAttendanceEmail implements ShouldQueue
             'sultan@artalgroup.net',
             'hradmin@artalgroup.net',
             'mohammedalrabeai@gmail.com',
+            'legal2@artalgroup.net',
             // 'anotheremail@example.com',
             // 'thirdemail@example.com',
             // يمكنك إضافة المزيد هنا...
@@ -67,7 +68,7 @@ class SendFirstAttendanceEmail implements ShouldQueue
         <html dir='rtl' lang='ar'>
         <body style='font-family: Tahoma, Arial, sans-serif; background-color: #f9f9f9; padding: 20px;'>
             <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
-                <h2 style='color: #333333;'>📢 إشعار مباشرة موظف</h2>
+                <h2 style='color: #333333;'>📢 إشعار مباشرة | {$fullName} | {$nationalId}</h2>
                 <p style='font-size: 16px; color: #555555;'>نحيطكم علمًا بأن الموظف التالي قد باشر عمله:</p>
                 <table style='border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px;'>
                     <tr style='background-color: #f1f1f1;'>
@@ -87,7 +88,7 @@ class SendFirstAttendanceEmail implements ShouldQueue
                         <td style='border: 1px solid #ddd; padding: 8px;'>{$mobileNumber}</td>
                     </tr>
                     <tr style='background-color: #f1f1f1;'>
-                        <td style='border: 1px solid #ddd; padding: 8px;'>الموقع المحضر فيه</td>
+                        <td style='border: 1px solid #ddd; padding: 8px;'>الموقع المباشر فيه</td>
                         <td style='border: 1px solid #ddd; padding: 8px;'>{$zoneName}</td>
                     </tr>
                     <tr>
