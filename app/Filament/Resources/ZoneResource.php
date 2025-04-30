@@ -129,7 +129,35 @@ class ZoneResource extends Resource
                     ->label(__('Range (meter)')),
 
                 Tables\Columns\TextColumn::make('emp_no')
-                    ->label(__('Number of Employees')),
+                    ->label(__('Number of Employees'))
+                    ->state(function ($record) {
+                        return \App\Models\EmployeeProjectRecord::where('zone_id', $record->id)
+                            ->where('status', true)
+                            ->count().' موظف';
+                    })
+                    ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
+                    ->action(
+                        Tables\Actions\Action::make('show_zone_assignments')
+                            ->label('عرض الموظفين')
+                            ->modalHeading('الموظفون المسندون للموقع')
+                            ->modalSubmitAction(false)
+                            ->modalWidth('7xl')
+                            ->action(fn () => null)
+                            ->mountUsing(function (Tables\Actions\Action $action, $record) {
+                                $assignments = \App\Models\EmployeeProjectRecord::with(['employee', 'shift.zone.pattern']) // ← shift ⟶ zone ⟶ pattern
+                                    ->where('zone_id', $record->id)
+                                    ->where('status', true)
+                                    ->get()
+                                    ->sortBy(fn ($item) => $item->employee->name ?? '');
+
+                                $action->modalContent(
+                                    view('filament.modals.zone-assignments', [
+                                        'assignments' => $assignments,
+                                        'calculateWorkPattern' => [\App\Filament\Resources\EmployeeProjectRecordResource::class, 'calculateWorkPattern'],
+                                    ])
+                                );
+                            })
+                    ),
 
                 Tables\Columns\BooleanColumn::make('status')
                     ->label(__('Active'))

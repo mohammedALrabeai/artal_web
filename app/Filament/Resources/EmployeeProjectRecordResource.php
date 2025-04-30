@@ -526,7 +526,7 @@ class EmployeeProjectRecordResource extends Resource
 
     //     return implode(' ', $daysView);
     // }
-    private static function calculateWorkPattern($record)
+    public static function calculateWorkPattern($record)
     {
         if (! $record->shift || ! $record->shift->zone || ! $record->shift->zone->pattern) {
             return '<span style="color: red; font-weight: bold; padding: 4px; display: inline-block; width: 100px; text-align: center;">❌ غير متوفر</span>';
