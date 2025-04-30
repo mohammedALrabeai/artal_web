@@ -106,8 +106,30 @@ class ProjectResource extends Resource
                     ->sortable()
                     ->label(__('End Date')), // إضافة تسمية مترجمة
                 Tables\Columns\TextColumn::make('emp_no')
-                    ->label(__('Number of Employees')) // التسمية موجودة بالفعل
-                    ->sortable(),
+                    ->label(__('Number of Employees'))
+                    ->sortable()
+                    ->state(function ($record) {
+                        return $record->employeeProjectRecords()->count().' موظف';
+                    })
+                    ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
+                    ->action(
+                        Tables\Actions\Action::make('show_employees')
+                            ->label('عرض الموظفين')
+                            ->modalHeading('الموظفون المسندون للمشروع')
+                            ->modalSubmitAction(false)
+                            ->modalWidth('4xl')
+                            ->action(fn () => null)
+                            ->mountUsing(function (Tables\Actions\Action $action, $record) {
+                                $employees = \App\Models\EmployeeProjectRecord::with(['employee', 'zone', 'shift'])
+                                    ->where('project_id', $record->id)
+                                    ->where('status', 1) // ✅ فقط الإسنادات النشطة
+                                    ->get()
+                                    ->sortBy(fn ($record) => $record->zone->name ?? '');
+
+                                $action->modalContent(view('filament.modals.project-employees', compact('employees')));
+                            })
+                    ),
+
                 Tables\Columns\IconColumn::make('status')
                     ->boolean()
                     ->label(__('Status')),
@@ -134,6 +156,7 @@ class ProjectResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

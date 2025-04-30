@@ -47,4 +47,10 @@ class Project extends Model
     {
         return $this->hasMany(Zone::class)->where('status', 1);
     }
+
+    public function employeeProjectRecords()
+{
+    return $this->hasMany(\App\Models\EmployeeProjectRecord::class, 'project_id');
+}
+
 }
