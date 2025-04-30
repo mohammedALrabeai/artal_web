@@ -95,13 +95,24 @@ class CheckConsecutiveAbsences extends Command
 
             $fullPath = Storage::disk('local')->path($filePath); // 🔥 هذا يجلب المسار الفعلي الصحيح
 
-            Mail::send([], [], function ($mail) use ($emails, $fullPath, $htmlMessage) {
-                $mail->to('mohammed.artalgroup@gmail.com')
-                    ->bcc($emails)
-                    ->subject('📄 تقرير الغياب المتتالي للموظفين')
-                    ->html($htmlMessage)
-                    ->attach($fullPath);
-            });
+            try {
+                Mail::send([], [], function ($mail) use ($emails, $fullPath, $htmlMessage) {
+                    $mail->to('mohammed.artalgroup@gmail.com')
+                        ->bcc($emails)
+                        ->subject('📄 تقرير الغياب المتتالي للموظفين')
+                        ->html($htmlMessage)
+                        ->attach($fullPath);
+                });
+
+            } catch (\Throwable $e) {
+                \Log::error('فشل إرسال تقرير الغياب عبر البريد', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                $this->error('❌ فشل إرسال البريد، تم تسجيل الخطأ.');
+
+                return;
+            }
 
             $this->info('✅ تم إرسال تقرير الغياب المتتالي إلى القائمة المحددة.');
         } else {
