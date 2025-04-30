@@ -139,6 +139,16 @@ class AttendanceService
             'notes' => $status === 'off' ? 'Day off' : ($status === 'absent' ? 'Absent' : null),
         ]);
 
+        if ($status === 'absent') {
+            $employeeStatus = \App\Models\EmployeeStatus::firstOrNew([
+                'employee_id' => $record->employee_id,
+            ]);
+        
+            $employeeStatus->consecutive_absence_count = ($employeeStatus->consecutive_absence_count ?? 0) + 1;
+            $employeeStatus->save();
+        }
+        
+
         Log::info('Attendance marked', [
             'employee_id' => $record->employee_id,
             'status' => $status,

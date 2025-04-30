@@ -97,7 +97,7 @@ class SendFirstAttendanceEmail implements ShouldQueue
                     </tr>
                 </table>
                 <p style='margin-top: 20px; font-size: 16px; color: #555555;'>نتمنى له التوفيق والنجاح في مهام عمله.</p>
-                <p style='color: #999999; font-size: 14px;'>مع أطيب التحيات،<br>فريق الموارد البشرية</p>
+                <p style='color: #999999; font-size: 14px;'>مع أطيب التحيات،<br>Artal Solutions Team</p>
             </div>
         </body>
         </html>

@@ -177,7 +177,7 @@ class EmployeeResource extends Resource
                                     ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
                                     ->toArray()
                             )
-                            ->required()
+
                             ->searchable(),
                     ])
 
@@ -324,7 +324,8 @@ class EmployeeResource extends Resource
 
                         Forms\Components\TextInput::make('email')
                             ->label(__('Email'))
-                            ->email(),
+                            ->email()
+                            ,
                     ])->columns(2),
 
                 // Address

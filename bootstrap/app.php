@@ -36,13 +36,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         // أضف اسم الـCommand هنا
         \App\Console\Commands\ProcessAttendanceCommand::class,
-        // \App\Console\Commands\CheckConsecutiveAbsences::class,
+        \App\Console\Commands\CheckConsecutiveAbsences::class,
     ])
     ->withSchedule(function (Schedule $schedule) {
         // جدولة الـCommand للعمل كل ساعة
         $schedule->command('attendance:process')->everyFifteenMinutes();
-        // $schedule->command('attendance:check-absences')->dailyAt('09:00');
-        // $schedule->command('attendance:check-absences')->dailyAt('15:00');
+        $schedule->command('attendance:check-absences')->dailyAt('09:06');
+        $schedule->command('attendance:check-absences')->dailyAt('21:06');
 
         // $schedule->command('attendance:process')->hourly();
         // $schedule->command('attendance:process')->everyMinute();

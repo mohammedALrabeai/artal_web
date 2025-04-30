@@ -197,6 +197,7 @@ class AttendanceController extends Controller
                 ]);
             }
         }
+        $this->updateEmployeeStatusOnCheckIn($employee);
 
         return response()->json([
             'message' => 'Checked in successfully.',
@@ -243,6 +244,8 @@ class AttendanceController extends Controller
             'is_coverage' => true,
             'notes' => $request->input('notes'),
         ]);
+
+        $this->updateEmployeeStatusOnCheckIn($employee);
 
         // جلب اسم الموظف بالكامل باستخدام دالة name()
         $employeeName = $employee->name();
@@ -482,6 +485,8 @@ class AttendanceController extends Controller
                 'notes' => $request->input('notes'),
             ]
         );
+
+        $this->updateEmployeeStatusOnCheckIn($employee);
 
         return response()->json([
             'message' => 'Checked in successfully.',
@@ -1322,5 +1327,15 @@ class AttendanceController extends Controller
             'current_cycle_number' => $currentCycleNumber,
             'current_day_in_cycle' => $currentDayInCycle,
         ];
+    }
+
+    private function updateEmployeeStatusOnCheckIn($employee)
+    {
+        $status = EmployeeStatus::firstOrNew(['employee_id' => $employee->id]);
+
+        $status->last_present_at = now()->toDateString();
+        $status->consecutive_absence_count = 0;
+
+        $status->save();
     }
 }

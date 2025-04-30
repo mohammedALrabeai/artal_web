@@ -8,16 +8,16 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class ConsecutiveAbsenceExport implements FromCollection, WithHeadings
 {
-    public Collection $records;
+    protected $data;
 
-    public function __construct(Collection $records)
+    public function __construct(Collection $data)
     {
-        $this->records = $records;
+        $this->data = $data;
     }
 
     public function collection(): Collection
     {
-        return $this->records;
+        return $this->data;
     }
 
     public function headings(): array
@@ -31,7 +31,7 @@ class ConsecutiveAbsenceExport implements FromCollection, WithHeadings
             'اسم الموقع',
             'اسم الوردية',
             'عدد أيام الغياب',
-            'آخر تاريخ غياب',
+            'آخر تاريخ حضور',
         ];
     }
 }
