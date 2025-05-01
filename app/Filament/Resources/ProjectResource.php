@@ -108,8 +108,11 @@ class ProjectResource extends Resource
                 Tables\Columns\TextColumn::make('emp_no')
                     ->label(__('Number of Employees'))
                     ->sortable()
+                    // ->state(function ($record) {
+                    //     return $record->employeeProjectRecords()->count().' موظف';
+                    // })
                     ->state(function ($record) {
-                        return $record->employeeProjectRecords()->count().' موظف';
+                        return $record->emp_no.' موظف';
                     })
                     ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
                     ->action(

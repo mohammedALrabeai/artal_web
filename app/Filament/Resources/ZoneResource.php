@@ -130,10 +130,13 @@ class ZoneResource extends Resource
 
                 Tables\Columns\TextColumn::make('emp_no')
                     ->label(__('Number of Employees'))
+                    // ->state(function ($record) {
+                    //     return \App\Models\EmployeeProjectRecord::where('zone_id', $record->id)
+                    //         ->where('status', true)
+                    //         ->count().' موظف';
+                    // })
                     ->state(function ($record) {
-                        return \App\Models\EmployeeProjectRecord::where('zone_id', $record->id)
-                            ->where('status', true)
-                            ->count().' موظف';
+                        return $record->emp_no.' موظف';
                     })
                     ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
                     ->action(
