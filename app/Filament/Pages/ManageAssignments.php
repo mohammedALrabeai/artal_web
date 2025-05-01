@@ -2,12 +2,11 @@
 
 namespace App\Filament\Pages;
 
-use App\Forms\Components\EmployeeSelect;
+use App\Forms\Components\EmployeeSelectV2;
 use App\Models\EmployeeProjectRecord;
 use App\Models\Project;
 use App\Models\Shift;
 use App\Models\Zone;
-use App\Services\NotificationService;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -124,7 +123,7 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
             Repeater::make('records')
                 ->label('الموظفون')
                 ->schema([
-                    EmployeeSelect::make()
+                    EmployeeSelectV2::make()
                         ->columnSpan(2),
 
                     Select::make('zone_id')
@@ -179,175 +178,85 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
 
     public function save(): void
     {
-        foreach ($this->records as $item) {
-            if (! isset($item['employee_id'], $item['zone_id'], $item['shift_id'], $item['start_date'])) {
-                Notification::make()
-                    ->title('⚠️ تأكد من إدخال جميع البيانات لكل موظف')
-                    ->danger()
-                    ->send();
-
-                return;
-            }
-        }
-
         $created = 0;
         $updated = 0;
         $updatWitLoc = 0;
+        $notificationJobs = [];
 
-        DB::transaction(function () use (&$created, &$updated, &$updatWitLoc) {
-            $existingIds = collect($this->records)->pluck('employee_id')->filter();
+        DB::transaction(function () use (&$created, &$updated, &$updatWitLoc, &$notificationJobs) {
+            // 🔍 جميع التركيبات الحالية: employee_id + zone_id + shift_id
+            $existingCombinations = collect($this->records)
+                ->filter(fn ($item) => isset($item['employee_id'], $item['zone_id'], $item['shift_id']))
+                ->map(fn ($item) => $item['employee_id'].'-'.$item['zone_id'].'-'.$item['shift_id']);
 
-            // 🔍 جلب السجلات التي سيتم تعطيلها
+            // 🔍 جلب السجلات القديمة المرتبطة بالمشروع والتي لم تعد موجودة الآن
             $toBeDisabled = EmployeeProjectRecord::where('project_id', $this->projectId)
-                ->whereNotIn('employee_id', $existingIds)
-                ->where('status', true) // فقط النشطين
-                ->get();
+                ->where('status', true)
+                ->get()
+                ->filter(function ($record) use ($existingCombinations) {
+                    $key = $record->employee_id.'-'.$record->zone_id.'-'.$record->shift_id;
 
-            // ⛔ تعطيلهم فعليًا
+                    return ! $existingCombinations->contains($key);
+                });
+
+            // ⛔ تعطيلها فعليًا
             EmployeeProjectRecord::whereIn('id', $toBeDisabled->pluck('id'))
                 ->update(['status' => false, 'end_date' => now()]);
 
-            // 🛎️ إرسال إشعارات داخلية
-            $notificationService = new \App\Services\NotificationService;
-
             foreach ($toBeDisabled as $record) {
-                $employee = $record->employee;
-                $zone = $record->zone;
-                $project = $record->project;
-                $shift = $record->shift;
-
-                $notificationService->sendNotification(
-                    ['manager', 'general_manager', 'hr'],
-                    '🚫 إنهاء إسناد موظف',
-                    "👤 *اسم الموظف:* {$employee->name()}\n".
-                    "📍 *الموقع:* {$zone->name} - {$project->name}\n".
-                    "🕒 *الوردية:* {$shift->name}\n".
-                    '📅 *تاريخ الإنهاء:* '.now()->toDateString()."\n\n".
-                    '📢 *تم الإنهاء ضمن عملية التحديث الجماعي.*',
-                    [
-                        $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                        $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
-                    ]
-                );
+                $notificationJobs[] = [
+                    'type' => 'end',
+                    'record' => $record,
+                ];
             }
 
-            // dd($this->records);
+            // ✅ المعالجة الأساسية
             foreach ($this->records as $data) {
-                // $record = EmployeeProjectRecord::firstWhere([
-                //     'employee_id' => $data['employee_id'],
-                //     'project_id' => $this->projectId,
-                // ]);
-                $record = null;
-                if (! empty($data['id'])) {
-                    $record = EmployeeProjectRecord::find($data['id']);
+                // إسناد جديد (لا يحتوي على id)
+                if (! isset($data['id'])) {
+                    // التأكد من عدم وجود سجل نشط لنفس الموظف + الموقع + الوردية
+                    $existing = EmployeeProjectRecord::where('employee_id', $data['employee_id'])
+                        ->where('project_id', $this->projectId)
+                        ->where('zone_id', $data['zone_id'])
+                        ->where('shift_id', $data['shift_id'])
+                        ->where('status', true)
+                        ->first();
+
+                    if (! $existing) {
+                        $createdRecord = EmployeeProjectRecord::create([
+                            'employee_id' => $data['employee_id'],
+                            'project_id' => $this->projectId,
+                            'zone_id' => $data['zone_id'],
+                            'shift_id' => $data['shift_id'],
+                            'start_date' => $data['start_date'],
+                            'end_date' => $data['end_date'] ?? null,
+                            'status' => true,
+                        ]);
+                        $created++;
+
+                        // تأكد من تفعيل الموظف إذا كان غير مفعل
+                        $createdRecord->employee->update(['status' => 1]);
+
+                        $notificationJobs[] = [
+                            'type' => 'assign',
+                            'record' => $createdRecord,
+                        ];
+                    }
+
+                    continue;
                 }
 
-                if ($record) {
-                    // ✅ إذا تغيّر الموظف نفسه (يعني صف تم فيه استبدال موظف بآخر)
-                    if ($record->employee_id != $data['employee_id']) {
-                        // إنهاء الإسناد السابق
-                        $record->update([
-                            'status' => false,
-                            'end_date' => now()->toDateString(),
-                        ]);
+                // ✅ تعديل سجل موجود
+                $record = EmployeeProjectRecord::find($data['id']);
+                if (! $record) {
+                    continue;
+                }
 
-                        // إضافة سجل جديد للموظف الجديد
-                        $newRecord = EmployeeProjectRecord::create([
-                            'employee_id' => $data['employee_id'],
-                            'project_id' => $this->projectId,
-                            'zone_id' => $data['zone_id'],
-                            'shift_id' => $data['shift_id'],
-                            'start_date' => $data['start_date'],
-                            'end_date' => $data['end_date'] ?? null,
-                            'status' => true,
-                        ]);
+                // تم تغيير الموظف
+                if ($record->employee_id != $data['employee_id']) {
+                    $record->update(['status' => false, 'end_date' => now()->toDateString()]);
 
-                        $updatWitLoc++;
-
-                        $employee = \App\Models\Employee::find($data['employee_id']);
-                        $zone = \App\Models\Zone::find($data['zone_id']);
-                        $shift = \App\Models\Shift::find($data['shift_id']);
-                        $project = \App\Models\Project::find($this->projectId);
-                        $assignedBy = auth()->user()?->name ?? 'نظام';
-
-                        $notificationService->sendNotification(
-                            ['manager', 'general_manager', 'hr'],
-                            '📌 نقل موظف إلى موقع جديد (تغيير موظف)',
-                            "👤 *اسم الموظف الجديد:* {$employee->name()}\n".
-                            "📌 *الموقع:* {$zone->name} - {$project->name}\n".
-                            "🕒 *الوردية:* {$shift->name}\n".
-                            "📅 *تاريخ البدء:* {$newRecord->start_date}\n".
-                            '📅 *تاريخ الانتهاء:* '.($newRecord->end_date ?? 'غير محدد')."\n\n".
-                            "🆔 *رقم الهوية:* {$employee->national_id}\n".
-                            "📞 *الجوال:* {$employee->mobile_number}\n".
-                            "📢 *تم النقل بواسطة:* {$assignedBy}",
-                            [
-                                $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                                $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
-                            ]
-                        );
-                    }
-
-                    // ✅ إذا لم يتغير الموظف، ولكن تغيّر الموقع أو الوردية
-                    elseif (
-                        $record->zone_id !== $data['zone_id'] ||
-                        $record->shift_id !== $data['shift_id'] ||
-                        $record->start_date !== $data['start_date']
-                    ) {
-                        // تعطيل السجل القديم
-                        $record->update([
-                            'status' => false,
-                            'end_date' => now()->toDateString(),
-                        ]);
-
-                        // إنشاء سجل جديد
-                        $newRecord = EmployeeProjectRecord::create([
-                            'employee_id' => $data['employee_id'],
-                            'project_id' => $this->projectId,
-                            'zone_id' => $data['zone_id'],
-                            'shift_id' => $data['shift_id'],
-                            'start_date' => $data['start_date'],
-                            'end_date' => $data['end_date'] ?? null,
-                            'status' => true,
-                        ]);
-
-                        $employee = \App\Models\Employee::find($data['employee_id']);
-                        $zone = \App\Models\Zone::find($data['zone_id']);
-                        $shift = \App\Models\Shift::find($data['shift_id']);
-                        $project = \App\Models\Project::find($this->projectId);
-                        $assignedBy = auth()->user()?->name ?? 'نظام';
-
-                        // ✅ إشعار داخلي للمسؤولين
-                        $notificationService = new NotificationService;
-                        $notificationService->sendNotification(
-                            ['manager', 'general_manager', 'hr'],
-                            '📌 نقل موظف إلى موقع جديد',
-                            "👤 *اسم الموظف:* {$employee->name()}\n".
-                            "📌 *الموقع الجديد:* {$zone->name} - {$project->name}\n".
-                            "🕒 *الوردية:* {$shift->name}\n".
-                            "📅 *تاريخ البدء:* {$newRecord->start_date}\n".
-                            '📅 *تاريخ الانتهاء:* '.($newRecord->end_date ?? 'غير محدد')."\n\n".
-                            "🆔 *رقم الهوية:* {$employee->national_id}\n".
-                            "📞 *الجوال:* {$employee->mobile_number}\n".
-                            "📢 *تم النقل بواسطة:* {$assignedBy}",
-                            [
-                                $notificationService->createAction('عرض الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
-                                $notificationService->createAction('عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
-                            ]
-                        );
-
-                        $updatWitLoc++;
-                    } else {
-                        // لا تغيير كبير، فقط تعديل تواريخ مثل end_date
-                        // $record->update([
-                        //     'end_date' => $data['end_date'] ?? null,
-                        //     'status' => true,
-                        // ]);
-
-                        $updated++;
-                    }
-                } else {
-                    $createdRecord = EmployeeProjectRecord::create([
+                    $newRecord = EmployeeProjectRecord::create([
                         'employee_id' => $data['employee_id'],
                         'project_id' => $this->projectId,
                         'zone_id' => $data['zone_id'],
@@ -356,19 +265,56 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
                         'end_date' => $data['end_date'] ?? null,
                         'status' => true,
                     ]);
-                    $created++;
-                    $this->sendAssignmentNotification($createdRecord); // ✅ إرسال إشعار بعد الإضافة
+                    $updatWitLoc++;
 
+                    $newRecord->employee->update(['status' => 1]);
+
+                    $notificationJobs[] = [
+                        'type' => 'transfer_employee',
+                        'record' => $newRecord,
+                    ];
                 }
+                // تم تغيير الموقع أو الوردية أو تاريخ البدء
+                elseif (
+                    $record->zone_id !== $data['zone_id'] ||
+                    $record->shift_id !== $data['shift_id'] ||
+                    $record->start_date !== $data['start_date']
+                ) {
+                    $record->update(['status' => false, 'end_date' => now()->toDateString()]);
 
+                    $newRecord = EmployeeProjectRecord::create([
+                        'employee_id' => $data['employee_id'],
+                        'project_id' => $this->projectId,
+                        'zone_id' => $data['zone_id'],
+                        'shift_id' => $data['shift_id'],
+                        'start_date' => $data['start_date'],
+                        'end_date' => $data['end_date'] ?? null,
+                        'status' => true,
+                    ]);
+                    $updatWitLoc++;
+
+                    $newRecord->employee->update(['status' => 1]);
+
+                    $notificationJobs[] = [
+                        'type' => 'transfer_location',
+                        'record' => $newRecord,
+                    ];
+                } else {
+                    // لم يتم تغيير الموقع أو الموظف أو الوردية
+                    $updated++;
+                }
             }
         });
 
+        // ✅ تنفيذ الإشعارات بعد نجاح المعاملة
+        \App\Services\AssignmentNotifier::dispatchJobs($notificationJobs);
+
         Notification::make()
             ->title('✅ تم حفظ التعديلات')
-            ->body("📌 تم  موظف، إضافة {$created} موظف جديد ,{$updatWitLoc} نقل")
+            ->body("📌 تم تنفيذ العمليات: {$created} إضافة، {$updated} تحديث، {$updatWitLoc} نقل")
             ->success()
             ->send();
+
         $this->reset(['projectId', 'records']);
     }
 
