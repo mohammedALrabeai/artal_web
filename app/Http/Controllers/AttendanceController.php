@@ -709,6 +709,7 @@ class AttendanceController extends Controller
 
             // جلب الورديات المرتبطة بالموقع
             $shifts = Shift::with(['attendances.employee', 'zone.project'])
+                ->where('status', 1)
                 ->whereHas('zone', function ($query) use ($projectId) {
                     $query->where('status', 1)
                         ->where('project_id', $projectId)

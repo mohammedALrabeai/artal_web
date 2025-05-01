@@ -43,6 +43,7 @@ class SendFirstAttendanceEmail implements ShouldQueue
             'hradmin@artalgroup.net',
             'mohammedalrabeai@gmail.com',
             'legal2@artalgroup.net',
+            'hr@artalgroup.net',
             // 'anotheremail@example.com',
             // 'thirdemail@example.com',
             // يمكنك إضافة المزيد هنا...

@@ -62,6 +62,7 @@ class CheckConsecutiveAbsences extends Command
                 'hradmin@artalgroup.net',
                 'mohammedalrabeai@gmail.com',
                 'legal2@artalgroup.net',
+                'hr@artalgroup.net',
             ];
             $absentCount = $exportData->count();
 
