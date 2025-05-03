@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Pusher\Pusher;
+use App\Http\Controllers\AssignmentReportController;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -155,6 +156,14 @@ Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesF
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2']);
 Route::get('/attendance3', [AttendanceController::class, 'getAttendanceStatusV3']);
+
+
+// routes/api.php
+
+
+
+Route::get('/assigned-employees-mobiles', [AssignmentReportController::class, 'mobileNumbers']);
+
 
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
 Route::get('/test-email', [\App\Http\Controllers\TestEmailController::class, 'send']);
