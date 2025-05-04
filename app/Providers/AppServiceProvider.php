@@ -2,18 +2,24 @@
 
 namespace App\Providers;
 
-use Filament\Facades\Filament;
-use Filament\Support\Assets\Js;
-use Filament\Support\Assets\Css;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Vite;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\ServiceProvider;
-use Filament\Notifications\Notification;
 use App\View\Components\NotificationBell;
-use Filament\Support\Facades\FilamentAsset;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
+use Filament\Facades\Filament;
 use Filament\Notifications\Livewire\DatabaseNotifications;
+use Filament\Notifications\Notification;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
+use Filament\Support\Facades\FilamentAsset;
+use Google\Client as GoogleClient;
+use Google\Service\Drive as GoogleDrive;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\ServiceProvider;
+use League\Flysystem\Filesystem;
+use Masbug\Flysystem\GoogleDriveAdapter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,6 +38,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
 
+        Storage::extend('google', function ($app, $config) {
+            $client = new GoogleClient;
+            $client->setClientId($config['clientId']);
+            $client->setClientSecret($config['clientSecret']);
+            $client->refreshToken($config['refreshToken']);
+
+            $service = new GoogleDrive($client);
+            $adapter = new GoogleDriveAdapter($service, $config['folderId'] ?? null);
+
+            $flysystem = new Filesystem($adapter);
+
+            // ✅ حل المشكلة هنا: لف الـ Flysystem في FilesystemAdapter
+            return new FilesystemAdapter($flysystem, $adapter, $config);
+        });
         // Filament::registerRenderHook('header.end', function () {
         //     // جلب الإشعارات غير المقروءة إذا كان المستخدم مسجلاً دخوله
         //     $notifications = auth()->check() ? auth()->user()->unreadNotifications : collect([]);

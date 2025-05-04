@@ -42,6 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // جدولة الـCommand للعمل كل ساعة
         $schedule->command('attendance:process')->everyFifteenMinutes();
         $schedule->command('attendance:check-absences')->dailyAt('10:10');
+        $schedule->command('backup:run --only-db')->dailyAt('03:00');
+
         // $schedule->command('attendance:check-absences')->dailyAt('21:06');
         // $schedule->command('attendance:check-absences')
         //     ->name('absences-morning')
