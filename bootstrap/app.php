@@ -43,15 +43,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('attendance:process')->everyFifteenMinutes();
         // $schedule->command('attendance:check-absences')->dailyAt('09:06');
         // $schedule->command('attendance:check-absences')->dailyAt('21:06');
-        $schedule->command('attendance:check-absences')
-            ->name('absences-morning')
-            ->between('09:06', '09:10')
-            ->withoutOverlapping();
+        // $schedule->command('attendance:check-absences')
+        //     ->name('absences-morning')
+        //     ->between('09:06', '09:10')
+        //     ->withoutOverlapping();
 
-        $schedule->command('attendance:check-absences')
-            ->name('absences-evening')
-            ->between('21:06', '21:10')
-            ->withoutOverlapping();
+        // $schedule->command('attendance:check-absences')
+        //     ->name('absences-evening')
+        //     ->between('21:06', '21:10')
+        //     ->withoutOverlapping();
 
         // $schedule->command('attendance:process')->hourly();
         // $schedule->command('attendance:process')->everyMinute();
