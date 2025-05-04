@@ -233,61 +233,60 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
-    public function isCurrentlyActiveV2(?\Carbon\Carbon $now = null): bool
+    public function isCurrentlyActiveV2(?Carbon $now = null): bool
     {
-        $now = $now ? $now->copy()->tz('Asia/Riyadh') : \Carbon\Carbon::now('Asia/Riyadh');
+        $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
 
-        // أولاً: التأكد أن اليوم هو يوم عمل فعلي
         if (! $this->isWorkingDayDynamic($now)) {
             return false;
         }
 
+        $startDate = Carbon::parse($this->start_date)->startOfDay();
+        $pattern = $this->zone?->pattern;
+        if (! $pattern) {
+            return false;
+        }
+
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+        if ($cycleLength <= 0) {
+            return false;
+        }
+
+        $daysSinceStart = $startDate->diffInDays($now->copy()->startOfDay());
+        $cycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+        $isOddCycle = $cycleNumber % 2 === 1;
+
+        $shiftType = match ($this->type) {
+            'morning' => 1,
+            'evening' => 2,
+            'morning_evening' => $isOddCycle ? 1 : 2,
+            'evening_morning' => $isOddCycle ? 2 : 1,
+            default => null,
+        };
+
+        // نستخدم يوم اليوم دائمًا ولا نخصم يوم
         $day = $now->copy()->startOfDay();
-        $shiftType = $this->shift_type;
 
-        // توقيتات صباح اليوم
-        $morningStart = \Carbon\Carbon::parse("{$day->toDateString()} {$this->morning_start}", 'Asia/Riyadh');
-        $morningEnd = \Carbon\Carbon::parse("{$day->toDateString()} {$this->morning_end}", 'Asia/Riyadh');
+        $morningStart = Carbon::parse("{$day->toDateString()} {$this->morning_start}", 'Asia/Riyadh');
+        $morningEnd = Carbon::parse("{$day->toDateString()} {$this->morning_end}", 'Asia/Riyadh');
 
-        // توقيتات مساء اليوم
-        $eveningStart = \Carbon\Carbon::parse("{$day->toDateString()} {$this->evening_start}", 'Asia/Riyadh');
-        $eveningEnd = \Carbon\Carbon::parse("{$day->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
-
-        // تعديل المساء إذا كانت تنتهي اليوم التالي
+        $eveningStart = Carbon::parse("{$day->toDateString()} {$this->evening_start}", 'Asia/Riyadh');
+        $eveningEnd = Carbon::parse("{$day->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
         if ($eveningEnd->lessThan($eveningStart)) {
             $eveningEnd->addDay();
         }
 
-        switch ($this->type) {
-            case 'morning':
-                return $now->between($morningStart, $morningEnd);
-
-            case 'evening':
-                return $now->between($eveningStart, $eveningEnd);
-
-            case 'morning_evening':
-                return $shiftType === 1
-                    ? $now->between($morningStart, $morningEnd)
-                    : $now->between($eveningStart, $eveningEnd);
-
-            case 'evening_morning':
-                if ($shiftType === 2) {
-                    // وردية المساء تبدأ أمس وتنتهي صباح اليوم
-                    $eveningStartYesterday = $eveningStart->copy()->subDay();
-                    $eveningEndCorrected = \Carbon\Carbon::parse("{$day->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
-                    if ($eveningEndCorrected->lessThan($eveningStartYesterday)) {
-                        $eveningEndCorrected->addDay();
-                    }
-
-                    return $now->between($eveningStartYesterday, $eveningEndCorrected);
-                } else {
-                    // وردية صباح اليوم
-                    return $now->between($morningStart, $morningEnd);
-                }
-
-            default:
-                return false;
-        }
+        return match ($this->type) {
+            'morning' => $now->between($morningStart, $morningEnd),
+            'evening' => $now->between($eveningStart, $eveningEnd),
+            'morning_evening' => $shiftType === 1
+                ? $now->between($morningStart, $morningEnd)
+                : $now->between($eveningStart, $eveningEnd),
+            'evening_morning' => $shiftType === 2
+                ? $now->between($eveningStart, $eveningEnd)
+                : $now->between($morningStart, $morningEnd),
+            default => false,
+        };
     }
 
     // ✅ دالة لحساب نوع الوردية الحالية (صباح / مساء)

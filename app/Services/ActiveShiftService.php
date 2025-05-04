@@ -54,13 +54,13 @@ class ActiveShiftService
                                 }
                             }
                             $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
-                            ->where('status', 'present')
-                            ->whereNull('check_out')
-                            ->whereDate('date', $now->toDateString())
-                            ->whereHas('employee', function ($query) {
-                                $query->where('out_of_zone', true);
-                            })
-                            ->count();
+                                ->where('status', 'present')
+                                ->whereNull('check_out')
+                                ->whereDate('date', $now->toDateString())
+                                ->whereHas('employee', function ($query) {
+                                    $query->where('out_of_zone', true);
+                                })
+                                ->count();
 
                             return [
                                 'id' => $zone->id,
