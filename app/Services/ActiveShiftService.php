@@ -42,6 +42,9 @@ class ActiveShiftService
                                         ->whereDate('created_at', $now->toDateString())
                                         ->where('shift_id', $shift->id)
                                         ->where('zone_id', $zone->id)
+                                        ->where('status', 'present')
+                                        // ->where('date', $shiftInfo['attendance_date'] ?? null)
+                                        ->whereNull('check_out')
                                         ->count(),
                                     'emp_no' => $shift->emp_no,
                                 ];
