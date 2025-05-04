@@ -53,6 +53,14 @@ class ActiveShiftService
                                     $currentShiftEmpNo += $shift->emp_no;
                                 }
                             }
+                            $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                            ->where('status', 'present')
+                            ->whereNull('check_out')
+                            ->whereDate('date', $now->toDateString())
+                            ->whereHas('employee', function ($query) {
+                                $query->where('out_of_zone', true);
+                            })
+                            ->count();
 
                             return [
                                 'id' => $zone->id,
@@ -61,10 +69,12 @@ class ActiveShiftService
                                 'shifts' => $activeShifts,
                                 'current_shift_emp_no' => $currentShiftEmpNo,
                                 'active_coverages_count' => $zone->attendances()
-                                    ->whereNull('shift_id')
+                                    // ->whereNull('shift_id')
+                                    ->where('status', 'coverage')
+                                    ->whereNull('check_out')
                                     ->whereDate('created_at', $now->toDateString())
                                     ->count(),
-                                'out_of_zone_count' => 0, // مخصص لاحقًا إذا عندك منطق خاص به
+                                'out_of_zone_count' => $outOfZoneCount, // مخصص لاحقًا إذا عندك منطق خاص به
                             ];
                         }),
                     ];
