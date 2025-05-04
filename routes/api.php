@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\SlideController;
 use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AssignmentReportController;
 use App\Http\Controllers\attendance\CoverageController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
@@ -21,7 +22,6 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Pusher\Pusher;
-use App\Http\Controllers\AssignmentReportController;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -157,13 +157,11 @@ Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2']);
 Route::get('/attendance3', [AttendanceController::class, 'getAttendanceStatusV3']);
 
+Route::get('/active-shifts-summary', [\App\Http\Controllers\Api\ActiveShiftController::class, 'index']);
 
 // routes/api.php
 
-
-
 Route::get('/assigned-employees-mobiles', [AssignmentReportController::class, 'mobileNumbers']);
-
 
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
 Route::get('/test-email', [\App\Http\Controllers\TestEmailController::class, 'send']);
