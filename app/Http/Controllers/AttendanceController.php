@@ -728,6 +728,7 @@ class AttendanceController extends Controller
                     ->where('project_id', $projectId)
                     ->where('zone_id', $zoneId)
                     ->where('shift_id', $shift->id)
+                    ->where('status', true)
                     ->where(function ($query) use ($date) {
                         $query->whereNull('end_date')->orWhere('end_date', '>=', $date);
                     })
