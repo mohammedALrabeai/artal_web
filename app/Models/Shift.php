@@ -233,17 +233,16 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
-    public function isCurrentlyActiveV2(?Carbon $now = null): bool
+    public function isCurrentlyActiveV2(Carbon $now): bool
     {
-        $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
+        $pattern = $this->zone?->pattern;
 
-        if (! $this->isWorkingDayDynamic($now)) {
+        if (! $pattern || ! $this->start_date) {
             return false;
         }
 
-        $startDate = Carbon::parse($this->start_date)->startOfDay();
-        $pattern = $this->zone?->pattern;
-        if (! $pattern) {
+        // ✅ استخدام الدالة الموثوقة للتحقق من يوم عمل
+        if (! $this->isWorkingDay2($now)) {
             return false;
         }
 
@@ -252,41 +251,76 @@ class Shift extends Model
             return false;
         }
 
+        // ✅ حساب رقم الدورة والفردية/الزوجية
+        $startDate = Carbon::parse($this->start_date)->startOfDay('Asia/Riyadh');
         $daysSinceStart = $startDate->diffInDays($now->copy()->startOfDay());
         $cycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
         $isOddCycle = $cycleNumber % 2 === 1;
 
-        $shiftType = match ($this->type) {
-            'morning' => 1,
-            'evening' => 2,
-            'morning_evening' => $isOddCycle ? 1 : 2,
-            'evening_morning' => $isOddCycle ? 2 : 1,
-            default => null,
+        // ✅ تواريخ اليوم والأمس
+        $today = $now->copy()->startOfDay();
+        $yesterday = $now->copy()->subDay()->startOfDay();
+
+        // ✅ دالة مساعدة لفحص الفترات الزمنية
+        $checkShift = function (Carbon $baseDate, $startTime, $endTime) use ($now) {
+            $start = Carbon::parse("{$baseDate->toDateString()} {$startTime}", 'Asia/Riyadh');
+            $end = Carbon::parse("{$baseDate->toDateString()} {$endTime}", 'Asia/Riyadh');
+
+            // ✅ إذا كانت الوردية تمتد بعد منتصف الليل
+            if ($end->lessThan($start)) {
+                $end->addDay();
+            }
+
+            return $now->between($start, $end);
         };
 
-        // نستخدم يوم اليوم دائمًا ولا نخصم يوم
-        $day = $now->copy()->startOfDay();
+        // ✅ التحقق حسب نوع الوردية
+        switch ($this->type) {
+            case 'morning':
+                return $checkShift($today, $this->morning_start, $this->morning_end);
 
-        $morningStart = Carbon::parse("{$day->toDateString()} {$this->morning_start}", 'Asia/Riyadh');
-        $morningEnd = Carbon::parse("{$day->toDateString()} {$this->morning_end}", 'Asia/Riyadh');
+            case 'evening':
+                // ✅ جرّب اليوم الحالي
+                if ($checkShift($today, $this->evening_start, $this->evening_end)) {
+                    return true;
+                }
 
-        $eveningStart = Carbon::parse("{$day->toDateString()} {$this->evening_start}", 'Asia/Riyadh');
-        $eveningEnd = Carbon::parse("{$day->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
-        if ($eveningEnd->lessThan($eveningStart)) {
-            $eveningEnd->addDay();
+                // ✅ إذا كانت الوردية تمتد بعد منتصف الليل، جرّب أمس أيضًا
+                if ($this->evening_end < $this->evening_start) {
+                    return $checkShift($yesterday, $this->evening_start, $this->evening_end);
+                }
+
+                return false;
+
+            case 'evening_morning':
+                if ($isOddCycle) {
+                    // ✅ الدورة الفردية = مساء
+                    if ($checkShift($today, $this->evening_start, $this->evening_end)) {
+                        return true;
+                    }
+
+                    return $checkShift($yesterday, $this->evening_start, $this->evening_end);
+                } else {
+                    // ✅ الدورة الزوجية = صباح
+                    return $checkShift($today, $this->morning_start, $this->morning_end);
+                }
+
+            case 'morning_evening':
+                if ($isOddCycle) {
+                    // ✅ الدورة الفردية = صباح
+                    return $checkShift($today, $this->morning_start, $this->morning_end);
+                } else {
+                    // ✅ الدورة الزوجية = مساء
+                    if ($checkShift($today, $this->evening_start, $this->evening_end)) {
+                        return true;
+                    }
+
+                    return $checkShift($yesterday, $this->evening_start, $this->evening_end);
+                }
+
+            default:
+                return false;
         }
-
-        return match ($this->type) {
-            'morning' => $now->between($morningStart, $morningEnd),
-            'evening' => $now->between($eveningStart, $eveningEnd),
-            'morning_evening' => $shiftType === 1
-                ? $now->between($morningStart, $morningEnd)
-                : $now->between($eveningStart, $eveningEnd),
-            'evening_morning' => $shiftType === 2
-                ? $now->between($eveningStart, $eveningEnd)
-                : $now->between($morningStart, $morningEnd),
-            default => false,
-        };
     }
 
     // ✅ دالة لحساب نوع الوردية الحالية (صباح / مساء)
