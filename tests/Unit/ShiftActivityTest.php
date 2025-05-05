@@ -17,8 +17,6 @@ class ShiftActivityTest extends TestCase
             [301, '2025-05-06 06:30:00', true,  'evening - قبل نهاية الليل'],
             [301, '2025-05-06 08:00:00', false, 'evening - بعد نهاية الليل'],
 
-            // [385, '2025-05-11 08:30:00', false, 'morning - يوم عطلة (off-day)'],
-
             [104, '2025-05-05 08:30:00', false, 'morning_evening - دورة زوجية - صباح ❌'],
             [104, '2025-05-06 21:00:00', true,  'morning_evening - دورة زوجية - مساء'],
 
@@ -27,7 +25,6 @@ class ShiftActivityTest extends TestCase
 
             [301, '2025-05-09 06:30:00', true,  'evening - امتداد وردية من يوم عمل إلى يوم عطلة (قبل النهاية)'],
             [301, '2025-05-09 09:00:00', false, 'evening - امتداد وردية من يوم عمل إلى يوم عطلة (بعد النهاية)'],
-
         ];
 
         foreach ($testCases as [$shiftId, $datetime, $expected, $description]) {
@@ -35,7 +32,7 @@ class ShiftActivityTest extends TestCase
             $this->assertNotNull($shift, "⛔ Shift ID {$shiftId} not found");
 
             $now = \Carbon\Carbon::parse($datetime, 'Asia/Riyadh');
-            $result = $shift->isCurrentlyActiveV2($now);
+            [$result, $source] = $shift->getShiftActiveStatus($now);
 
             echo "\n--- Test Case ---";
             echo "\nShift ID      : {$shift->id}";
@@ -43,6 +40,7 @@ class ShiftActivityTest extends TestCase
             echo "\nDatetime      : {$datetime}";
             echo "\nExpected      : ".($expected ? 'TRUE' : 'FALSE');
             echo "\nActual        : ".($result ? 'TRUE' : 'FALSE');
+            echo "\nSource        : ".($source ?? 'N/A');
             echo "\nType          : {$shift->type}";
             echo "\nStart Date    : {$shift->start_date}";
             echo "\nMorning Start : {$shift->morning_start}";

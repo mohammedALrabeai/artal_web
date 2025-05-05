@@ -31,21 +31,31 @@ class ActiveShiftService
                             $currentShiftEmpNo = 0;
 
                             foreach ($zone->shifts as $shift) {
-                                $isCurrent = $shift->isCurrentlyActiveV2($now);
+                                [$isCurrent, $startedAt] = $shift->getShiftActiveStatus($now); // ← ✅
+
+                                $attendanceDateRange = match ($startedAt) {
+                                    'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+                                    'yesterday' => [$now->copy()->subDay()->startOfDay(), $now->copy()->endOfDay()],
+                                    default => [null, null], // غير نشط
+                                };
+
+                                $attendeesCount = 0;
+                                if ($attendanceDateRange[0] && $attendanceDateRange[1]) {
+                                    $attendeesCount = $shift->attendances()
+                                        ->whereBetween('created_at', $attendanceDateRange)
+                                        ->where('shift_id', $shift->id)
+                                        ->where('zone_id', $zone->id)
+                                        ->where('status', 'present')
+                                        ->whereNull('check_out')
+                                        ->count();
+                                }
 
                                 $activeShifts[] = [
                                     'id' => $shift->id,
                                     'name' => $shift->name,
                                     'type' => $shift->type,
                                     'is_current_shift' => $isCurrent,
-                                    'attendees_count' => $shift->attendances()
-                                        ->whereDate('created_at', $now->toDateString())
-                                        ->where('shift_id', $shift->id)
-                                        ->where('zone_id', $zone->id)
-                                        ->where('status', 'present')
-                                        // ->where('date', $shiftInfo['attendance_date'] ?? null)
-                                        ->whereNull('check_out')
-                                        ->count(),
+                                    'attendees_count' => $attendeesCount,
                                     'emp_no' => $shift->emp_no,
                                 ];
 
@@ -53,6 +63,7 @@ class ActiveShiftService
                                     $currentShiftEmpNo += $shift->emp_no;
                                 }
                             }
+
                             $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
                                 ->where('status', 'present')
                                 ->whereNull('check_out')
