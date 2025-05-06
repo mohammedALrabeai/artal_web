@@ -78,6 +78,7 @@ class ListShifts extends ListRecords
                         // notify()->danger('حدث خطأ أثناء التعديل: '.$e->getMessage());
                     }
                 })
+                ->visible(fn () => auth()->user()?->hasAnyRole(['manager', 'general_manager', 'hr_manager']))
 
                 ->color('warning'),
 
