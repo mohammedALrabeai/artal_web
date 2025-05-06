@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\attendance;
 
+ini_set('memory_limit', '512M');
+ini_set('max_execution_time', 300); // أو حتى 600 حسب الحاجة
+
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\Request;
@@ -30,7 +33,7 @@ class AttendanceExport2Controller extends Controller
                     $query->whereBetween('date', [$startDate, $endDate]);
                 },
                 'leaveBalances',
-                'currentZone',
+                'latestZone.project',
             ])
             ->get();
 
@@ -53,7 +56,7 @@ class AttendanceExport2Controller extends Controller
                 $query->whereBetween('date', [$startDate, $endDate]);
             },
             'leaveBalances',
-            'currentZone',
+            'latestZone.project',
         ])->get();
 
         return $this->exportAttendanceData($employees, $startDate, $endDate);
@@ -167,8 +170,13 @@ class AttendanceExport2Controller extends Controller
 
             $annualLeaveBalance = $employee->leaveBalances->where('leave_type', 'annual')->sum('balance');
             $sickLeaveBalance = $employee->leaveBalances->where('leave_type', 'sick')->sum('balance');
-            $currentZone = $employee->currentZone ? $employee->currentZone->name : 'غير محدد';
-            $salary = $employee->basic_salary + $employee->allowances; // تخصيص حساب الراتب حسب الحقول
+            // $currentZone = $employee->currentZone ? $employee->currentZone->name : 'غير محدد';
+            $currentProject = $employee->latestZone && $employee->latestZone->project
+            ? $employee->latestZone->project->name
+            : 'غير محدد';
+
+            // $salary = $employee->basic_salary + $employee->allowances; // تخصيص حساب الراتب حسب الحقول
+            $salary = $employee->total_salary; // يستخدم الـ accessor الجديد
 
             // دمج الخلايا لبيانات الموظف الأساسية
             $sheet->mergeCells("A{$startRow}:A{$endRow}");
@@ -221,8 +229,8 @@ class AttendanceExport2Controller extends Controller
             $sheet->setCellValue("D{$startRow}", $employee->national_id); // رقم الهوية
             $sheet->setCellValue("E{$startRow}", $annualLeaveBalance); // رصيد الغياب
             $sheet->setCellValue("F{$startRow}", $sickLeaveBalance); // رصيد الإجازات المرضية
-            $sheet->setCellValue("G{$startRow}", $currentZone); // موقع العمل
-            $sheet->setCellValue("H{$startRow}", $salary); // الراتب
+            $sheet->setCellValue("G{$startRow}", $currentProject); // موقع العمل
+            $sheet->setCellValue("H{$startRow}", number_format($salary, 2)); // الراتب
 
             // إدخال العمود HRS
 

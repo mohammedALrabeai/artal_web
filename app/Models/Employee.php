@@ -111,7 +111,6 @@ class Employee extends Model
         return $this->hasMany(EmployeeProjectRecord::class, 'employee_id');
     }
 
-
     public function attendances()
     {
         return $this->hasMany(Attendance::class);
@@ -144,6 +143,13 @@ class Employee extends Model
     public function getNameAttribute()
     {
         return $this->first_name.' '.$this->father_name.' '.$this->grandfather_name.' '.$this->family_name;
+    }
+
+    public function getTotalSalaryAttribute(): float
+    {
+        return ($this->basic_salary ?? 0)
+             + ($this->living_allowance ?? 0)
+             + ($this->other_allowances ?? 0);
     }
 
     public function resignations()
