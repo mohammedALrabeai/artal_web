@@ -54,6 +54,7 @@ class ActiveShiftService
                                     $assignedEmployeeIds = \App\Models\EmployeeProjectRecord::query()
                                         ->where('zone_id', $zone->id)
                                         ->where('shift_id', $shift->id)
+                                        ->where('status', true)
                                         ->where(function ($q) use ($now) {
                                             $q->whereNull('end_date')
                                                 ->orWhere('end_date', '>=', $now->toDateString());

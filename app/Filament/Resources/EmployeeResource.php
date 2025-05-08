@@ -324,8 +324,7 @@ class EmployeeResource extends Resource
 
                         Forms\Components\TextInput::make('email')
                             ->label(__('Email'))
-                            ->email()
-                            ,
+                            ->email(),
                     ])->columns(2),
 
                 // Address
@@ -555,6 +554,7 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('national_id')
                     ->label(__('National ID'))
                     ->searchable()
+                    ->copyable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('marital_status')
                     ->label(__('Marital Status'))

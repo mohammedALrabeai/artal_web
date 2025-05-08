@@ -304,9 +304,11 @@ Route::get('/missing-employees/all', function () {
             continue;
         }
 
-        $employees = \App\Models\Employee::whereIn('id', $item['employee_ids'])->get([
-            'id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'mobile_number',
-        ]);
+        $employees = \App\Models\Employee::whereIn('id', $item['employee_ids'])
+            ->where('status', 1)
+            ->get([
+                'id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'mobile_number',
+            ]);
 
         foreach ($employees as $employee) {
             $results->push([
