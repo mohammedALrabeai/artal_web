@@ -17,6 +17,7 @@ use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\EmployeeNotificationController;
 use App\Http\Controllers\EmployeeStatusController;
 use App\Http\Controllers\ProjectController;
+use App\Models\Employee;
 use App\Services\AttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -288,3 +289,40 @@ Route::get('/employee-statuses', [EmployeeStatusController::class, 'index']);
 // });
 
 Route::get('/absent-employees', [AbsentController::class, 'getTrulyAbsentEmployees']);
+
+Route::get('/missing-employees/all', function () {
+    $date = request()->query('date', now()->toDateString());
+
+    $data = cache()->get("missing_employees_summary_{$date}", []);
+
+    $results = collect();
+
+    foreach ($data as $item) {
+        $shift = \App\Models\Shift::with(['zone.project'])->find($item['shift_id']);
+
+        if (! $shift || ! $shift->zone || ! $shift->zone->project) {
+            continue;
+        }
+
+        $employees = \App\Models\Employee::whereIn('id', $item['employee_ids'])->get([
+            'id', 'first_name', 'family_name', 'mobile_number',
+        ]);
+
+        foreach ($employees as $employee) {
+            $results->push([
+                'employee_id' => $employee->id,
+                'name' => "{$employee->first_name} {$employee->family_name}",
+                'mobile_number' => $employee->mobile_number,
+                'project' => $shift->zone->project->name,
+                'zone' => $shift->zone->name,
+                'shift' => $shift->name,
+            ]);
+        }
+    }
+
+    return response()->json([
+        'date' => $date,
+        'count' => $results->count(),
+        'missing_employees' => $results,
+    ]);
+});

@@ -10,23 +10,23 @@ class ActiveShiftService
     public function getActiveShiftsSummaryV2(?Carbon $now = null): array
     {
         $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
-
-        return Area::with(['projects.zones.shifts' => function ($q) {
+        $missingMap = [];
+        $summary = Area::with(['projects.zones.shifts' => function ($q) {
             $q->where('status', 1); // فقط الورديات النشطة
         }, 'projects.zones' => function ($q) {
             $q->where('status', 1); // فقط المواقع النشطة
         }, 'projects' => function ($q) {
             $q->where('status', 1); // فقط المشاريع النشطة
-        }])->get()->map(function ($area) use ($now) {
+        }])->get()->map(function ($area) use (&$missingMap, $now) {
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projects->map(function ($project) use ($now) {
+                'projects' => $area->projects->map(function ($project) use (&$missingMap, $now) {
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
                         'emp_no' => $project->emp_no,
-                        'zones' => $project->zones->map(function ($zone) use ($now) {
+                        'zones' => $project->zones->map(function ($zone) use (&$missingMap, $now) {
                             $activeShifts = [];
                             $currentShiftEmpNo = 0;
 
@@ -48,6 +48,43 @@ class ActiveShiftService
                                         ->where('status', 'present')
                                         ->whereNull('check_out')
                                         ->count();
+                                }
+
+                                if ($isCurrent && $attendanceDateRange[0] && $attendanceDateRange[1]) {
+                                    $assignedEmployeeIds = \App\Models\EmployeeProjectRecord::query()
+                                        ->where('zone_id', $zone->id)
+                                        ->where('shift_id', $shift->id)
+                                        ->where(function ($q) use ($now) {
+                                            $q->whereNull('end_date')
+                                                ->orWhere('end_date', '>=', $now->toDateString());
+                                        })
+                                        ->pluck('employee_id')
+                                        ->toArray();
+
+                                    $presentEmployeeIds = $shift->attendances()
+                                        ->whereBetween('created_at', $attendanceDateRange)
+                                        ->where('zone_id', $zone->id)
+                                        ->where('status', 'present')
+                                        ->whereNull('check_out')
+                                        ->pluck('employee_id')
+                                        ->toArray();
+
+                                    $coveredEmployeeIds = \App\Models\Attendance::query()
+                                        ->where('zone_id', $zone->id)
+                                        ->where('is_coverage', true)
+                                        ->whereBetween('created_at', $attendanceDateRange)
+                                        ->pluck('employee_id')
+                                        ->toArray();
+
+                                    $missingIds = array_diff($assignedEmployeeIds, array_merge($presentEmployeeIds, $coveredEmployeeIds));
+
+                                    // حفظهم في المصفوفة المجمعة
+                                    $missingMap[] = [
+                                        'shift_id' => $shift->id,
+                                        'zone_id' => $zone->id,
+                                        'project_id' => $zone->project_id,
+                                        'employee_ids' => array_values($missingIds),
+                                    ];
                                 }
 
                                 $activeShifts[] = [
@@ -92,6 +129,10 @@ class ActiveShiftService
                 }),
             ];
         })->toArray();
+        // ⬅️ هنا مكان الكاش الصحيح بعد جمع $missingMap بالكامل
+        cache()->put('missing_employees_summary_'.$now->toDateString(), $missingMap, now()->addMinutes(3));
+
+        return $summary;
     }
 
     public function getActiveShiftsSummary(?Carbon $now = null): array
