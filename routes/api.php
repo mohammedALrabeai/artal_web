@@ -305,13 +305,13 @@ Route::get('/missing-employees/all', function () {
         }
 
         $employees = \App\Models\Employee::whereIn('id', $item['employee_ids'])->get([
-            'id', 'first_name', 'family_name', 'mobile_number',
+            'id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'mobile_number',
         ]);
 
         foreach ($employees as $employee) {
             $results->push([
                 'employee_id' => $employee->id,
-                'name' => "{$employee->first_name} {$employee->family_name}",
+                'name' => "{$employee->name}",
                 'mobile_number' => $employee->mobile_number,
                 'project' => $shift->zone->project->name,
                 'zone' => $shift->zone->name,
