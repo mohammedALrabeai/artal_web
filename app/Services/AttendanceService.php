@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Attendance;
 use App\Models\EmployeeProjectRecord;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class AttendanceService
@@ -143,11 +144,10 @@ class AttendanceService
             $employeeStatus = \App\Models\EmployeeStatus::firstOrNew([
                 'employee_id' => $record->employee_id,
             ]);
-        
+
             $employeeStatus->consecutive_absence_count = ($employeeStatus->consecutive_absence_count ?? 0) + 1;
             $employeeStatus->save();
         }
-        
 
         Log::info('Attendance marked', [
             'employee_id' => $record->employee_id,
@@ -155,5 +155,36 @@ class AttendanceService
         ]);
 
         return true; // تم تسجيل السجل
+    }
+
+    /**
+     * إرجاع الموظفين الغائبين فعليًا في تاريخ معين.
+     */
+    public function getTrulyAbsentEmployees(string $date): Collection
+    {
+        // 1. الموظفون الذين لديهم سجل غياب اليوم
+        $absentIds = Attendance::whereDate('date', $date)
+            ->where('status', 'absent')
+            ->pluck('employee_id')
+            ->unique();
+
+        // 2. الموظفون الذين لديهم أي سجل آخر (حضور أو تغطية) اليوم
+        $notAbsent = Attendance::whereDate('date', $date)
+            ->where(function ($query) {
+                $query->where('status', '!=', 'absent')
+                    ->orWhere('is_coverage', true);
+            })
+            ->pluck('employee_id')
+            ->unique();
+
+        // 3. استثناء الموظفين الذين لديهم سجل آخر
+        $finalAbsentIds = $absentIds->diff($notAbsent);
+
+        // 4. جلب التفاصيل
+        return Attendance::with(['employee', 'zone', 'shift'])
+            ->whereDate('date', $date)
+            ->where('status', 'absent')
+            ->whereIn('employee_id', $finalAbsentIds)
+            ->get();
     }
 }

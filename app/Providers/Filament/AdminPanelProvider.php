@@ -79,7 +79,8 @@ class AdminPanelProvider extends PanelProvider
                 FilamentShieldPlugin::make(),
                 SpotlightPlugin::make(),
             ])
-            ->plugin(FilamentSpatieLaravelBackupPlugin::make()
+            ->plugin(
+                FilamentSpatieLaravelBackupPlugin::make()
                 ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com')
             )
             ->authMiddleware([

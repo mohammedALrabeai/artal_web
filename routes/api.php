@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AbsentController;
 use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OperationNotificationController;
@@ -285,3 +286,5 @@ Route::middleware('auth:employee')->group(function () {
 // Route::middleware('auth:sanctum')->group(function () {
 Route::get('/employee-statuses', [EmployeeStatusController::class, 'index']);
 // });
+
+Route::get('/absent-employees', [AbsentController::class, 'getTrulyAbsentEmployees']);
