@@ -556,6 +556,20 @@ class EmployeeResource extends Resource
                     ->searchable()
                     ->copyable()
                     ->toggleable(isToggledHiddenByDefault: false),
+                // Tables\Columns\ToggleColumn::make('exclude_from_absence_report')
+                //     ->label('استثناء من تقرير الغياب')
+                // // ->visible(false)
+                //     ->getStateUsing(fn ($record) => $record->employeeStatus?->exclude_from_absence_report ?? false)
+                //     ->isToggledUsing(function ($record) {
+                //         return function (bool $state) use ($record) {
+                //             $record->employeeStatus()->updateOrCreate([], [
+                //                 'exclude_from_absence_report' => $state,
+                //             ]);
+                //         };
+                //     })
+                //     ->sortable(false)
+                // ->toggleable(isToggledHiddenByDefault: false)
+                // ,
                 Tables\Columns\TextColumn::make('marital_status')
                     ->label(__('Marital Status'))
                     ->formatStateUsing(fn ($state) => $state ? MaritalStatus::fromArabic($state)?->label() ?? '-' : '-'
@@ -912,7 +926,8 @@ class EmployeeResource extends Resource
                         ->openUrlInNewTab(false),
                     Tables\Actions\Action::make('exportYearly')
                         ->label('تصدير الحضور السنوي')
-                    // ->icon('heroicon-o-document-download')
+                        // ->icon('heroicon-o-document-download')
+                        ->icon('heroicon-o-document-arrow-down')
                         ->action(function ($record, array $data) {
                             // الحصول على السنة المُدخلة في النموذج
                             $year = $data['year'];
@@ -935,6 +950,17 @@ class EmployeeResource extends Resource
                                 ->default(date('Y') >= 2024 && date('Y') <= 2035 ? date('Y') : 2024)
                                 ->required(),
                         ]),
+                    Tables\Actions\Action::make('toggle_exclusion')
+                        ->label(fn ($record) => $record->employeeStatus?->exclude_from_absence_report ? '❌ إزالة الاستثناء' : '✅ استثناء من التقرير')
+                        ->color(fn ($record) => $record->employeeStatus?->exclude_from_absence_report ? 'danger' : 'success')
+                        ->icon('heroicon-o-adjustments-horizontal')
+                        ->action(function ($record) {
+                            $currentState = $record->employeeStatus?->exclude_from_absence_report ?? false;
+
+                            $record->employeeStatus()->updateOrCreate([], [
+                                'exclude_from_absence_report' => ! $currentState,
+                            ]);
+                        }),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
                 ]),

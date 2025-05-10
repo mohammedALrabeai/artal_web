@@ -23,6 +23,11 @@ class CheckConsecutiveAbsences extends Command
         // ✅ جلب الموظفين الذين تجاوزوا العتبة
         $statuses = EmployeeStatus::with('employee.projectRecords.project', 'employee.projectRecords.zone', 'employee.projectRecords.shift')
             ->where('consecutive_absence_count', '>=', $threshold)
+            ->where('exclude_from_absence_report', false)
+            ->whereHas('employee', function ($query) {
+                $query->where('status', true);
+            })
+
             ->get();
 
         foreach ($statuses as $status) {
@@ -63,7 +68,7 @@ class CheckConsecutiveAbsences extends Command
                 'mohammedalrabeai@gmail.com',
                 'legal2@artalgroup.net',
                 'hr@artalgroup.net',
-                'hradmin2@artalgroup.net'
+                'hradmin2@artalgroup.net',
             ];
             $absentCount = $exportData->count();
 

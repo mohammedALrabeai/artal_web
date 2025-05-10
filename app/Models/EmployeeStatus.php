@@ -23,6 +23,7 @@ class EmployeeStatus extends Model
 
         'consecutive_absence_count',
         'last_present_at',
+        'exclude_from_absence_report',
 
     ];
 
@@ -38,6 +39,8 @@ class EmployeeStatus extends Model
         'last_location' => 'array', // يمكن تخزين الإحداثيات كـ JSON
 
         'last_present_at' => 'date',
+        'exclude_from_absence_report' => 'boolean',
+
     ];
 
     /**
