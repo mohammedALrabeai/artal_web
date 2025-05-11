@@ -10,6 +10,23 @@ class ActiveShiftService
     public function getActiveShiftsSummaryV2(?Carbon $now = null): array
     {
         $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
+        $today = $now->copy()->startOfDay();
+        $yesterday = $now->copy()->subDay()->startOfDay();
+
+        $rangeToday = [$today, $now->copy()->endOfDay()];
+        $rangeYesterday = [$yesterday, $now->copy()->endOfDay()];
+        $coveredToday = \App\Models\Attendance::query()
+            ->where('is_coverage', true)
+            ->whereBetween('created_at', $rangeToday)
+            ->pluck('employee_id')
+            ->toArray();
+
+        $coveredYesterday = \App\Models\Attendance::query()
+            ->where('is_coverage', true)
+            ->whereBetween('created_at', $rangeYesterday)
+            ->pluck('employee_id')
+            ->toArray();
+
         $missingMap = [];
         $summary = Area::with(['projects.zones.shifts' => function ($q) {
             $q->where('status', 1); // فقط الورديات النشطة
@@ -17,16 +34,16 @@ class ActiveShiftService
             $q->where('status', 1); // فقط المواقع النشطة
         }, 'projects' => function ($q) {
             $q->where('status', 1); // فقط المشاريع النشطة
-        }])->get()->map(function ($area) use (&$missingMap, $now) {
+        }])->get()->map(function ($area) use (&$missingMap,$coveredToday,$coveredYesterday, $now) {
             return [
                 'id' => $area->id,
                 'name' => $area->name,
-                'projects' => $area->projects->map(function ($project) use (&$missingMap, $now) {
+                'projects' => $area->projects->map(function ($project) use (&$missingMap,$coveredToday,$coveredYesterday, $now) {
                     return [
                         'id' => $project->id,
                         'name' => $project->name,
                         'emp_no' => $project->emp_no,
-                        'zones' => $project->zones->map(function ($zone) use (&$missingMap, $now) {
+                        'zones' => $project->zones->map(function ($zone) use (&$missingMap,$coveredToday,$coveredYesterday, $now) {
                             $activeShifts = [];
                             $currentShiftEmpNo = 0;
 
@@ -70,12 +87,18 @@ class ActiveShiftService
                                         ->pluck('employee_id')
                                         ->toArray();
 
-                                    $coveredEmployeeIds = \App\Models\Attendance::query()
-                                        ->where('zone_id', $zone->id)
-                                        ->where('is_coverage', true)
-                                        ->whereBetween('created_at', $attendanceDateRange)
-                                        ->pluck('employee_id')
-                                        ->toArray();
+                                    // $coveredEmployeeIds = \App\Models\Attendance::query()
+                                    //     // ->where('zone_id', $zone->id)
+                                    //     ->where('is_coverage', true)
+                                    //     ->whereBetween('created_at', $attendanceDateRange)
+                                    //     ->pluck('employee_id')
+                                    //     ->toArray();
+                                    $coveredEmployeeIds = match ($startedAt) {
+                                        'today' => $coveredToday,
+                                        'yesterday' => $coveredYesterday,
+                                        default => [],
+                                    };
+                                    
 
                                     $missingIds = array_diff($assignedEmployeeIds, array_merge($presentEmployeeIds, $coveredEmployeeIds));
 
