@@ -17,9 +17,11 @@
     "Has Off Days": "يوجد أيام إجازة",
     "Manage Patterns": "إدارة الأنماط",
     "Start Date": "تاريخ البدء",
- 
+    "Exclude from Auto Absence":"استثناء من الغياب التلقائي",
+ "When activated, employees of this shift will not be automatically considered absent.":"عند التفعيل، لن يُعتبر موظفو هذه الوردية غائبين تلقائيًا",
     "Latitude": "خط العرض",
     "Longitude": "خط الطول",
+    "Exempt from absence":"مستثنى من الغياب التلقائي",
 
 "general": "تعميم",
     "notification": "إخطار",

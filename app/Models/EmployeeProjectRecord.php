@@ -94,4 +94,19 @@ class EmployeeProjectRecord extends Model
         // إذا كان اليوم الحالي أقل من عدد أيام العمل، فهو يوم عمل
         return $currentDayInCycle < $workingDays;
     }
+
+    // app/Models/EmployeeProjectRecord.php
+
+    public function scopeActiveNonExcluded($query)
+    {
+        return $query
+            ->where('status', true)
+            ->where('start_date', '<=', now('Asia/Riyadh'))
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now('Asia/Riyadh'));
+            })
+            ->whereHas('shift', fn ($q) => $q->where('exclude_from_auto_absence', false)
+            );
+    }
 }

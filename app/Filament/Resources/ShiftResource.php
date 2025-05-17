@@ -111,6 +111,10 @@ class ShiftResource extends Resource
                 ->label(__('Number of Employees'))
                 ->numeric()
                 ->required(),
+            Forms\Components\Toggle::make('exclude_from_auto_absence')
+                ->label(__('Exclude from Auto Absence'))
+                ->helperText(__('When activated, employees of this shift will not be automatically considered absent.'))
+                ->default(false),
 
             Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
@@ -171,6 +175,12 @@ class ShiftResource extends Resource
                 Tables\Columns\TextColumn::make('emp_no')
                     ->label(__('Number of Employees'))
                     ->sortable(),
+                Tables\Columns\IconColumn::make('exclude_from_auto_absence')
+                    ->boolean()
+                    ->label(__('Exempt from absence'))
+                    ->sortable()
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('work_pattern') // 🆕 إضافة نمط العمل
                     ->label('نمط العمل')
                     ->getStateUsing(fn ($record) => self::calculateWorkPattern($record))
@@ -192,9 +202,14 @@ class ShiftResource extends Resource
                         'evening_morning' => __('Evening-Morning'),
                     ]),
 
+                TernaryFilter::make('exclude_from_auto_absence')
+                    ->label(__('مستثناة من الغياب التلقائي'))
+                    ->trueLabel(__('مستثناة'))
+                    ->falseLabel(__('غير مستثناة')),
                 TernaryFilter::make('status')
                     ->label(__('Active'))
                     ->nullable(),
+
             ])
             ->paginationPageOptions([10, 25, 50, 100])
             ->actions([

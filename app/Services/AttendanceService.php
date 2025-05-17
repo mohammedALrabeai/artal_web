@@ -22,6 +22,8 @@ class AttendanceService
 
         try {
             $activeEmployees = EmployeeProjectRecord::where('status', true)->whereNotNull('shift_id')
+                ->whereHas('shift', fn ($q) => $q->where('exclude_from_auto_absence', false)
+                )
                 ->with(['shift.zone.pattern'])->get();
             Log::info('Active employees retrieved', ['count' => $activeEmployees->count()]);
 

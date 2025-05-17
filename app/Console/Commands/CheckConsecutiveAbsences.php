@@ -21,13 +21,18 @@ class CheckConsecutiveAbsences extends Command
         $exportData = collect();
 
         // ✅ جلب الموظفين الذين تجاوزوا العتبة
-        $statuses = EmployeeStatus::with('employee.projectRecords.project', 'employee.projectRecords.zone', 'employee.projectRecords.shift')
+        $statuses = EmployeeStatus::with([
+            'employee',
+            // نحمل فقط السجلّات التي طبقت عليها الـ scope
+            'employee.projectRecords' => fn ($q) => $q->activeNonExcluded(),
+            'employee.projectRecords.project',
+            'employee.projectRecords.zone',
+            'employee.projectRecords.shift',
+        ])
             ->where('consecutive_absence_count', '>=', $threshold)
             ->where('exclude_from_absence_report', false)
-            ->whereHas('employee', function ($query) {
-                $query->where('status', true);
-            })
-
+            ->whereHas('employee.projectRecords', fn ($q) => $q->activeNonExcluded()
+            )
             ->get();
 
         foreach ($statuses as $status) {

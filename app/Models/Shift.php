@@ -28,6 +28,12 @@ class Shift extends Model
         'start_date',
         'emp_no',
         'status',
+        'exclude_from_auto_absence'
+    ];
+
+    protected $casts = [
+       
+        'exclude_from_auto_absence' => 'boolean',
     ];
 
     // علاقة مع المواقع
