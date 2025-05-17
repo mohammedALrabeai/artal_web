@@ -11,7 +11,8 @@ use Filament\Widgets\StatsOverviewWidget\Card;
 class EmployeeReportWidget extends StatsOverviewWidget
 {
     use HasWidgetShield;
-        protected static ?int $sort = -1;
+
+    protected static ?int $sort = -2;
 
     protected function getCards(): array
     {
