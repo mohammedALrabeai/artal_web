@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 class ShiftEmployeeShortageOverview extends StatsOverviewWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getCards(): array
     {
         // اعمل نفس فلترة الجدول

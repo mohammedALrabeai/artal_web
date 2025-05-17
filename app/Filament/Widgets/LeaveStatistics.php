@@ -9,6 +9,7 @@ class LeaveStatistics extends LineChartWidget
 {
     use HasWidgetShield;
     protected static ?string $heading = 'Leave Statistics';
+     protected static ?int $sort = 5;
 
     protected function getData(): array
     {

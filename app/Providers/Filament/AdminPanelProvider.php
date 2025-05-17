@@ -62,6 +62,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 OpenLinkWidget::class,
+                \App\Filament\Resources\ShiftShortageResource\Widgets\ShiftEmployeeShortageOverview::class,
+
                 // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
@@ -81,13 +83,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugin(
                 FilamentSpatieLaravelBackupPlugin::make()
-                ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com')
+                    ->authorize(fn (): bool => auth()->user()->email === 'manger@gmail.com')
             )
             ->authMiddleware([
                 Authenticate::class,
             ])
             ->databaseNotifications()
-            
+
             ->databaseNotificationsPolling(null);
         // ->renderHook( PanelsRenderHook::USER_MENU_BEFORE, function () {
         //     return view('components.notification-bell', [

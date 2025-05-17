@@ -11,7 +11,7 @@ class AttendancePieStatsWidget extends ChartWidget
 {
     protected static ?string $heading = 'إحصائيات الحضور اليومية';
 
-    protected static ?int $sort = 1;
+    protected static ?int $sort = 0;
 
     protected static string $color = 'info';
 

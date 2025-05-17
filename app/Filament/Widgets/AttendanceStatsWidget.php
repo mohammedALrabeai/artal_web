@@ -14,7 +14,7 @@ class AttendanceStatsWidget extends Widget implements Forms\Contracts\HasForms
 
     protected static string $view = 'filament.widgets.attendance-stats-widget';
 
-    protected static ?int $sort = 1;
+    protected static ?int $sort = 0;
 
     public ?string $selectedDate;
 

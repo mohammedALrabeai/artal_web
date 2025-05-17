@@ -10,6 +10,7 @@ class ProjectZoneChartWidget extends PieChartWidget
 {
     use HasWidgetShield;
     protected static ?string $heading = 'Projects & Zones Chart';
+     protected static ?int $sort = 5;
 
     protected function getData(): array
     {

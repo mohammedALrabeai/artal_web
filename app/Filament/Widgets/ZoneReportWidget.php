@@ -11,6 +11,8 @@ class ZoneReportWidget extends PieChartWidget
 
     protected static ?string $heading = null;
 
+    protected static ?int $sort = 5;
+
     public function getHeading(): ?string
     {
         return __('Zones Report');
