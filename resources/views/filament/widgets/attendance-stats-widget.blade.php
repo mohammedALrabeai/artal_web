@@ -1,6 +1,8 @@
 <x-filament::widget>
     <x-filament::card>
-        <div class="grid grid-cols-5 gap-4 text-center rtl">
+        {{ $this->form }}
+
+        <div class="grid grid-cols-5 gap-4 text-center rtl mt-4">
             <div>
                 <div class="text-xl font-bold">{{ $data['total'] }}</div>
                 <div class="text-sm text-gray-600">الموظفين الكلي</div>
@@ -21,6 +23,12 @@
                 <div class="text-xl font-bold text-red-600">{{ $data['absent'] }}</div>
                 <div class="text-sm text-gray-600">الغياب</div>
             </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <x-filament::button wire:click="$refresh">
+                تحديث البيانات
+            </x-filament::button>
         </div>
     </x-filament::card>
 </x-filament::widget>
