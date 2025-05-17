@@ -28,11 +28,11 @@ class Shift extends Model
         'start_date',
         'emp_no',
         'status',
-        'exclude_from_auto_absence'
+        'exclude_from_auto_absence',
     ];
 
     protected $casts = [
-       
+
         'exclude_from_auto_absence' => 'boolean',
     ];
 
@@ -196,7 +196,7 @@ class Shift extends Model
             return false;
         }
 
-        $currentDayInCycle = $daysSinceStart % $cycleLength;
+        $currentDayInCycle = (int) $daysSinceStart % $cycleLength;
 
         return $currentDayInCycle < $workingDays;
     }
@@ -239,63 +239,63 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
-    public function isCurrentlyActiveV2(?Carbon $now = null): bool
-    {
-        $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
+    // public function isCurrentlyActiveV2(?Carbon $now = null): bool
+    // {
+    //     $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
 
-        if (! $this->isWorkingDayDynamic($now)) {
-            return false;
-        }
+    //     if (! $this->isWorkingDayDynamic($now)) {
+    //         return false;
+    //     }
 
-        $startDate = Carbon::parse($this->start_date)->startOfDay();
-        $pattern = $this->zone?->pattern;
-        if (! $pattern) {
-            return false;
-        }
+    //     $startDate = Carbon::parse($this->start_date)->startOfDay();
+    //     $pattern = $this->zone?->pattern;
+    //     if (! $pattern) {
+    //         return false;
+    //     }
 
-        $cycleLength = $pattern->working_days + $pattern->off_days;
-        if ($cycleLength <= 0) {
-            return false;
-        }
+    //     $cycleLength = $pattern->working_days + $pattern->off_days;
+    //     if ($cycleLength <= 0) {
+    //         return false;
+    //     }
 
-        $daysSinceStart = $startDate->diffInDays($now->copy()->startOfDay());
-        $cycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
-        $isOddCycle = $cycleNumber % 2 === 1;
+    //     $daysSinceStart = $startDate->diffInDays($now->copy()->startOfDay());
+    //     $cycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+    //     $isOddCycle = $cycleNumber % 2 === 1;
 
-        $shiftType = match ($this->type) {
-            'morning' => 1,
-            'evening' => 2,
-            'morning_evening' => $isOddCycle ? 1 : 2,
-            'evening_morning' => $isOddCycle ? 2 : 1,
-            default => null,
+    //     $shiftType = match ($this->type) {
+    //         'morning' => 1,
+    //         'evening' => 2,
+    //         'morning_evening' => $isOddCycle ? 1 : 2,
+    //         'evening_morning' => $isOddCycle ? 2 : 1,
+    //         default => null,
 
-        };
+    //     };
 
-        // نستخدم يوم اليوم دائمًا ولا نخصم يوم
-        $day = $now->copy()->startOfDay();
+    //     // نستخدم يوم اليوم دائمًا ولا نخصم يوم
+    //     $day = $now->copy()->startOfDay();
 
-        $morningStart = Carbon::parse("{$day->toDateString()} {$this->morning_start}", 'Asia/Riyadh');
-        $morningEnd = Carbon::parse("{$day->toDateString()} {$this->morning_end}", 'Asia/Riyadh');
+    //     $morningStart = Carbon::parse("{$day->toDateString()} {$this->morning_start}", 'Asia/Riyadh');
+    //     $morningEnd = Carbon::parse("{$day->toDateString()} {$this->morning_end}", 'Asia/Riyadh');
 
-        $eveningStart = Carbon::parse("{$day->toDateString()} {$this->evening_start}", 'Asia/Riyadh');
-        $eveningEnd = Carbon::parse("{$day->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
-        if ($eveningEnd->lessThan($eveningStart)) {
-            $eveningEnd->addDay();
-        }
+    //     $eveningStart = Carbon::parse("{$day->toDateString()} {$this->evening_start}", 'Asia/Riyadh');
+    //     $eveningEnd = Carbon::parse("{$day->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
+    //     if ($eveningEnd->lessThan($eveningStart)) {
+    //         $eveningEnd->addDay();
+    //     }
 
-        return match ($this->type) {
-            'morning' => $now->between($morningStart, $morningEnd),
-            'evening' => $now->between($eveningStart, $eveningEnd),
-            'morning_evening' => $shiftType === 1
-                ? $now->between($morningStart, $morningEnd)
-                : $now->between($eveningStart, $eveningEnd),
-            'evening_morning' => $shiftType === 2
-                ? $now->between($eveningStart, $eveningEnd)
-                : $now->between($morningStart, $morningEnd),
-            default => false,
-        };
+    //     return match ($this->type) {
+    //         'morning' => $now->between($morningStart, $morningEnd),
+    //         'evening' => $now->between($eveningStart, $eveningEnd),
+    //         'morning_evening' => $shiftType === 1
+    //             ? $now->between($morningStart, $morningEnd)
+    //             : $now->between($eveningStart, $eveningEnd),
+    //         'evening_morning' => $shiftType === 2
+    //             ? $now->between($eveningStart, $eveningEnd)
+    //             : $now->between($morningStart, $morningEnd),
+    //         default => false,
+    //     };
 
-    }
+    // }
 
     public function getShiftActiveStatus(Carbon $now): array
     {

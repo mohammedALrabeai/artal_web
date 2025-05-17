@@ -10,8 +10,8 @@ class ActiveShiftService
     public function getActiveShiftsSummaryV2(?Carbon $now = null): array
     {
         $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
-       
-        $intervalSeconds = 30; // ← 🟡 يمكنك تغييرها إلى 60 أو 120 أو 15 حسب ما تريد
+
+        $intervalSeconds = 60; // ← 🟡 يمكنك تغييرها إلى 60 أو 120 أو 15 حسب ما تريد
 
         $intervalKey = floor($now->timestamp / $intervalSeconds); // ← مفتاح فريد لكل فترة زمنية
 
@@ -19,8 +19,12 @@ class ActiveShiftService
 
         // now()->addSeconds(30)
         // now()->addMinutes(1)
+        // if (cache()->has($cacheKey)) {
+        //     dd("📦 يستخدم الكاش: $cacheKey");
+        // }
 
         return cache()->remember($cacheKey, now()->addSeconds($intervalSeconds), function () use ($now) {
+            logger('🚀 تنفيذ فعلي للدالة getActiveShiftsSummaryV2');
             $today = $now->copy()->startOfDay();
             $yesterday = $now->copy()->subDay()->startOfDay();
 
