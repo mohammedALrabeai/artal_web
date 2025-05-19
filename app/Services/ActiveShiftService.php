@@ -15,7 +15,7 @@ class ActiveShiftService
 
         // $intervalKey = floor($now->timestamp / $intervalSeconds); // ← مفتاح فريد لكل فترة زمنية
 
-        $cacheKey = "active_shifts_summary";
+        $cacheKey = 'active_shifts_summary';
 
         // now()->addSeconds(30)
         // now()->addMinutes(1)
@@ -82,7 +82,7 @@ class ActiveShiftService
                                             ->count();
                                     }
 
-                                    if ($isCurrent && $attendanceDateRange[0] && $attendanceDateRange[1] && !$shift->exclude_from_auto_absence) {
+                                    if ($isCurrent && $attendanceDateRange[0] && $attendanceDateRange[1] && ! $shift->exclude_from_auto_absence) {
                                         $assignedEmployeeIds = \App\Models\EmployeeProjectRecord::query()
                                             ->where('zone_id', $zone->id)
                                             ->where('shift_id', $shift->id)
@@ -124,8 +124,7 @@ class ActiveShiftService
                                             'employee_ids' => array_values($missingIds),
                                         ];
                                     }
-
-                                    $activeShifts[] = [
+                                    $shiftItem = [
                                         'id' => $shift->id,
                                         'name' => $shift->name,
                                         'type' => $shift->type,
@@ -133,6 +132,13 @@ class ActiveShiftService
                                         'attendees_count' => $attendeesCount,
                                         'emp_no' => $shift->emp_no,
                                     ];
+
+                                    // نضيف الحقل فقط إذا كان مستثنًى
+                                    if ($shift->exclude_from_auto_absence) {
+                                        $shiftItem['exclude_from_auto_absence'] = true;
+                                    }
+
+                                    $activeShifts[] = $shiftItem;
 
                                     if ($isCurrent) {
                                         $currentShiftEmpNo += $shift->emp_no;
