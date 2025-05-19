@@ -13,10 +13,8 @@ class CurrentShiftStatsWidget extends StatsOverviewWidget
         $now = now('Asia/Riyadh');
         // $intervalSeconds = 60;
         // $intervalKey = floor($now->timestamp / $intervalSeconds);
-        $cacheKey = "active_shifts_summary";
-        $summary = Cache::get($cacheKey);
-
-        // dd($summary);
+        $cacheKey = 'active_shifts_summary';
+        $summary = Cache::get($cacheKey, []);
 
         $required = $present = $coverage = $leftToday = 0;
 
