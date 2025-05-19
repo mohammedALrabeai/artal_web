@@ -3,6 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ShiftResource\Pages;
+use App\Models\EmployeeProjectRecord;
+use App\Models\EmployeeStatus;
 use App\Models\Shift;
 use App\Models\Zone;
 use Carbon\Carbon;
@@ -13,6 +15,7 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ShiftResource extends Resource
@@ -111,10 +114,10 @@ class ShiftResource extends Resource
                 ->label(__('Number of Employees'))
                 ->numeric()
                 ->required(),
-            Forms\Components\Toggle::make('exclude_from_auto_absence')
-                ->label(__('Exclude from Auto Absence'))
-                ->helperText(__('When activated, employees of this shift will not be automatically considered absent.'))
-                ->default(false),
+            // Forms\Components\Toggle::make('exclude_from_auto_absence')
+            //     ->label(__('Exclude from Auto Absence'))
+            //     ->helperText(__('When activated, employees of this shift will not be automatically considered absent.'))
+            //     ->default(false),
 
             Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
@@ -215,6 +218,39 @@ class ShiftResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('toggleExclude')
+                    ->label(fn (Shift $record) => $record->exclude_from_auto_absence
+                      ? __('Include in Auto-Absence')
+                      : __('Exclude from Auto-Absence'))
+                    ->icon(fn (Shift $record) => $record->exclude_from_auto_absence
+                      ? 'heroicon-s-check-circle'
+                      : 'heroicon-s-x-circle')
+                    ->requiresConfirmation()
+                    // ->requiresPermission('update_shift::shortage')
+                    ->modalHeading(__('Confirm Shift Exclusion'))
+                    ->modalDescription(__('If you exclude this shift from auto-absence, the consecutive absence count for all its assigned employees will be reset to zero. Do you wish to continue?'))
+
+                    ->action(function (Shift $record, array $data): void {
+                        // نبدّل قيمة العمود
+                        DB::transaction(function () use ($record) {
+                            // 1) تبديل قيمة الاستثناء
+                            $record->update([
+                                'exclude_from_auto_absence' => ! $record->exclude_from_auto_absence,
+                            ]);
+
+                            // 2) إعادة تصفير عداد الغياب لموظفي هذه الوردية
+                            $employeeIds = EmployeeProjectRecord::query()
+                                ->where('shift_id', $record->id)
+                                ->where('status', true)
+                                ->pluck('employee_id');
+
+                            EmployeeStatus::whereIn('employee_id', $employeeIds)
+                                ->update(['consecutive_absence_count' => 0]);
+                        });
+                        // إذا عندك منطق إضافي (مثلاً إرسال Notification) ضعه هنا
+                    })
+                // يظهر فقط لمن يملك صلاحية التعديل عبر Shield/Policy
+                    ->visible(fn (Shift $record): bool => auth()->user()->can('update', $record)),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
