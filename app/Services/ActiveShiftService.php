@@ -13,9 +13,9 @@ class ActiveShiftService
 
         $intervalSeconds = 60; // ← 🟡 يمكنك تغييرها إلى 60 أو 120 أو 15 حسب ما تريد
 
-        $intervalKey = floor($now->timestamp / $intervalSeconds); // ← مفتاح فريد لكل فترة زمنية
+        // $intervalKey = floor($now->timestamp / $intervalSeconds); // ← مفتاح فريد لكل فترة زمنية
 
-        $cacheKey = "active_shifts_summary_{$intervalKey}";
+        $cacheKey = "active_shifts_summary";
 
         // now()->addSeconds(30)
         // now()->addMinutes(1)

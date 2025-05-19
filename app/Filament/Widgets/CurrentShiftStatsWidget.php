@@ -2,20 +2,20 @@
 
 namespace App\Filament\Widgets;
 
-use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Card;
+use Illuminate\Support\Facades\Cache;
 
 class CurrentShiftStatsWidget extends StatsOverviewWidget
 {
     protected function getCards(): array
     {
-        $now = Carbon::now('Asia/Riyadh');
-        $intervalSeconds = 60;
-        $intervalKey = floor($now->timestamp / $intervalSeconds);
-        $cacheKey = "active_shifts_summary_{$intervalKey}";
+        $now = now('Asia/Riyadh');
+        // $intervalSeconds = 60;
+        // $intervalKey = floor($now->timestamp / $intervalSeconds);
+        $cacheKey = "active_shifts_summary";
+        $summary = Cache::get($cacheKey);
 
-        $summary = cache()->get($cacheKey, []);
         // dd($summary);
 
         $required = $present = $coverage = $leftToday = 0;
