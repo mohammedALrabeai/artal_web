@@ -82,7 +82,7 @@ class ActiveShiftService
                                             ->count();
                                     }
 
-                                    if ($isCurrent && $attendanceDateRange[0] && $attendanceDateRange[1]) {
+                                    if ($isCurrent && $attendanceDateRange[0] && $attendanceDateRange[1] && !$shift->exclude_from_auto_absence) {
                                         $assignedEmployeeIds = \App\Models\EmployeeProjectRecord::query()
                                             ->where('zone_id', $zone->id)
                                             ->where('shift_id', $shift->id)
