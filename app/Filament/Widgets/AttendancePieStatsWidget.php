@@ -2,63 +2,77 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Attendance;
 use App\Models\Employee;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\Cache;
 
 class AttendancePieStatsWidget extends ChartWidget
 {
-    protected static ?string $heading = 'إحصائيات الحضور اليومية';
-
-    protected static ?int $sort = 0;
-
-    protected static string $color = 'info';
-
+    protected static ?string $heading   = 'إحصائيات الحضور اليومية';
+    protected static ?int    $sort      = 0;
+    protected static string   $color     = 'info';
     protected static ?string $maxHeight = '300px';
 
     protected function getData(): array
     {
         $today = Carbon::today('Asia/Riyadh')->toDateString();
 
-        $totalEmployees = Employee::where('status', 1)->count();
+        // 1) جلب البيانات من الكاش
+        // ------------------------------------------
+        // يحتوي على هيكل: [ [ 'projects' => [ 'zones' => [ 'shifts' => [ ['is_current_shift', 'attendees_count', ...] ] ] ] ] ]
+        $summary     = Cache::get('active_shifts_summary', []);
 
-        // عدّ الحالات المختلفة من الحضور
-        $attendanceCounts = Attendance::query()
-            ->whereDate('date', $today)
-            ->selectRaw("
-        COUNT(DISTINCT CASE WHEN status = 'present' AND is_coverage = 0 THEN employee_id END) as present,
-        COUNT(DISTINCT CASE WHEN status = 'coverage' THEN employee_id END) as coverage,
-        COUNT(DISTINCT CASE WHEN status = 'off' THEN employee_id END) as off,
-        COUNT(DISTINCT CASE WHEN status = 'leave' THEN employee_id END) as `leave`,
-        COUNT(DISTINCT CASE WHEN status = 'UV' THEN employee_id END) as unpaid,
-        COUNT(DISTINCT CASE WHEN status = 'M' THEN employee_id END) as morbid
-    ")
-            ->first();
+        // مصفوفة المفقودين: كل عنصر فيها ['employee_ids' => [...]]
+        $missingMap  = Cache::get("missing_employees_summary_{$today}", []);
 
-        $counted = collect($attendanceCounts)->map(fn ($v) => (int) $v);
-        $counted['absent'] = max(0, $totalEmployees - $counted->sum());
+        // 2) احسب الحضور والتغطيات من الـ summary
+        // ------------------------------------------
+        $totalPresent  = 0;
+        $totalCoverage = 0;
 
+        foreach ($summary as $area) {
+            foreach ($area['projects'] as $project) {
+                foreach ($project['zones'] as $zone) {
+                    // تغطيات المنطقة (مخزنة مباشرة)
+                    $totalCoverage += $zone['active_coverages_count'] ?? 0;
+
+                    // لكل الوردات بالحلقة
+                    foreach ($zone['shifts'] as $shift) {
+                        if (! empty($shift['is_current_shift'])) {
+                            $totalPresent += $shift['attendees_count'] ?? 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3) احسب عدد الغياب من مصفوفة الـ missingMap
+        // ------------------------------------------
+        $totalAbsent = 0;
+        foreach ($missingMap as $entry) {
+            $totalAbsent += count($entry['employee_ids'] ?? []);
+        }
+
+        // 4) إجمالي الموظفين (يمكنك أيضاً تخزينه في كاش منفصل)
+        // ------------------------------------------
+        $totalEmployees = Cache::get('total_employees_count')
+            ?? Employee::where('status', 1)->count();
+
+        // 5) أعد البيانات بالشكل المطلوب للـ pie chart
+        // ------------------------------------------
         return [
             'datasets' => [
                 [
-                    'label' => 'عدد الموظفين',
-                    'data' => [
-                        $counted['present'],
-                        $counted['coverage'],
-                        $counted['off'],
-                        $counted['leave'],
-                        $counted['unpaid'],
-                        $counted['morbid'],
-                        $counted['absent'],
+                    'label' => 'الموظفين',
+                    'data'  => [
+                        $totalPresent,
+                        $totalCoverage,
+                        $totalAbsent,
                     ],
                     'backgroundColor' => [
                         '#10B981', // حاضر
                         '#3B82F6', // تغطية
-                        '#FACC15', // أوف
-                        '#8B5CF6', // إجازة
-                        '#EC4899', // بدون راتب
-                        '#F97316', // مرضي
                         '#EF4444', // غياب
                     ],
                 ],
@@ -66,10 +80,6 @@ class AttendancePieStatsWidget extends ChartWidget
             'labels' => [
                 'حاضر',
                 'تغطية',
-                'أوف',
-                'إجازة',
-                'بدون راتب',
-                'مرضي',
                 'غياب',
             ],
         ];
