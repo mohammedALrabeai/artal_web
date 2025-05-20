@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Cache;
 
 class CurrentShiftStatsWidget extends StatsOverviewWidget
 {
+    protected static ?string $pollingInterval = '120s';
+
     protected function getCards(): array
     {
         $now = now('Asia/Riyadh');
