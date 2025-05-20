@@ -9,10 +9,15 @@ use Illuminate\Support\Facades\Cache;
 
 class AttendancePieStatsWidget extends ChartWidget
 {
-    protected static ?string $heading   = 'إحصائيات الحضور اليومية';
-    protected static ?int    $sort      = 0;
-    protected static string   $color     = 'info';
+    protected static ?string $heading = 'إحصائيات الحضور اليومية';
+
+    protected static ?int $sort = 0;
+
+    protected static string $color = 'info';
+
     protected static ?string $maxHeight = '300px';
+
+    protected static ?string $pollingInterval = '120s';
 
     protected function getData(): array
     {
@@ -21,14 +26,14 @@ class AttendancePieStatsWidget extends ChartWidget
         // 1) جلب البيانات من الكاش
         // ------------------------------------------
         // يحتوي على هيكل: [ [ 'projects' => [ 'zones' => [ 'shifts' => [ ['is_current_shift', 'attendees_count', ...] ] ] ] ] ]
-        $summary     = Cache::get('active_shifts_summary', []);
+        $summary = Cache::get('active_shifts_summary', []);
 
         // مصفوفة المفقودين: كل عنصر فيها ['employee_ids' => [...]]
-        $missingMap  = Cache::get("missing_employees_summary_{$today}", []);
+        $missingMap = Cache::get("missing_employees_summary_{$today}", []);
 
         // 2) احسب الحضور والتغطيات من الـ summary
         // ------------------------------------------
-        $totalPresent  = 0;
+        $totalPresent = 0;
         $totalCoverage = 0;
 
         foreach ($summary as $area) {
@@ -65,7 +70,7 @@ class AttendancePieStatsWidget extends ChartWidget
             'datasets' => [
                 [
                     'label' => 'الموظفين',
-                    'data'  => [
+                    'data' => [
                         $totalPresent,
                         $totalCoverage,
                         $totalAbsent,
