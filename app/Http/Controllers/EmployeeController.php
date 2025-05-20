@@ -106,7 +106,6 @@ class EmployeeController extends Controller
             'allowed' => (bool) $allowed,
         ], 200);
     }
-    }
 
     public function store(Request $request)
     {
