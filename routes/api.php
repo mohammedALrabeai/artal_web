@@ -28,11 +28,10 @@ use Pusher\Pusher;
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
 
-Route::get('/all-employees', [EmployeeController::class, 'index']);
+Route::get('/all-employees', [EmployeeController::class, 'index'])->middleware('auth:employee');
 Route::post('/employee-action', [EmployeeController::class, 'store']);
 Route::get('/allowed-employees', [EmployeeController::class, 'allowed'])
-     ->middleware('auth:employee'); 
-
+    ->middleware('auth:employee');
 
 Route::post('/employee/login', [EmployeeAuthController::class, 'login']);
 Route::post('/employee/verify-otp', [EmployeeAuthController::class, 'verifyOtp']);

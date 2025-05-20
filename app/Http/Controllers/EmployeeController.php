@@ -15,65 +15,51 @@ class EmployeeController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. تحقق من صحة المدخلات
         $request->validate([
             'search' => 'nullable|string|max:255',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:5|max:100',
         ]);
 
-        $search = $request->input('search');
+        $search = trim($request->input('search', ''));
         $perPage = $request->input('per_page', 20);
         $page = $request->input('page', 1);
-        $cacheKey = "employees:{$page}:{$perPage}:".md5($search);
 
-        // 2. جلب الموظفين مع eager loading لأحدث مشروع
-        if (! $search) {
-            // استخدم الكاش إذا لم يكن هنالك بحث لتخفيف الضغط
-            $paginator = Cache::remember($cacheKey, now()->addMinutes(2), function () use ($perPage) {
-                return Employee::with(['latestZone'])
-                    ->select([
-                        'id',
-                        'first_name',
-                        'father_name',
-                        'grandfather_name',
-                        'family_name',
-                        'national_id',
-                        'mobile_number',
-                        'phone_number',
-                        // 'avatar_path',
-                    ])
-                    ->orderBy('first_name')
-                    ->paginate($perPage);
+        $query = Employee::with(['currentProjectRecord.project', 'latestZone'])
+            ->select([
+                'id',
+                'first_name', 'father_name', 'grandfather_name', 'family_name',
+                'national_id', 'mobile_number', 'phone_number', 'avatar_path',
+            ])
+            ->orderBy('first_name');
+
+        if ($search !== '') {
+            // نقسم نص البحث إلى كلمات
+            $keywords = preg_split('/\s+/', $search);
+
+            // لكل كلمة، نضيف شرط where فرعي يبحث عنها في أي من حقول الاسم
+            $query->where(function ($q) use ($keywords) {
+                foreach ($keywords as $word) {
+                    $q->where(function ($sub) use ($word) {
+                        $sub->where('first_name', 'like', "%{$word}%")
+                            ->orWhere('father_name', 'like', "%{$word}%")
+                            ->orWhere('grandfather_name', 'like', "%{$word}%")
+                            ->orWhere('family_name', 'like', "%{$word}%");
+                    });
+                }
+            });
+        }
+
+        // الكاش فقط إذا لم يكن هناك بحث
+        $cacheKey = "employees:{$page}:{$perPage}:".md5($search);
+        if ($search === '') {
+            $paginator = Cache::remember($cacheKey, now()->addMinutes(2), function () use ($query, $perPage) {
+                return $query->paginate($perPage);
             });
         } else {
-            // عند وجود بحث، نبني الاستعلام مع فلترة
-            $query = Employee::with(['latestZone'])
-                ->select([
-                    'id',
-                    'first_name',
-                    'father_name',
-                    'grandfather_name',
-                    'family_name',
-                    'national_id',
-                    'mobile_number',
-                    'phone_number',
-                    // 'avatar_path',
-                ])
-                ->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('father_name', 'like', "%{$search}%")
-                        ->orWhere('grandfather_name', 'like', "%{$search}%")
-                        ->orWhere('family_name', 'like', "%{$search}%")
-                        ->orWhere('national_id', 'like', "%{$search}%")
-                        ->orWhere('mobile_number', 'like', "%{$search}%");
-                })
-                ->orderBy('first_name');
-
             $paginator = $query->paginate($perPage);
         }
 
-        // 3. إرجاع ال Resource مع بيانات الـ pagination
         return EmployeeResource::collection($paginator)
             ->additional([
                 'meta' => [
