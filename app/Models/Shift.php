@@ -201,6 +201,65 @@ class Shift extends Model
         return $currentDayInCycle < $workingDays;
     }
 
+    public function isWorkingDay3(?Carbon $referenceDateTime = null): ?bool
+    {
+        $referenceDateTime = $referenceDateTime ? $referenceDateTime->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
+
+        $zone = $this->zone;
+        if (! $zone || ! $zone->pattern) {
+            return null;
+        }
+
+        $pattern = $zone->pattern;
+        $workingDays = (int) $pattern->working_days;
+        $offDays = (int) $pattern->off_days;
+
+        if ($workingDays <= 0 || $offDays < 0) {
+            return null;
+        }
+
+        $cycleLength = $workingDays + $offDays;
+        if ($cycleLength <= 0) {
+            return null;
+        }
+
+        $startDate = Carbon::parse($this->start_date, 'Asia/Riyadh');
+        $daysSinceStart = $startDate->diffInDays($referenceDateTime->copy()->startOfDay());
+        $currentDayInCycle = $daysSinceStart % $cycleLength;
+        $isWorkingDay = $currentDayInCycle < $workingDays;
+
+        // ✅ إذا كان اليوم يوم عمل → نرجع true فورًا
+        if ($isWorkingDay) {
+            return true;
+        }
+
+        // ✅ معالجة حالة خاصة: استعلام في يوم أوف صباحًا أثناء استمرار وردية الأمس المسائية
+        if (in_array($this->type, ['evening', 'evening_morning'])) {
+            $yesterday = $referenceDateTime->copy()->subDay()->startOfDay();
+
+            $daysSinceYesterdayStart = $startDate->diffInDays($yesterday);
+            $cycleDay = $daysSinceYesterdayStart % $cycleLength;
+
+            $yesterdayIsWorking = $cycleDay < $workingDays;
+
+            if ($yesterdayIsWorking) {
+                $eveningStart = Carbon::parse("{$yesterday->toDateString()} {$this->evening_start}", 'Asia/Riyadh');
+                $eveningEnd = Carbon::parse("{$yesterday->toDateString()} {$this->evening_end}", 'Asia/Riyadh');
+
+                if ($eveningEnd->lessThan($eveningStart)) {
+                    $eveningEnd->addDay();
+                }
+
+                if ($referenceDateTime->between($eveningStart, $eveningEnd)) {
+                    return true; // لا يزال اليوم تابعًا للوردية المسائية السابقة
+                }
+            }
+        }
+
+        // ❌ في باقي الحالات، نعتبر اليوم يوم أوف
+        return false;
+    }
+
     public function isWorkingDayDynamic(Carbon $referenceDateTime): bool
     {
         $zone = $this->zone;
@@ -378,6 +437,109 @@ class Shift extends Model
                     if ($todayIsWorking && $checkShift($today, $this->evening_start, $this->evening_end)) {
                         return [true, 'today'];
                     }
+                    if ($this->evening_end < $this->evening_start && $yesterdayIsWorking && $checkShift($yesterday, $this->evening_start, $this->evening_end)) {
+                        return [true, 'yesterday'];
+                    }
+
+                    return [false, null];
+                }
+
+            default:
+                return [false, null];
+        }
+    }
+
+    public function getShiftActiveStatus2(Carbon $now): array
+    {
+        $pattern = $this->zone?->pattern;
+
+        if (! $pattern || ! $this->start_date) {
+            return [false, null];
+        }
+
+        $cycleLength = $pattern->working_days + $pattern->off_days;
+        if ($cycleLength <= 0) {
+            return [false, null];
+        }
+
+        $today = $now->copy()->startOfDay();
+        $yesterday = $now->copy()->subDay()->startOfDay();
+
+        $startDate = Carbon::parse($this->start_date)->startOfDay('Asia/Riyadh');
+
+        $daysSinceStart = $startDate->diffInDays($today);
+        $cycleNumber = (int) floor($daysSinceStart / $cycleLength) + 1;
+        $isOddCycle = $cycleNumber % 2 === 1;
+
+        $daysSinceStartYesterday = $startDate->diffInDays($yesterday);
+        $cycleDayYesterday = $daysSinceStartYesterday % $cycleLength;
+        $yesterdayIsWorking = $cycleDayYesterday < $pattern->working_days;
+
+        $daysSinceStartToday = $daysSinceStart;
+        $cycleDayToday = $daysSinceStartToday % $cycleLength;
+        $todayIsWorking = $cycleDayToday < $pattern->working_days;
+
+        $checkShift = function (Carbon $baseDate, $startTime, $endTime) use ($now) {
+            $start = Carbon::parse("{$baseDate->toDateString()} {$startTime}", 'Asia/Riyadh');
+            $end = Carbon::parse("{$baseDate->toDateString()} {$endTime}", 'Asia/Riyadh');
+
+            if ($end->lessThan($start)) {
+                $end->addDay();
+            }
+
+            return $now->between($start, $end);
+        };
+
+        switch ($this->type) {
+            case 'morning':
+                if (! $todayIsWorking) {
+                    return [false, null];
+                }
+
+                return [$checkShift($today, $this->morning_start, $this->morning_end), 'today'];
+
+            case 'evening':
+                if ($todayIsWorking && $checkShift($today, $this->evening_start, $this->evening_end)) {
+                    return [true, 'today'];
+                }
+
+                if ($this->evening_end < $this->evening_start && $yesterdayIsWorking && $checkShift($yesterday, $this->evening_start, $this->evening_end)) {
+                    return [true, 'yesterday'];
+                }
+
+                return [false, null];
+
+            case 'evening_morning':
+                if ($isOddCycle) {
+                    if ($todayIsWorking && $checkShift($today, $this->evening_start, $this->evening_end)) {
+                        return [true, 'today'];
+                    }
+
+                    if ($this->evening_end < $this->evening_start && $yesterdayIsWorking && $checkShift($yesterday, $this->evening_start, $this->evening_end)) {
+                        return [true, 'yesterday'];
+                    }
+
+                    return [false, null];
+                } else {
+                    if (! $todayIsWorking) {
+                        return [false, null];
+                    }
+
+                    return [$checkShift($today, $this->morning_start, $this->morning_end), 'today'];
+                }
+
+            case 'morning_evening':
+                if ($isOddCycle) {
+                    if (! $todayIsWorking) {
+                        return [false, null];
+                    }
+
+                    return [$checkShift($today, $this->morning_start, $this->morning_end), 'today'];
+                } else {
+                    if ($todayIsWorking && $checkShift($today, $this->evening_start, $this->evening_end)) {
+                        return [true, 'today'];
+                    }
+
                     if ($this->evening_end < $this->evening_start && $yesterdayIsWorking && $checkShift($yesterday, $this->evening_start, $this->evening_end)) {
                         return [true, 'yesterday'];
                     }

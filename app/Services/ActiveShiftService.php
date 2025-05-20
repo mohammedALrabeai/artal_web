@@ -63,7 +63,7 @@ class ActiveShiftService
                                 $currentShiftEmpNo = 0;
 
                                 foreach ($zone->shifts as $shift) {
-                                    [$isCurrent, $startedAt] = $shift->getShiftActiveStatus($now); // ← ✅
+                                    [$isCurrent, $startedAt] = $shift->getShiftActiveStatus2($now); // ← ✅
 
                                     $attendanceDateRange = match ($startedAt) {
                                         'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],

@@ -32,7 +32,7 @@ class ShiftActivityTest extends TestCase
             $this->assertNotNull($shift, "⛔ Shift ID {$shiftId} not found");
 
             $now = \Carbon\Carbon::parse($datetime, 'Asia/Riyadh');
-            [$result, $source] = $shift->getShiftActiveStatus($now);
+            [$result, $source] = $shift->getShiftActiveStatus2($now);
 
             echo "\n--- Test Case ---";
             echo "\nShift ID      : {$shift->id}";
