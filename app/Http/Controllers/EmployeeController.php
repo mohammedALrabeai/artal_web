@@ -25,11 +25,11 @@ class EmployeeController extends Controller
         $perPage = $request->input('per_page', 20);
         $page = $request->input('page', 1);
 
-        $query = Employee::with(['currentProjectRecord.project', 'latestZone'])
+        $query = Employee::with(['latestZone'])
             ->select([
                 'id',
                 'first_name', 'father_name', 'grandfather_name', 'family_name',
-                'national_id', 'mobile_number', 'phone_number', 'avatar_path',
+                'national_id', 'mobile_number', 
             ])
             ->orderBy('first_name');
 
