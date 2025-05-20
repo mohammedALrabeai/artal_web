@@ -145,6 +145,8 @@ class EmployeeController extends Controller
         //     ]
         // );
 
+        $message_with_title = "🔔 {$title}\n\n{$message}";
+
         // 4. إرسال رسالة واتساب بنفس المحتوى عبر OtpService
         $otpService = new OtpService;
 
@@ -156,7 +158,7 @@ class EmployeeController extends Controller
         // ب. إلى جروب الموارد البشرية
         $otpService->sendOtp(
             '120363385699307538@g.us',
-            $message
+            $message_with_title
         );
 
         // 5. رد الـ API
