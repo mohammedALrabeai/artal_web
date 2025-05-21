@@ -7,6 +7,7 @@ use App\Models\EmployeeProjectRecord;
 use App\Models\Project;
 use App\Models\Shift;
 use App\Models\Zone;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 class ManageAssignments extends Page implements Forms\Contracts\HasForms
 {
-    use Forms\Concerns\InteractsWithForms;
+    use Forms\Concerns\InteractsWithForms,HasPageShield;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 

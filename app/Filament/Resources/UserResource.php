@@ -2,21 +2,21 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\UserResource\Pages;
+use App\Models\User;
 use Filament\Forms;
-use Filament\Tables;
 use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use App\Models\User;
-use App\Models\Zone;
-use App\Filament\Resources\UserResource\Pages;
-
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
@@ -36,12 +36,12 @@ class UserResource extends Resource
     {
         return __('User Management');
     }
+
     // أو أي مجموعة أخرى
     protected static ?int $navigationSort = 1; // ترتيب التبويب
+
     // protected static ?string $navigationIcon = 'heroicon-o-user-group'; // أيقونة التبويب
     protected static bool $shouldRegisterNavigation = true;
-
-
 
     public static function form(Form $form): Form
     {
@@ -60,7 +60,7 @@ class UserResource extends Resource
                 ->label(__('Phone')) // Translation
                 ->tel(),
 
-                Forms\Components\Select::make('roles')
+            Forms\Components\Select::make('roles')
                 ->relationship('roles', 'name')
                 ->multiple()
                 ->preload()
@@ -70,8 +70,21 @@ class UserResource extends Resource
                 ->label(__('Password')) // Translation
                 ->password()
                 ->required()
-                ->visibleOn('create')
-                ->hiddenOn('edit'),
+                ->visibleOn(['create', 'edit']),
+            //     ->hiddenOn('edit'),
+
+            //        Forms\Components\TextInput::make('password')
+            // ->label('كلمة المرور')
+            // ->password()
+            // ->confirmed()                                           // يضيف الحقل الثاني للتأكيد
+            // ->confirmationFieldLabel('تأكيد كلمة المرور')         // يعيد تسمية حقل التأكيد
+            // ->confirmationPlaceholder('أعد كتابة كلمة المرور')     // يضع Placeholder بالعربي
+            // ->required(fn (string $context): bool => $context === 'create')
+            // ->dehydrated(fn ($state): bool => filled($state))
+            // ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+            // ->visibleOn(['create', 'edit'])
+            // ->hiddenOn('index')
+            //         ,
         ]);
     }
 
@@ -92,23 +105,23 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->label(__('Phone'))
                     ->searchable(),
-                    Tables\Columns\TextColumn::make('roles.name')
+                Tables\Columns\TextColumn::make('roles.name')
                     ->label('الأدوار')
                     ->badge()
                     ->sortable()
                     ->searchable(),
-                   
-                    // Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
-                    // ->label(__('Role'))
-                    // ->sortable()
-                    // ->color(function ($state) {
-                    //     return match ($state) {
-                    //         'Manager' => 'primary',
-                    //         'General Manager' => 'success',
-                    //         'HR' => 'danger',
-                    //         default => 'secondary',
-                    //     };
-                    // }),
+
+                // Tables\Columns\TextColumn::make('role.name') // عرض اسم الدور المرتبط
+                // ->label(__('Role'))
+                // ->sortable()
+                // ->color(function ($state) {
+                //     return match ($state) {
+                //         'Manager' => 'primary',
+                //         'General Manager' => 'success',
+                //         'HR' => 'danger',
+                //         default => 'secondary',
+                //     };
+                // }),
             ])
             ->filters([
                 // SelectFilter::make('role_id')
