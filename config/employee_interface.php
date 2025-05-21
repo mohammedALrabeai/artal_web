@@ -1,4 +1,5 @@
 <?php
+
 // config/employee_interface.php
 
 return [
@@ -13,7 +14,9 @@ return [
     */
 
     'allowed_employee_ids' => [
+        10354,
         1,
+
         // 5,
         // 12,
         // 27,

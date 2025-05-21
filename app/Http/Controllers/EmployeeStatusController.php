@@ -69,6 +69,7 @@ class EmployeeStatusController extends Controller
         if (! $employee) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+     
         $employeeId = $employee->id;
 
         // استلام البيانات من الطلب
@@ -80,7 +81,7 @@ class EmployeeStatusController extends Controller
         $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
 
         // تحديث وقت آخر اتصال
-        $status->last_seen_at = Carbon::now();
+        $status->last_seen_at = Carbon::now('Asia/Riyadh');
 
         // تحديث حالة GPS: إذا تغيرت القيمة يتم تحديث وقت تغيير حالة GPS
         if ($status->gps_enabled !== $gpsEnabled) {
