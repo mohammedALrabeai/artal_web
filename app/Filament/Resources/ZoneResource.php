@@ -2,20 +2,20 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\Zone;
-use Filament\Tables;
+use App\Filament\Resources\ZoneResource\Pages;
 use App\Models\Pattern;
 use App\Models\Project;
+use App\Models\Zone;
+use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Tables\Table;
 use Filament\Resources\Resource;
+use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
-use App\Filament\Resources\ZoneResource\Pages;
+use Filament\Tables\Table;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class ZoneResource extends Resource
 {
@@ -176,14 +176,14 @@ class ZoneResource extends Resource
                     ->openUrlInNewTab()
                     ->sortable(false),
             ])
-             ->headerActions([
-             ExportAction::make()
-                ->label(__('Export All Zones'))
-                ->exports([
-                    ExcelExport::make()              // ✨ هذه المثيلة هي التي تبيّن الإكسل
-                        ->fromTable()               // source: جدول Filament
-                        ->ignoreFormatting(['map_url']), // تجاهل الـ formatStateUsing في عمود map_url :contentReference[oaicite:0]{index=0}
-                ])
+            ->headerActions([
+                ExportAction::make()
+                    ->label(__('Export All Zones'))
+                    ->exports([
+                        ExcelExport::make()              // ✨ هذه المثيلة هي التي تبيّن الإكسل
+                            ->fromTable()               // source: جدول Filament
+                            ->ignoreFormatting(['map_url']), // تجاهل الـ formatStateUsing في عمود map_url :contentReference[oaicite:0]{index=0}
+                    ]),
                 // optional: ->fileName('all-zones.xlsx')
             ])
             ->filters([
@@ -262,10 +262,15 @@ class ZoneResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
-           
+
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
-                ExportBulkAction::make(),
+                ExportBulkAction::make()
+                    ->exports([
+                        ExcelExport::make()
+                            ->fromTable()
+                            ->ignoreFormatting(['map_url']),
+                    ]),
             ]);
     }
 
