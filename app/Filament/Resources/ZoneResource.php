@@ -2,17 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ZoneResource\Pages;
+use Filament\Forms;
+use App\Models\Zone;
+use Filament\Tables;
 use App\Models\Pattern;
 use App\Models\Project;
-use App\Models\Zone;
-use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Tables\Table;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Table;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Filament\Resources\ZoneResource\Pages;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ZoneResource extends Resource
@@ -165,6 +167,24 @@ class ZoneResource extends Resource
                 Tables\Columns\BooleanColumn::make('status')
                     ->label(__('Active'))
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('map_url')
+                    ->label(__('Map'))
+                    ->getStateUsing(fn (Zone $record): string => $record->map_url)
+                    ->formatStateUsing(fn (string $state): string => 'View')
+                    ->url(fn (string $state): string => $state)
+                    ->openUrlInNewTab()
+                    ->sortable(false),
+            ])
+             ->headerActions([
+             ExportAction::make()
+                ->label(__('Export All Zones'))
+                ->exports([
+                    ExcelExport::make()              // ✨ هذه المثيلة هي التي تبيّن الإكسل
+                        ->fromTable()               // source: جدول Filament
+                        ->ignoreFormatting(['map_url']), // تجاهل الـ formatStateUsing في عمود map_url :contentReference[oaicite:0]{index=0}
+                ])
+                // optional: ->fileName('all-zones.xlsx')
             ])
             ->filters([
                 SelectFilter::make('pattern_id')
@@ -242,6 +262,7 @@ class ZoneResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
+           
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
                 ExportBulkAction::make(),

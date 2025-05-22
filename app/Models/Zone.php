@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Services\NotificationService;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
@@ -62,8 +61,6 @@ class Zone extends Model
         return $this->hasMany(Attendance::class);
     }
 
- 
-
     public function getDescriptionForEvent(string $eventName): string
     {
         if ($eventName === 'updated') {
@@ -102,6 +99,11 @@ class Zone extends Model
         }
 
         return "Zone record has been {$eventName}";
+    }
+
+    public function getMapUrlAttribute(): string
+    {
+        return "https://maps.google.com/?q={$this->lat},{$this->longg}";
     }
 
     public function getActivitylogOptions(): LogOptions
