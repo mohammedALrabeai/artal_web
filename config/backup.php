@@ -7,8 +7,7 @@ return [
          * The name of this application. You can use this name to monitor
          * the backups.
          */
-      'name' => '', // لا تستخدم مجلد باسم المشروع
-
+        'name' => '', // لا تستخدم مجلد باسم المشروع
 
         'source' => [
             'files' => [
@@ -151,6 +150,7 @@ return [
              */
             'filename_prefix' => 'backup-', // أو اتركها فارغة ''
             'disks' => [
+                'local',
                 'google',
             ],
 
