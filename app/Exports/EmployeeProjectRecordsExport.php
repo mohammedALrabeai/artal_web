@@ -28,7 +28,7 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
     protected Carbon $startDate;
 
     /** @var array<int,int> project_id => count */
-    protected array $projectEmployeesCount = [];
+    // protected array $projectEmployeesCount = [];
 
     public function __construct(bool $onlyActive = true, ?string $startDate = null)
     {
@@ -36,12 +36,12 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
         $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
 
         // → استعلام واحد يجلب project_id و COUNT(*) لكل مشروع
-        $this->projectEmployeesCount = EmployeeProjectRecord::query()
-            ->when($this->onlyActive, fn ($q) => $q->where('status', true))
-            ->select('project_id', DB::raw('COUNT(*) as total'))
-            ->groupBy('project_id')
-            ->pluck('total', 'project_id')
-            ->toArray();
+        // $this->projectEmployeesCount = EmployeeProjectRecord::query()
+        //     ->when($this->onlyActive, fn ($q) => $q->where('status', true))
+        //     ->select('project_id', DB::raw('COUNT(*) as total'))
+        //     ->groupBy('project_id')
+        //     ->pluck('total', 'project_id')
+        //     ->toArray();
 
     }
 
@@ -82,13 +82,13 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
         ])));
 
         // نأخذ عدد الموظفين لهذا المشروع من الـ array المحسوب
-        $projectCount = $this->projectEmployeesCount[$record->project_id] ?? 0;
+        // $projectCount = $this->projectEmployeesCount[$record->project_id] ?? 0;
 
         $base = [
             $fullName,
             $record->employee->national_id ?? 'غير متوفر',
             $record->project->name ?? 'غير متوفر',
-            $projectCount, 
+            $record->project->emp_no ?? '-', 
             $record->zone->name ?? 'غير متوفر',
             $record->shift->name ?? 'غير متوفر',
             $record->start_date,
