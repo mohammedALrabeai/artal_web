@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\EmployeeProjectRecord;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -13,8 +14,10 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCustomCsvSettings, WithHeadings, WithMapping, WithStyles
+
+class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCustomCsvSettings, WithHeadings, WithMapping, WithStyles,WithChunkReading
 {
     use Exportable;
 
@@ -24,10 +27,21 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
 
     protected Carbon $startDate;
 
+    /** @var array<int,int> project_id => count */
+    protected array $projectEmployeesCount = [];
+
     public function __construct(bool $onlyActive = true, ?string $startDate = null)
     {
         $this->onlyActive = $onlyActive;
         $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
+
+        // → استعلام واحد يجلب project_id و COUNT(*) لكل مشروع
+        $this->projectEmployeesCount = EmployeeProjectRecord::query()
+            ->when($this->onlyActive, fn ($q) => $q->where('status', true))
+            ->select('project_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('project_id')
+            ->pluck('total', 'project_id')
+            ->toArray();
 
     }
 
@@ -46,7 +60,9 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
     public function headings(): array
     {
         $baseHeadings = [
-            'الاسم الكامل', 'رقم الهوية', 'المشروع', 'الموقع', 'الوردية',
+            'الاسم الكامل', 'رقم الهوية', 'المشروع',
+            'عدد الموظفين في المشروع',
+            'الموقع', 'الوردية',
             'تاريخ البدء', 'تاريخ الانتهاء', 'الحالة',
         ];
 
@@ -65,10 +81,14 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
             $record->employee->family_name ?? '',
         ])));
 
+        // نأخذ عدد الموظفين لهذا المشروع من الـ array المحسوب
+        $projectCount = $this->projectEmployeesCount[$record->project_id] ?? 0;
+
         $base = [
             $fullName,
             $record->employee->national_id ?? 'غير متوفر',
             $record->project->name ?? 'غير متوفر',
+            $projectCount, 
             $record->zone->name ?? 'غير متوفر',
             $record->shift->name ?? 'غير متوفر',
             $record->start_date,
@@ -185,5 +205,11 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
         }
 
         return $days;
+    }
+
+
+     public function chunkSize(): int
+    {
+        return 1000;
     }
 }
