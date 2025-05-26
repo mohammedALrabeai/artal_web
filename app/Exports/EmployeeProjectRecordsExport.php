@@ -8,16 +8,15 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-
-class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCustomCsvSettings, WithHeadings, WithMapping, WithStyles,WithChunkReading
+class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithChunkReading, WithCustomCsvSettings, WithHeadings, WithMapping, WithStyles
 {
     use Exportable;
 
@@ -88,7 +87,7 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
             $fullName,
             $record->employee->national_id ?? 'غير متوفر',
             $record->project->name ?? 'غير متوفر',
-            $record->project->emp_no ?? '-', 
+            $record->project->emp_no ?? '-',
             $record->zone->name ?? 'غير متوفر',
             $record->shift->name ?? 'غير متوفر',
             $record->start_date,
@@ -127,7 +126,7 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
 
         // ✅ 4. تلوين الأعمدة حسب نوع العمل
         $startRow = 2;
-        $startCol = 9;
+        $startCol = 10;
 
         foreach ($this->workPatternValues as $rowIndex => $days) {
             foreach ($days as $colOffset => $value) {
@@ -207,8 +206,7 @@ class EmployeeProjectRecordsExport implements FromQuery, ShouldAutoSize, WithCus
         return $days;
     }
 
-
-     public function chunkSize(): int
+    public function chunkSize(): int
     {
         return 1000;
     }
