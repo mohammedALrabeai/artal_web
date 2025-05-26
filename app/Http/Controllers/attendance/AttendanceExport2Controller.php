@@ -64,6 +64,17 @@ class AttendanceExport2Controller extends Controller
 
     public function exportAttendanceData($employees, $startDate, $endDate)
     {
+
+        // ↙ فرز حسب معرف المشروع (latestZone->project->id)
+        $employees = $employees
+            ->sortBy(fn ($emp) =>
+                // إذا كنت على PHP 8+
+                $emp->latestZone?->project?->id
+                // وإذا لم تجد المشروع، أرجع قيمة كبيرة تدفعهم لنهاية القائمة
+                ?? PHP_INT_MAX
+            )
+            ->values();
+
         // خريطة الألوان لكل حالة
         $attendanceColors = [
             'absent' => 'E57373',   // أحمر
