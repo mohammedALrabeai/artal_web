@@ -8,6 +8,7 @@ ini_set('max_execution_time', 300); // أو حتى 600 حسب الحاجة
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -64,6 +65,8 @@ class AttendanceExport2Controller extends Controller
 
     public function exportAttendanceData($employees, $startDate, $endDate)
     {
+        // $locale = App::getLocale();  // مثلاً "ar" أو "en" حسب الإعداد
+        // App::setLocale($locale);     // هذا يضمن أن الدالة __() تستخدم اللغة الصحيحة
 
         // ↙ فرز حسب معرف المشروع (latestZone->project->id)
         $employees = $employees
@@ -145,6 +148,8 @@ class AttendanceExport2Controller extends Controller
         foreach ($columnsData as $column) {
             $headers[] = $column['title'];
         }
+
+        $headers[] = 'تامينات';
 
         // وضع الرؤوس في الصف الأول
         $columnIndex = 1;
@@ -369,6 +374,29 @@ class AttendanceExport2Controller extends Controller
                 $sheet->setCellValueByColumnAndRow($columnIndex, $startRow, $formula);
                 $columnIndex++;
             }
+
+            // تكون قيمة $colIndex هي العمود التالي الفارغ؛ فنستخدمه لعمود التأمينات:
+            $insuranceCol = $columnIndex;
+
+            // تحديد نص التأمين:
+            $hasInsurance = $employee->commercial_record_id !== null;
+            $sheet->mergeCellsByColumnAndRow($insuranceCol, $startRow, $insuranceCol, $endRow);
+            $sheet->setCellValueByColumnAndRow(
+                $insuranceCol,
+                $startRow,
+                $hasInsurance ? 'تامينات' : 'بدون تامينات'
+            );
+            // (اختياري) تلوين العمود:
+            $sheet->getStyleByColumnAndRow($insuranceCol, $startRow)->applyFromArray([
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'AED581'], // أخضر فاتح مثلاً
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
 
             // الانتقال للموظف التالي
             $rowIndex += 3; // ثلاث صفوف لكل موظف
