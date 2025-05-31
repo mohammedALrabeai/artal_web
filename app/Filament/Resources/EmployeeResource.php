@@ -436,6 +436,8 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
                     ->sortable()
+                      ->copyable()
+                    ->copyMessageDuration(1500)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Full Name'))
@@ -728,6 +730,8 @@ class EmployeeResource extends Resource
 
                 Tables\Columns\TextColumn::make('mobile_number')
                     ->label(__('Mobile Number'))
+                      ->copyable()
+                    ->copyMessageDuration(1500)
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('phone_number')
@@ -737,6 +741,8 @@ class EmployeeResource extends Resource
 
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('Email'))
+                      ->copyable()
+                    ->copyMessageDuration(1500)
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('region')
