@@ -25,7 +25,7 @@
     "Active": "Active",
     "Range": "Range",
     "Manage Zones": "Manage Zones",
-    "Zone": "Zone",
+
     "Type": "Type",
     "Morning Start": "Morning Start",
     "Morning End": "Morning End",
@@ -37,7 +37,7 @@
     "Last Time Out (Minutes)": "Last Time Out (Minutes)",
     "Start Date": "Start Date",
     "Number of Employees": "Number of Employees",
-    "Active": "Active",
+ 
     "Inactive": "Inactive",
     "Morning": "Morning",
     "Evening": "Evening",
@@ -126,7 +126,7 @@
     "Sick": "Sick",
     "Unpaid": "Unpaid",
     "Employee": "Employee",
-    "Zone": "Zone",
+
     "Date": "Date",
     "Check In": "Check In",
     "Check Out": "Check Out",
@@ -138,11 +138,11 @@
     "From": "From",
     "To": "To",
     "Employee": "Employee",
-    "Zone": "Zone",
+
     "Start Date": "Start Date",
     "End Date": "End Date",
     "Status": "Status",
-    "Active": "Active",
+
     "Absent": "Absent",
     "Transferred": "Transferred",
     "Added By": "Added By",
@@ -167,7 +167,7 @@
     "Employees": "Employees",
     "Employee": "Employee",
     "Zones": "Zones",
-    "Zone": "Zone",
+
     "Shifts": "Shifts",
     "Shift": "Shift",
     "Attachments": "Attachments",
@@ -257,8 +257,8 @@
     "Zone & Project Management": "Zone & Project Management",
     "Employee Project Records": "Employee Project Records",
     "Project": "Project",
-    "Zone": "Zone",
-    "Shift": "Shift",
+
+   
     "Start Date": "Start Date",
     "End Date": "End Date",
     "Banks": "Banks",
