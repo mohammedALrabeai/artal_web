@@ -278,6 +278,8 @@ class EmployeeProjectRecordResource extends Resource
             ->actions([
 
                 Action::make('replace_employee')
+                    ->visible(fn () => auth()->user()?->can('create_employee::project::record'))
+
                     ->label('استبدال الموظف')
                     // ->icon('heroicon-o-user-switch')
                     ->color('warning')
