@@ -27,6 +27,7 @@ class ListEmployees extends ListRecords
         return [
             Actions\CreateAction::make(),
             Actions\Action::make('importEmployees')
+                ->visible(fn () => auth()->user()?->can('create_employee'))
                 ->label(__('Import Employees'))
                 ->form([
                     Forms\Components\FileUpload::make('employee_file')
