@@ -159,4 +159,34 @@ class ZoneController extends Controller
             'data' => $zones,
         ]);
     }
+
+    public function getZoneDetails(Request $request)
+    {
+        $zoneId = $request->input('zone_id');
+
+        if (! $zoneId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'zone_id is required',
+            ], 422);
+        }
+
+        $zone = Zone::with('project')->find($zoneId);
+
+        if (! $zone) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Zone not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'zone_id' => $zone->id,
+                'zone_name' => $zone->name,
+                'project_name' => $zone->project?->name,
+            ],
+        ]);
+    }
 }
