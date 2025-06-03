@@ -41,6 +41,8 @@ class Settings extends Page
             'show_attendance_log' => false,
             'force_update' => false,
             'whatsapp_notifications' => false,
+                'show_secure_code_widget' => false, // ✅ جديد
+
         ];
     
         $this->settings = array_merge($defaultSettings, $this->settings);
@@ -102,6 +104,11 @@ class Settings extends Page
                 ->label('عرض سجل التحضير')
                 ->default($this->settings['show_attendance_log'])
                 ->reactive(),
+                Forms\Components\Toggle::make('settings.show_secure_code_widget')
+    ->label('عرض ودجت كود التحقق')
+    ->default($this->settings['show_secure_code_widget'] ?? false)
+    ->reactive(),
+
             Forms\Components\Select::make('settings.otp_type')
                 ->label('نوع OTP')
                 ->options([
