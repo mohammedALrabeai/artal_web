@@ -146,4 +146,17 @@ class ZoneController extends Controller
             'data' => $zones,
         ], 200);
     }
+
+
+    public function getActiveZonesCoordinates(Request $request)
+    {
+        $zones = Zone::where('status', 1) // ✅ المواقع الفعالة فقط
+            ->select('id', 'lat', 'longg', 'area')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $zones,
+        ]);
+    }
 }

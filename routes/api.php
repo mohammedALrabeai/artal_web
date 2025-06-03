@@ -55,6 +55,9 @@ Route::middleware(['auth:employee'])->group(function () {
     Route::get('/employee/zones', [EmployeeController::class, 'getEmployeeZones']);
 });
 
+Route::get('zones/coordinates', [ZoneController::class, 'getActiveZonesCoordinates']);
+
+
 Route::middleware('auth:employee')->get('/employee/notifications', [EmployeeNotificationController::class, 'getNotifications']);
 
 Route::middleware('auth:employee')->get('/employee/notifications/unread-count', [EmployeeNotificationController::class, 'getUnreadCount']);
@@ -85,7 +88,7 @@ Route::middleware('auth:employee')->group(function () {
     Route::post('/zones/nearby-with-shift', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
 
     // @deprecated version
-    Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']); 
+    Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 });
 
 Route::post('/zones/nearby-with-shift-operation', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
@@ -228,14 +231,13 @@ Route::get('/test', function (Request $request) {
 });
 
 // routes for notifications
-Route::middleware('auth:sanctum')->
-group(function () {
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
-    Route::post('/notifications/send-test', [NotificationController::class, 'sendTestNotification']);
-});
+Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+        Route::post('/notifications/send-test', [NotificationController::class, 'sendTestNotification']);
+    });
 
 Route::prefix('admin')->group(function () {
     Route::post('/notifications/test/all-managers', [AdminNotificationController::class, 'sendTestNotificationToAllManagers']);
@@ -312,7 +314,12 @@ Route::get('/missing-employees/all', function () {
         $employees = \App\Models\Employee::whereIn('id', $item['employee_ids'])
             ->where('status', 1)
             ->get([
-                'id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'mobile_number',
+                'id',
+                'first_name',
+                'father_name',
+                'grandfather_name',
+                'family_name',
+                'mobile_number',
             ]);
 
         foreach ($employees as $employee) {
