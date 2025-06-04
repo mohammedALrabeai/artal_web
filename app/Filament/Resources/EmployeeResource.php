@@ -164,9 +164,9 @@ class EmployeeResource extends Resource
                             ->label(__('Bank Name'))
                             ->datalist(
                                 collect(\App\Enums\Bank::cases())
-                                    ->map(fn($bank) => $bank->label())
+                                    ->map(fn($bank) => $bank->value)
                                     ->merge(
-                                        Employee::query()
+                                        \App\Models\Employee::query()
                                             ->distinct()
                                             ->pluck('bank_name')
                                             ->filter()
@@ -179,7 +179,7 @@ class EmployeeResource extends Resource
                             ->required()
                             ->reactive()
                             ->helperText(fn($state) => \App\Helpers\IbanHelper::translateBankCode($state)
-                                ? '🧾 ' . __('Bank: ') . \App\Helpers\IbanHelper::translateBankCode($state)
+                                ? '🧾 ' . \App\Helpers\IbanHelper::translateBankCode($state)
                                 : null),
 
                         // Forms\Components\TextInput::make('bank_account')
@@ -191,13 +191,13 @@ class EmployeeResource extends Resource
                         //     $set('bank_name', \App\Helpers\IbanHelper::detectBankFromIban($state));
                         // }),
                         Forms\Components\TextInput::make('bank_account')
-                            ->label(__('Bank Account'))
+                            ->label('رقم الآيبان')
                             ->required()
-                            ->rule(new ValidSaudiIban())
+                            ->rule(new \App\Rules\ValidSaudiIban())
                             ->reactive()
-                            ->helperText(fn($state) => \App\Helpers\IbanHelper::detectBankFromIban($state)
-                                ? '🧾 البنك: ' . \App\Helpers\IbanHelper::detectBankFromIban($state)
-                                : null),
+                            ->helperText(fn($state) => \App\Helpers\IbanHelper::translateBankCode(
+                                \App\Helpers\IbanHelper::detectBankFromIban($state)
+                            )),
 
                         TextInput::make('bank_name_display')
                             ->label('')

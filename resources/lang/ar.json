@@ -2,7 +2,6 @@
     "Dashboard": "لوحة القيادة",
     "Users": "المستخدمين",
     "Name": "الاسم",
-
     "Phone": "رقم الهاتف",
     "Role": "الدور",
     "Password": "كلمة المرور",
@@ -17,22 +16,32 @@
     "Has Off Days": "يوجد أيام إجازة",
     "Manage Patterns": "إدارة الأنماط",
     "Start Date": "تاريخ البدء",
-    "Exclude from Auto Absence":"استثناء من الغياب التلقائي",
- "When activated, employees of this shift will not be automatically considered absent.":"عند التفعيل، لن يُعتبر موظفو هذه الوردية غائبين تلقائيًا",
+    "Exclude from Auto Absence": "استثناء من الغياب التلقائي",
+    "When activated, employees of this shift will not be automatically considered absent.": "عند التفعيل، لن يُعتبر موظفو هذه الوردية غائبين تلقائيًا",
     "Latitude": "خط العرض",
     "Longitude": "خط الطول",
-    "Exempt from absence":"مستثنى من الغياب التلقائي",
-
-"general": "تعميم",
+    "Exempt from absence": "مستثنى من الغياب التلقائي",
+    "bank.AlRajhi": "مصرف الراجحي",
+    "bank.SNB": "البنك الأهلي السعودي",
+    "bank.ANB": "البنك العربي الوطني",
+    "bank.SABB": "البنك السعودي البريطاني",
+    "bank.BSF": "البنك السعودي الفرنسي",
+    "bank.RiyadBank": "بنك الرياض",
+    "bank.AlInma": "مصرف الإنماء",
+    "bank.AlJazira": "بنك الجزيرة",
+    "bank.GIB": "بنك الخليج الدولي",
+    "bank.AlBilad": "بنك البلاد",
+    "bank.NBD": "بنك الإمارات دبي الوطني",
+    "bank.Meem": "بنك ميم",
+    "bank.Mashreq": "بنك المشرق",
+    "general": "تعميم",
     "notification": "إخطار",
     "warning": "إنذار",
     "violation": "مخالفة",
     "summons": "استدعاء",
     "other": "",
-  
     "Range (meter)": "النطاق (متر)",
     "Manage Zones": "إدارة المناطق",
-
     "Type": "النوع",
     "Morning Start": "بداية الصباح",
     "Morning End": "نهاية الصباح",
@@ -43,10 +52,8 @@
     "Last Entry Time (Minutes)": "آخر وقت للدخول (بالدقائق)",
     "Early Exit Time (Minutes)": "الوقت المبكر للخروج (بالدقائق)",
     "Last Time Out (Minutes)": "آخر وقت للخروج (بالدقائق)",
-
     "Number of Employees": "عدد الموظفين",
     "Number of Employees (All shifts included)": "عدد الموظفين (شامل جميع الورديات)",
-  
     "Inactive": "غير نشط",
     "Morning": "صباحي",
     "Evening": "مسائي",
@@ -76,12 +83,10 @@
     "Phone Number": "رقم الهاتف",
     "Employees currently working and available for assignment": "الموظفون النشطون والمتاحون للعمل",
     "Employees who are not currently active or available": "الموظفون غير النشطين أو غير المتاحين حاليًا",
-
     "Region": "المنطقة",
-    "Ended: :ended | Excluded: :excluded" : "منتهية عقودهم: :ended | مستبعدون: :excluded",
-"Excluded: :excluded" :"مستبعدون: :excluded",
-"Inactive Employees": "الموظفين غير النشطين",
-  
+    "Ended: :ended | Excluded: :excluded": "منتهية عقودهم: :ended | مستبعدون: :excluded",
+    "Excluded: :excluded": "مستبعدون: :excluded",
+    "Inactive Employees": "الموظفين غير النشطين",
     "Street": "الشارع",
     "Building Number": "رقم المبنى",
     "Apartment Number": "رقم الشقة",
@@ -94,13 +99,11 @@
     "Personal Information": "المعلومات الشخصية",
     "Job Information": "المعلومات الوظيفية",
     "Contact Information": "معلومات الاتصال",
-
     "Social Media": "وسائل التواصل الاجتماعي",
     "Security": "الأمان",
     "Personal Information": "المعلومات الشخصية",
     "Job Information": "المعلومات الوظيفية",
     "Contact Information": "معلومات الاتصال",
- 
     "Social Media": "وسائل التواصل الاجتماعي",
     "Security": "الأمان",
     "Bank Account": "الحساب البنكي",
@@ -111,7 +114,6 @@
     "Attachments": "المرفقات",
     "Content": "المحتوى",
     "Expiry Date": "تاريخ الانتهاء",
-
     "Employee": "الموظف",
     "Added By": "أضيف بواسطة",
     "Text": "نص",
@@ -137,8 +139,6 @@
     "Sick": "مرضية",
     "Unpaid": "بدون راتب",
     "Employee": "الموظف",
-
-
     "Check In": "وقت الحضور",
     "Check Out": "وقت الانصراف",
     "Present": "حاضر",
@@ -148,8 +148,6 @@
     "From": "من",
     "To": "إلى",
     "Employee": "الموظف",
-
-
     "Active": "نشط",
     "Absent": "غائب",
     "Transferred": "منقول",
@@ -174,7 +172,7 @@
     "Employees": "الموظفين",
     "Employee": "موظف",
     "Zones": "المواقع",
- "Identifier (leave empty to auto-generate)": "الرقم الوظيفي (اتركه فارغًا لإنشاءه تلقائيًا)",
+    "Identifier (leave empty to auto-generate)": "الرقم الوظيفي (اتركه فارغًا لإنشاءه تلقائيًا)",
     "Shifts": "الورديات",
     "Shift": "ورديه",
     "Attachments": "المرفقات",
@@ -240,11 +238,8 @@
     "Status": "الحالة",
     "Employee": "الموظف",
     "Request Type": "نوع الطلب",
-   
-   
     "Created By": "أنشئ بواسطة",
     "Reason": "السبب",
-   
     "Approval History": "سجل الموافقات",
     "Add Approval": "إضافة موافقة",
     "Edit Approval": "تعديل الموافقة",
@@ -269,7 +264,6 @@
     "Projects": "المشاريع",
     "Employee Project Records": "مواقع الموظفين",
     "Project": "المشروع",
-   
     "Shift": "الوردية",
     "Start Date": "تاريخ البدء",
     "Banks": "البنوك",
@@ -312,7 +306,6 @@
     "title_placeholder": "أدخل عنوان السلايد",
     "description_placeholder": "أدخل وصف السلايد",
     "created_at": "تاريخ الإنشاء",
-
     "notification": {
         "resource_label": "الإشعار",
         "resource_plural_label": "الإشعارات",
@@ -324,7 +317,6 @@
         "read": "مقروء",
         "management": "الإدارة"
     },
-
     "Create": "إنشاء",
     "Edit": "تعديل",
     "View": "عرض",
@@ -334,7 +326,6 @@
     "Reset": "إعادة تعيين",
     "No records found": "لم يتم العثور على سجلات",
     "Loading": "جاري التحميل",
-
     "View Employee Path": "عرض مسار الموظف",
     "Employee Path": "مسار الموظف",
     "Path History": "سجل المسار",
@@ -343,51 +334,43 @@
     "Distance from Zone": "المسافة من المنطقة",
     "Within Zone": "داخل المنطقة",
     "Outside Zone": "خارج المنطقة",
-
     "Pick Location": "اختر الموقع",
     "Map": "الخريطة",
     "Range": "النطاق",
     "Location Details": "تفاصيل الموقع",
     "Zone Information": "معلومات المنطقة",
-
     "Pattern Details": "تفاصيل النمط",
     "Working Hours": "ساعات العمل",
     "Break Hours": "ساعات الراحة",
     "Schedule": "الجدول",
-
     "Check In": "تسجيل الحضور",
     "Check Out": "تسجيل الانصراف",
     "Attendance Status": "حالة الحضور",
     "Late": "متأخر",
     "Early Leave": "خروج مبكر",
     "Overtime": "ساعات إضافية",
-
     "Leave Type": "نوع الإجازة",
     "Leave Period": "فترة الإجازة",
     "Leave Status": "حالة الإجازة",
     "Approved": "معتمد",
     "Pending": "قيد الانتظار",
     "Rejected": "مرفوض",
-
     "Project Details": "تفاصيل المشروع",
     "Project Manager": "مدير المشروع",
     "Project Status": "حالة المشروع",
     "Start Date": "تاريخ البدء",
     "End Date": "تاريخ الانتهاء",
     "Progress": "التقدم",
-
     "Device Information": "معلومات الجهاز",
     "Device Type": "نوع الجهاز",
     "Device Status": "حالة الجهاز",
     "Last Sync": "آخر مزامنة",
     "Battery Level": "مستوى البطارية",
-
     "Report Type": "نوع التقرير",
     "Report Period": "فترة التقرير",
     "Generate Report": "إنشاء التقرير",
     "Export Report": "تصدير التقرير",
     "Report Summary": "ملخص التقرير",
-
     "Mark as Read": "تعليم كمقروء",
     "Clear All": "مسح الكل",
     "No Notifications": "لا توجد إشعارات",
@@ -405,7 +388,6 @@
     "Check Out Datetime": "تاريخ ووقت الانصراف",
     "Work Hours": "ساعات العمل",
     "Is Late": "متأخر",
-
     "Coverage Request": "طلب تغطية",
     "Resignation": "استقالة",
     "Resignations": "الاستقالات",
@@ -415,7 +397,6 @@
     "Approval Flow": "سير العمل",
     "Policy": "السياسة",
     "Policies": "السياسات",
-  
     "Insurance Companies": "شركات التأمين الطبي",
     "Loan Request": "طلب قرض",
     "Loan Requests": "طلبات القروض",
@@ -430,11 +411,8 @@
     "Slides": "الشرائح",
     "Slide": "الشريحة",
     "Request Types": "أنواع الطلبات",
- 
     "Request Status": "حالة الطلب",
- 
     "Request Date": "تاريخ الطلب",
-   
     "Updated By": "تحديث بواسطة",
     "Current Approver Role": "دور الموافق الحالي",
     "Remaining Levels": "المستويات المتبقية",
@@ -475,35 +453,28 @@
     "Expiring Soon": "تنتهي قريباً",
     "With Parent Company": "مع شركة أم",
     "Capital Above 100k": "رأس المال أكثر من 100 ألف",
-
     "Export": "تصدير",
-     "Unified Number (700)": "الرقم الموحد (700)",
+    "Unified Number (700)": "الرقم الموحد (700)",
     "Expiry Date (Hijri)": "نهاية السجل التجاري (هجري)",
     "Municipal Licenses": "رخص البلديات",
     "Municipal License": "رخصة بلدية",
-  
     "License Number B": "رقم رخصة البلدية",
     "Expiry Date L(Hijri)": "تاريخ انتهاء الرخصة (هجري)",
     "Expiry Date L(Gregorian)": "تاريخ انتهاء الرخصة (ميلادي)",
     "VAT": "الضريبة المضافة",
- 
     "Without VAT": "بدون ضريبة مضافة",
     "Postal Subscriptions": "اشتراكات البريد",
     "Postal Subscription": "اشتراك بريد",
-
     "Subscription Number": "رقم الاشتراك",
-
     "Without Notes": "بدون ملاحظات",
     "Private Licenses": "التراخيص الخاصة",
     "Private License": "ترخيص خاص",
- 
     "License Name": "اسم الترخيص",
     "License Name C": "(اسم الترخيص)جهة الترخيص",
     "License Number": "رقم الترخيص",
     "Issue Date": "تاريخ الإصدار",
     "National Addresses": "العنوان الوطني",
     "National Address": "عنوان وطني",
-   
     "Website": "الموقع الإلكتروني",
     "Platform Username": "اسم دخول المنصة",
     "Platform Password": "الرقم السري للمنصة",
@@ -533,17 +504,14 @@
     "AB+": "AB+",
     "AB-": "AB-",
     "Job Title": "المسمى الوظيفي",
-
     "Social Insurance Type": "الاشتراك في المؤسسة العامة للتامينات الاجتماعية",
     "Insurance Company": "شركة التأمين الاجتماعي",
     "Insurance Company M": "شركة التأمين الطبي",
     "Insurance registration date": "تاريخ التسجيل في التأمينات",
     "Date of exclusion from insurance": "تاريخ الاستبعاد من التأمين",
-
     "Parents Insurance": "تأمين الوالدين",
     "No Insurance": "بدون تأمينات اجتماعية",
     "Social Insurance Subscriber": "مشترك في التأمين الاجتماعي",
-
     "Developer": "مطور",
     "Designer": "مصمم",
     "AlRajhi": "بنك الراجحي",
@@ -555,12 +523,10 @@
     "AlBilad Bank": "بنك البلاد",
     "AlInma Bank": "مصرف الإنماء",
     "Bank AlJazira": "بنك الجزيرة",
-    "Saudi British Bank":"البنك السعودي البريطاني",
+    "Saudi British Bank": "البنك السعودي البريطاني",
     "Meem Bank": "بنك ميم",
-
     "View Employee": "عرض الموظف",
     "Asset Name": "اسم العُهد",
-
     "Serial Number": "الرقم التسلسلي",
     "Purchase Date": "تاريخ الشراء",
     "Asset Value": "القيمة المالية",
@@ -568,48 +534,40 @@
     "Asset Status": "حالة العُهد",
     "Assets": "العُهد",
     "Asset": "العُهد",
-
     "Assigned Date": "تاريخ التسليم",
     "Expected Return Date": "تاريخ الاسترجاع المتوقع",
     "Returned Date": "تاريخ الاسترجاع",
     "Condition at Assignment": "حالة العُهد عند التسليم",
     "Condition at Return": "حالة العُهد عند الاسترجاع",
-
     "Asset Assignments": "تعيينات العُهد",
     "Asset Assignment": "تعيين العُهد",
     "Assets Management": "إدارة العُهد",
-
-
     "Asset has been saved successfully.": "تم حفظ العهد بنجاح.",
     "Asset has been deleted successfully.": "تم حذف العهد بنجاح.",
-   
-
     "Number of all registered employees": "عدد جميع الموظفين المسجلين",
     "Employees currently active": "الموظفين النشطين حالياً",
     "Employees who are currently excluded": "الموظفين المستبعدين حالياً",
-
     "marital_status.single": "أعزب",
     "marital_status.married": "متزوج",
     "marital_status.divorced": "مطلق",
     "marital_status.widowed": "أرمل",
     "Marital Status": "الحالة الاجتماعية",
-   
-        "unauthorized_approval": "أنت غير مخول بالموافقة على هذا الطلب.",
-        "approver_roles": "أدوارك: :roles، الدور المطلوب: :required_role",
-        "approval_error": "خطأ في الموافقة",
-        "approval_status": "لا يمكن الموافقة على هذا الطلب لأنه بالفعل :status.",
-        "approval_status_message": "لا يمكنك الموافقة على هذا الطلب، حالته الحالية: :status.",
-        "approval_flow_not_configured": "لم يتم تكوين سير الموافقة بشكل صحيح لهذا النوع من الطلبات.",
+    "unauthorized_approval": "أنت غير مخول بالموافقة على هذا الطلب.",
+    "approver_roles": "أدوارك: :roles، الدور المطلوب: :required_role",
+    "approval_error": "خطأ في الموافقة",
+    "approval_status": "لا يمكن الموافقة على هذا الطلب لأنه بالفعل :status.",
+    "approval_status_message": "لا يمكنك الموافقة على هذا الطلب، حالته الحالية: :status.",
+    "approval_flow_not_configured": "لم يتم تكوين سير الموافقة بشكل صحيح لهذا النوع من الطلبات.",
     "approval_flow_not_configured_message": "لا يمكن معالجة هذا الطلب لأن سير الموافقة غير مضبوط بشكل صحيح.",
-        "already_approved": "لقد قمت بالموافقة على هذا الطلب مسبقًا.",
-        "already_approved_message": "لا يمكنك الموافقة على هذا الطلب مرة أخرى، لأنه تمت الموافقة عليه بالفعل.",
+    "already_approved": "لقد قمت بالموافقة على هذا الطلب مسبقًا.",
+    "already_approved_message": "لا يمكنك الموافقة على هذا الطلب مرة أخرى، لأنه تمت الموافقة عليه بالفعل.",
     "insufficient_leave_balance": "رصيد الإجازات غير كافٍ للموافقة. الحد الأدنى المطلوب: :required_balance، رصيدك الحالي: :current_balance.",
     "insufficient_leave_balance_message": "لا يمكنك الموافقة على هذا الطلب بسبب عدم كفاية رصيد الإجازات. الحد الأدنى المطلوب: :required_balance، رصيدك الحالي: :current_balance.",
     "comments_required": "التعليقات مطلوبة لإتمام هذه الموافقة.",
     "comments_required_message": "يجب إضافة تعليق قبل الموافقة على هذا الطلب.",
     "no_policy_defined": "لا توجد سياسة محددة لهذا النوع من الطلبات.",
     "no_policy_defined_message": "لا يمكن معالجة هذا الطلب لأنه لا توجد سياسة معتمدة لهذا النوع من الطلبات.",
-"Number of Employees in one shift": "عدد الموظفين في الوردية الواحدة",
+    "Number of Employees in one shift": "عدد الموظفين في الوردية الواحدة",
     "Covered": "مشمول",
     "Area": "المنطقة",
     "Excluded": "مستبعد",
@@ -622,7 +580,6 @@
     "Administration Attachments": "مرفقات الإدارة",
     "Not Covered": "غير مشمول",
     "Without Description": "بدون وصف",
- 
     "Operations Manager": "مدير العمليات",
     "Liaison Officer": "معقب",
     "Security Manager": "مدير أمن",
@@ -637,34 +594,28 @@
     "Basic Salary Range": "نطاق الراتب الأساسي",
     "Minimum Salary": "الراتب الأدنى",
     "Maximum Salary": "الراتب الأقصى",
-
     "With Social Insurance": "بالتأمين الاجتماعي",
     "Without Social Insurance": "بدون تأمين اجتماعي",
-
     "All Job Titles": "كل المسميات الوظيفية",
     "All Banks": "كل البنوك",
     "All Blood Types": "كل فصائل الدم",
     "All Parents Insurance Options": "كل خيارات تأمين الوالدين",
     "All Companies": "كل الشركات",
-
     "Medical Insurance Company": "شركة التأمين الطبي",
     "Insurance Company Name": "اسم شركة التأمين",
     "Subscriber number": "رقم المشترك",
     "Employee Notifications": "إشعارات الموظف",
     "Leave Details": "تفاصيل الإجازة",
     "Loan Details": "تفاصيل القرض",
-
     "All Records": "كل السجلات",
     "Import Employees": "استيراد الموظفين",
     "Upload Excel File": "تحميل ملف Excel",
     "Use IDs from file": "استخدام المعرفات من الملف",
     "success": "نجاح",
-
     "Exclusion": "الاستبعاد",
     "Exclusions": "الاستبعادات",
     "Exclusion Type": "نوع الاستبعاد",
     "Exclusion Date": "تاريخ الاستبعاد",
-  
     "Termination": "إنهاء خدمة",
     "Retirement": "تقاعد",
     "Exclusion Details": "تفاصيل الاستبعاد",
@@ -673,34 +624,24 @@
     "Limited": "محدود",
     "Unlimited": "غير محدود",
     "Unassigned Employees": "الموظفين غير المعينين",
-   "Assigned Employees": "الموظفين المعينين",
-   "Approve": "الموافقة",
+    "Assigned Employees": "الموظفين المعينين",
+    "Approve": "الموافقة",
     "Reject": "رفض",
- 
     "Coverage Reason": "سبب التغطية",
     "Select Replacement Employee": "اختر الموظف البديل",
-
-
-
     "Submit": "إرسال",
-  
-
     "Off": "إجازة",
-
     "Paid Leave": "إجازة مدفوعة",
     "Unpaid Leave": "إجازة غير مدفوعة",
-  
     "Training or Course": "التدريب أو الدورة",
     "Shortage in Staff": "نقص في الموظفين",
     "Employee Absent": "غياب موظف",
     "Emergency Leave": "إجازة طارئة",
     "Unknown": "غير معروف",
-
     "Search for an employee...": "ابحث عن موظف...",
     "Pending Approvals": "الموافقات المعلقة",
     "Replacement Required": "مطلوب بديل",
     "Replacement Not Required": "لا يتطلب بديل",
-
     "At least one attachment is required.": "يجب إضافة مرفق واحد على الأقل.",
     "You can upload a maximum of 5 attachments.": "يمكنك تحميل ما يصل إلى 5 مرفقات.",
     "Export Attendance": "تصدير الحضور"

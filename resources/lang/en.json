@@ -25,7 +25,19 @@
     "Active": "Active",
     "Range": "Range",
     "Manage Zones": "Manage Zones",
-
+    "bank.AlRajhi": "Al Rajhi Bank",
+    "bank.SNB": "Saudi National Bank",
+    "bank.ANB": "Arab National Bank",
+    "bank.SABB": "Saudi British Bank",
+    "bank.BSF": "Banque Saudi Fransi",
+    "bank.RiyadBank": "Riyad Bank",
+    "bank.AlInma": "Alinma Bank",
+    "bank.AlJazira": "Bank Al Jazira",
+    "bank.GIB": "Gulf International Bank",
+    "bank.AlBilad": "Bank Al Bilad",
+    "bank.NBD": "Emirates NBD",
+    "bank.Meem": "Meem Bank",
+    "bank.Mashreq": "Mashreq Bank",
     "Type": "Type",
     "Morning Start": "Morning Start",
     "Morning End": "Morning End",
@@ -37,7 +49,6 @@
     "Last Time Out (Minutes)": "Last Time Out (Minutes)",
     "Start Date": "Start Date",
     "Number of Employees": "Number of Employees",
- 
     "Inactive": "Inactive",
     "Morning": "Morning",
     "Evening": "Evening",
@@ -126,7 +137,6 @@
     "Sick": "Sick",
     "Unpaid": "Unpaid",
     "Employee": "Employee",
-
     "Date": "Date",
     "Check In": "Check In",
     "Check Out": "Check Out",
@@ -138,11 +148,9 @@
     "From": "From",
     "To": "To",
     "Employee": "Employee",
-
     "Start Date": "Start Date",
     "End Date": "End Date",
     "Status": "Status",
-
     "Absent": "Absent",
     "Transferred": "Transferred",
     "Added By": "Added By",
@@ -167,7 +175,6 @@
     "Employees": "Employees",
     "Employee": "Employee",
     "Zones": "Zones",
-
     "Shifts": "Shifts",
     "Shift": "Shift",
     "Attachments": "Attachments",
@@ -257,8 +264,6 @@
     "Zone & Project Management": "Zone & Project Management",
     "Employee Project Records": "Employee Project Records",
     "Project": "Project",
-
-   
     "Start Date": "Start Date",
     "End Date": "End Date",
     "Banks": "Banks",
@@ -294,16 +299,14 @@
     "Rejected": "Rejected",
     "Requests": "Requests",
     "Request Management": "Request Management",
-
     "management": "Management",
     "title": "Slide Title",
     "description": "Slide Description",
     "image_url": "Slide Image",
     "is_active": "Active",
-    "created_at": "Created At", 
-    "title_placeholder" :"Enter slide title",
-    "description_placeholder" : "Enter slide description",
-
+    "created_at": "Created At",
+    "title_placeholder": "Enter slide title",
+    "description_placeholder": "Enter slide description",
     "notification": {
         "resource_label": "Notification",
         "resource_plural_label": "Notifications",
@@ -335,8 +338,4 @@
     "بدون تأمين": "Without Insurance",
     "شركة التأمين": "Insurance Company",
     "كل الشركات": "All Companies"
-
-
-  
-
 }
