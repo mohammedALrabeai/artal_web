@@ -16,24 +16,35 @@ class IbanHelper
         $bankCode = substr(strtoupper(str_replace(' ', '', $iban)), 4, 2);
 
         return match ($bankCode) {
-            '10' => \App\Enums\Bank::SNB->value,        // البنك الأهلي السعودي
-            '20' => \App\Enums\Bank::ANB->value,        // البنك العربي الوطني
-            '30', '45' => \App\Enums\Bank::SABB->value, // البنك السعودي البريطاني (ساب)
-            '40' => \App\Enums\Bank::BSF->value,        // البنك السعودي الفرنسي
-            '50' => \App\Enums\Bank::RiyadBank->value,  // بنك الرياض
-            '60' => \App\Enums\Bank::Alinma->value,     // مصرف الإنماء
-            '65' => \App\Enums\Bank::Mashreq->value,    // بنك المشرق
-            '70' => \App\Enums\Bank::AlJazira->value,   // بنك الجزيرة
-            '80' => \App\Enums\Bank::AlRajhi->value,    // مصرف الراجحي
-            '85' => \App\Enums\Bank::NBD->value,        // بنك الإمارات دبي الوطني
-            '90' => \App\Enums\Bank::Meem->value,       // بنك ميم (GIB)
-            '15' => \App\Enums\Bank::AlBilad->value,    // بنك البلاد
-            '83' => \App\Enums\Bank::SBI->value,        // بنك الدولة الهندي
-            '86' => \App\Enums\Bank::JPM->value,        // جي بي مورغان تشيس
-            '87' => \App\Enums\Bank::ICBC->value,       // البنك الصناعي والتجاري الصيني
+            '10' => Bank::SNB->value,             // البنك الأهلي السعودي
+            '15' => Bank::AlBilad->value,         // بنك البلاد
+            '20' => Bank::ANB->value,             // البنك العربي الوطني
+            '30', '45' => Bank::SAB->value,       // البنك السعودي البريطاني (ساب)
+            '40' => Bank::BSF->value,             // البنك السعودي الفرنسي
+            '50' => Bank::RiyadBank->value,       // بنك الرياض
+            '60', '05' => Bank::Alinma->value,    // مصرف الإنماء
+            '65' => Bank::Mashreq->value,         // بنك المشرق
+            '70' => Bank::AlJazira->value,        // بنك الجزيرة
+            '80' => Bank::AlRajhi->value,         // مصرف الراجحي
+            '85' => Bank::EmiratesNBD->value,     // بنك الإمارات دبي الوطني
+            '86' => Bank::JPMorgan->value,        // جي بي مورغان تشيس
+            '87' => Bank::ICBC->value,            // البنك الصناعي والتجاري الصيني
+            '83' => Bank::SBI->value,             // بنك الدولة الهندي
+            '90' => Bank::Meem->value,            // بنك الخليج الدولي (ميم)
+            '77' => Bank::STC->value,             // بنك STC
+            '73' => Bank::D360->value,            // بنك D360
+            '88' => Bank::BNPParibas->value,      // بنك BNP باريبا
+            '89' => Bank::DeutscheBank->value,    // دويتشه بنك
+            '91' => Bank::BankMuscat->value,      // بنك مسقط
+            '92' => Bank::FAB->value,             // بنك أبوظبي الأول
+            '93' => Bank::NBK->value,             // بنك الكويت الوطني
+            '94' => Bank::NBB->value,             // بنك البحرين الوطني
+            '95' => Bank::NBP->value,             // بنك باكستان الوطني
+            '96' => Bank::QNB->value,             // بنك قطر الوطني
             default => null,
         };
     }
+
 
 
     /**
