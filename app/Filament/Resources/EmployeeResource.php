@@ -176,7 +176,11 @@ class EmployeeResource extends Resource
                                     ->values()
                                     ->toArray()
                             )
-                            ->required(),
+                            ->required()
+                            ->reactive()
+                            ->helperText(fn($state) => \App\Helpers\IbanHelper::translateBankCode($state)
+                                ? '🧾 ' . __('Bank: ') . \App\Helpers\IbanHelper::translateBankCode($state)
+                                : null),
 
                         // Forms\Components\TextInput::make('bank_account')
                         // ->label(__('Bank Account'))
