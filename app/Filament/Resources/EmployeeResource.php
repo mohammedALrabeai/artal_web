@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use Illuminate\Validation\Rule;
+use App\Rules\ValidSaudiIban;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class EmployeeResource extends Resource
@@ -102,7 +104,7 @@ class EmployeeResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('id')
                             ->label(__('Identifier (leave empty to auto-generate)'))
-                            ->visible(fn (string $context): bool => $context === 'create'),
+                            ->visible(fn(string $context): bool => $context === 'create'),
                         Forms\Components\TextInput::make('first_name')
                             ->label(__('First Name'))
                             ->required(),
@@ -140,7 +142,7 @@ class EmployeeResource extends Resource
                             ->required(),
                         Forms\Components\Select::make('marital_status')
                             ->label(__('Marital Status')) // استخدام الترجمة
-                            ->options(collect(MaritalStatus::cases())->mapWithKeys(fn ($status) => [
+                            ->options(collect(MaritalStatus::cases())->mapWithKeys(fn($status) => [
                                 $status->value => $status->label(),
                             ]))
                             ->nullable()
@@ -151,30 +153,59 @@ class EmployeeResource extends Resource
                             ->label(__('Job Title'))
                             ->options(
                                 collect(\App\Enums\JobTitle::cases())
-                                    ->mapWithKeys(fn ($jobTitle) => [$jobTitle->value => $jobTitle->label()])
+                                    ->mapWithKeys(fn($jobTitle) => [$jobTitle->value => $jobTitle->label()])
                                     ->toArray()
                             )
                             ->required()
+
                             ->searchable(),
 
-                        Forms\Components\Select::make('bank_name')
+                        Forms\Components\TextInput::make('bank_name')
                             ->label(__('Bank Name'))
-                            ->options(
+                            ->datalist(
                                 collect(\App\Enums\Bank::cases())
-                                    ->mapWithKeys(fn ($bank) => [$bank->value => $bank->label()])
+                                    ->map(fn($bank) => $bank->label())
+                                    ->merge(
+                                        Employee::query()
+                                            ->distinct()
+                                            ->pluck('bank_name')
+                                            ->filter()
+                                            ->unique()
+                                    )
+                                    ->unique()
+                                    ->values()
                                     ->toArray()
                             )
                             ->required(),
 
+                        // Forms\Components\TextInput::make('bank_account')
+                        // ->label(__('Bank Account'))
+                        // ->required()
+                        // ->rule(new ValidSaudiIban())
+                        // ->reactive()
+                        // ->afterStateUpdated(function ($state, callable $set) {
+                        //     $set('bank_name', \App\Helpers\IbanHelper::detectBankFromIban($state));
+                        // }),
                         Forms\Components\TextInput::make('bank_account')
                             ->label(__('Bank Account'))
-                            ->required(),
+                            ->required()
+                            ->rule(new ValidSaudiIban())
+                            ->reactive()
+                            ->helperText(fn($state) => \App\Helpers\IbanHelper::detectBankFromIban($state)
+                                ? '🧾 البنك: ' . \App\Helpers\IbanHelper::detectBankFromIban($state)
+                                : null),
+
+                        TextInput::make('bank_name_display')
+                            ->label('')
+                            ->dehydrated(false)
+                            ->visible(false)
+                            ->helperText(fn($get) => $get('bank_name_display') ? '🧾 ' . __('Bank: ') . $get('bank_name_display') : null),
 
                         Forms\Components\Select::make('blood_type')
                             ->label(__('Blood Type'))
                             ->options(
                                 collect(\App\Enums\BloodType::cases())
-                                    ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
+                                    ->mapWithKeys(fn($bloodType) => [$bloodType->value => $bloodType->label()])
                                     ->toArray()
                             )
 
@@ -207,7 +238,7 @@ class EmployeeResource extends Resource
                             ->required()
                             ->searchable()
                             ->placeholder(__('Select Commercial Record'))
-                            ->preload()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->preload()->visible(fn($get) => $get('insurance_type') === 'commercial_record'),
 
                         // Forms\Components\TextInput::make('insurance_company_name')
                         //     ->label(__('Insurance Company Name'))
@@ -216,13 +247,13 @@ class EmployeeResource extends Resource
 
                         Forms\Components\TextInput::make('insurance_number')
                             ->label(__('Subscriber number'))
-                            ->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->visible(fn($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_start_date')
-                            ->label(__('Insurance registration date'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('Insurance registration date'))->visible(fn($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\DatePicker::make('insurance_end_date')
-                            ->label(__('Date of exclusion from insurance'))->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->label(__('Date of exclusion from insurance'))->visible(fn($get) => $get('insurance_type') === 'commercial_record'),
 
                         Forms\Components\Select::make('insurance_company_id')
                             ->label(__('Insurance Company M'))
@@ -233,16 +264,16 @@ class EmployeeResource extends Resource
                             ->placeholder('اختر شركة التأمين') // النص الافتراضي
                             ->nullable() // السماح للحقل بأن يكون فارغًا
                             ->searchable() // دعم البحث
-                            ->preload()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->preload()->visible(fn($get) => $get('insurance_type') === 'commercial_record'),
                         Forms\Components\Select::make('parent_insurance')
                             ->label(__('Parents Insurance'))
                             ->options(
                                 collect(\App\Enums\ParentInsurance::cases())
-                                    ->mapWithKeys(fn ($insurance) => [$insurance->value => $insurance->label()])
+                                    ->mapWithKeys(fn($insurance) => [$insurance->value => $insurance->label()])
                                     ->toArray()
                             )
                             ->nullable()
-                            ->searchable()->visible(fn ($get) => $get('insurance_type') === 'commercial_record'),
+                            ->searchable()->visible(fn($get) => $get('insurance_type') === 'commercial_record'),
                     ])
                     ->columns(2),
 
@@ -263,7 +294,7 @@ class EmployeeResource extends Resource
                             ->minDate(now()) // لضمان اختيار تاريخ مستقبلي
                             ->displayFormat('Y-m-d')
                             ->placeholder(__('Select contract end date'))
-                            ->visible(fn ($get) => $get('contract_type') === 'limited'),
+                            ->visible(fn($get) => $get('contract_type') === 'limited'),
 
                         Forms\Components\DatePicker::make('actual_start')
                             ->label(__('Actual Start'))
@@ -436,15 +467,15 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
                     ->sortable()
-                      ->copyable()
+                    ->copyable()
                     ->copyMessageDuration(1500)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Full Name'))
                     ->getStateUsing(function ($record) {
-                        return $record->first_name.' '.
-                            $record->father_name.' '.
-                            $record->grandfather_name.' '.
+                        return $record->first_name . ' ' .
+                            $record->father_name . ' ' .
+                            $record->grandfather_name . ' ' .
                             $record->family_name;
                     })
                     // ->searchable()
@@ -473,7 +504,7 @@ class EmployeeResource extends Resource
                     ->sortable()
                     ->copyable()
                     ->copyMessageDuration(1500)
-                // ->searchable()
+                    // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('current_project')
@@ -543,8 +574,8 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('is_excluded')
                     ->badge()
                     ->label(__('Excluded'))
-                    ->getStateUsing(fn ($record) => $record->isExcluded() ? __('Yes') : __('No'))
-                    ->color(fn ($record) => $record->isExcluded() ? 'danger' : 'success')
+                    ->getStateUsing(fn($record) => $record->isExcluded() ? __('Yes') : __('No'))
+                    ->color(fn($record) => $record->isExcluded() ? 'danger' : 'success')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -574,7 +605,8 @@ class EmployeeResource extends Resource
                 // ,
                 Tables\Columns\TextColumn::make('marital_status')
                     ->label(__('Marital Status'))
-                    ->formatStateUsing(fn ($state) => $state ? MaritalStatus::fromArabic($state)?->label() ?? '-' : '-'
+                    ->formatStateUsing(
+                        fn($state) => $state ? MaritalStatus::fromArabic($state)?->label() ?? '-' : '-'
                     )
                     ->sortable()
                     ->searchable()
@@ -730,7 +762,7 @@ class EmployeeResource extends Resource
 
                 Tables\Columns\TextColumn::make('mobile_number')
                     ->label(__('Mobile Number'))
-                      ->copyable()
+                    ->copyable()
                     ->copyMessageDuration(1500)
                     ->searchable(),
 
@@ -741,7 +773,7 @@ class EmployeeResource extends Resource
 
                 Tables\Columns\TextColumn::make('email')
                     ->label(__('Email'))
-                      ->copyable()
+                    ->copyable()
                     ->copyMessageDuration(1500)
                     ->searchable(),
 
@@ -808,7 +840,7 @@ class EmployeeResource extends Resource
 
                 Tables\Filters\Filter::make('excluded')
                     ->label(__('Excluded Employees'))
-                    ->query(fn ($query) => $query->whereHas('exclusions', fn ($q) => $q->where('status', Exclusion::STATUS_APPROVED)))
+                    ->query(fn($query) => $query->whereHas('exclusions', fn($q) => $q->where('status', Exclusion::STATUS_APPROVED)))
                     ->toggle(),
                 SelectFilter::make('added_by')
                     ->label(__('Added By'))
@@ -817,11 +849,11 @@ class EmployeeResource extends Resource
                 // فلتر الموظفين الذين لديهم تأمين أو ليس لديهم
                 Filter::make('with_insurance')
                     ->label(__('With Insurance'))
-                    ->query(fn ($query) => $query->whereNotNull('insurance_company_id')),
+                    ->query(fn($query) => $query->whereNotNull('insurance_company_id')),
 
                 Filter::make('without_insurance')
                     ->label(__('Without Insurance'))
-                    ->query(fn ($query) => $query->whereNull('insurance_company_id')),
+                    ->query(fn($query) => $query->whereNull('insurance_company_id')),
 
                 // فلتر حسب شركات التأمين الطبي
                 SelectFilter::make('insurance_company_id')
@@ -842,7 +874,7 @@ class EmployeeResource extends Resource
                     ->label(__('Job Title'))
                     ->options(
                         collect(\App\Enums\JobTitle::cases())
-                            ->mapWithKeys(fn ($jobTitle) => [$jobTitle->value => $jobTitle->label()])
+                            ->mapWithKeys(fn($jobTitle) => [$jobTitle->value => $jobTitle->label()])
                             ->toArray()
                     )
                     ->placeholder(__('All Job Titles'))
@@ -853,7 +885,7 @@ class EmployeeResource extends Resource
                     ->label(__('Bank Name'))
                     ->options(
                         collect(\App\Enums\Bank::cases())
-                            ->mapWithKeys(fn ($bank) => [$bank->value => $bank->label()])
+                            ->mapWithKeys(fn($bank) => [$bank->value => $bank->label()])
                             ->toArray()
                     )
                     ->placeholder(__('All Banks'))
@@ -864,7 +896,7 @@ class EmployeeResource extends Resource
                     ->label(__('Blood Type'))
                     ->options(
                         collect(\App\Enums\BloodType::cases())
-                            ->mapWithKeys(fn ($bloodType) => [$bloodType->value => $bloodType->label()])
+                            ->mapWithKeys(fn($bloodType) => [$bloodType->value => $bloodType->label()])
                             ->toArray()
                     )
                     ->placeholder(__('All Blood Types'))
@@ -873,18 +905,18 @@ class EmployeeResource extends Resource
                 // فلتر حسب حالة التأمين الاجتماعي
                 Filter::make('with_social_insurance')
                     ->label(__('With Social Insurance'))
-                    ->query(fn ($query) => $query->whereNotNull('insurance_number')),
+                    ->query(fn($query) => $query->whereNotNull('insurance_number')),
 
                 Filter::make('without_social_insurance')
                     ->label(__('Without Social Insurance'))
-                    ->query(fn ($query) => $query->whereNull('insurance_number')),
+                    ->query(fn($query) => $query->whereNull('insurance_number')),
 
                 // فلتر حسب تأمين الوالدين
                 SelectFilter::make('parent_insurance')
                     ->label(__('Parents Insurance'))
                     ->options(
                         collect(\App\Enums\ParentInsurance::cases())
-                            ->mapWithKeys(fn ($insurance) => [$insurance->value => $insurance->label()])
+                            ->mapWithKeys(fn($insurance) => [$insurance->value => $insurance->label()])
                             ->toArray()
                     )
                     ->placeholder(__('All Parents Insurance Options'))
@@ -894,16 +926,16 @@ class EmployeeResource extends Resource
                     ->form([
                         Forms\Components\DatePicker::make('start_date')->label(__('Start Date')),
                     ])
-                    ->query(fn ($query, array $data) => $query
-                        ->when(! empty($data['start_date']), fn ($query) => $query->where('contract_start', '>=', $data['start_date']))),
+                    ->query(fn($query, array $data) => $query
+                        ->when(! empty($data['start_date']), fn($query) => $query->where('contract_start', '>=', $data['start_date']))),
 
                 Filter::make('contract_end')
                     ->label(__('Contract Ends Before'))
                     ->form([
                         Forms\Components\DatePicker::make('end_date')->label(__('End Date')),
                     ])
-                    ->query(fn ($query, array $data) => $query
-                        ->when(! empty($data['end_date']), fn ($query) => $query->where('contract_end', '<=', $data['end_date']))),
+                    ->query(fn($query, array $data) => $query
+                        ->when(! empty($data['end_date']), fn($query) => $query->where('contract_end', '<=', $data['end_date']))),
 
                 // فلتر حسب الراتب الأساسي
                 Filter::make('basic_salary')
@@ -912,9 +944,9 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('min_salary')->label(__('Minimum Salary'))->numeric(),
                         Forms\Components\TextInput::make('max_salary')->label(__('Maximum Salary'))->numeric(),
                     ])
-                    ->query(fn ($query, array $data) => $query
-                        ->when($data['min_salary'], fn ($query, $min) => $query->where('basic_salary', '>=', $min))
-                        ->when($data['max_salary'], fn ($query, $max) => $query->where('basic_salary', '<=', $max))),
+                    ->query(fn($query, array $data) => $query
+                        ->when($data['min_salary'], fn($query, $min) => $query->where('basic_salary', '>=', $min))
+                        ->when($data['max_salary'], fn($query, $max) => $query->where('basic_salary', '<=', $max))),
 
             ])
             ->actions([
@@ -923,12 +955,12 @@ class EmployeeResource extends Resource
                         ->label('عرض المسار')
                         ->color('primary')
                         ->icon('heroicon-o-map')
-                        ->url(fn ($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
+                        ->url(fn($record) => route('filament.pages.employee-paths', ['employeeId' => $record->id])),
 
                     Tables\Actions\Action::make('view')
                         ->label(__('View'))
                         ->icon('heroicon-o-eye')
-                        ->url(fn ($record) => static::getUrl('view', ['record' => $record->id]))
+                        ->url(fn($record) => static::getUrl('view', ['record' => $record->id]))
                         ->openUrlInNewTab(false),
                     Tables\Actions\Action::make('exportYearly')
                         ->label('تصدير الحضور السنوي')
@@ -957,8 +989,8 @@ class EmployeeResource extends Resource
                                 ->required(),
                         ]),
                     Tables\Actions\Action::make('toggle_exclusion')
-                        ->label(fn ($record) => $record->employeeStatus?->exclude_from_absence_report ? '❌ إزالة الاستثناء' : '✅ استثناء من التقرير')
-                        ->color(fn ($record) => $record->employeeStatus?->exclude_from_absence_report ? 'danger' : 'success')
+                        ->label(fn($record) => $record->employeeStatus?->exclude_from_absence_report ? '❌ إزالة الاستثناء' : '✅ استثناء من التقرير')
+                        ->color(fn($record) => $record->employeeStatus?->exclude_from_absence_report ? 'danger' : 'success')
                         ->icon('heroicon-o-adjustments-horizontal')
                         ->action(function ($record) {
                             $currentState = $record->employeeStatus?->exclude_from_absence_report ?? false;
@@ -1017,13 +1049,13 @@ class EmployeeResource extends Resource
                     ])
                     ->action(function (\Illuminate\Database\Eloquent\Collection $records, array $data): void {
                         // جمع قائمة بالمعرفات (external_user_ids) كـ Strings
-                        $externalUserIds = $records->pluck('id')->filter()->map(fn ($id) => (string) $id)->toArray();
+                        $externalUserIds = $records->pluck('id')->filter()->map(fn($id) => (string) $id)->toArray();
                         Log::info('External User IDs:', $externalUserIds);
 
                         if (! empty($externalUserIds)) {
                             // إعداد الهيدرز
                             $headers = [
-                                'Authorization' => 'Basic '.env('ONESIGNAL_REST_API_KEY'),
+                                'Authorization' => 'Basic ' . env('ONESIGNAL_REST_API_KEY'),
                                 'Content-Type' => 'application/json; charset=utf-8',
                             ];
 
@@ -1115,7 +1147,6 @@ class EmployeeResource extends Resource
                                 }
                             }
                         }
-
                     })
                     ->requiresConfirmation()
                     ->color('primary'),
@@ -1196,6 +1227,29 @@ class EmployeeResource extends Resource
             RelationManagers\AssetAssignmentsRelationManager::class,
 
         ];
+    }
+
+    function detectBankFromIban(?string $iban): ?string
+    {
+        if (!$iban || strlen($iban) < 6) return null;
+
+        // استخراج الكود البنكي (الموقع 5 و6 في الآيبان السعودي)
+        $bankCode = substr($iban, 4, 2);
+
+        $banks = [
+            '80' => 'AlRajhi',
+            '10' => 'NCB',
+            '50' => 'Riyad Bank',
+            '30' => 'SABB',
+            '40' => 'BSF',
+            '20' => 'ANB',
+            '60' => 'AlInma',
+            '70' => 'Bank AlJazira',
+            '90' => 'Meem',
+            // أضف المزيد حسب الحاجة
+        ];
+
+        return $banks[$bankCode] ?? null;
     }
 
     //     protected function getHeaderWidgets(): array
