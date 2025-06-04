@@ -15,24 +15,26 @@ class IbanHelper
 
         $bankCode = substr(strtoupper(str_replace(' ', '', $iban)), 4, 2);
 
-        $banks = [
-            '10' => Bank::SNB->value,
-            '20' => Bank::ANB->value,
-            '30' => Bank::SABB->value,
-            '40' => Bank::BSF->value,
-            '50' => Bank::RiyadBank->value,
-            '60' => Bank::AlInma->value,
-            '70' => Bank::AlJazira->value,
-            '75' => Bank::GIB->value,
-            '80' => Bank::AlRajhi->value,
-            '85' => Bank::NBD->value,
-            '90' => Bank::AlBilad->value,
-            '95' => Bank::Meem->value,
-            '65' => Bank::Mashreq->value,
-        ];
-
-        return $banks[$bankCode] ?? null;
+        return match ($bankCode) {
+            '10' => \App\Enums\Bank::SNB->value,        // البنك الأهلي السعودي
+            '20' => \App\Enums\Bank::ANB->value,        // البنك العربي الوطني
+            '30', '45' => \App\Enums\Bank::SABB->value, // البنك السعودي البريطاني (ساب)
+            '40' => \App\Enums\Bank::BSF->value,        // البنك السعودي الفرنسي
+            '50' => \App\Enums\Bank::RiyadBank->value,  // بنك الرياض
+            '60' => \App\Enums\Bank::Alinma->value,     // مصرف الإنماء
+            '65' => \App\Enums\Bank::Mashreq->value,    // بنك المشرق
+            '70' => \App\Enums\Bank::AlJazira->value,   // بنك الجزيرة
+            '80' => \App\Enums\Bank::AlRajhi->value,    // مصرف الراجحي
+            '85' => \App\Enums\Bank::NBD->value,        // بنك الإمارات دبي الوطني
+            '90' => \App\Enums\Bank::Meem->value,       // بنك ميم (GIB)
+            '15' => \App\Enums\Bank::AlBilad->value,    // بنك البلاد
+            '83' => \App\Enums\Bank::SBI->value,        // بنك الدولة الهندي
+            '86' => \App\Enums\Bank::JPM->value,        // جي بي مورغان تشيس
+            '87' => \App\Enums\Bank::ICBC->value,       // البنك الصناعي والتجاري الصيني
+            default => null,
+        };
     }
+
 
     /**
      * يعيد التسمية الكاملة للبنك بناءً على اختصاره (حسب enum Bank)

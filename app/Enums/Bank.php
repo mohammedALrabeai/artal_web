@@ -4,18 +4,21 @@ namespace App\Enums;
 
 enum Bank: string
 {
-    case AlRajhi   = 'AlRajhi';
     case SNB       = 'SNB';
     case ANB       = 'ANB';
     case SABB      = 'SABB';
     case BSF       = 'BSF';
     case RiyadBank = 'RiyadBank';
-    case AlInma    = 'AlInma';
+    case Alinma    = 'Alinma';
     case AlJazira  = 'AlJazira';
-    case GIB       = 'GIB';
-    case AlBilad   = 'AlBilad';
-    case NBD       = 'NBD';
+    case AlRajhi   = 'AlRajhi';
     case Meem      = 'Meem';
+    case AlBilad   = 'AlBilad';
+    case GIB       = 'GIB';
+    case JPM       = 'JPM';
+    case ICBC      = 'ICBC';
+    case SBI       = 'SBI';
+    case NBD       = 'NBD';
     case Mashreq   = 'Mashreq';
 
     public function label(): string
