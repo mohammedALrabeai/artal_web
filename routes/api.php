@@ -17,6 +17,7 @@ use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\EmployeeNotificationController;
 use App\Http\Controllers\EmployeeStatusController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\Api\CodeVerificationController;
 use App\Models\Employee;
 use App\Services\AttendanceService;
 use Illuminate\Http\Request;
@@ -57,6 +58,7 @@ Route::middleware(['auth:employee'])->group(function () {
 
 Route::get('zones/coordinates', [ZoneController::class, 'getActiveZonesCoordinates']);
 Route::post('zones/details', [ZoneController::class, 'getZoneDetails']);
+Route::post('/verify_zones_code', [CodeVerificationController::class, 'verify']);
 
 
 
