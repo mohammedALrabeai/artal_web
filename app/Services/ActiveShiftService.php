@@ -153,24 +153,35 @@ class ActiveShiftService
                                         $query->where('out_of_zone', true);
                                     })
                                     ->count();
-                                // $threshold = $now->copy()->subMinutes(20);
+                                    //                                 $outsideAfterMinutes = 1;                 // 👈 عدّلها متى شئت
+                                    // $threshold = $now->copy()->subMinutes($outsideAfterMinutes);
 
-                                // $outOfZoneCount = \App\Models\Attendance::query()
-                                //     ->where('zone_id',    $zone->id)
-                                //     ->where('status',     'present')
-                                //     ->whereNull('check_out')
-                                //     ->whereDate('date',   $now->toDateString())
-                                //     /* ربط مباشر بجدول الحالة بدلاً من whereHas() */
-                                //     ->join('employee_statuses as es', 'es.employee_id', '=', 'attendances.employee_id')
-                                //     ->where(function ($q) use ($threshold) {
-                                //         $q->where('es.is_inside',    false)          // خارج النطاق
-                                //         ->orWhere('es.gps_enabled', false)    ;     // GPS مُعطّل
-                                //         //   ->orWhere('es.last_seen_at', '<', $threshold); // آخر ظهور أقدم من 20 د
-                                //     })
-                                //     /* لو وُجِد احتمال تكرار سجل حضور للموظف نفسه أضف السطر التالي: */
-                                //     // ->distinct('attendances.employee_id')
-                                //     // ->count('attendances.employee_id');
-                                //     ->count();
+                                    // $outOfZoneCount = \App\Models\Attendance::query()
+                                    //     ->where('zone_id',    $zone->id)
+                                    //     ->where('status',     'present')
+                                    //     ->whereNull('check_out')
+                                    //     ->whereDate('date',   $now->toDateString())
+                                    //     ->join('employee_statuses as es', 'es.employee_id', '=', 'attendances.employee_id')
+                                    //     ->where(function ($q) use ($threshold) {
+
+                                    //         // ↙️ 1) خارج الحدود المكانية منذ أكثر من X دقيقة
+                                    //         $q->where(function ($q1) use ($threshold) {
+                                    //                $q1->where('es.is_inside', false)
+                                    //                   ->where('es.last_seen_at', '<', $threshold);
+                                    //            })
+
+                                    //         // ↙️ 2) GPS مُعطّل منذ أكثر من X دقيقة
+                                    //           ->orWhere(function ($q2) use ($threshold) {
+                                    //                $q2->where('es.gps_enabled', false)
+                                    //                   ->where('es.last_gps_status_at', '<', $threshold);
+                                    //            })
+
+                                    //         // ↙️ 3) لم يُرصد آخر ظهور منذ 20 دقيقة (يمكنك تكييفها أو إزالتها)
+                                    //           ->orWhere('es.last_seen_at', '<', $now->copy()->subMinutes(20));
+                                    //     })
+                                    //     // ->distinct('attendances.employee_id')   // فعّلها إن وُجِد احتمال تسجيلين للموظف
+                                    //     ->count();
+
 
                                 return [
                                     'id' => $zone->id,
