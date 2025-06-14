@@ -145,32 +145,32 @@ class ActiveShiftService
                                     }
                                 }
 
-                                // $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
-                                //     ->where('status', 'present')
-                                //     ->whereNull('check_out')
-                                //     ->whereDate('date', $now->toDateString())
-                                //     ->whereHas('employee', function ($query) {
-                                //         $query->where('out_of_zone', true);
-                                //     })
-                                //     ->count();
-                                $threshold = $now->copy()->subMinutes(20);
+                                $outOfZoneCount = \App\Models\Attendance::where('zone_id', $zone->id)
+                                    ->where('status', 'present')
+                                    ->whereNull('check_out')
+                                    ->whereDate('date', $now->toDateString())
+                                    ->whereHas('employee', function ($query) {
+                                        $query->where('out_of_zone', true);
+                                    })
+                                    ->count();
+                                // $threshold = $now->copy()->subMinutes(20);
 
-$outOfZoneCount = \App\Models\Attendance::query()
-    ->where('zone_id',    $zone->id)
-    ->where('status',     'present')
-    ->whereNull('check_out')
-    ->whereDate('date',   $now->toDateString())
-    /* ربط مباشر بجدول الحالة بدلاً من whereHas() */
-    ->join('employee_statuses as es', 'es.employee_id', '=', 'attendances.employee_id')
-    ->where(function ($q) use ($threshold) {
-        $q->where('es.is_inside',    false)          // خارج النطاق
-          ->orWhere('es.gps_enabled', false)    ;     // GPS مُعطّل
-        //   ->orWhere('es.last_seen_at', '<', $threshold); // آخر ظهور أقدم من 20 د
-    })
-    /* لو وُجِد احتمال تكرار سجل حضور للموظف نفسه أضف السطر التالي: */
-    // ->distinct('attendances.employee_id')
-    // ->count('attendances.employee_id');
-    ->count();
+                                // $outOfZoneCount = \App\Models\Attendance::query()
+                                //     ->where('zone_id',    $zone->id)
+                                //     ->where('status',     'present')
+                                //     ->whereNull('check_out')
+                                //     ->whereDate('date',   $now->toDateString())
+                                //     /* ربط مباشر بجدول الحالة بدلاً من whereHas() */
+                                //     ->join('employee_statuses as es', 'es.employee_id', '=', 'attendances.employee_id')
+                                //     ->where(function ($q) use ($threshold) {
+                                //         $q->where('es.is_inside',    false)          // خارج النطاق
+                                //         ->orWhere('es.gps_enabled', false)    ;     // GPS مُعطّل
+                                //         //   ->orWhere('es.last_seen_at', '<', $threshold); // آخر ظهور أقدم من 20 د
+                                //     })
+                                //     /* لو وُجِد احتمال تكرار سجل حضور للموظف نفسه أضف السطر التالي: */
+                                //     // ->distinct('attendances.employee_id')
+                                //     // ->count('attendances.employee_id');
+                                //     ->count();
 
                                 return [
                                     'id' => $zone->id,
