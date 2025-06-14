@@ -108,14 +108,16 @@ class EmployeeCoordinateController extends Controller
             ->get(['latitude', 'longitude', 'timestamp']);
 
         // ✅ جلب بيانات المنطقة (Zone) الخاصة بالموظف
-        $zone = Zone::whereHas('employees', function ($query) use ($employeeId) {
-            $query->where('employee_id', $employeeId);
-        })->first(['lat', 'longg', 'area']);
+        // $zone = Zone::whereHas('employees', function ($query) use ($employeeId) {
+        //     $query->where('employee_id', $employeeId);
+        // })->first(['lat', 'longg', 'area']);
+
+        $zone = $employee->currentZone;
         // ✅ تحويل القيم إلى double قبل الإرجاع
-        if ($zone) {
-            $zone->lat = (float) $zone->lat;
-            $zone->longg = (float) $zone->longg;
-        }
+        // if ($zone) {
+        //     $zone->lat = (float) $zone->lat;
+        //     $zone->longg = (float) $zone->longg;
+        // }
 
         return response()->json([
             'status' => 'success',
