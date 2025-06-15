@@ -6,6 +6,8 @@ use App\Models\EmployeeStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Arr;
+use App\Models\Zone;
 
 class EmployeeStatusController extends Controller
 {
@@ -62,49 +64,99 @@ class EmployeeStatusController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateStatus(Request $request)
-    {
-        // الحصول على المستخدم المُصادق عليه
-        $employee = Auth::user();
-        if (! $employee) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-     
-        $employeeId = $employee->id;
 
-        // استلام البيانات من الطلب
-        $gpsEnabled = $request->boolean('gps_enabled', false);
-        $isInside = $request->boolean('is_inside', false);
-        $lastLocation = $request->input('last_location'); // من المتوقع أن تكون بيانات الموقع JSON أو مصفوفة
 
-        // إيجاد السجل الخاص بالموظف أو إنشاؤه إذا لم يكن موجوداً
-        $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
-
-        // تحديث وقت آخر اتصال
-        $status->last_seen_at = Carbon::now('Asia/Riyadh');
-
-        // تحديث حالة GPS: إذا تغيرت القيمة يتم تحديث وقت تغيير حالة GPS
-        if ($status->gps_enabled !== $gpsEnabled) {
-            $status->gps_enabled = $gpsEnabled;
-            $status->last_gps_status_at = Carbon::now();
-        }
-
-        // تحديث حالة النطاق (is_inside) وإذا تغيرت القيمة يتم تحديث وقت تغيير حالة النطاق
-        if ($status->is_inside !== $isInside) {
-            $status->is_inside = $isInside;
-            // يمكن إضافة عمود آخر مثل zone_status_updated_at إذا أردت تتبع التغيير
-            // $status->zone_status_updated_at = Carbon::now();
-        }
-
-        // تحديث الموقع إذا تم إرساله
-        if ($lastLocation) {
-            $status->last_location = is_array($lastLocation)
-                ? json_encode($lastLocation)
-                : $lastLocation;
-        }
-
-        $status->save();
-
-        return response()->json(['message' => 'Employee status updated successfully']);
+public function updateStatus(Request $request)
+{
+    $employee = Auth::user();
+    if (! $employee) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    $employeeId = $employee->id;
+
+    $gpsEnabled = $request->boolean('gps_enabled', false);
+    $lastLocation = $request->input('last_location'); // يتوقع مصفوفة lat/long
+    $zoneId = $request->input('zone_id'); // معرف الموقع المرتبط
+    $now = Carbon::now('Asia/Riyadh');
+
+    $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
+
+    $status->last_seen_at = $now;
+
+    // تحديث حالة GPS
+    if ($status->gps_enabled !== $gpsEnabled) {
+        $status->gps_enabled = $gpsEnabled;
+        $status->last_gps_status_at = $now;
+    }
+
+    // الاحتفاظ بالموقع السابق
+    $previousLocation = $status->last_location ? json_decode($status->last_location, true) : null;
+
+    // تحديث الموقع الحالي
+    if ($lastLocation) {
+        if ($previousLocation) {
+            $status->previous_location = $status->last_location;
+        }
+        $status->last_location = is_array($lastLocation)
+            ? json_encode($lastLocation)
+            : $lastLocation;
+    }
+
+    // حساب داخل أو خارج النطاق إذا توفر zone_id وlast_location
+    if ($zoneId && $lastLocation) {
+        $zone = Zone::find($zoneId);
+        if ($zone) {
+            $currentInside = $this->isInsideZone($lastLocation, $zone);
+            $previousInside = $previousLocation
+                ? $this->isInsideZone($previousLocation, $zone)
+                : true; // إذا لا يوجد موقع سابق، نعتبره آمن
+
+            $finalInside = $currentInside || $previousInside;
+
+            // إذا تغيرت الحالة فقط
+            if ($status->is_inside !== $finalInside) {
+                $status->is_inside = $finalInside;
+                $status->zone_status_updated_at = $now; // تحتاج تضيف هذا العمود إذا أردت
+            }
+        }
+    }
+
+    $status->save();
+
+    return response()->json(['message' => 'Employee status updated successfully']);
+}
+
+
+
+
+public function isInsideZone($lastLocation, Zone $zone): bool
+{
+    // تحويل last_location إلى مصفوفة إذا كانت JSON
+    if (is_string($lastLocation)) {
+        $lastLocation = json_decode($lastLocation, true);
+    }
+
+    $lat1 = (float) Arr::get($lastLocation, 'lat');
+    $lon1 = (float) Arr::get($lastLocation, 'long');
+
+    $lat2 = (float) $zone->lat;
+    $lon2 = (float) $zone->longg;
+    $radius = $zone->area ?? 50; // ← المسافة المسموحة بالأمتار (افتراضي 50)
+
+    $earthRadius = 6371000; // متر
+
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+
+    $a = sin($dLat / 2) * sin($dLat / 2) +
+         cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+         sin($dLon / 2) * sin($dLon / 2);
+
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+    $distance = $earthRadius * $c;
+
+    return $distance <= $radius;
+}
+
 }
