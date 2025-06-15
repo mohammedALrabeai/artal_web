@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,7 +13,7 @@ class AttendanceResource extends JsonResource
     {
         return [
             'id'         => $this->id,
-            'date'       => $this->date->toDateString(),
+            'date'       => Carbon::parse($this->date)->toDateString(),
             'status'     => $this->status,
             'check_in'   => $this->check_in,
             'check_out'  => $this->check_out,
