@@ -66,7 +66,8 @@ class EmployeeStatusController extends Controller
      */
 
 
-public function updateStatus(Request $request)
+
+ public function updateStatus(Request $request)
 {
     $employee = Auth::user();
     if (! $employee) {
@@ -76,12 +77,12 @@ public function updateStatus(Request $request)
     $employeeId = $employee->id;
 
     $gpsEnabled = $request->boolean('gps_enabled', false);
-    $lastLocation = $request->input('last_location'); // يتوقع مصفوفة lat/long
-    $zoneId = $request->input('zone_id'); // معرف الموقع المرتبط
+    $isInsideFromRequest = $request->boolean('is_inside', false); // ← فقط عند غياب zone_id
+    $lastLocation = $request->input('last_location');
+    $zoneId = $request->input('zone_id');
     $now = Carbon::now('Asia/Riyadh');
 
     $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
-
     $status->last_seen_at = $now;
 
     // تحديث حالة GPS
@@ -90,34 +91,36 @@ public function updateStatus(Request $request)
         $status->last_gps_status_at = $now;
     }
 
-    // الاحتفاظ بالموقع السابق
-    $previousLocation = $status->last_location ? json_decode($status->last_location, true) : null;
+    // جلب الموقع السابق من الكائن (لا يتم حفظه في الجدول)
+    $previousLocation = $status->last_location ?? null;
 
     // تحديث الموقع الحالي
     if ($lastLocation) {
-        if ($previousLocation) {
-            $status->previous_location = $status->last_location;
-        }
         $status->last_location = is_array($lastLocation)
-            ? json_encode($lastLocation)
-            : $lastLocation;
+            ? $lastLocation
+            : json_decode($lastLocation, true);
     }
 
-    // حساب داخل أو خارج النطاق إذا توفر zone_id وlast_location
-    if ($zoneId && $lastLocation) {
-        $zone = Zone::find($zoneId);
-        if ($zone) {
-            $currentInside = $this->isInsideZone($lastLocation, $zone);
-            $previousInside = $previousLocation
-                ? $this->isInsideZone($previousLocation, $zone)
-                : true; // إذا لا يوجد موقع سابق، نعتبره آمن
+    // 🧠 منطق تحديد is_inside
+    if ($lastLocation) {
+        if ($zoneId) {
+            $zone = Zone::find($zoneId);
+            if ($zone) {
+                $currentInside = $this->isInsideZone($status->last_location, $zone);
+                $previousInside = $previousLocation
+                    ? $this->isInsideZone($previousLocation, $zone)
+                    : true;
 
-            $finalInside = $currentInside || $previousInside;
+                $finalInside = $currentInside || $previousInside;
 
-            // إذا تغيرت الحالة فقط
-            if ($status->is_inside !== $finalInside) {
-                $status->is_inside = $finalInside;
-                $status->zone_status_updated_at = $now; // تحتاج تضيف هذا العمود إذا أردت
+                if ($status->is_inside !== $finalInside) {
+                    $status->is_inside = $finalInside;
+                }
+            }
+        } else {
+            // ✅ إذا لم يُرسل zone_id → اعتماد مباشر كما في المنطق السابق
+            if ($status->is_inside !== $isInsideFromRequest) {
+                $status->is_inside = $isInsideFromRequest;
             }
         }
     }
@@ -127,36 +130,39 @@ public function updateStatus(Request $request)
     return response()->json(['message' => 'Employee status updated successfully']);
 }
 
-
-
-
-public function isInsideZone($lastLocation, Zone $zone): bool
+protected function isInsideZone($location, Zone $zone): bool
 {
-    // تحويل last_location إلى مصفوفة إذا كانت JSON
-    if (is_string($lastLocation)) {
-        $lastLocation = json_decode($lastLocation, true);
+    if (is_string($location)) {
+        $location = json_decode($location, true);
     }
 
-    $lat1 = (float) Arr::get($lastLocation, 'lat');
-    $lon1 = (float) Arr::get($lastLocation, 'long');
+    $lat1 = (float) Arr::get($location, 'lat');
+    $lon1 = (float) Arr::get($location, 'long');
+
+    if (! $lat1 || ! $lon1) {
+        return true; // ← نعتبره داخل النطاق لحماية النظام من الأعطال
+    }
 
     $lat2 = (float) $zone->lat;
     $lon2 = (float) $zone->longg;
-    $radius = $zone->area ?? 50; // ← المسافة المسموحة بالأمتار (افتراضي 50)
+    $radius = $zone->area ?? 50;
 
-    $earthRadius = 6371000; // متر
+    $earthRadius = 6371000;
 
     $dLat = deg2rad($lat2 - $lat1);
     $dLon = deg2rad($lon2 - $lon1);
 
-    $a = sin($dLat / 2) * sin($dLat / 2) +
+    $a = sin($dLat / 2) ** 2 +
          cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-         sin($dLon / 2) * sin($dLon / 2);
+         sin($dLon / 2) ** 2;
 
     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
     $distance = $earthRadius * $c;
 
     return $distance <= $radius;
 }
+
+
+
 
 }
