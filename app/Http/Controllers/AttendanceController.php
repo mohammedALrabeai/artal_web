@@ -191,7 +191,7 @@ class AttendanceController extends Controller
                 dispatch(new \App\Jobs\SendFirstAttendanceEmail($employee, $attendance->zone, $attendance->date));
             } catch (\Throwable $e) {
                 // سجل الخطأ في اللوج بدون أن توقف العملية
-                \Log::error('فشل إرسال إشعار مباشرة الموظف: '.$e->getMessage(), [
+                \Log::error('فشل إرسال إشعار مباشرة الموظف: ' . $e->getMessage(), [
                     'employee_id' => $employee->id,
                     'zone_id' => $attendance->zone->id ?? null,
                     'date' => $attendance->date,
@@ -277,16 +277,16 @@ class AttendanceController extends Controller
             'type' => 'App\\Notifications\\CoverageRequestNotification',
             'title' => 'طلب تغطية جديد',
             'message' => "📢 **طلب تغطية جديد**\n"
-                ."👤 **الموظف:** {$employee->first_name} {$employee->father_name} {$employee->family_name} "
-                ."(ID: {$employee->id})\n"
-                ."📅 **التاريخ:** {$attendance->date}\n"
-                .'⏰ **الحضور:** '.($attendance->check_in ?? 'غير متوفر')."\n"
-                .'🏁 **الانصراف:** '.($attendance->check_out ?? 'غير متوفر')."\n"
-                .'📍 **الموقع:** '.($attendance->zone->name ?? 'غير محدد')."\n"
-                .'📝 **السبب:** '.($attendance->notes ?? 'لا يوجد سبب محدد')."\n"
-                .'🔄 **الحالة:** '.($attendance->approval_status ?? 'في انتظار الموافقة')."\n"
-                .'🔄 **هل هي تغطية؟** '.($attendance->is_coverage ? 'نعم' : 'لا')."\n"
-                .'🚨 **خارج المنطقة؟** '.($attendance->out_of_zone ? 'نعم' : 'لا'),
+                . "👤 **الموظف:** {$employee->first_name} {$employee->father_name} {$employee->family_name} "
+                . "(ID: {$employee->id})\n"
+                . "📅 **التاريخ:** {$attendance->date}\n"
+                . '⏰ **الحضور:** ' . ($attendance->check_in ?? 'غير متوفر') . "\n"
+                . '🏁 **الانصراف:** ' . ($attendance->check_out ?? 'غير متوفر') . "\n"
+                . '📍 **الموقع:** ' . ($attendance->zone->name ?? 'غير محدد') . "\n"
+                . '📝 **السبب:** ' . ($attendance->notes ?? 'لا يوجد سبب محدد') . "\n"
+                . '🔄 **الحالة:** ' . ($attendance->approval_status ?? 'في انتظار الموافقة') . "\n"
+                . '🔄 **هل هي تغطية؟** ' . ($attendance->is_coverage ? 'نعم' : 'لا') . "\n"
+                . '🚨 **خارج المنطقة؟** ' . ($attendance->out_of_zone ? 'نعم' : 'لا'),
             'attendance_id' => $attendance->id,
             'employee_id' => $attendance->employee->id,
             'employee_name' => "{$attendance->employee->first_name} {$attendance->employee->father_name} {$attendance->employee->family_name}",
@@ -311,7 +311,7 @@ class AttendanceController extends Controller
                 dispatch(new \App\Jobs\SendFirstAttendanceEmail($employee, $attendance->zone, $attendance->date));
             } catch (\Throwable $e) {
                 // سجل الخطأ في اللوج بدون أن توقف العملية
-                \Log::error('فشل إرسال إشعار مباشرة الموظف: '.$e->getMessage(), [
+                \Log::error('فشل إرسال إشعار مباشرة الموظف: ' . $e->getMessage(), [
                     'employee_id' => $employee->id,
                     'zone_id' => $attendance->zone->id ?? null,
                     'date' => $attendance->date,
@@ -407,7 +407,7 @@ class AttendanceController extends Controller
             'check_out' => $currentDateTime->toTimeString(), // العمود القديم
             'check_out_datetime' => $currentDateTime, // العمود الجديد
             'work_hours' => $workHours,
-            'notes' => $attendance->notes.' | '.$request->input('notes'),
+            'notes' => $attendance->notes . ' | ' . $request->input('notes'),
         ]);
 
         return response()->json([
@@ -455,7 +455,7 @@ class AttendanceController extends Controller
             'check_out' => $currentDateTime->toTimeString(),
             'check_out_datetime' => $currentDateTime,
             'work_hours' => $workHours,
-            'notes' => $attendance->notes.' | '.$request->input('notes'),
+            'notes' => $attendance->notes . ' | ' . $request->input('notes'),
         ]);
 
         return response()->json([
@@ -531,7 +531,7 @@ class AttendanceController extends Controller
             'check_out' => $currentDateTime->toTimeString(), // العمود القديم
             'check_out_datetime' => $currentDateTime, // العمود الجديد
             'work_hours' => $workHours,
-            'notes' => $attendance->notes.' | '.$request->input('notes'),
+            'notes' => $attendance->notes . ' | ' . $request->input('notes'),
         ]);
 
         return response()->json([
@@ -553,8 +553,8 @@ class AttendanceController extends Controller
 
         try {
             // تعديل التاريخين لضبط الوقت
-            $startDateTime = $startDate.' 00:00:00';
-            $endDateTime = $endDate.' 23:59:59';
+            $startDateTime = $startDate . ' 00:00:00';
+            $endDateTime = $endDate . ' 23:59:59';
             //  echo $startDateTime;
             //  echo $endDateTime;
             // استرجاع السجلات من قاعدة البيانات بناءً على الفترة الزمنية
@@ -619,7 +619,7 @@ class AttendanceController extends Controller
 
                     return [
                         'employee_id' => $employee->id,
-                        'employee_name' => $employee->first_name.' '.$employee->father_name.' '.$employee->family_name,
+                        'employee_name' => $employee->first_name . ' ' . $employee->father_name . ' ' . $employee->family_name,
                         'status' => $attendance ? $attendance->status : 'absent',
                         'check_in' => $attendance ? $attendance->check_in : null,
                         'check_out' => $attendance ? $attendance->check_out : null,
@@ -646,7 +646,7 @@ class AttendanceController extends Controller
 
                 return [
                     'employee_id' => $employee->id,
-                    'employee_name' => $employee->first_name.' '.$employee->father_name.' '.$employee->family_name,
+                    'employee_name' => $employee->first_name . ' ' . $employee->father_name . ' ' . $employee->family_name,
                     'status' => 'coverage',
                     'check_in' => $attendance->check_in,
                     'check_out' => null,
@@ -788,7 +788,7 @@ class AttendanceController extends Controller
                 $endTime = $shiftType === 1 ? $shift->morning_end : $shift->evening_end;
 
                 // هل هو يوم عمل؟
-                $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($date.' 00:00:00', 'Asia/Riyadh'));
+                $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($date . ' 00:00:00', 'Asia/Riyadh'));
 
                 $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $shift->zone);
 
@@ -859,7 +859,6 @@ class AttendanceController extends Controller
                     'coverage' => $coverageEmployees,
                 ],
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -1072,7 +1071,7 @@ class AttendanceController extends Controller
                 $endTime = $shiftType === 1 ? $shift->morning_end : $shift->evening_end;
 
                 // هل هو يوم عمل؟
-                $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($relevantDate.' 00:00:00', 'Asia/Riyadh'));
+                $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($relevantDate . ' 00:00:00', 'Asia/Riyadh'));
 
                 $dataByShift[] = [
                     'shift_id' => $shift->id,
@@ -1140,7 +1139,6 @@ class AttendanceController extends Controller
                     'coverage' => $coverageEmployees,
                 ],
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -1342,41 +1340,69 @@ class AttendanceController extends Controller
         $status->save();
     }
 
-     /**
+    /**
      * رجوع سجل آخر 7 أيام (اليوم + 6 أيام سابقة) للموظف المصادق.
      * ?days=14  ⟵ يمكنك تمرير عدد أيام مخصّص.
      */
-   public function lastWeek(Request $request): JsonResponse
-{
-    // 1) التحقق من صلاحيات المشرف (اختياري)
-    // $request->user()->can('viewAttendance') …
+    public function lastWeek(Request $request): JsonResponse
+    {
+        // 1) التحقق من صلاحيات المشرف (اختياري)
+        // $request->user()->can('viewAttendance') …
 
-    // 2) التحقق من وجود employee_id
-    $employeeId = $request->integer('employee_id');
-    if (!$employeeId) {
+        // 2) التحقق من وجود employee_id
+        $employeeId = $request->integer('employee_id');
+        if (!$employeeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'employee_id is required',
+            ], 422);
+        }
+
+        $days = max(1, (int) $request->query('days', 7));
+
+        $end   = now('Asia/Riyadh')->endOfDay();
+        $start = $end->copy()->subDays($days - 1)->startOfDay();
+
+        $records = Attendance::query()
+            ->where('employee_id', $employeeId)
+            ->whereBetween('date', [$start, $end])
+            ->with(['zone:id,name', 'shift:id,name'])
+            ->orderByDesc('date')
+            ->orderByDesc('check_in_datetime')
+            ->get();
+
+        $active = Attendance::where('employee_id', $employeeId)
+            ->whereNull('check_out')
+            ->latest('check_in_datetime')
+            ->first();
+
+        $canCheckIn = false;
+        $canCheckOut = false;
+        $checkOutType = null;
+
+        if ($active) {
+            $hoursSinceCheckIn = now()->diffInHours($active->check_in_datetime);
+
+            if ($hoursSinceCheckIn < 12) {
+                // يوجد حضور أو تغطية بدون انصراف خلال آخر 12 ساعة
+                $canCheckOut = true;
+                $checkOutType = $active->status === 'coverage' ? 'coverage' : 'attendance';
+            } else {
+                // مر وقت طويل على السجل النشط — نسمح بتحضير جديد
+                $canCheckIn = true;
+            }
+        } else {
+            // لا يوجد سجل نشط → نسمح بالتحضير
+            $canCheckIn = true;
+        }
+
+
         return response()->json([
-            'success' => false,
-            'message' => 'employee_id is required',
-        ], 422);
+            'success' => true,
+            'data'    => \App\Http\Resources\AttendanceResource::collection($records),
+            'can_check_in' => $canCheckIn,
+            'can_check_out' => $canCheckOut,
+            'check_out_type' => $checkOutType,
+        ]);
     }
-
-    $days = max(1, (int) $request->query('days', 7));
-
-    $end   = now('Asia/Riyadh')->endOfDay();
-    $start = $end->copy()->subDays($days - 1)->startOfDay();
-
-    $records = Attendance::query()
-        ->where('employee_id', $employeeId)
-        ->whereBetween('date', [$start, $end])
-        ->with(['zone:id,name', 'shift:id,name'])
-        ->orderByDesc('date')
-        ->orderByDesc('check_in_datetime')
-        ->get();
-
-    return response()->json([
-        'success' => true,
-        'data'    => \App\Http\Resources\AttendanceResource::collection($records),
-    ]);
-}
-
 }
