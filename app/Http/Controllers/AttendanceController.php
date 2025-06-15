@@ -14,6 +14,7 @@ use App\Services\NotificationService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Notification;
 
 class AttendanceController extends Controller
@@ -1340,4 +1341,42 @@ class AttendanceController extends Controller
 
         $status->save();
     }
+
+     /**
+     * رجوع سجل آخر 7 أيام (اليوم + 6 أيام سابقة) للموظف المصادق.
+     * ?days=14  ⟵ يمكنك تمرير عدد أيام مخصّص.
+     */
+   public function lastWeek(Request $request): JsonResponse
+{
+    // 1) التحقق من صلاحيات المشرف (اختياري)
+    // $request->user()->can('viewAttendance') …
+
+    // 2) التحقق من وجود employee_id
+    $employeeId = $request->integer('employee_id');
+    if (!$employeeId) {
+        return response()->json([
+            'success' => false,
+            'message' => 'employee_id is required',
+        ], 422);
+    }
+
+    $days = max(1, (int) $request->query('days', 7));
+
+    $end   = now('Asia/Riyadh')->endOfDay();
+    $start = $end->copy()->subDays($days - 1)->startOfDay();
+
+    $records = Attendance::query()
+        ->where('employee_id', $employeeId)
+        ->whereBetween('date', [$start, $end])
+        ->with(['zone:id,name', 'shift:id,name'])
+        ->orderByDesc('date')
+        ->orderByDesc('check_in_datetime')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data'    => \App\Http\Resources\AttendanceResource::collection($records),
+    ]);
+}
+
 }

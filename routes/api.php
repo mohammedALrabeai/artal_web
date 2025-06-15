@@ -59,8 +59,11 @@ Route::middleware(['auth:employee'])->group(function () {
 Route::get('zones/coordinates', [ZoneController::class, 'getActiveZonesCoordinates']);
 Route::post('zones/details', [ZoneController::class, 'getZoneDetails']);
 Route::post('/verify_zones_code', [CodeVerificationController::class, 'verify']);
+Route::post('/verify_zones_code_with_attendance', [CodeVerificationController::class, 'verifyWithAttendance']);
 
-
+Route::get('/employee/attendance/last-week',
+    [\App\Http\Controllers\AttendanceController::class, 'lastWeek']
+)->middleware('auth:sanctum');
 
 Route::middleware('auth:employee')->get('/employee/notifications', [EmployeeNotificationController::class, 'getNotifications']);
 

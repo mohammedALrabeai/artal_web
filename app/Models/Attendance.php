@@ -67,6 +67,24 @@ class Attendance extends Model
     //   protected static $submitEmptyLogs = false;
     //   protected static $logName = 'attendance';
 
+    // آخر سجل نشط (بدون انصراف)
+public function scopeActiveToday($q, int $employeeId)
+{
+    return $q->where('employee_id', $employeeId)
+             ->whereDate('date', now('Asia/Riyadh'))
+             ->whereNull('check_out')
+             ->latest('check_in_datetime');
+}
+
+// أي سجل (نشط أو منتهٍ) في اليوم الحالي
+public function scopeLastToday($q, int $employeeId)
+{
+    return $q->where('employee_id', $employeeId)
+             ->whereDate('date', now('Asia/Riyadh'))
+             ->latest('check_in_datetime');
+}
+
+
     public function getDescriptionForEvent(string $eventName): string
     {
         return "Attendance record has been {$eventName}";
