@@ -1,30 +1,31 @@
 <?php
 
-use App\Http\Controllers\AbsentController;
-use App\Http\Controllers\Api\AdminNotificationController;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\OperationNotificationController;
-use App\Http\Controllers\Api\SettingsController;
-use App\Http\Controllers\Api\SlideController;
-use App\Http\Controllers\Api\ZoneController;
-use App\Http\Controllers\AreaController;
-use App\Http\Controllers\AssignmentReportController;
-use App\Http\Controllers\attendance\CoverageController;
-use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\Auth\EmployeeAuthController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\EmployeeCoordinateController;
-use App\Http\Controllers\EmployeeNotificationController;
-use App\Http\Controllers\EmployeeStatusController;
-use App\Http\Controllers\ProjectController;
-use App\Http\Controllers\Api\CodeVerificationController;
+use Pusher\Pusher;
 use App\Models\Employee;
-use App\Services\AttendanceService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
+use App\Services\AttendanceService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Pusher\Pusher;
+use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AbsentController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\Api\ZoneController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Api\SlideController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\EmployeeStatusController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\AssignmentReportController;
+use App\Http\Controllers\Auth\EmployeeAuthController;
+use App\Http\Controllers\EmployeeCoordinateController;
+use App\Http\Controllers\Api\V2\AttendanceV2Controller;
+use App\Http\Controllers\attendance\CoverageController;
+use App\Http\Controllers\Api\CodeVerificationController;
+use App\Http\Controllers\EmployeeNotificationController;
+use App\Http\Controllers\Api\AdminNotificationController;
+use App\Http\Controllers\Api\OperationNotificationController;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -97,6 +98,14 @@ Route::middleware('auth:employee')->group(function () {
     // @deprecated version
     Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 });
+
+
+// routes/api.php
+Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
+    Route::post('employee/attendance/check-in', [AttendanceV2Controller::class, 'checkIn']);
+    Route::post('employee/attendance/check-out', [AttendanceV2Controller::class, 'checkOut']);
+});
+
 
 Route::post('/zones/nearby-with-shift-operation', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
 Route::middleware('auth:sanctum')->group(function () {
