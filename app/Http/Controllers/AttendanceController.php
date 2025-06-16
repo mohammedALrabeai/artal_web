@@ -1371,30 +1371,30 @@ class AttendanceController extends Controller
             ->orderByDesc('check_in_datetime')
             ->get();
 
-        $active = Attendance::where('employee_id', $employeeId)
-            ->whereNull('check_out')
-            ->latest('check_in_datetime')
-            ->first();
+       $last = Attendance::where('employee_id', $employeeId)
+    ->latest('check_in_datetime')
+    ->first();
 
-        $canCheckIn = false;
-        $canCheckOut = false;
-        $checkOutType = null;
+$canCheckIn = false;
+$canCheckOut = false;
+$checkOutType = null;
 
-        if ($active) {
-            $hoursSinceCheckIn = now()->diffInHours($active->check_in_datetime);
+if ($last) {
+    if ($last->check_out === null) {
+        $hoursSinceCheckIn = now('Asia/Riyadh')->diffInHours(Carbon::parse($last->check_in_datetime));
 
-            if ($hoursSinceCheckIn < 12) {
-                // يوجد حضور أو تغطية بدون انصراف خلال آخر 12 ساعة
-                $canCheckOut = true;
-                $checkOutType = $active->status === 'coverage' ? 'coverage' : 'attendance';
-            } else {
-                // مر وقت طويل على السجل النشط — نسمح بتحضير جديد
-                $canCheckIn = true;
-            }
+        if ($hoursSinceCheckIn < 12) {
+            $canCheckOut = true;
+            $checkOutType = $last->status === 'coverage' ? 'coverage' : 'attendance';
         } else {
-            // لا يوجد سجل نشط → نسمح بالتحضير
             $canCheckIn = true;
         }
+    } else {
+        $canCheckIn = true;
+    }
+} else {
+    $canCheckIn = true;
+}
 
 
         return response()->json([
