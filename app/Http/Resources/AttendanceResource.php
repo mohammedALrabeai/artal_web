@@ -15,13 +15,8 @@ class AttendanceResource extends JsonResource
             'id'         => $this->id,
             'date'       => Carbon::parse($this->date)->toDateString(),
             'status'     => $this->status,
-           'check_in' => $this->check_in_datetime
-    ? Carbon::parse($this->check_in_datetime)->tz('Asia/Riyadh')->format('H:i:s')
-    : null,
-
-'check_out' => $this->check_out_datetime
-    ? Carbon::parse($this->check_out_datetime)->tz('Asia/Riyadh')->format('H:i:s')
-    : null,
+            'check_in'   => $this->check_in,
+            'check_out'  => $this->check_out,
             'is_late'    => $this->is_late,
             'zone_id'    => $this->zone_id,
             'zone_name'  => $this->zone?->name,
