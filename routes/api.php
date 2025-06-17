@@ -182,6 +182,7 @@ Route::get('/assigned-employees', [AreaController::class, 'getAssignedEmployeesF
 Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2']);
 Route::get('/attendance3', [AttendanceController::class, 'getAttendanceStatusV3']);
+Route::get('/attendance4', [AttendanceController::class, 'getAttendanceStatusV4']);
 
 Route::get('/active-shifts-summary', [\App\Http\Controllers\Api\ActiveShiftController::class, 'index']);
 Route::get('/active-shifts-summary-v2', [\App\Http\Controllers\Api\ActiveShiftController::class, 'indexV2']);

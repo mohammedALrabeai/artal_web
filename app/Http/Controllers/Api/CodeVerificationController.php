@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Zone;
+use App\Models\Employee;
 use App\Models\Attendance;
 use App\Services\CodeDecoder;
+use App\Models\EmployeeStatus;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VerifyCodeRequest;
@@ -24,6 +26,10 @@ class CodeVerificationController extends Controller
             $zone = Zone::query()
                 ->with('project')      // إذا أردت تحميل المشروع
                 ->findOrFail($zoneId);
+                $employeeId = $request->integer('employee_id');
+
+                $employee=Employee::findOrFail($employeeId);
+                 $this->updateEmployeeStatusOnCheckIn($employee);
 
             return response()->json([
                 'success' => true,
@@ -39,6 +45,16 @@ class CodeVerificationController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+       protected function updateEmployeeStatusOnCheckIn(Employee $employee): void
+    {
+        $status = EmployeeStatus::firstOrNew(['employee_id' => $employee->id]);
+
+        $status->last_present_at = now('Asia/Riyadh')->toDateString();
+        $status->consecutive_absence_count = 0;
+
+        $status->save();
     }
 
     public function verifyWithAttendance(VerifyCodeRequest $req): JsonResponse
