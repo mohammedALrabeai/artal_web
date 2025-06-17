@@ -1327,6 +1327,28 @@ class AttendanceController extends Controller
     }
 }
 
+private function adjustedIsWorkingDay($shift, Carbon $date, Carbon $now): bool
+{
+    $isTodayWorking = $shift->isWorkingDay2($date);
+
+    if (! $isTodayWorking) {
+        $yesterday = $date->copy()->subDay();
+        $isYesterdayWorking = $shift->isWorkingDay2($yesterday);
+
+        $eveningStart = Carbon::parse("{$yesterday->toDateString()} {$shift->evening_start}", 'Asia/Riyadh');
+        $eveningEnd   = Carbon::parse("{$yesterday->toDateString()} {$shift->evening_end}", 'Asia/Riyadh');
+
+        if ($eveningEnd->lessThan($eveningStart)) {
+            $eveningEnd->addDay();
+        }
+
+        if ($isYesterdayWorking && $now->between($eveningStart, $eveningEnd)) {
+            return true;
+        }
+    }
+
+    return $isTodayWorking;
+}
 
     /**
      * الحصول على الورديات النشطة حاليًا لعرض حالة الحضور
