@@ -74,7 +74,7 @@ class AttendanceV2Controller extends Controller
         'is_late' => false,
     ]);
 
-    if ($status === 'present') {
+    if ($status === 'present' ) {
         $this->updateEmployeeStatusOnCheckIn($employee);
     }
 
