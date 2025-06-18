@@ -122,9 +122,39 @@ foreach ($groupedByShift as $shiftId => $recordsInShift) {
             $html .= '<td style="width: 22mm; background-color:#FF0000;"></td>';
             $html .= '<td style="width: 28mm; background-color:#FF0000; color:#FFFFFF;">'.($shift->name ?? '-').'</td>';
 
-            foreach ($dates as $date) {
-                $html .= '<td style="width: 6.5mm; background-color:#FF0000;"></td>';
-            }
+           foreach ($dates as $target) {
+    $days = $shiftStartDate->diffInDays($target);
+    $inCycle = $days % $cycle;
+    $cycleNum = floor($days / $cycle) + 1;
+    $isWorkDay = $inCycle < $working;
+
+    $value = 'OFF';
+    if ($isWorkDay) {
+        $value = ($cycleNum % 2 === 1) ? 'M' : 'N';
+
+        switch ($shift->type) {
+            case 'morning':
+                $value = 'M';
+                break;
+            case 'evening':
+                $value = 'N';
+                break;
+            case 'evening_morning':
+                $value = ($cycleNum % 2 === 1) ? 'N' : 'M';
+                break;
+        }
+    }
+
+    $bgColor = match ($value) {
+        'M' => '#D9D9D9',
+        'N' => '#999999',
+        'OFF' => '#FFC7CE',
+        default => '#FFFFFF',
+    };
+
+    $html .= '<td style="width: 6.5mm; background-color:'.$bgColor.'; font-size:7px; text-align: center;">'.$value.'</td>';
+}
+
 
             $html .= '</tr>';
         }

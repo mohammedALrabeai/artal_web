@@ -109,10 +109,10 @@ public function __construct(array $projectIds, bool $onlyActive = true, ?string 
             '❌ نقص', // الحالة
         ];
 
-        $pattern = array_fill(0, 30, 'OFF'); // لا حاجة لنمط العمل
-        $this->workPatternValues[] = $pattern;
+       $workPattern = $this->getWorkPatternDays($record, );
+      $this->workPatternValues[] = $workPattern;
 
-        return array_merge($base, $pattern);
+    return array_merge($base, $workPattern);
     }
 
     // الحالة العادية:
@@ -188,12 +188,27 @@ public function __construct(array $projectIds, bool $onlyActive = true, ?string 
 foreach ($sheet->getRowIterator(2) as $row) {
     $rowIndex = $row->getRowIndex();
     $cell = $sheet->getCell("A$rowIndex");
+
     if ($cell->getValue() === 'نقص') {
-        $sheet->getStyle("A{$rowIndex}:{$highestCol}{$rowIndex}")
+        // لون الاسم (A)
+        $sheet->getStyle("A{$rowIndex}")
             ->getFill()->setFillType(Fill::FILL_SOLID)
             ->getStartColor()->setRGB('FF0000');
+        $sheet->getStyle("A{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
+
+        // رقم الهوية (B)
+        $sheet->getStyle("B{$rowIndex}")
+            ->getFill()->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('FF0000');
+
+        // الوردية (E)
+        $sheet->getStyle("E{$rowIndex}")
+            ->getFill()->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('FF0000');
+        $sheet->getStyle("E{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
     }
 }
+
 
 
         return [];
