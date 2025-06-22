@@ -130,7 +130,7 @@ class EmployeeStatusController extends Controller
                 'out_of_zone' => false,
                 'last_active' => $now,
             ]);
-        }
+        } 
 
 
         return response()->json(['message' => 'Employee status updated successfully']);
