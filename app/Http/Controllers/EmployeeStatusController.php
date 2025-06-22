@@ -128,13 +128,12 @@ class EmployeeStatusController extends Controller
 
         $status->save();
 
-        $employee = Employee::find($employeeId);
-        if ($employee && !is_null($status->is_inside)) {
-            $employee->updateQuietly([
-                'out_of_zone' => ! $status->is_inside,
-                'last_active' => $now,
-            ]);
-        }
+       if ($status->is_inside === true) {
+    Employee::where('id', $employeeId)->updateQuietly([
+        'out_of_zone' => false,
+        'last_active' => $now,
+    ]);
+}
 
         return response()->json(['message' => 'Employee status updated successfully']);
     }
