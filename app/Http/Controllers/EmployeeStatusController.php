@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Models\Zone;
-use App\Models\Employee;
-use Illuminate\Support\Arr;
-use Illuminate\Http\Request;
-
 use App\Models\EmployeeStatus;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Zone;
+
+use Illuminate\Support\Arr;
 
 class EmployeeStatusController extends Controller
 {
@@ -75,7 +74,6 @@ class EmployeeStatusController extends Controller
 
         $employeeId = $employee->id;
 
-
         $gpsEnabled = $request->boolean('gps_enabled', false);
         $isInsideFromRequest = $request->boolean('is_inside', false); // ← فقط عند غياب zone_id
         $lastLocation = $request->input('last_location');
@@ -84,7 +82,6 @@ class EmployeeStatusController extends Controller
 
         $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
         $status->last_seen_at = $now;
-
 
         // تحديث حالة GPS
         if ($status->gps_enabled !== $gpsEnabled) {
@@ -127,13 +124,6 @@ class EmployeeStatusController extends Controller
         }
 
         $status->save();
-
-       if ($status->is_inside === true) {
-    Employee::where('id', $employeeId)->updateQuietly([
-        'out_of_zone' => false,
-        'last_active' => $now,
-    ]);
-}
 
         return response()->json(['message' => 'Employee status updated successfully']);
     }
