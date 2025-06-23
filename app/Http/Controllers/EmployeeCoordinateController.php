@@ -130,6 +130,59 @@ class EmployeeCoordinateController extends Controller
         ]);
     }
 
+  public function getZoneEmployeesRoutes(Request $request, $zoneId)
+{
+    $request->validate([
+        'date' => 'nullable|date',
+    ]);
+
+    $date = $request->input('date', Carbon::now()->toDateString());
+
+    $zone = Zone::find($zoneId);
+    if (! $zone) {
+        return response()->json(['error' => 'Zone not found'], 404);
+    }
+
+    // ✅ جلب الموظفين المسندين للموقع
+    $assignments = \App\Models\EmployeeProjectRecord::with(['employee'])
+        ->where('zone_id', $zoneId)
+        ->where('status', true)
+        ->get();
+
+    $result = [];
+
+    foreach ($assignments as $assignment) {
+        $employee = $assignment->employee;
+
+        if (! $employee) {
+            continue;
+        }
+
+        $route = $employee->coordinates()
+            ->whereDate('timestamp', $date)
+            ->orderBy('timestamp', 'asc')
+            ->get(['latitude', 'longitude', 'timestamp']);
+
+        $result[] = [
+            'id' => $employee->id,
+            'name' => "{$employee->first_name} {$employee->family_name}",
+            'route' => $route,
+        ];
+    }
+
+    return response()->json([
+        'zone' => [
+            'lat' => (float) $zone->lat,
+            'longg' => (float) $zone->longg,
+            'area' => (float) $zone->area,
+            'name' => $zone->name,
+        ],
+        'employees' => $result,
+    ]);
+}
+
+
+
     public function getRecentEmployeeLocationsOld()
     {
         // وقت الحد الفاصل (10 دقائق)
