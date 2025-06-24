@@ -219,7 +219,7 @@ class AttendanceResource extends Resource
                 ->badge()
                 ->getStateUsing(function ($record) {
                     return match ($record->status) {
-                        'off' => __('Off'),
+                        'off' => __('OFF'),
                         'present' => __('Present'),
                         'coverage' => __('Coverage'),
                         'M' => __('Morbid'),
@@ -230,7 +230,7 @@ class AttendanceResource extends Resource
                     };
                 })
                 ->colors([
-                    'success' => fn ($state) => $state === __('Off'), // أخضر
+                    'success' => fn ($state) => $state === __('OFF'), // أخضر
                     'primary' => fn ($state) => $state === __('Present'), // أزرق فاتح
                     'warning' => fn ($state) => $state === __('Coverage'), // برتقالي
                     'secondary' => fn ($state) => $state === __('Morbid'), // رمادي
