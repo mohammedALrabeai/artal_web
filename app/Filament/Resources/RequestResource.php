@@ -66,7 +66,7 @@ class RequestResource extends Resource
                                 ->label(__('Type'))
                                 ->options(\App\Models\RequestType::where('is_active', true) // ✅ تصفية الأنواع القابلة للاستخدام فقط
                                     ->get()
-                                    ->mapWithKeys(fn ($type) => [$type->key => __($type->name)]) // ✅ ترجمة ديناميكية
+                                    ->mapWithKeys(fn($type) => [$type->key => __($type->name)]) // ✅ ترجمة ديناميكية
                                     ->toArray())
                                 ->required()
                                 ->reactive(),
@@ -106,24 +106,24 @@ class RequestResource extends Resource
                                 ->label(__('Start Date'))
                                 ->required()
                                 ->reactive()
-                                ->visible(fn ($get) => $get('type') === 'leave'),
+                                ->visible(fn($get) => $get('type') === 'leave'),
 
                             // تاريخ النهاية
                             Forms\Components\DatePicker::make('end_date')
                                 ->label(__('End Date'))
                                 ->required()
                                 ->reactive()
-                                ->visible(fn ($get) => $get('type') === 'leave'),
+                                ->visible(fn($get) => $get('type') === 'leave'),
 
                             // المدة
                             Forms\Components\TextInput::make('duration')
                                 ->label(__('Duration (Days)'))
                                 ->numeric()
                                 ->disabled(false)
-                                ->default(fn ($get) => $get('start_date') && $get('end_date')
+                                ->default(fn($get) => $get('start_date') && $get('end_date')
                                     ? \Carbon\Carbon::parse($get('start_date'))->diffInDays(\Carbon\Carbon::parse($get('end_date'))) + 1
                                     : null)
-                                ->visible(fn ($get) => $get('type') === 'leave'),
+                                ->visible(fn($get) => $get('type') === 'leave'),
 
                             // نوع الإجازة
                             Forms\Components\Select::make('leave_type')
@@ -134,15 +134,15 @@ class RequestResource extends Resource
                                     'unpaid' => __('Unpaid Leave'),
                                 ])
                                 ->required()
-                                ->visible(fn ($get) => $get('type') === 'leave'),
+                                ->visible(fn($get) => $get('type') === 'leave'),
 
                             // السبب
                             Forms\Components\Textarea::make('reason')
                                 ->label(__('Reason'))
                                 ->nullable()
-                                ->visible(fn ($get) => $get('type') === 'leave'),
+                                ->visible(fn($get) => $get('type') === 'leave'),
                         ])->columns(2)
-                        ->visible(fn ($get) => $get('type') === 'leave'),
+                        ->visible(fn($get) => $get('type') === 'leave'),
 
                     Forms\Components\Tabs\Tab::make('Exclusion Details')
                         ->label(__('Exclusion Details'))
@@ -151,7 +151,7 @@ class RequestResource extends Resource
                                 ->label(__('Exclusion Type'))
                                 ->options(
                                     collect(\App\Enums\ExclusionType::cases())
-                                        ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
+                                        ->mapWithKeys(fn($type) => [$type->value => $type->label()])
                                         ->toArray()
                                 )
                                 ->required(),
@@ -185,7 +185,7 @@ class RequestResource extends Resource
                             //     ->nullable(),
                         ])
                         ->columns(2)
-                        ->visible(fn ($get) => $get('type') === 'exclusion'), // يظهر فقط إذا كان نوع الطلب استبعاد
+                        ->visible(fn($get) => $get('type') === 'exclusion'), // يظهر فقط إذا كان نوع الطلب استبعاد
 
                     Forms\Components\Tabs\Tab::make('Loan Details')
                         ->label(__('Loan Details'))
@@ -193,11 +193,11 @@ class RequestResource extends Resource
                             // حقول طلبات أخرى مثل القروض
                             Forms\Components\TextInput::make('amount')
                                 ->label(__('Amount'))
-                                ->visible(fn ($livewire, $get) => $get('type') === 'loan')
+                                ->visible(fn($livewire, $get) => $get('type') === 'loan')
                                 ->numeric(),
                         ])
                         ->columns(2)
-                        ->visible(fn ($livewire, $get) => $get('type') === 'loan'),
+                        ->visible(fn($livewire, $get) => $get('type') === 'loan'),
 
                     Forms\Components\Tabs\Tab::make(__('Attachments'))
                         ->schema([
@@ -265,7 +265,7 @@ class RequestResource extends Resource
                     // ->visible(fn ($get) => !empty($get('employee_id'))),
 
                 ])
-            // ->columns(1)
+                // ->columns(1)
                 ->persistTabInQueryString(),
 
         ])->columns(1);
@@ -277,16 +277,17 @@ class RequestResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
-                    ->formatStateUsing(fn ($state) => __($state)),
+                    ->formatStateUsing(fn($state) => __($state)),
                 Tables\Columns\TextColumn::make('submittedBy.name')
                     ->label(__('Submitted By'))
                     ->searchable(), // تمكين البحث
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Employee'))
-                    ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
-                        $record->employee->father_name.' '.
-                        $record->employee->grandfather_name.' '.
-                        $record->employee->family_name
+                    ->getStateUsing(
+                        fn($record) => $record->employee->first_name . ' ' .
+                            $record->employee->father_name . ' ' .
+                            $record->employee->grandfather_name . ' ' .
+                            $record->employee->family_name
                     )
                     ->searchable(query: function ($query, $search) {
                         return $query->whereHas('employee', function ($subQuery) use ($search) {
@@ -303,8 +304,8 @@ class RequestResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
-                    ->formatStateUsing(fn ($state) => __($state))
-                    ->color(fn ($state) => match ($state) {
+                    ->formatStateUsing(fn($state) => __($state))
+                    ->color(fn($state) => match ($state) {
                         'pending' => 'warning',
                         'approved' => 'success',
                         'rejected' => 'danger',
@@ -313,7 +314,7 @@ class RequestResource extends Resource
 
                 Tables\Columns\TextColumn::make('current_approver_role')
                     ->label(__('Current Approver Role'))
-                    ->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state))),
+                    ->formatStateUsing(fn($state) => ucfirst(str_replace('_', ' ', $state))),
                 Tables\Columns\TextColumn::make('duration')
                     ->label(__('Duration (Days)'))
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -341,7 +342,7 @@ class RequestResource extends Resource
                         if (json_last_error() === JSON_ERROR_NONE) {
                             // ✅ إذا كانت البيانات JSON، قم بعرضها بتنسيق مناسب
                             return collect($decoded)
-                                ->map(fn ($value, $key) => ucfirst(str_replace('_', ' ', $key)).': '.(is_array($value) ? json_encode($value) : $value))
+                                ->map(fn($value, $key) => ucfirst(str_replace('_', ' ', $key)) . ': ' . (is_array($value) ? json_encode($value) : $value))
                                 ->join(' | ');
                         }
 
@@ -364,8 +365,8 @@ class RequestResource extends Resource
 
                         // تحديد المستويات المتبقية بناءً على `approval_level`
                         $remainingFlows = $approvalFlows
-                            ->filter(fn ($flow) => ! in_array($flow->approval_level, $approvedLevels))
-                            ->map(fn ($flow) => __(':role (Level :level)', [
+                            ->filter(fn($flow) => ! in_array($flow->approval_level, $approvedLevels))
+                            ->map(fn($flow) => __(':role (Level :level)', [
                                 'role' => $flow->approver_role,
                                 'level' => $flow->approval_level,
                             ]));
@@ -402,7 +403,7 @@ class RequestResource extends Resource
                 // حسب النوع
                 Tables\Filters\SelectFilter::make('type')
                     ->label(__('Type'))
-                    ->options(\App\Models\RequestType::pluck('name', 'key')->map(fn ($name) => __($name))),
+                    ->options(\App\Models\RequestType::pluck('name', 'key')->map(fn($name) => __($name))),
 
                 // حسب الحالة
                 Tables\Filters\SelectFilter::make('status')
@@ -426,7 +427,7 @@ class RequestResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->label(__('Type'))
 
-                    ->options(\App\Models\RequestType::all()->pluck('name', 'key')->map(fn ($name) => __($name)) // ترجمة الأسماء (في حال كانت لديك مفاتيح ترجمة)
+                    ->options(\App\Models\RequestType::all()->pluck('name', 'key')->map(fn($name) => __($name)) // ترجمة الأسماء (في حال كانت لديك مفاتيح ترجمة)
                         ->toArray()),
 
                 Tables\Filters\SelectFilter::make('status')
@@ -472,7 +473,7 @@ class RequestResource extends Resource
                 // ✅ **زر "إرفاق ملف"**
                 Tables\Actions\Action::make('approve')
                     ->label(__('Approve'))
-                    ->action(fn ($record, array $data) => $record->approveRequest(auth()->user(), $data['comments']))
+                    ->action(fn($record, array $data) => $record->approveRequest(auth()->user(), $data['comments']))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->form([
@@ -481,10 +482,26 @@ class RequestResource extends Resource
                             ->required(),
                     ])
                     ->requiresConfirmation()
-                    ->hidden(fn ($record) => $record->status !== 'pending'),
+                    ->hidden(function ($record) {
+                        // إخفاء الزر إذا لم يكن الطلب "pending"
+                        if ($record->status !== 'pending') {
+                            return true;
+                        }
+
+                        // إخفاء الزر إذا كان الطلب استبعاد موعده في المستقبل
+                        if (
+                            $record->type === 'exclusion' &&
+                            $record->exclusion &&
+                            \Carbon\Carbon::parse($record->exclusion->exclusion_date)->isFuture()
+                        ) {
+                            return true;
+                        }
+
+                        return false; // غير مخفي في باقي الحالات
+                    }),
                 Tables\Actions\Action::make('reject')
                     ->label(__('Reject'))
-                    ->action(fn ($record, array $data) => $record->rejectRequest(auth()->user(), $data['comments']))
+                    ->action(fn($record, array $data) => $record->rejectRequest(auth()->user(), $data['comments']))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->form([
@@ -493,7 +510,7 @@ class RequestResource extends Resource
                             ->required(),
                     ])
                     ->requiresConfirmation()
-                    ->hidden(fn ($record) => $record->status !== 'pending'),
+                    ->hidden(fn($record) => $record->status !== 'pending'),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\Action::make('attach_file')
                     ->label(__('Attach File'))
@@ -555,6 +572,7 @@ class RequestResource extends Resource
 
                 Tables\Actions\EditAction::make(),
             ])
+            ->paginationPageOptions([10, 25, 50, 100])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
                 // ExportBulkAction::make()

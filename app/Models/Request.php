@@ -186,6 +186,7 @@ class Request extends Model
                 ]);
                 $this->employee->update(['status' => false, 'job_status' => $this->exclusion->type]);
                 $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
+                
             }
             if ($this->type === 'coverage' && $this->coverage) {
                 $this->coverage->update([

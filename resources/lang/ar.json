@@ -656,5 +656,8 @@
     "Replacement Not Required": "لا يتطلب بديل",
     "At least one attachment is required.": "يجب إضافة مرفق واحد على الأقل.",
     "You can upload a maximum of 5 attachments.": "يمكنك تحميل ما يصل إلى 5 مرفقات.",
-    "Export Attendance": "تصدير الحضور"
+    "Export Attendance": "تصدير الحضور",
+     "Requests Needing Approval": "طلبات بانتظار الموافقة",
+  "Upcoming Exclusions": "طلبات استبعاد مستقبلية"
+
 }
