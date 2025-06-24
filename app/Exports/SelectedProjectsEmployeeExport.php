@@ -20,62 +20,95 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
 
     protected array $workPatternValues = [];
     protected Carbon $startDate;
-protected array $missingShifts = [];
+    protected array $missingShifts = [];
 
-public function __construct(array $projectIds, bool $onlyActive = true, ?string $startDate = null)
-{
-    $query = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
-        ->whereIn('project_id', $projectIds);
+    public function __construct(array $projectIds, bool $onlyActive = true, ?string $startDate = null)
+    {
+        $query = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift'])
+            ->whereIn('project_id', $projectIds);
 
-    if ($onlyActive) {
-        $query->where('status', true);
-    }
+        if ($onlyActive) {
+            $query->where('status', true);
+        }
 
-    $this->records = $query->get()->sortBy(fn($r) => $r->shift->id ?? 0);
+        $this->records = $query->get()->sortBy(fn($r) => $r->shift->id ?? 0);
+        $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
 
-    $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
+        // ✅ نحصل على جميع المناطق (zones) التابعة للمشاريع المطلوبة
+        $zoneIds = \App\Models\Zone::whereIn('project_id', $projectIds)->pluck('id');
 
-    // حساب النقص
-    $grouped = $this->records->groupBy('shift_id');
-    foreach ($grouped as $shiftId => $group) {
-        $shift = $group->first()?->shift;
-        if ($shift && $shift->emp_no > $group->count()) {
-            $this->missingShifts[] = [
-                'shift' => $shift,
-                'missing_count' => $shift->emp_no - $group->count(),
-            ];
+        // ✅ نحصل على الورديات المرتبطة بهذه المناطق
+        $allShifts = \App\Models\Shift::with(['zone', 'zone.pattern'])
+            ->whereIn('zone_id', $zoneIds)
+            ->get();
+
+        foreach ($allShifts as $shift) {
+            $assignedCount = $this->records->where('shift.id', $shift->id)->count();
+
+            if ($shift->emp_no > $assignedCount) {
+                $this->missingShifts[] = [
+                    'shift' => $shift,
+                    'project' => $shift->zone?->project,
+                    'zone' => $shift->zone,
+                    'missing_count' => $shift->emp_no - $assignedCount,
+                ];
+            }
         }
     }
-}
 
 
- public function collection()
+
+
+  public function collection()
 {
-    $groupedByShift = $this->records->groupBy('shift_id');
+    $groupedByZone = $this->records->groupBy('zone.id');
     $orderedRows = collect();
 
-    foreach ($groupedByShift as $shiftId => $group) {
-        $shift = $group->first()?->shift;
+    foreach ($groupedByZone as $zoneId => $zoneGroup) {
+        $groupedByShift = $zoneGroup->groupBy('shift.id');
 
-        // ✅ أضف الموظفين الفعليين
-        foreach ($group as $record) {
-            $orderedRows->push($record);
-        }
-
-        // ✅ احسب النقص
-        if ($shift && $shift->emp_no > $group->count()) {
-            $missingCount = $shift->emp_no - $group->count();
-            $project = $group->first()?->project;
-            $zone = $group->first()?->zone;
-
-            for ($i = 0; $i < $missingCount; $i++) {
-                $orderedRows->push((object)[
-                    'is_missing_row' => true,
-                    'shift' => $shift,
-                    'project' => $project,
-                    'zone' => $zone,
-                ]);
+        foreach ($groupedByShift as $shiftId => $group) {
+            // 🟢 الموظفين داخل الوردية
+            foreach ($group as $record) {
+                $orderedRows->push($record);
             }
+
+            // 🔴 النقص إن وُجد داخل نفس shift & zone
+            $shift = $group->first()?->shift;
+            $zone = $group->first()?->zone;
+            $project = $group->first()?->project;
+
+            if ($shift && $shift->emp_no > $group->count()) {
+                $missingCount = $shift->emp_no - $group->count();
+                for ($i = 0; $i < $missingCount; $i++) {
+                    $orderedRows->push((object)[
+                        'is_missing_row' => true,
+                        'shift' => $shift,
+                        'project' => $project,
+                        'zone' => $zone,
+                    ]);
+                }
+            }
+        }
+    }
+
+    // 🔴 الورديات التي ليس لها أي موظف مسند (تم التعامل معها في missingShifts مسبقًا)
+    // نضيفها فقط إن لم تكن ضمن السجلات بالفعل
+    foreach ($this->missingShifts as $item) {
+        $alreadyHandled = $orderedRows->contains(fn ($r) =>
+            !empty($r->is_missing_row) &&
+            $r->shift->id === $item['shift']->id
+        );
+
+        if ($alreadyHandled) continue;
+
+        for ($i = 0; $i < $item['missing_count']; $i++) {
+            $orderedRows->push((object)[
+                'is_missing_row' => true,
+                'shift' => $item['shift'],
+                'project' => $item['project'],
+                'zone' => $item['zone'],
+            ]);
         }
     }
 
@@ -84,61 +117,70 @@ public function __construct(array $projectIds, bool $onlyActive = true, ?string 
 
 
 
+
+
+
     public function headings(): array
     {
         $baseHeadings = [
-            'الاسم الكامل', 'رقم الهوية', 'المشروع', 'الموقع', 'الوردية',
-            'تاريخ البدء', 'تاريخ الانتهاء', 'الحالة',
+            'الاسم الكامل',
+            'رقم الهوية',
+            'المشروع',
+            'الموقع',
+            'الوردية',
+            'تاريخ البدء',
+            'تاريخ الانتهاء',
+            'الحالة',
         ];
 
-        $dates = collect(range(0, 30))->map(fn ($i) => $this->startDate->copy()->addDays($i)->format('d M'));
+        $dates = collect(range(0, 30))->map(fn($i) => $this->startDate->copy()->addDays($i)->format('d M'));
         return array_merge($baseHeadings, $dates->toArray());
     }
 
-   public function map($record): array
-{
-    if (isset($record->is_missing_row)) {
+    public function map($record): array
+    {
+        if (isset($record->is_missing_row)) {
+            $base = [
+                'نقص', // الاسم
+                '-',   // الهوية
+                $record->project->name ?? 'غير معروف', // ✅ اسم المشروع
+                $record->zone->name ?? 'غير معروف',    // ✅ اسم الموقع
+                $record->shift->name ?? 'بدون اسم',     // اسم الوردية
+                '-',   // start_date
+                '-',   // end_date
+                '❌ نقص', // الحالة
+            ];
+
+            $workPattern = $this->getWorkPatternDays($record,);
+            $this->workPatternValues[] = $workPattern;
+
+            return array_merge($base, $workPattern);
+        }
+
+        // الحالة العادية:
+        $fullName = implode(' ', array_filter([
+            $record->employee->first_name,
+            $record->employee->father_name,
+            $record->employee->grandfather_name,
+            $record->employee->family_name,
+        ]));
+
         $base = [
-            'نقص', // الاسم
-            '-',   // الهوية
-             $record->project->name ?? 'غير معروف', // ✅ اسم المشروع
-            $record->zone->name ?? 'غير معروف',    // ✅ اسم الموقع
-            $record->shift->name ?? 'بدون اسم',     // اسم الوردية
-            '-',   // start_date
-            '-',   // end_date
-            '❌ نقص', // الحالة
+            $fullName,
+            $record->employee->national_id,
+            $record->project->name,
+            $record->zone->name,
+            $record->shift->name,
+            $record->start_date,
+            $record->end_date ?? 'غير محدد',
+            $record->status ? 'نشط' : 'غير نشط',
         ];
 
-       $workPattern = $this->getWorkPatternDays($record, );
-      $this->workPatternValues[] = $workPattern;
+        $workPattern = $this->getWorkPatternDays($record);
+        $this->workPatternValues[] = $workPattern;
 
-    return array_merge($base, $workPattern);
+        return array_merge($base, $workPattern);
     }
-
-    // الحالة العادية:
-    $fullName = implode(' ', array_filter([
-        $record->employee->first_name,
-        $record->employee->father_name,
-        $record->employee->grandfather_name,
-        $record->employee->family_name,
-    ]));
-
-    $base = [
-        $fullName,
-        $record->employee->national_id,
-        $record->project->name,
-        $record->zone->name,
-        $record->shift->name,
-        $record->start_date,
-        $record->end_date ?? 'غير محدد',
-        $record->status ? 'نشط' : 'غير نشط',
-    ];
-
-    $workPattern = $this->getWorkPatternDays($record);
-    $this->workPatternValues[] = $workPattern;
-
-    return array_merge($base, $workPattern);
-}
 
 
     public function styles(Worksheet $sheet)
@@ -185,29 +227,29 @@ public function __construct(array $projectIds, bool $onlyActive = true, ?string 
         }
         $sheet->freezePane('B2');
         // ✅ 5. تلوين صفوف "نقص" كاملة
-foreach ($sheet->getRowIterator(2) as $row) {
-    $rowIndex = $row->getRowIndex();
-    $cell = $sheet->getCell("A$rowIndex");
+        foreach ($sheet->getRowIterator(2) as $row) {
+            $rowIndex = $row->getRowIndex();
+            $cell = $sheet->getCell("A$rowIndex");
 
-    if ($cell->getValue() === 'نقص') {
-        // لون الاسم (A)
-        $sheet->getStyle("A{$rowIndex}")
-            ->getFill()->setFillType(Fill::FILL_SOLID)
-            ->getStartColor()->setRGB('FF0000');
-        $sheet->getStyle("A{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
+            if ($cell->getValue() === 'نقص') {
+                // لون الاسم (A)
+                $sheet->getStyle("A{$rowIndex}")
+                    ->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('FF0000');
+                $sheet->getStyle("A{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
 
-        // رقم الهوية (B)
-        $sheet->getStyle("B{$rowIndex}")
-            ->getFill()->setFillType(Fill::FILL_SOLID)
-            ->getStartColor()->setRGB('FF0000');
+                // رقم الهوية (B)
+                $sheet->getStyle("B{$rowIndex}")
+                    ->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('FF0000');
 
-        // الوردية (E)
-        $sheet->getStyle("E{$rowIndex}")
-            ->getFill()->setFillType(Fill::FILL_SOLID)
-            ->getStartColor()->setRGB('FF0000');
-        $sheet->getStyle("E{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
-    }
-}
+                // الوردية (E)
+                $sheet->getStyle("E{$rowIndex}")
+                    ->getFill()->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('FF0000');
+                $sheet->getStyle("E{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
+            }
+        }
 
 
 
@@ -243,11 +285,14 @@ foreach ($sheet->getRowIterator(2) as $row) {
                 $shiftType = ($cycleNumber % 2 == 1) ? 'ص' : 'م';
 
                 switch ($record->shift->type) {
-                    case 'morning': $shiftType = 'ص';
+                    case 'morning':
+                        $shiftType = 'ص';
                         break;
-                    case 'evening': $shiftType = 'م';
+                    case 'evening':
+                        $shiftType = 'م';
                         break;
-                    case 'evening_morning': $shiftType = ($cycleNumber % 2 == 1) ? 'م' : 'ص';
+                    case 'evening_morning':
+                        $shiftType = ($cycleNumber % 2 == 1) ? 'م' : 'ص';
                         break;
                 }
             }
@@ -258,7 +303,6 @@ foreach ($sheet->getRowIterator(2) as $row) {
                 '-' => 'OFF',
                 default => '--',
             };
-
         }
 
         return $days;

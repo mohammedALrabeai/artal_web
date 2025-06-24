@@ -1,18 +1,20 @@
 <?php
 
+use App\Models\Employee;
+use Illuminate\Http\Request;
+use App\Models\EmployeeCoordinate;
+use App\Services\EmployeePdfService;
 use App\Filament\Pages\EmployeePaths;
-use App\Http\Controllers\attendance\AttendanceExport2Controller;
-use App\Http\Controllers\attendance\AttendanceYearlyExportController;
+use App\Models\EmployeeProjectRecord;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ExportController;
-use App\Http\Controllers\FileUploadController2;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\S3TestController;
-use App\Models\Employee;
-use App\Models\EmployeeCoordinate;
-use App\Models\EmployeeProjectRecord;
-use App\Services\EmployeePdfService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Services\ProjectEmployeesPdfService;
+use App\Http\Controllers\FileUploadController2;
+use App\Http\Controllers\attendance\AttendanceExport2Controller;
+use App\Http\Controllers\attendance\AttendanceYearlyExportController;
+  use App\Models\Shift;
 
 Route::get('/', function () {
     return view('welcome');
@@ -97,8 +99,9 @@ Route::get('/admin/projects/export/pdf', function () {
         ->get();
 
     $service = new \App\Services\ProjectEmployeesPdfService;
-    $service->generate($records, 'تقرير نمط العمل - الموظفين', $startDate);
+    $service->generate($records, 'جدول التشغيل', $startDate, $ids); // ← تمرير العنوان كنص، وتمرير IDs
 })->name('projects.export.pdf')->middleware(['web', 'auth']);
+
 
 // Route::get('/filament/employee-route/{employeeId}', function ($employeeId) {
 //     $coordinates = EmployeeCoordinate::where('employee_id', $employeeId)

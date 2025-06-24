@@ -458,7 +458,10 @@ class EmployeeResource extends Resource
                 ->onColor('success')
                 ->offColor('danger')
                 ->default(true)
-                ->required(),
+                ->required()
+                 ->afterStateUpdated(function ($state, callable $set) {
+        $set('job_status', $state ? 'يعمل' : 'لا يعمل');
+    }),
 
         ])
             ->columns(1);
