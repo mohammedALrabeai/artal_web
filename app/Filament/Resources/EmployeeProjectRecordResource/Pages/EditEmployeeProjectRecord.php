@@ -16,4 +16,25 @@ class EditEmployeeProjectRecord extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+// protected function beforeSave(): void
+// {
+//     $record = $this->getRecord();
+//     $newData = $this->form->getState();
+//     dd($newData, $record);
+
+//     if (
+//         $record->status !== $newData['status'] && // تم تغيير الحالة
+//         $newData['status'] === false &&           // أصبحت غير نشطة
+//         empty($newData['end_date'])               // ولا يوجد end_date
+//     ) {
+//         $record->end_date = now('Asia/Riyadh');
+//     }
+// }
+
+
+
+
+
+
 }

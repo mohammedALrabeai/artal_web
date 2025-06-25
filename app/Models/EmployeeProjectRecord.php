@@ -34,6 +34,18 @@ class EmployeeProjectRecord extends Model
                 $record->assigned_by = auth()->id();
             }
         });
+
+           // عند التحديث: إذا تغيّر status من true إلى false → نحدّث end_date
+    // static::saving(function (self $record) {
+    //     if (
+    //         $record->isDirty('status') &&
+    //         $record->getOriginal('status') === true &&
+    //         $record->status === false &&
+    //         is_null($record->end_date)
+    //     ) {
+    //         $record->end_date = now('Asia/Riyadh');
+    //     }
+    // });
     }
 
     public function assignedBy()

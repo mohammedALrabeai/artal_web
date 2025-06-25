@@ -142,7 +142,13 @@ class EmployeeProjectRecordResource extends Resource
                 ->onColor('success') // لون عند التفعيل
                 ->offColor('danger') // لون عند الإيقاف
                 ->required()
-                ->default(true),
+                ->default(true)
+                  ->afterStateUpdated(function (callable $set, callable $get, $state) {
+        // إذا تم تغيير الحالة إلى غير نشط
+        if ($state === false && empty($get('end_date'))) {
+            $set('end_date', now('Asia/Riyadh')->format('Y-m-d'));
+        }
+    }),
 
         ]);
     }
@@ -453,14 +459,21 @@ class EmployeeProjectRecordResource extends Resource
             ]);
     }
 
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        if (isset($data['status']) && is_bool($data['status'])) {
-            $data['status'] = $data['status'] ? 'active' : 'completed';
-        }
+//    protected function mutateFormDataBeforeSave(array $data): array
+// {
+//     if (
+//         isset($data['status']) &&
+//         $this->record &&
+//         $this->record->status === true &&   // كان نشطًا
+//         $data['status'] === false &&        // أصبح غير نشط
+//         empty($data['end_date'])            // لا يوجد end_date
+//     ) {
+//         $data['end_date'] = now('Asia/Riyadh');
+//     }
 
-        return $data;
-    }
+//     return $data;
+// }
+
 
     public static function getPages(): array
     {
