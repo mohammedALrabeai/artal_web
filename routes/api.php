@@ -25,6 +25,7 @@ use App\Http\Controllers\attendance\CoverageController;
 use App\Http\Controllers\Api\CodeVerificationController;
 use App\Http\Controllers\EmployeeNotificationController;
 use App\Http\Controllers\Api\AdminNotificationController;
+use App\Http\Controllers\Api\V2\UncoveredZonesController;
 use App\Http\Controllers\Api\OperationNotificationController;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
@@ -360,3 +361,39 @@ Route::get('/missing-employees/all', function () {
         'missing_employees' => $results,
     ]);
 });
+
+
+Route::get('/uncovered-zones', function () {
+    $date = request()->query('date', now()->toDateString());
+    $data = cache()->get("missing_employees_summary_{$date}", []);
+    
+    $grouped = collect($data)->groupBy(fn ($item) => $item['zone_id']);
+
+    $results = [];
+
+    foreach ($grouped as $zoneId => $items) {
+        $zone = \App\Models\Zone::with('project')->find($zoneId);
+        if (! $zone || ! $zone->project) {
+            continue;
+        }
+
+        $missing = collect($items)->sum(fn ($item) => count($item['employee_ids']));
+
+        if ($missing > 0) {
+            $results[] = [
+                'project'  => $zone->project->name,
+                'zone'     => $zone->name,
+                'required' => $zone->emp_no,
+                'missing'  => $missing,
+            ];
+        }
+    }
+
+    return response()->json([
+        'date' => $date,
+        'count' => count($results),
+        'uncovered_zones' => $results,
+    ]);
+});
+
+
