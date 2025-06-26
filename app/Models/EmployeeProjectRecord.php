@@ -19,6 +19,7 @@ class EmployeeProjectRecord extends Model
         'shift_id',
         'status',
         'assigned_by',
+        'shift_slot_id'
     ];
 
     // علاقة مع الموظف
@@ -52,6 +53,12 @@ class EmployeeProjectRecord extends Model
     {
         return $this->belongsTo(User::class, 'assigned_by');
     }
+
+    public function shiftSlot()
+{
+    return $this->belongsTo(ShiftSlot::class);
+}
+
 
     // علاقة مع المشروع
     public function project()

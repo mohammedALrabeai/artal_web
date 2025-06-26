@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\URL;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use Illuminate\Validation\Rule;
 use App\Rules\ValidSaudiIban;
+use Filament\Forms\Components\Tabs\Tab;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class EmployeeResource extends Resource
@@ -512,7 +513,7 @@ class EmployeeResource extends Resource
                     ->copyable()
                     ->copyMessageDuration(1500)
                     // ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('current_project')
                     ->label(__('Current Project'))
@@ -520,6 +521,19 @@ class EmployeeResource extends Resource
                         $currentProjectRecord = $record->currentProjectRecord; // استدعاء العلاقة الحالية
 
                         return $currentProjectRecord ? $currentProjectRecord->project->name : __('Not Assigned');
+                    })
+                    ->copyable()
+                    ->copyMessageDuration(1500)
+                    ->sortable()
+                    // ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                    Tables\Columns\TextColumn::make('currentZone.name')
+                    ->label(__('Current Zone'))
+                    ->getStateUsing(function ($record) {
+                        $currentZone = $record->currentZone; // استدعاء العلاقة الحالية
+
+                        return $currentZone ? $currentZone->name : __('Not Assigned');
                     })
                     ->copyable()
                     ->copyMessageDuration(1500)
