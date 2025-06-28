@@ -127,8 +127,38 @@ class EmployeeProjectRecordResource extends Resource
 
                     return \App\Models\Shift::where('zone_id', $zoneId)->pluck('name', 'id');
                 })
+                 ->reactive()
                 ->searchable()
                 ->required(),
+
+    //             Select::make('shift_slot_id')
+    // ->label('Slot')
+    // ->options(function (callable $get, ?EmployeeProjectRecord $record) {
+    //     $shiftId = $get('shift_id');
+    //     if (! $shiftId) return [];
+
+    //     // جلب الـ IDs المحجوزة حاليًا
+    //     $usedSlotIds = EmployeeProjectRecord::query()
+    //         ->where('shift_id', $shiftId)
+    //         ->when($record, fn($q) => $q->where('id', '!=', $record->id)) // استثناء السجل الحالي
+    //         ->where('status', true)
+    //         ->whereNull('end_date')
+    //         ->pluck('shift_slot_id')
+    //         ->filter()
+    //         ->toArray();
+
+    //     return \App\Models\ShiftSlot::where('shift_id', $shiftId)
+    //         ->whereNotIn('id', $usedSlotIds)
+    //         ->orderBy('slot_number')
+    //         ->get()
+    //         ->pluck('slot_number', 'id');
+    // })
+    // ->searchable()
+    // ->required()
+    // ->visible(fn (callable $get) => $get('shift_id')) // يظهر فقط عند اختيار وردية
+    // ->helperText('اختر الرقم المتاح ضمن هذه الوردية')
+    // ->reactive(),
+
 
             DatePicker::make('start_date')
                 ->label(__('Start Date'))

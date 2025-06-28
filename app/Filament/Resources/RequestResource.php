@@ -13,6 +13,8 @@ use App\Tables\Filters\EmployeeFilter;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Carbon\Carbon;
+
 use Filament\Tables;
 use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
@@ -321,6 +323,13 @@ class RequestResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->label(__('Description'))
                     ->searchable(),
+            Tables\Columns\TextColumn::make('exclusion_date')
+    ->label(__('Exclusion Date'))
+    ->getStateUsing(fn ($record) => $record->exclusion?->exclusion_date)
+    ->formatStateUsing(fn ($state) => $state ? \Carbon\Carbon::parse($state)->format('Y-m-d') : '-')
+    ->sortable(),
+
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Amount'))
                     ->toggleable(isToggledHiddenByDefault: true),

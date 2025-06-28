@@ -25,10 +25,18 @@ class ListRequests extends ListRecords
 // }
 
 
-    protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
-    {
-        return parent::getTableQuery()->latest();
-    }
+    // protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
+    // {
+    //     return parent::getTableQuery()->latest();
+    // }
+
+   protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
+{
+    return parent::getTableQuery()
+       ->with('exclusion') // تحميل علاقة الاستبعاد
+        ->latest();
+}
+
 
     // public function getTabs(): array
     // {
