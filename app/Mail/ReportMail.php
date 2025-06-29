@@ -20,12 +20,11 @@ class ReportMail extends Mailable
         $this->filePath = $filePath;
     }
 
-    public function build()
-    {
-        $fullPath = storage_path('app/' . $this->filePath);
+  public function build()
+{
+    return $this->subject('تقرير الموظفين غير المسندين')
+        ->view('emails.simple-report')
+        ->attach($this->filePath); // ← المسار المطلق يمر هنا
+}
 
-        return $this->subject('تقرير الموظفين غير المسندين')
-            ->view('emails.simple-report')
-            ->attach($fullPath);
-    }
 }

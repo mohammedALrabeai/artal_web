@@ -14,30 +14,36 @@ class SendUnassignedEmployeesReport extends Command
     protected $signature = 'report:send-unassigned-employees {email}';
     protected $description = 'يرسل تقرير الموظفين غير المسندين إلى الإيميل المحدد';
 
-    public function handle()
-    {
-        $export = new UnassignedEmployeesExport();
-        $fileName = 'unassigned-employees-' . now()->format('Ymd_His') . '.xlsx';
-        $filePath = 'reports/' . $fileName;
+   public function handle()
+{
+    $export = new UnassignedEmployeesExport();
+    $fileName = 'unassigned-employees-' . now()->format('Ymd_His') . '.xlsx';
+    $filePath = 'reports/' . $fileName;
 
-        // تأكد من وجود المجلد
-        Storage::makeDirectory('reports');
+    // تأكد من وجود المجلد
+    \Storage::makeDirectory('reports');
 
-        // حفظ ملف الإكسل
-        Excel::store($export, $filePath, 'local');
+    // حفظ ملف الإكسل في ديسك local
+    \Maatwebsite\Excel\Facades\Excel::store($export, $filePath, 'local');
 
-        // تحقق من وجود الملف فعلاً قبل الإرسال
-        if (!Storage::disk('local')->exists($filePath)) {
-            $this->error("❌ فشل حفظ ملف التقرير: $filePath");
-            return 1;
-        }
+    $fullPath = storage_path('app/' . $filePath);
 
-        // إرسال الإيميل مع الملف كمرفق
-        Mail::to($this->argument('email'))->send(new ReportMail($filePath));
-
-        $this->info('✅ تم إرسال التقرير بنجاح إلى ' . $this->argument('email'));
-        return 0;
+    // اطبع المسار وتحقق منه
+    $this->info("مسار الملف: $fullPath");
+    if (!file_exists($fullPath)) {
+        $this->error("❌ الملف لم يتم إيجاده بعد الحفظ! تحقق من الصلاحيات أو الديسك.");
+        return 1;
+    } else {
+        $this->info("✅ الملف تم إنشاؤه بنجاح.");
     }
+
+    // أرسل الإيميل مع إرفاق الملف بالمسار المطلق
+    \Mail::to($this->argument('email'))->send(new \App\Mail\ReportMail($fullPath));
+
+    $this->info('✅ تم إرسال التقرير بنجاح إلى ' . $this->argument('email'));
+    return 0;
+}
+
 }
 
 
