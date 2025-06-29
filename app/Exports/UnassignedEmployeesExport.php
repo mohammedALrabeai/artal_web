@@ -1,45 +1,52 @@
 <?php
 
+// app/Exports/UnassignedEmployeesExport.php
+
 namespace App\Exports;
 
 use App\Models\EmployeeProjectRecord;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Illuminate\Support\Collection;
 
 class UnassignedEmployeesExport implements FromCollection, WithHeadings
 {
     public function collection()
     {
-        // جلب الموظفين غير المخصصين لأي سلوت
-        return EmployeeProjectRecord::whereNull('shift_slot_id')
-            ->where('status', true)
+        // استخراج جميع الإسنادات النشطة التي لا يوجد لها سلوت
+        $records = EmployeeProjectRecord::where('status', true)
             ->whereNull('end_date')
-            ->with(['employee', 'shift', 'zone'])
-            ->get()
-            ->map(function ($record) {
-                return [
-                    'employee_id'   => $record->employee?->id,
-                    'employee_name' => $record->employee
-                        ? "{$record->employee->first_name} {$record->employee->father_name} {$record->employee->family_name}"
-                        : '-',
-                    'national_id'   => $record->employee?->national_id,
-                    'zone'          => $record->zone?->name,
-                    'shift'         => $record->shift?->name,
-                    'start_date'    => $record->start_date,
-                ];
-            });
+            ->whereNull('shift_slot_id')
+            ->with(['employee', 'shift', 'zone', 'project'])
+            ->get();
+
+        return $records->map(function ($record) {
+            return [
+                'اسم الموظف'      => optional($record->employee)->name ?? '',
+                'رقم الهوية'      => optional($record->employee)->national_id ?? '',
+                'الجوال'          => optional($record->employee)->mobile_number ?? '',
+                'المشروع'         => optional($record->project)->name ?? '',
+                'الموقع'          => optional($record->zone)->name ?? '',
+                'الوردية'         => optional($record->shift)->name ?? '',
+                'تاريخ البداية'   => $record->start_date,
+                'تاريخ النهاية'   => $record->end_date,
+                'رقم السجل'       => $record->id,
+            ];
+        });
     }
 
     public function headings(): array
     {
         return [
-            'معرف الموظف',
             'اسم الموظف',
             'رقم الهوية',
+            'الجوال',
+            'المشروع',
             'الموقع',
             'الوردية',
             'تاريخ البداية',
+            'تاريخ النهاية',
+            'رقم السجل',
         ];
     }
 }
