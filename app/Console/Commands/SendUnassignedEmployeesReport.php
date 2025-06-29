@@ -45,7 +45,7 @@ class SendUnassignedEmployeesReport extends Command
                     <p style='font-size: 15px; color: #666;'>يرجى مراجعة الورديات واتخاذ الإجراء اللازم.</p>
                     <p style='margin-top: 30px; font-size: 14px; color: #888;'>
                         مع تحيات<br>
-                        Artal HR Team
+                        Artal Soft Team
                     </p>
                 </div>
             </body>
@@ -67,6 +67,8 @@ class SendUnassignedEmployeesReport extends Command
         }
     }
 }
+
+//
 // This command generates a report of unassigned employees and sends it via email as an Excel file.
 // php artisan report:send-unassigned-employees mohammedalrabeai@gmail.com
 
