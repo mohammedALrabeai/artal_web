@@ -61,6 +61,7 @@ class Employee extends Model
         'api_token',
         'leave_balance',
         'out_of_zone',
+        'preferred_zone_name',
         'insurance_company_id',
         'parent_insurance', 'insurance_company_name',
         'commercial_record_id',

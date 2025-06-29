@@ -131,33 +131,38 @@ class EmployeeProjectRecordResource extends Resource
                 ->searchable()
                 ->required(),
 
-    //             Select::make('shift_slot_id')
-    // ->label('Slot')
-    // ->options(function (callable $get, ?EmployeeProjectRecord $record) {
-    //     $shiftId = $get('shift_id');
-    //     if (! $shiftId) return [];
+           Select::make('shift_slot_id')
+    ->label('Slot')
+    ->options(function (callable $get, ?EmployeeProjectRecord $record) {
+        $shiftId = $get('shift_id');
+        if (! $shiftId) return [];
 
-    //     // جلب الـ IDs المحجوزة حاليًا
-    //     $usedSlotIds = EmployeeProjectRecord::query()
-    //         ->where('shift_id', $shiftId)
-    //         ->when($record, fn($q) => $q->where('id', '!=', $record->id)) // استثناء السجل الحالي
-    //         ->where('status', true)
-    //         ->whereNull('end_date')
-    //         ->pluck('shift_slot_id')
-    //         ->filter()
-    //         ->toArray();
+        // جلب الـ IDs المحجوزة حاليًا
+        $usedSlotIds = EmployeeProjectRecord::query()
+            ->where('shift_id', $shiftId)
+            ->where('status', true)
+            ->whereNull('end_date')
+            ->when($record, fn($q) => $q->where('id', '!=', $record->id)) // استثناء السجل الحالي
+            ->pluck('shift_slot_id')
+            ->filter()
+            ->toArray();
 
-    //     return \App\Models\ShiftSlot::where('shift_id', $shiftId)
-    //         ->whereNotIn('id', $usedSlotIds)
-    //         ->orderBy('slot_number')
-    //         ->get()
-    //         ->pluck('slot_number', 'id');
-    // })
-    // ->searchable()
-    // ->required()
-    // ->visible(fn (callable $get) => $get('shift_id')) // يظهر فقط عند اختيار وردية
-    // ->helperText('اختر الرقم المتاح ضمن هذه الوردية')
-    // ->reactive(),
+        $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
+            ->when(count($usedSlotIds), fn($q) => $q->whereNotIn('id', $usedSlotIds));
+
+        // ✅ إضافة مكانه الحالي ضمن القائمة إن وُجد حتى لو كان محجوزًا
+        if ($record && $record->shift_slot_id) {
+            $query->orWhere('id', $record->shift_slot_id);
+        }
+
+        return $query->orderBy('slot_number')->get()->pluck('slot_number', 'id');
+    })
+    ->searchable()
+    ->required()
+    ->visible(fn (callable $get) => $get('shift_id'))
+    ->helperText('اختر Slot متاح ضمن هذه الوردية')
+    ->reactive(),
+
 
 
             DatePicker::make('start_date')

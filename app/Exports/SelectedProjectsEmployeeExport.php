@@ -148,7 +148,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
                 $record->shift->name ?? 'بدون اسم',     // اسم الوردية
                 '-',   // start_date
                 '-',   // end_date
-                '❌ نقص', // الحالة
+                '-', // الحالة
             ];
 
             $workPattern = $this->getWorkPatternDays($record,);

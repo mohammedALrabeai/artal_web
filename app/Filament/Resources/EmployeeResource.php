@@ -9,6 +9,8 @@ use App\Filament\Resources\EmployeeResource\Pages;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
 use App\Models\Employee;
 use App\Models\Exclusion;
+use Illuminate\Support\Carbon;
+
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
@@ -322,6 +324,12 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('job_status')
                             ->label(__('Job Status')),
 
+                        Forms\Components\TextInput::make('preferred_zone_name')
+                            ->label(__('Preferred Zone Name'))
+                        // ->required()
+                        ,
+
+
                         // Forms\Components\TextInput::make('health_insurance_status')
                         //     ->label(__('Health Insurance Status'))
                         //     ->required(),
@@ -460,9 +468,19 @@ class EmployeeResource extends Resource
                 ->offColor('danger')
                 ->default(true)
                 ->required()
-                 ->afterStateUpdated(function ($state, callable $set) {
-        $set('job_status', $state ? 'يعمل' : 'لا يعمل');
-    }),
+                ->afterStateUpdated(function ($state, callable $set, $livewire) {
+                    $set('job_status', $state ? 'يعمل' : 'لا يعمل');
+
+                    if (! $state) {
+                        $employeeId = $livewire->record->id;
+
+                        \App\Models\EmployeeProjectRecord::where('employee_id', $employeeId)
+                            ->update([
+                                'status' => false, // تأكيد أن الحالة تتعطل
+                                'end_date' => Carbon::now()->toDateString(), // تعيين تاريخ اليوم
+                            ]);
+                    }
+                }),
 
         ])
             ->columns(1);
@@ -528,7 +546,7 @@ class EmployeeResource extends Resource
                     // ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
 
-                    Tables\Columns\TextColumn::make('currentZone.name')
+                Tables\Columns\TextColumn::make('currentZone.name')
                     ->label(__('Current Zone'))
                     ->getStateUsing(function ($record) {
                         $currentZone = $record->currentZone; // استدعاء العلاقة الحالية

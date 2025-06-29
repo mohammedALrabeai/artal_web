@@ -72,95 +72,112 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
         }
     }
 
-    protected function getFormSchema(): array
-    {
-        return [
-            Forms\Components\Grid::make(12)
-                ->schema([
-                    Select::make('projectId')
-                        ->label('اختر المشروع')
-                        ->options(Project::pluck('name', 'id'))
-                        ->reactive()
-                        ->searchable()
-                        ->required()
-                        ->afterStateUpdated(function (callable $set) {
-                            $set('records', []);
-                            $this->requiredEmployees = 0;
-                            $this->assignedEmployees = 0;
-                            $this->missingEmployees = 0;
-                        })
-                        ->columnSpan(10),
+protected function getFormSchema(): array
+{
+    return [
+        Forms\Components\Grid::make(12)
+            ->schema([
+                Select::make('projectId')
+                    ->label('اختر المشروع')
+                    ->options(Project::pluck('name', 'id'))
+                    ->reactive()
+                    ->searchable()
+                    ->required()
+                    ->afterStateUpdated(function (callable $set) {
+                        $set('records', []);
+                        $this->requiredEmployees = 0;
+                        $this->assignedEmployees = 0;
+                        $this->missingEmployees = 0;
+                    })
+                    ->columnSpan(10),
 
-                    Forms\Components\Placeholder::make('load_button')
-                        ->content('🔄 تحميل الموظفين')
-                        ->extraAttributes([
-                            'class' => 'filament-button filament-button-size-md rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition',
-                            'style' => 'cursor:pointer; text-align:center;',
-                            'wire:click' => 'loadProjectEmployeesFromButton',
-                        ])
-                        ->visible(fn (callable $get) => $get('projectId')) // يظهر فقط إذا تم اختيار مشروع
-                        ->columnSpan(2),
-                ]),
+                Forms\Components\Placeholder::make('load_button')
+                    ->content('🔄 تحميل الموظفين')
+                    ->extraAttributes([
+                        'class' => 'filament-button filament-button-size-md rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition',
+                        'style' => 'cursor:pointer; text-align:center;',
+                        'wire:click' => 'loadProjectEmployeesFromButton',
+                    ])
+                    ->visible(fn (callable $get) => $get('projectId'))
+                    ->columnSpan(2),
+            ]),
 
-            Forms\Components\Grid::make(3)
-                ->schema([
-                    Forms\Components\Placeholder::make('required_employees')
-                        ->label('العدد المطلوب')
-                        ->content(fn () => $this->requiredEmployees)
-                        ->columnSpan(1),
+        Forms\Components\Grid::make(3)
+            ->schema([
+                Forms\Components\Placeholder::make('required_employees')
+                    ->label('العدد المطلوب')
+                    ->content(fn () => $this->requiredEmployees)
+                    ->columnSpan(1),
 
-                    Forms\Components\Placeholder::make('assigned_employees')
-                        ->label('الموظفين المسندين')
-                        ->content(fn () => $this->assignedEmployees)
-                        ->columnSpan(1),
+                Forms\Components\Placeholder::make('assigned_employees')
+                    ->label('الموظفين المسندين')
+                    ->content(fn () => $this->assignedEmployees)
+                    ->columnSpan(1),
 
-                    Forms\Components\Placeholder::make('missing_employees')
-                        ->label('النقص')
-                        ->content(fn () => $this->missingEmployees)
-                        ->columnSpan(1),
-                ])
-                ->visible(fn (callable $get) => $get('projectId') !== null),
+                Forms\Components\Placeholder::make('missing_employees')
+                    ->label('النقص')
+                    ->content(fn () => $this->missingEmployees)
+                    ->columnSpan(1),
+            ])
+            ->visible(fn (callable $get) => $get('projectId') !== null),
 
-            Repeater::make('records')
-                ->label('الموظفون')
-                ->schema([
-                    EmployeeSelectV2::make()
-                        ->columnSpan(2),
+        Repeater::make('records')
+            ->label('الموظفون')
+            ->schema([
+                EmployeeSelectV2::make()
+                    ->columnSpan(2),
 
-                    Select::make('zone_id')
-                        ->label('الموقع')
-                        ->options(fn (callable $get) => $get('../../projectId') // استدعاء قيمة projectId من الفورم (وليس من $this)
-        ? Zone::where('project_id', $get('../../projectId'))->pluck('name', 'id')
-        : []
-                        )
+                Select::make('zone_id')
+                    ->label('الموقع')
+                    ->options(fn (callable $get) => $get('../../projectId')
+                        ? Zone::where('project_id', $get('../../projectId'))->pluck('name', 'id')
+                        : [])
+                    ->reactive()
+                    ->required()
+                    ->afterStateUpdated(function (callable $set) {
+                        $set('shift_id', null);
+                        $set('shift_slot_id', null);
+                    })
+                    ->columnSpan(2),
 
-                        ->reactive()
-                        ->required()
-                        ->columnSpan(2),
+                Select::make('shift_id')
+                    ->label('الوردية')
+                    ->options(fn (callable $get) => $get('zone_id')
+                        ? Shift::where('zone_id', $get('zone_id'))->pluck('name', 'id')
+                        : [])
+                    ->reactive()
+                    ->required()
+                    ->afterStateUpdated(function (callable $set) {
+                        $set('shift_slot_id', null);
+                    })
+                    ->columnSpan(2),
 
-                    Select::make('shift_id')
-                        ->label('الوردية')
-                        ->options(fn (callable $get) => $get('zone_id') ? Shift::where('zone_id', $get('zone_id'))->pluck('name', 'id') : []
-                        )
+                Select::make('shift_slot_id')
+                    ->label('المكان (Slot)')
+                    ->options(function (callable $get) {
+                        $shiftId = $get('shift_id');
+                        if (! $shiftId) {
+                            return [];
+                        }
 
-                        ->required()
-                        ->columnSpan(2),
+                        return \App\Models\ShiftSlot::where('shift_id', $shiftId)
+                            ->orderBy('slot_number')
+                            ->pluck('slot_number', 'id')
+                            ->map(fn ($num) => "مكان رقم $num");
+                    })
+                    ->required()
+                    ->columnSpan(1),
 
-                    DatePicker::make('start_date')
-                        ->label('تاريخ البداية')
-                        ->required()
-                        ->columnSpan(1),
-
-                    // DatePicker::make('end_date')
-                    //     ->label('تاريخ النهاية')
-                    //     ->columnSpan(1),
-                ])
-                ->columns(7) // 👈  توزيع الأعمدة على صف واحد
-                ->minItems(1)
-                ->default(fn () => $this->records),
-
-        ];
-    }
+                DatePicker::make('start_date')
+                    ->label('تاريخ البداية')
+                    ->required()
+                    ->columnSpan(1),
+            ])
+            ->columns(8)
+            ->minItems(1)
+            ->default(fn () => $this->records),
+    ];
+}
 
     protected function getHeaderActions(): array
     {
@@ -177,170 +194,175 @@ class ManageAssignments extends Page implements Forms\Contracts\HasForms
         ];
     }
 
-    public function save(): void
-    {
-        $created = 0;
-        $updated = 0;
-        $updatWitLoc = 0;
-        $notificationJobs = [];
+  public function save(): void
+{
+    $created = 0;
+    $updated = 0;
+    $updatWitLoc = 0;
+    $notificationJobs = [];
 
-        DB::transaction(function () use (&$created, &$updated, &$updatWitLoc, &$notificationJobs) {
-            // 🔍 جميع التركيبات الحالية: employee_id + zone_id + shift_id
-            $existingCombinations = collect($this->records)
-                ->filter(fn ($item) => isset($item['employee_id'], $item['zone_id'], $item['shift_id']))
-                ->map(fn ($item) => $item['employee_id'].'-'.$item['zone_id'].'-'.$item['shift_id']);
+    $slotKeys = [];
 
-            // 🔍 جلب السجلات القديمة المرتبطة بالمشروع والتي لم تعد موجودة الآن
-            $toBeDisabled = EmployeeProjectRecord::where('project_id', $this->projectId)
+    DB::transaction(function () use (&$created, &$updated, &$updatWitLoc, &$notificationJobs, &$slotKeys) {
+        $existingCombinations = collect($this->records)
+            ->filter(fn ($item) => isset($item['employee_id'], $item['zone_id'], $item['shift_id'], $item['shift_slot_id']))
+            ->map(fn ($item) => $item['employee_id'].'-'.$item['zone_id'].'-'.$item['shift_id']);
+
+        // 🚫 التحقق من التكرار داخل Repeater
+        foreach ($this->records as $record) {
+            $key = $record['shift_id'].'-'.$record['shift_slot_id'];
+            if (in_array($key, $slotKeys)) {
+                throw new \Exception("⚠️ تم تكرار نفس المكان (Slot) داخل نفس الوردية.");
+            }
+            $slotKeys[] = $key;
+        }
+
+        // 🚫 التحقق من أن المكان لم يُستخدم سابقًا (من قاعدة البيانات)
+        foreach ($this->records as $record) {
+            $existing = EmployeeProjectRecord::where('shift_slot_id', $record['shift_slot_id'])
+                ->where('shift_id', $record['shift_id'])
                 ->where('status', true)
-                ->get()
-                ->filter(function ($record) use ($existingCombinations) {
-                    $key = $record->employee_id.'-'.$record->zone_id.'-'.$record->shift_id;
+                ->where(function ($q) use ($record) {
+                    $q->whereNull('end_date')->orWhere('end_date', '>=', now()->toDateString());
+                })
+                ->when(isset($record['id']), fn($q) => $q->where('id', '!=', $record['id']))
+                ->first();
 
-                    return ! $existingCombinations->contains($key);
-                });
-
-            // ⛔ تعطيلها فعليًا
-            EmployeeProjectRecord::whereIn('id', $toBeDisabled->pluck('id'))
-                ->update(['status' => false, 'end_date' => now()]);
-
-            foreach ($toBeDisabled as $record) {
-                $notificationJobs[] = [
-                    'type' => 'end',
-                    'record' => $record,
-                ];
+            if ($existing) {
+                $slot = \App\Models\ShiftSlot::find($record['shift_slot_id']);
+                throw new \Exception("❌ المكان رقم ({$slot->slot_number}) في الوردية مستخدم مسبقًا.");
             }
+        }
 
-            // ✅ المعالجة الأساسية
-            foreach ($this->records as $data) {
-                // إسناد جديد (لا يحتوي على id)
-                if (! isset($data['id'])) {
-                    // التأكد من عدم وجود سجل نشط لنفس الموظف + الموقع + الوردية
-                    $existing = EmployeeProjectRecord::where('employee_id', $data['employee_id'])
-                        ->where('project_id', $this->projectId)
-                        ->where('zone_id', $data['zone_id'])
-                        ->where('shift_id', $data['shift_id'])
-                        ->where('status', true)
-                        ->first();
-
-                    if (! $existing) {
-                        $createdRecord = EmployeeProjectRecord::create([
-                            'employee_id' => $data['employee_id'],
-                            'project_id' => $this->projectId,
-                            'zone_id' => $data['zone_id'],
-                            'shift_id' => $data['shift_id'],
-                            'start_date' => $data['start_date'],
-                            'end_date' => $data['end_date'] ?? null,
-                            'status' => true,
-                        ]);
-                        $created++;
-
-                        // تأكد من تفعيل الموظف إذا كان غير مفعل
-                        $createdRecord->employee->update(['status' => 1]);
-
-                        $notificationJobs[] = [
-                            'type' => 'assign',
-                            'record' => $createdRecord,
-                        ];
-                    }
-
-                    continue;
-                }
-
-                // ✅ تعديل سجل موجود
-                $record = EmployeeProjectRecord::find($data['id']);
-                if (! $record) {
-                    continue;
-                }
-
-                // تم تغيير الموظف
-                if ($record->employee_id != $data['employee_id']) {
-                    $record->update(['status' => false, 'end_date' => now()->toDateString()]);
-
-                    $newRecord = EmployeeProjectRecord::create([
-                        'employee_id' => $data['employee_id'],
-                        'project_id' => $this->projectId,
-                        'zone_id' => $data['zone_id'],
-                        'shift_id' => $data['shift_id'],
-                        'start_date' => $data['start_date'],
-                        'end_date' => $data['end_date'] ?? null,
-                        'status' => true,
-                    ]);
-                    $updatWitLoc++;
-
-                    $newRecord->employee->update(['status' => 1]);
-
-                    $notificationJobs[] = [
-                        'type' => 'transfer_employee',
-                        'record' => $newRecord,
-                    ];
-                }
-                // تم تغيير الموقع أو الوردية أو تاريخ البدء
-                elseif (
-                    $record->zone_id !== $data['zone_id'] ||
-                    $record->shift_id !== $data['shift_id'] ||
-                    $record->start_date !== $data['start_date']
-                ) {
-                    $record->update(['status' => false, 'end_date' => now()->toDateString()]);
-
-                    $newRecord = EmployeeProjectRecord::create([
-                        'employee_id' => $data['employee_id'],
-                        'project_id' => $this->projectId,
-                        'zone_id' => $data['zone_id'],
-                        'shift_id' => $data['shift_id'],
-                        'start_date' => $data['start_date'],
-                        'end_date' => $data['end_date'] ?? null,
-                        'status' => true,
-                    ]);
-                    $updatWitLoc++;
-
-                    $newRecord->employee->update(['status' => 1]);
-
-                    $notificationJobs[] = [
-                        'type' => 'transfer_location',
-                        'record' => $newRecord,
-                    ];
-                } else {
-                    // لم يتم تغيير الموقع أو الموظف أو الوردية
-                    $updated++;
-                }
-            }
-        });
-
-        // ✅ تنفيذ الإشعارات بعد نجاح المعاملة
-        \App\Services\AssignmentNotifier::dispatchJobs($notificationJobs);
-
-        Notification::make()
-            ->title('✅ تم حفظ التعديلات')
-            ->body("📌 تم تنفيذ العمليات: {$created} إضافة، {$updated} تحديث، {$updatWitLoc} نقل")
-            ->success()
-            ->send();
-
-        $this->reset(['projectId', 'records']);
-    }
-
-    protected function loadProjectEmployees($projectId): void
-    {
-        $project = Project::findOrFail($projectId);
-
-        $this->requiredEmployees = $project->emp_no ?? 0;
-
-        $this->records = EmployeeProjectRecord::where('project_id', $projectId)
+        $toBeDisabled = EmployeeProjectRecord::where('project_id', $this->projectId)
             ->where('status', true)
             ->get()
-            ->map(fn ($record) => [
-                'employee_id' => $record->employee_id,
-                'zone_id' => $record->zone_id,
-                'shift_id' => $record->shift_id,
-                'start_date' => $record->start_date,
-                'end_date' => $record->end_date,
-                'id' => $record->id,
-            ])
-            ->toArray();
+            ->filter(function ($record) use ($existingCombinations) {
+                $key = $record->employee_id.'-'.$record->zone_id.'-'.$record->shift_id;
+                return ! $existingCombinations->contains($key);
+            });
 
-        $this->assignedEmployees = count($this->records);
-        $this->missingEmployees = max(0, $this->requiredEmployees - $this->assignedEmployees);
-    }
+        EmployeeProjectRecord::whereIn('id', $toBeDisabled->pluck('id'))
+            ->update(['status' => false, 'end_date' => now()]);
+
+        foreach ($toBeDisabled as $record) {
+            $notificationJobs[] = ['type' => 'end', 'record' => $record];
+        }
+
+        foreach ($this->records as $data) {
+            if (! isset($data['id'])) {
+                $existing = EmployeeProjectRecord::where('employee_id', $data['employee_id'])
+                    ->where('project_id', $this->projectId)
+                    ->where('zone_id', $data['zone_id'])
+                    ->where('shift_id', $data['shift_id'])
+                    ->where('status', true)
+                    ->first();
+
+                if (! $existing) {
+                    $createdRecord = EmployeeProjectRecord::create([
+                        'employee_id' => $data['employee_id'],
+                        'project_id' => $this->projectId,
+                        'zone_id' => $data['zone_id'],
+                        'shift_id' => $data['shift_id'],
+                        'shift_slot_id' => $data['shift_slot_id'],
+                        'start_date' => $data['start_date'],
+                        'end_date' => $data['end_date'] ?? null,
+                        'status' => true,
+                    ]);
+                    $created++;
+
+                    $createdRecord->employee->update(['status' => 1]);
+
+                    $notificationJobs[] = ['type' => 'assign', 'record' => $createdRecord];
+                }
+
+                continue;
+            }
+
+            $record = EmployeeProjectRecord::find($data['id']);
+            if (! $record) continue;
+
+            if ($record->employee_id != $data['employee_id']) {
+                $record->update(['status' => false, 'end_date' => now()->toDateString()]);
+
+                $newRecord = EmployeeProjectRecord::create([
+                    'employee_id' => $data['employee_id'],
+                    'project_id' => $this->projectId,
+                    'zone_id' => $data['zone_id'],
+                    'shift_id' => $data['shift_id'],
+                    'shift_slot_id' => $data['shift_slot_id'],
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'] ?? null,
+                    'status' => true,
+                ]);
+                $updatWitLoc++;
+                $newRecord->employee->update(['status' => 1]);
+
+                $notificationJobs[] = ['type' => 'transfer_employee', 'record' => $newRecord];
+            } elseif (
+                $record->zone_id !== $data['zone_id'] ||
+                $record->shift_id !== $data['shift_id'] ||
+                $record->start_date !== $data['start_date'] ||
+                $record->shift_slot_id !== $data['shift_slot_id']
+            ) {
+                $record->update(['status' => false, 'end_date' => now()->toDateString()]);
+
+                $newRecord = EmployeeProjectRecord::create([
+                    'employee_id' => $data['employee_id'],
+                    'project_id' => $this->projectId,
+                    'zone_id' => $data['zone_id'],
+                    'shift_id' => $data['shift_id'],
+                    'shift_slot_id' => $data['shift_slot_id'],
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'] ?? null,
+                    'status' => true,
+                ]);
+                $updatWitLoc++;
+                $newRecord->employee->update(['status' => 1]);
+
+                $notificationJobs[] = ['type' => 'transfer_location', 'record' => $newRecord];
+            } else {
+                $updated++;
+            }
+        }
+    });
+
+    \App\Services\AssignmentNotifier::dispatchJobs($notificationJobs);
+
+    Notification::make()
+        ->title('✅ تم حفظ التعديلات')
+        ->body("📌 تم تنفيذ العمليات: {$created} إضافة، {$updated} تحديث، {$updatWitLoc} نقل")
+        ->success()
+        ->send();
+
+    $this->reset(['projectId', 'records']);
+}
+
+
+   protected function loadProjectEmployees($projectId): void
+{
+    $project = Project::findOrFail($projectId);
+
+    $this->requiredEmployees = $project->emp_no ?? 0;
+
+    $this->records = EmployeeProjectRecord::where('project_id', $projectId)
+        ->where('status', true)
+        ->get()
+        ->map(fn ($record) => [
+            'id' => $record->id,
+            'employee_id' => $record->employee_id,
+            'zone_id' => $record->zone_id,
+            'shift_id' => $record->shift_id,
+            'shift_slot_id' => $record->shift_slot_id, // ✅ نضيفه هنا
+            'start_date' => $record->start_date,
+            'end_date' => $record->end_date,
+        ])
+        ->toArray();
+
+    $this->assignedEmployees = count($this->records);
+    $this->missingEmployees = max(0, $this->requiredEmployees - $this->assignedEmployees);
+}
+
 
     protected function sendAssignmentNotification(EmployeeProjectRecord $record): void
     {

@@ -110,10 +110,25 @@ class ShiftResource extends Resource
                 ->label(__('Start Date'))
                 ->required(),
 
-            Forms\Components\TextInput::make('emp_no')
-                ->label(__('Number of Employees'))
-                ->numeric()
-                ->required(),
+         Forms\Components\TextInput::make('emp_no')
+    ->label(__('Number of Employees'))
+    ->numeric()
+    ->required()
+    // ->rules([
+    //     function ($attribute, $value, $fail) {
+    //         // فقط عند التعديل وليس الإنشاء
+    //         if (request()->route('record')) {
+    //             $shiftId = request()->route('record');
+    //             $activeCount = \App\Models\EmployeeProjectRecord::where('shift_id', $shiftId)
+    //                 ->where('status', true)
+    //                 ->count();
+    //             if ($value < $activeCount) {
+    //                 $fail("لا يمكنك تقليل العدد إلى أقل من الموظفين المسندين حالياً ({$activeCount})");
+    //             }
+    //         }
+    //     }
+    // ])
+    ,
             // Forms\Components\Toggle::make('exclude_from_auto_absence')
             //     ->label(__('Exclude from Auto Absence'))
             //     ->helperText(__('When activated, employees of this shift will not be automatically considered absent.'))
@@ -124,6 +139,26 @@ class ShiftResource extends Resource
                 ->default(true),
         ]);
     }
+
+public static function mutateFormDataBeforeSave(array $data): array
+{
+    // التحقق فقط إذا كان تعديل (أي يوجد id)
+    if (isset($data['id'])) {
+        $shiftId = $data['id'];
+        $activeCount = \App\Models\EmployeeProjectRecord::where('shift_id', $shiftId)
+            ->where('status', true)
+            ->count();
+
+        if ($data['emp_no'] < $activeCount) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'emp_no' => "❌ لا يمكنك تقليل العدد إلى أقل من الموظفين المسندين حالياً ({$activeCount})",
+            ]);
+        }
+    }
+    return $data;
+}
+
+
 
     public static function table(Table $table): Table
     {

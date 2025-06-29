@@ -20,10 +20,7 @@ class ShiftSlot extends Model
         return $this->belongsTo(Shift::class);
     }
 
-    public function shiftSlots()
-{
-    return $this->hasMany(ShiftSlot::class);
-}
+
 
 
     // 🔁 المكان قد يكون مرتبطًا بسجلات متعددة عبر الزمن

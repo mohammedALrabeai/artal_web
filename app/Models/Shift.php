@@ -78,6 +78,11 @@ class Shift extends Model
 
         return null;
     }
+    public function slots()
+{
+    return $this->hasMany(\App\Models\ShiftSlot::class);
+}
+
 
     public function getLastEntryTimeAttribute($value)
     {
