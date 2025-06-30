@@ -71,7 +71,8 @@ class RequestResource extends Resource
                                     ->mapWithKeys(fn($type) => [$type->key => __($type->name)]) // ✅ ترجمة ديناميكية
                                     ->toArray())
                                 ->required()
-                                ->reactive(),
+                                ->reactive()
+                                ->disabledOn('edit'),
 
                             // اختيار الموظف
                             // Forms\Components\Select::make('employee_id')
@@ -579,7 +580,8 @@ class RequestResource extends Resource
                             ->send();
                     }),
 
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                ->hidden(fn($record) => in_array($record->status, ['approved', 'rejected'])),
             ])
             ->paginationPageOptions([10, 25, 50, 100])
             ->bulkActions([

@@ -24,7 +24,8 @@ class ViewRequest extends ViewRecord
                 ->url(fn ($record) => EmployeeResource::getUrl('view', ['record' => $record->employee]))
                 ->openUrlInNewTab(true),
 
-            Actions\EditAction::make(),
+            Actions\EditAction::make()
+                ->hidden(fn ($record) => in_array($record->status, ['approved', 'rejected'])),
         ];
     }
 
