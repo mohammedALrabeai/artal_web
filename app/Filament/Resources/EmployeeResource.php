@@ -1264,6 +1264,7 @@ class EmployeeResource extends Resource
             RelationManagers\ResignationsRelationManager::class,
             RelationManagers\RequestsRelationManager::class,
             RelationManagers\AssetAssignmentsRelationManager::class,
+             RelationManagers\EmployeeActivityRelationManager::class,
 
         ];
     }
