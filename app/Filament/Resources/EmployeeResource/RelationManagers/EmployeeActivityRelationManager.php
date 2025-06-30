@@ -31,8 +31,9 @@ class EmployeeActivityRelationManager extends RelationManager
 
 
 
-             Tables\Columns\TextColumn::make('new_values')
+            Tables\Columns\TextColumn::make('new_values')
     ->label('القيم الجديدة')
+    ->html()
     ->getStateUsing(function ($record) {
         try {
             $properties = is_string($record->properties)
@@ -45,9 +46,11 @@ class EmployeeActivityRelationManager extends RelationManager
                 return '-';
             }
 
-            return collect($attributes)
+            $text = collect($attributes)
                 ->map(fn($value, $key) => "$key : $value")
                 ->implode("\n");
+
+            return nl2br(e($text));
         } catch (\Throwable $e) {
             return '-';
         }
@@ -55,8 +58,10 @@ class EmployeeActivityRelationManager extends RelationManager
 
 
 
-            Tables\Columns\TextColumn::make('old_values')
+
+           Tables\Columns\TextColumn::make('old_values')
     ->label('القيم القديمة')
+    ->html()
     ->getStateUsing(function ($record) {
         try {
             $properties = is_string($record->properties)
@@ -69,13 +74,16 @@ class EmployeeActivityRelationManager extends RelationManager
                 return '-';
             }
 
-            return collect($old)
+            $text = collect($old)
                 ->map(fn($value, $key) => "$key : $value")
                 ->implode("\n");
+
+            return nl2br(e($text));
         } catch (\Throwable $e) {
             return '-';
         }
     }),
+
 
 
 
