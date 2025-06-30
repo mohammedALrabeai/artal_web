@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+    use App\Filament\Resources\EmployeeProjectRecordResource\RelationManagers\ActivityLogsRelationManager;
+
 
 class EmployeeProjectRecordResource extends Resource
 {
@@ -518,6 +520,14 @@ class EmployeeProjectRecordResource extends Resource
             'edit' => Pages\EditEmployeeProjectRecord::route('/{record}/edit'),
         ];
     }
+
+
+public static function getRelations(): array
+{
+    return [
+        ActivityLogsRelationManager::class,
+    ];
+}
 
     // private static function calculateWorkPattern($record)
     // {

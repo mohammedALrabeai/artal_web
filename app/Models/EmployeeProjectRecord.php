@@ -5,10 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
 
 class EmployeeProjectRecord extends Model
 {
     use HasFactory;
+    use LogsActivity;
+
 
     protected $fillable = [
         'employee_id',
@@ -128,4 +133,13 @@ class EmployeeProjectRecord extends Model
             ->whereHas('shift', fn ($q) => $q->where('exclude_from_auto_absence', false)
             );
     }
+
+    public function getActivitylogOptions(): LogOptions
+{
+    return LogOptions::defaults()
+        ->logAll() // سجل جميع الحقول
+        ->logOnlyDirty() // فقط الحقول المتغيرة
+        ->dontSubmitEmptyLogs(); // تجاهل إذا لم يتغير شيء فعلياً
+}
+
 }
