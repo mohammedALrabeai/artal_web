@@ -2,21 +2,22 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ShiftResource\Pages;
-use App\Models\EmployeeProjectRecord;
-use App\Models\EmployeeStatus;
-use App\Models\Shift;
-use App\Models\Zone;
 use Carbon\Carbon;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Zone;
 use Filament\Tables;
+use App\Models\Shift;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use App\Models\EmployeeStatus;
+use Filament\Resources\Resource;
+use Illuminate\Support\Facades\DB;
+use App\Models\EmployeeProjectRecord;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
+use App\Filament\Resources\ShiftResource\Pages;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\ShiftResource\RelationManagers\ShiftRecordsRelationManager;
 
 class ShiftResource extends Resource
 {
@@ -301,6 +302,13 @@ public static function mutateFormDataBeforeSave(array $data): array
             'edit' => Pages\EditShift::route('/{record}/edit'),
         ];
     }
+
+      public static function getRelations(): array
+{
+    return [
+        ShiftRecordsRelationManager::class,
+    ];
+}
 
     private static function calculateWorkPattern($record)
     {

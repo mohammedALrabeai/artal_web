@@ -2,20 +2,21 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ZoneResource\Pages;
+use Filament\Forms;
+use App\Models\Zone;
+use Filament\Tables;
 use App\Models\Pattern;
 use App\Models\Project;
-use App\Models\Zone;
-use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Tables\Table;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Table;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Filament\Resources\ZoneResource\Pages;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Filament\Resources\ZoneResource\RelationManagers\ZoneRecordsRelationManager;
 
 class ZoneResource extends Resource
 {
@@ -283,4 +284,10 @@ class ZoneResource extends Resource
             'view' => Pages\ViewZone::route('/{record}'), // صفحة عرض التفاصيل
         ];
     }
+    public static function getRelations(): array
+{
+    return [
+        ZoneRecordsRelationManager::class,
+    ];
+}
 }
