@@ -12,6 +12,28 @@ class SettingsController extends Controller
      */
     public function index()
     {
+
+         try {
+        $userAgent = strtolower(request()->header('User-Agent', 'unknown'));
+
+        if (str_contains($userAgent, 'android')) {
+            $platform = 'android';
+        } elseif (str_contains($userAgent, 'iphone') || str_contains($userAgent, 'ipad') || str_contains($userAgent, 'ios')) {
+            $platform = 'ios';
+        } elseif (str_contains($userAgent, 'windows')) {
+            $platform = 'windows';
+        } else {
+            $platform = 'unknown';
+        }
+
+        logger()->info('Settings retrieved from platform: ' . $platform, [
+            'user_agent' => $userAgent,
+            'ip' => request()->ip(),
+            'time' => now()->toDateTimeString(),
+        ]);
+    } catch (\Throwable $e) {
+        // لا تفعل شيئًا حتى لا يتأثر المستخدم
+    }
         // الحصول على جميع الإعدادات
         $settings = Setting::pluck('value', 'key')->toArray();
 
