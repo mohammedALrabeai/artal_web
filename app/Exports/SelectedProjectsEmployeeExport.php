@@ -130,6 +130,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             'الوردية',
             'تاريخ البدء',
             'تاريخ الانتهاء',
+            'حالة الموظف',
             'الحالة',
         ];
 
@@ -148,6 +149,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
                 $record->shift->name ?? 'بدون اسم',     // اسم الوردية
                 '-',   // start_date
                 '-',   // end_date
+                '-',   // حالة الموظف
                 '-', // الحالة
             ];
 
@@ -170,9 +172,10 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             $record->employee->national_id,
             $record->project->name,
             $record->zone->name,
-            $record->shift->name,
+            $record->shift->name?? 'بدون اسم',
             $record->start_date,
             $record->end_date ?? 'غير محدد',
+            $record->employee->status ? 'نشط' : 'غير نشط',
             $record->status ? 'نشط' : 'غير نشط',
         ];
 
@@ -207,7 +210,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
 
         // ✅ 4. تلوين خلايا الأيام القادمة حسب الرمز
         $startRow = 2; // من بعد الهيدر
-        $startCol = 9; // أول عمود لنمط العمل
+        $startCol = 10; // أول عمود لنمط العمل
 
         foreach ($this->workPatternValues as $rowIndex => $days) {
             foreach ($days as $colOffset => $value) {
