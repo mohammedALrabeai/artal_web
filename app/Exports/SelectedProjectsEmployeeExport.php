@@ -38,10 +38,18 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
         $zoneIds = \App\Models\Zone::whereIn('project_id', $projectIds)->pluck('id');
 
         // ✅ نحصل على الورديات المرتبطة بهذه المناطق
-        $allShifts = \App\Models\Shift::with(['zone', 'zone.pattern'])
-            ->whereIn('zone_id', $zoneIds)
-            ->where('status', true) 
-            ->get();
+       $allShifts = \App\Models\Shift::with(['zone', 'zone.project', 'zone.pattern'])
+    ->whereIn('zone_id', $zoneIds)
+    ->where('status', true) // ✅ فقط الورديات النشطة
+    ->whereHas('zone', function ($q) {
+        $q->where('status', true) // ✅ الموقع نشط
+          ->whereHas('project', function ($q) {
+              $q->where('status', true); // ✅ المشروع نشط
+          });
+    })
+    ->get();
+
+
 
         foreach ($allShifts as $shift) {
             $assignedCount = $this->records->where('shift.id', $shift->id)->count();

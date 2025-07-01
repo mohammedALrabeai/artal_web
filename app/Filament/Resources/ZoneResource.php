@@ -68,19 +68,19 @@ class ZoneResource extends Resource
                 ->label(__('Project'))
                 ->options(Project::all()->pluck('name', 'id'))
                 ->searchable()
-                ->disabled(fn ($record) => $record !== null)
+                ->disabled(fn($record) => $record !== null)
                 ->required(),
 
             Forms\Components\TextInput::make('lat')
                 ->label(__('Latitude'))
                 ->required()
-                ->default(fn ($record) => $record?->lat)
+                ->default(fn($record) => $record?->lat)
                 ->id('lat'),
 
             Forms\Components\TextInput::make('longg')
                 ->label(__('Longitude'))
                 ->required()
-                ->default(fn ($record) => $record?->longg)
+                ->default(fn($record) => $record?->longg)
                 ->id('longg'),
 
             Forms\Components\TextInput::make('area')
@@ -94,7 +94,21 @@ class ZoneResource extends Resource
                 ->required(),
             Forms\Components\Toggle::make('status')
                 ->label(__('Active'))
-                ->default(true),
+                ->default(true)
+                ->afterStateUpdated(function ($state, callable $set, $record) {
+                    if ($record && $state === false) {
+                        // ✅ تعطيل الورديات المرتبطة بهذا الموقع
+                        foreach ($record->shifts as $shift) {
+                            $shift->update(['status' => false]);
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('تم تعطيل الموقع وجميع الورديات التابعة له')
+                            ->success()
+                            ->send();
+                    }
+                }),
+
             Forms\Components\View::make('components.map-picker')
                 ->label(__('Pick Location'))
                 ->columnSpanFull(),
@@ -139,7 +153,7 @@ class ZoneResource extends Resource
                     //         ->count().' موظف';
                     // })
                     ->state(function ($record) {
-                        return $record->emp_no.' موظف';
+                        return $record->emp_no . ' موظف';
                     })
                     ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
                     ->action(
@@ -148,13 +162,13 @@ class ZoneResource extends Resource
                             ->modalHeading('الموظفون المسندون للموقع')
                             ->modalSubmitAction(false)
                             ->modalWidth('7xl')
-                            ->action(fn () => null)
+                            ->action(fn() => null)
                             ->mountUsing(function (Tables\Actions\Action $action, $record) {
                                 $assignments = \App\Models\EmployeeProjectRecord::with(['employee', 'shift.zone.pattern']) // ← shift ⟶ zone ⟶ pattern
                                     ->where('zone_id', $record->id)
                                     ->where('status', true)
                                     ->get()
-                                    ->sortBy(fn ($item) => $item->employee->name ?? '');
+                                    ->sortBy(fn($item) => $item->employee->name ?? '');
 
                                 $action->modalContent(
                                     view('filament.modals.zone-assignments', [
@@ -171,9 +185,9 @@ class ZoneResource extends Resource
 
                 Tables\Columns\TextColumn::make('map_url')
                     ->label(__('Map'))
-                    ->getStateUsing(fn (Zone $record): string => $record->map_url)
-                    ->formatStateUsing(fn (string $state): string => 'View')
-                    ->url(fn (string $state): string => $state)
+                    ->getStateUsing(fn(Zone $record): string => $record->map_url)
+                    ->formatStateUsing(fn(string $state): string => 'View')
+                    ->url(fn(string $state): string => $state)
                     ->openUrlInNewTab()
                     ->sortable(false),
             ])
@@ -206,7 +220,7 @@ class ZoneResource extends Resource
                 Tables\Actions\Action::make('view')
                     ->label(__('View'))
                     ->icon('heroicon-o-eye')
-                    ->url(fn (Zone $record) => ZoneResource::getUrl('view', ['record' => $record->id])), // ربط زر العرض بصفحة التفاصيل
+                    ->url(fn(Zone $record) => ZoneResource::getUrl('view', ['record' => $record->id])), // ربط زر العرض بصفحة التفاصيل
                 Tables\Actions\Action::make('transferProject')
                     ->label('نقل الموقع إلى مشروع آخر')
                     ->icon('heroicon-o-arrow-path')
@@ -258,7 +272,7 @@ class ZoneResource extends Resource
                             ->send();
                     })
                     ->color('warning')
-                    ->visible(fn () => auth()->user()?->hasAnyRole(['super_admin', 'manager', 'hr_manager', 'general_manager'])),
+                    ->visible(fn() => auth()->user()?->hasAnyRole(['super_admin', 'manager', 'hr_manager', 'general_manager'])),
 
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -285,9 +299,9 @@ class ZoneResource extends Resource
         ];
     }
     public static function getRelations(): array
-{
-    return [
-        ZoneRecordsRelationManager::class,
-    ];
-}
+    {
+        return [
+            ZoneRecordsRelationManager::class,
+        ];
+    }
 }

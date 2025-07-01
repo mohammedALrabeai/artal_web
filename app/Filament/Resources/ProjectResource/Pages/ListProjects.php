@@ -8,6 +8,8 @@ use Filament\Forms;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\URL;
 use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
+use Filament\Resources\Pages\ListRecords\Tab;
+
 
 class ListProjects extends ListRecords
 {
@@ -43,6 +45,17 @@ class ListProjects extends ListRecords
                     return redirect($url);
                 }),
 
+        ];
+    }
+
+
+      public function getTabs(): array
+    {
+        return [
+            'active' => Tab::make('المشاريع النشطة')
+                ->modifyQueryUsing(fn ($query) => $query->where('status', true)),
+
+            'all' => Tab::make('كل المشاريع'),
         ];
     }
 }

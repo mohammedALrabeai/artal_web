@@ -79,7 +79,25 @@ class ProjectResource extends Resource
                     ->required(),
                 Forms\Components\Toggle::make('status')
                     ->label(__('Status'))
-                    ->default(false),
+                    ->default(false)
+                    ->afterStateUpdated(function ($state, callable $set, $record) {
+                        if ($record && $state === false) {
+                            // ✅ تعطيل المواقع المرتبطة بالمشروع
+                            foreach ($record->zones as $zone) {
+                                $zone->update(['status' => false]);
+
+                                // ✅ تعطيل الورديات داخل كل موقع
+                                foreach ($zone->shifts as $shift) {
+                                    $shift->update(['status' => false]);
+                                }
+                            }
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('تم تعطيل المشروع وجميع المواقع والورديات التابعة له')
+                                ->success()
+                                ->send();
+                        }
+                    }),
             ]);
     }
 
@@ -112,7 +130,7 @@ class ProjectResource extends Resource
                     //     return $record->employeeProjectRecords()->count().' موظف';
                     // })
                     ->state(function ($record) {
-                        return $record->emp_no.' موظف';
+                        return $record->emp_no . ' موظف';
                     })
                     ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
                     ->action(
@@ -121,13 +139,13 @@ class ProjectResource extends Resource
                             ->modalHeading('الموظفون المسندون للمشروع')
                             ->modalSubmitAction(false)
                             ->modalWidth('4xl')
-                            ->action(fn () => null)
+                            ->action(fn() => null)
                             ->mountUsing(function (Tables\Actions\Action $action, $record) {
                                 $employees = \App\Models\EmployeeProjectRecord::with(['employee', 'zone', 'shift'])
                                     ->where('project_id', $record->id)
                                     ->where('status', 1) // ✅ فقط الإسنادات النشطة
                                     ->get()
-                                    ->sortBy(fn ($record) => $record->zone->name ?? '');
+                                    ->sortBy(fn($record) => $record->zone->name ?? '');
 
                                 $action->modalContent(view('filament.modals.project-employees', compact('employees')));
                             })
