@@ -40,6 +40,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
         // ✅ نحصل على الورديات المرتبطة بهذه المناطق
         $allShifts = \App\Models\Shift::with(['zone', 'zone.pattern'])
             ->whereIn('zone_id', $zoneIds)
+            ->where('status', true) 
             ->get();
 
         foreach ($allShifts as $shift) {
