@@ -14,7 +14,12 @@ class SettingsController extends Controller
     {
 
          try {
-        $userAgent = strtolower(request()->header('User-Agent', 'unknown'));
+         // 1. جلب المنصة من الهيدر مباشرة
+    $platform = strtolower(request()->header('X-Platform', ''));
+
+    // 2. fallback إذا لم يُرسل الهيدر
+    if (empty($platform)) {
+        $userAgent = strtolower(request()->header('User-Agent', ''));
 
         if (str_contains($userAgent, 'android')) {
             $platform = 'android';
@@ -25,13 +30,17 @@ class SettingsController extends Controller
         } else {
             $platform = 'unknown';
         }
+    }
 
-        logger()->info('Settings retrieved from platform: ' . $platform, [
-            'user_agent' => $userAgent,
-            'ip' => request()->ip(),
-            'time' => now()->toDateTimeString(),
-        ]);
+    logger()->info('Settings retrieved from platform: ' . $platform, [
+        'user_agent' => request()->header('User-Agent'),
+        'ip' => request()->ip(),
+        'time' => now()->toDateTimeString(),
+        'platform' => $platform,
+        'app_version' => request()->header('X-App-Version'),
+    ]);
     } catch (\Throwable $e) {
+        
         // لا تفعل شيئًا حتى لا يتأثر المستخدم
     }
         // الحصول على جميع الإعدادات
