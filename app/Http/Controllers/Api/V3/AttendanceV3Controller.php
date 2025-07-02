@@ -99,7 +99,10 @@ class AttendanceV3Controller extends Controller
             ->where('status', 'present')
             ->first();
 
-       
+            //  return response()->json([
+            //             'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
+                       
+            //         ], 400);
 
         if ($existingAttendance) {
             return response()->json([
@@ -369,6 +372,11 @@ class AttendanceV3Controller extends Controller
     {
         $employee = $request->user();
         $currentDateTime = Carbon::now('Asia/Riyadh');
+
+              return response()->json([
+                        'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
+                       
+                    ], 400);
 
         // إذا تم استلام المتغير main_attendance_id، استرجع السجل بناءً عليه
         if ($request->has('main_attendance_id')) {
