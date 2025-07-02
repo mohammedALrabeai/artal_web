@@ -99,10 +99,7 @@ class AttendanceV3Controller extends Controller
             ->where('status', 'present')
             ->first();
 
-             return response()->json([
-                        'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
-                       
-                    ], 400);
+       
 
         if ($existingAttendance) {
             return response()->json([
