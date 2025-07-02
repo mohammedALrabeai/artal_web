@@ -52,6 +52,7 @@ class EmployeesImport implements ToCollection
         'الجوال' => 'mobile_number',
         'جوال إضافي (طواريء)' => 'phone_number',
         'البريد الإلكتروني' => 'email',
+        'اسم الموقع المرشح'=>'preferred_zone_name',
        
      
         'المباشرة' => 'actual_start',
@@ -174,15 +175,19 @@ class EmployeesImport implements ToCollection
             $employeeData['job_status'] = $employeeData['job_status'] ?? 'نشط'; // تعيين قيمة افتراضية
             $employeeData['qualification'] = $employeeData['qualification'] ?? 'غير محدد';
             $employeeData['specialization'] = $employeeData['qualification'];
+            $employeeData['preferred_zone_name'] = $employeeData['preferred_zone_name'] ?? ''; // تعيين قيمة افتراضية
 
             // تعيين كلمة مرور افتراضية مشفرة
             $employeeData['password'] = '12345678';
 
             // تقسيم الاسم إلى أجزاء
             $fullName = $employeeData['full_name'] ?? null;
+           
             if ($fullName) {
+
                 // تقسيم الاسم بناءً على المسافات
                 $nameParts = explode(' ', trim($fullName));
+                
             
                 // تعيين الاسم الأول (المقطع الأول)
                 $employeeData['first_name'] = $nameParts[0] ?? null;

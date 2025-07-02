@@ -38,16 +38,16 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
         $zoneIds = \App\Models\Zone::whereIn('project_id', $projectIds)->pluck('id');
 
         // ✅ نحصل على الورديات المرتبطة بهذه المناطق
-       $allShifts = \App\Models\Shift::with(['zone', 'zone.project', 'zone.pattern'])
-    ->whereIn('zone_id', $zoneIds)
-    ->where('status', true) // ✅ فقط الورديات النشطة
-    ->whereHas('zone', function ($q) {
-        $q->where('status', true) // ✅ الموقع نشط
-          ->whereHas('project', function ($q) {
-              $q->where('status', true); // ✅ المشروع نشط
-          });
-    })
-    ->get();
+        $allShifts = \App\Models\Shift::with(['zone', 'zone.project', 'zone.pattern'])
+            ->whereIn('zone_id', $zoneIds)
+            ->where('status', true) // ✅ فقط الورديات النشطة
+            ->whereHas('zone', function ($q) {
+                $q->where('status', true) // ✅ الموقع نشط
+                    ->whereHas('project', function ($q) {
+                        $q->where('status', true); // ✅ المشروع نشط
+                    });
+            })
+            ->get();
 
 
 
@@ -68,61 +68,62 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
 
 
 
-  public function collection()
-{
-    $groupedByZone = $this->records->groupBy('zone.id');
-    $orderedRows = collect();
+    public function collection()
+    {
+        $groupedByZone = $this->records->groupBy('zone.id');
+        $orderedRows = collect();
 
-    foreach ($groupedByZone as $zoneId => $zoneGroup) {
-        $groupedByShift = $zoneGroup->groupBy('shift.id');
+        foreach ($groupedByZone as $zoneId => $zoneGroup) {
+            $groupedByShift = $zoneGroup->groupBy('shift.id');
 
-        foreach ($groupedByShift as $shiftId => $group) {
-            // 🟢 الموظفين داخل الوردية
-            foreach ($group as $record) {
-                $orderedRows->push($record);
-            }
+            foreach ($groupedByShift as $shiftId => $group) {
+                // 🟢 الموظفين داخل الوردية
+                foreach ($group as $record) {
+                    $orderedRows->push($record);
+                }
 
-            // 🔴 النقص إن وُجد داخل نفس shift & zone
-            $shift = $group->first()?->shift;
-            $zone = $group->first()?->zone;
-            $project = $group->first()?->project;
+                // 🔴 النقص إن وُجد داخل نفس shift & zone
+                $shift = $group->first()?->shift;
+                $zone = $group->first()?->zone;
+                $project = $group->first()?->project;
 
-            if ($shift && $shift->emp_no > $group->count()) {
-                $missingCount = $shift->emp_no - $group->count();
-                for ($i = 0; $i < $missingCount; $i++) {
-                    $orderedRows->push((object)[
-                        'is_missing_row' => true,
-                        'shift' => $shift,
-                        'project' => $project,
-                        'zone' => $zone,
-                    ]);
+                if ($shift && $shift->emp_no > $group->count()) {
+                    $missingCount = $shift->emp_no - $group->count();
+                    for ($i = 0; $i < $missingCount; $i++) {
+                        $orderedRows->push((object)[
+                            'is_missing_row' => true,
+                            'shift' => $shift,
+                            'project' => $project,
+                            'zone' => $zone,
+                        ]);
+                    }
                 }
             }
         }
-    }
 
-    // 🔴 الورديات التي ليس لها أي موظف مسند (تم التعامل معها في missingShifts مسبقًا)
-    // نضيفها فقط إن لم تكن ضمن السجلات بالفعل
-    foreach ($this->missingShifts as $item) {
-        $alreadyHandled = $orderedRows->contains(fn ($r) =>
-            !empty($r->is_missing_row) &&
-            $r->shift->id === $item['shift']->id
-        );
+        // 🔴 الورديات التي ليس لها أي موظف مسند (تم التعامل معها في missingShifts مسبقًا)
+        // نضيفها فقط إن لم تكن ضمن السجلات بالفعل
+        foreach ($this->missingShifts as $item) {
+            $alreadyHandled = $orderedRows->contains(
+                fn($r) =>
+                !empty($r->is_missing_row) &&
+                    $r->shift->id === $item['shift']->id
+            );
 
-        if ($alreadyHandled) continue;
+            if ($alreadyHandled) continue;
 
-        for ($i = 0; $i < $item['missing_count']; $i++) {
-            $orderedRows->push((object)[
-                'is_missing_row' => true,
-                'shift' => $item['shift'],
-                'project' => $item['project'],
-                'zone' => $item['zone'],
-            ]);
+            for ($i = 0; $i < $item['missing_count']; $i++) {
+                $orderedRows->push((object)[
+                    'is_missing_row' => true,
+                    'shift' => $item['shift'],
+                    'project' => $item['project'],
+                    'zone' => $item['zone'],
+                ]);
+            }
         }
-    }
 
-    return $orderedRows;
-}
+        return $orderedRows;
+    }
 
 
 
@@ -181,7 +182,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             $record->employee->national_id,
             $record->project->name,
             $record->zone->name,
-            $record->shift->name?? 'بدون اسم',
+            $record->shift->name ?? 'بدون اسم',
             $record->start_date,
             $record->end_date ?? 'غير محدد',
             $record->employee->status ? 'نشط' : 'غير نشط',
