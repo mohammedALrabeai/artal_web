@@ -99,8 +99,13 @@ Route::middleware('auth:employee')->group(function () {
     // @deprecated version
     Route::post('/employees/update-zone-status', [EmployeeCoordinateController::class, 'updateZoneStatus']);
 });
+// routes/api.php
+Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
+    Route::post('employee/attendance/check-in', [AttendanceV2Controller::class, 'checkIn']);
+    Route::post('employee/attendance/check-out', [AttendanceV2Controller::class, 'checkOut']);
+});
 
-Route::prefix('v2')->middleware('auth:employee')->group(function () {
+Route::prefix('v3')->middleware('auth:employee')->group(function () {
   Route::post('employee/attendance/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('employee/attendance/check-out', [AttendanceController::class, 'checkOut']);
     Route::post('employee/attendance/sync-check-in', [AttendanceController::class, 'syncCheckIn']);
@@ -119,11 +124,7 @@ Route::prefix('v2')->middleware('auth:employee')->group(function () {
 });
 
 
-// routes/api.php
-Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
-    Route::post('employee/attendance/check-in', [AttendanceV2Controller::class, 'checkIn']);
-    Route::post('employee/attendance/check-out', [AttendanceV2Controller::class, 'checkOut']);
-});
+
 
 
 Route::post('/zones/nearby-with-shift-operation', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
