@@ -54,6 +54,7 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             'المؤهل',
             'مكان الميلاد',
             'رقم المشترك بالتأمينات',
+            'اسم الموقع المرشح', // ✅ جديد
             'اسم الموقع الحالي',
             'الحالة',
             'تاريخ الاستبعاد',         // ✅ جديد
@@ -93,7 +94,9 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             $employee->qualification,
             $employee->birth_place,
             $employee->insurance_number,
-            optional($employee->currentZone)->name,
+            $employee->preferred_zone_name, // اسم الموقع المرشح ✅ جديد
+            // optional($employee->currentZone)->name,
+            optional($employee->latestZone)->name, // اسم الموقع الحالي
             $employee->status == 1 ? 'نشط' : 'غير نشط',
             $exclusion?->exclusion_date,       // ✅ جديد
             $exclusion?->reason,               // ✅ جديد

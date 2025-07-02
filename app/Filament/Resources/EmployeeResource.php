@@ -531,7 +531,7 @@ class EmployeeResource extends Resource
                     ->copyable()
                     ->copyMessageDuration(1500)
                     // ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('current_project')
                     ->label(__('Current Project'))
@@ -544,7 +544,7 @@ class EmployeeResource extends Resource
                     ->copyMessageDuration(1500)
                     ->sortable()
                     // ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(isToggledHiddenByDefault:true),
 
                 Tables\Columns\TextColumn::make('currentZone.name')
                     ->label(__('Current Zone'))

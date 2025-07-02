@@ -49,7 +49,20 @@ class ProjectRecordsRelationManager extends RelationManager // تحديث الا
                         : [];
                 })
                 ->searchable()
+                ->reactive()
                 ->required(),
+
+                Forms\Components\Select::make('shift_id')
+    ->label(__('Shift'))
+    ->options(function ($get) {
+        $zoneId = $get('zone_id');
+        return $zoneId
+            ? \App\Models\Shift::where('zone_id', $zoneId)->pluck('name', 'id')
+            : [];
+    })
+    ->searchable()
+    ->required(),
+
 
             Forms\Components\DatePicker::make('start_date')
                 ->label(__('Start Date'))
@@ -78,6 +91,10 @@ class ProjectRecordsRelationManager extends RelationManager // تحديث الا
                     ->label(__('Zone'))
                     ->sortable()
                     ->searchable(),
+                    Tables\Columns\TextColumn::make('shift.name')
+    ->label(__('Shift'))
+    ->sortable()
+    ->searchable(),
 
                 Tables\Columns\TextColumn::make('start_date')
                     ->label(__('Start Date'))
