@@ -21,6 +21,7 @@ use App\Http\Controllers\AssignmentReportController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\Api\V2\AttendanceV2Controller;
+use App\Http\Controllers\Api\V3\AttendanceV3Controller;
 use App\Http\Controllers\attendance\CoverageController;
 use App\Http\Controllers\Api\CodeVerificationController;
 use App\Http\Controllers\EmployeeNotificationController;
@@ -106,15 +107,15 @@ Route::prefix('v2')->middleware('auth:sanctum')->group(function () {
 });
 
 Route::prefix('v3')->middleware('auth:employee')->group(function () {
-  Route::post('employee/attendance/check-in', [AttendanceController::class, 'checkIn']);
-    Route::post('employee/attendance/check-out', [AttendanceController::class, 'checkOut']);
-    Route::post('employee/attendance/sync-check-in', [AttendanceController::class, 'syncCheckIn']);
-    Route::post('employee/attendance/sync-check-out', [AttendanceController::class, 'syncCheckOut']);
-    Route::get('employee/attendance', [AttendanceController::class, 'index']);
-    Route::get('attendances/filter', [AttendanceController::class, 'filter']);
+  Route::post('employee/attendance/check-in', [AttendanceV3Controller::class, 'checkIn']);
+    Route::post('employee/attendance/check-out', [AttendanceV3Controller::class, 'checkOut']);
+    Route::post('employee/attendance/sync-check-in', [AttendanceV3Controller::class, 'syncCheckIn']);
+    Route::post('employee/attendance/sync-check-out', [AttendanceV3Controller::class, 'syncCheckOut']);
+    Route::get('employee/attendance', [AttendanceV3Controller::class, 'index']);
+    Route::get('attendances/filter', [AttendanceV3Controller::class, 'filter']);
     // Route::post('attendances/coverage', [AttendanceController::class, 'store']);
-    Route::post('/attendances/coverage/check-in', [AttendanceController::class, 'checkInCoverage']);
-    Route::post('/attendances/coverage/check-out', [AttendanceController::class, 'checkOutCoverage']);
+    Route::post('/attendances/coverage/check-in', [AttendanceV3Controller::class, 'checkInCoverage']);
+    Route::post('/attendances/coverage/check-out', [AttendanceV3Controller::class, 'checkOutCoverage']);
 
     Route::post('/zones/nearby', [ZoneController::class, 'nearbyZones']);
     Route::post('/zones/nearby-with-shift', [ZoneController::class, 'nearbyZonesWithCurrentShifts']);
