@@ -99,12 +99,18 @@ class AttendanceV3Controller extends Controller
             ->where('status', 'present')
             ->first();
 
+             return response()->json([
+                        'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
+                       
+                    ], 400);
+
         if ($existingAttendance) {
             return response()->json([
                 'message' => 'You have already checked in today.',
                 'attendance' => $existingAttendance,
             ], 200);
         }
+
 
         // البحث عن أي سجل حضور سابق لهذا اليوم
         $existingAttendance = Attendance::where('employee_id', $employee->id)
