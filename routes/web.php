@@ -12,8 +12,10 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\S3TestController;
 use App\Services\ProjectEmployeesPdfService;
 use App\Http\Controllers\FileUploadController2;
+use App\Http\Controllers\SlotTimelineController;
 use App\Http\Controllers\attendance\AttendanceExport2Controller;
 use App\Http\Controllers\attendance\AttendanceYearlyExportController;
+use App\Http\Controllers\attendance\ImprovedAttendanceExport2Controller;
   use App\Models\Shift;
 
 Route::get('/', function () {
@@ -68,6 +70,7 @@ Route::get('/filament/employee-route/{employeeId}', function (Request $request, 
 Route::get('/export/attendance', [ExportController::class, 'exportAttendance'])->name('export.attendance');
 
 Route::get('/export-attendance', [AttendanceExport2Controller::class, 'export2'])->name('export.attendance2');
+Route::get('/export-enhanced-attendance', [ImprovedAttendanceExport2Controller::class, 'export2'])->name('export.enhanced.attendance2');
 
 Route::get('/export-attendance-filtered', [AttendanceExport2Controller::class, 'exportFiltered'])
     ->name('export.attendance.filtered')
@@ -101,6 +104,16 @@ Route::get('/admin/projects/export/pdf', function () {
     $service = new \App\Services\ProjectEmployeesPdfService;
     $service->generate($records, 'جدول التشغيل', $startDate, $ids); // ← تمرير العنوان كنص، وتمرير IDs
 })->name('projects.export.pdf')->middleware(['web', 'auth']);
+
+Route::get('/admin/timeline', fn() => view('admin.timeline'))->middleware('auth');
+Route::get('/timeline-slots', [App\Http\Controllers\TimelineController::class, 'slots'])->name('timeline.slots');
+Route::get('/admin/timeline-demo/{project}', [\App\Http\Controllers\TimelineController::class, 'show'])
+    ->name('timeline-demo');
+
+    Route::get('/slot-timeline', [SlotTimelineController::class, 'index'])->name('slot.timeline');
+
+
+
 
 
 // Route::get('/filament/employee-route/{employeeId}', function ($employeeId) {

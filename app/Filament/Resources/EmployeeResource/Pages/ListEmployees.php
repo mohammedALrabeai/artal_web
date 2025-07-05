@@ -133,7 +133,7 @@ class ListEmployees extends ListRecords
                 ])
                 ->action(function (array $data) {
                     $url = URL::temporarySignedRoute(
-                        'export.attendance2',
+                        'export.enhanced.attendance2',
                         now()->addMinutes(5),
                         [
                             'start_date' => $data['start_date'],

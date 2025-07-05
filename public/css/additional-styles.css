@@ -1,0 +1,169 @@
+/* Ù…Ù„Ù CSS Ù„Ù„ØªØ­Ø³ÙŠÙ†Ø§Øª - Ù†Ø³Ø®Ø© Ù†Ø¸ÙŠÙØ© Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ø®Ø§Ø±Ø¬ÙŠ */
+
+/* ØªØ­Ø³ÙŠÙ†Ø§Øª Ø§Ù„Ø®Ù„Ø§ÙŠØ§ */
+.table-cell-enhanced {
+    position: relative;
+    min-height: 45px;
+    vertical-align: middle;
+}
+
+/* Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ù„ÙˆØ§Ù† Ø£Ø³ÙÙ„ Ø§Ù„Ø®Ù„ÙŠØ© */
+.employee-period-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    border-radius: 0 0 4px 4px;
+    z-index: 5;
+}
+
+/* Ø£Ù„ÙˆØ§Ù† Ø§Ù„ÙØªØ±Ø§Øª Ø§Ù„ÙØ±Ø¯ÙŠØ© */
+.employee-period-odd .employee-period-indicator {
+    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    border-top: 1px solid #1565c0;
+}
+
+/* Ø£Ù„ÙˆØ§Ù† Ø§Ù„ÙØªØ±Ø§Øª Ø§Ù„Ø²ÙˆØ¬ÙŠØ© */
+.employee-period-even .employee-period-indicator {
+    background: linear-gradient(90deg, #7b1fa2, #ba68c8);
+    border-top: 1px solid #6a1b9a;
+}
+
+/* Ø­Ø¯ÙˆØ¯ Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„ÙØªØ±Ø© */
+.employee-period-start .employee-period-indicator {
+    border-left: 3px solid;
+    border-radius: 0 0 0 6px;
+}
+
+.employee-period-odd.employee-period-start .employee-period-indicator {
+    border-left-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-start .employee-period-indicator {
+    border-left-color: #4a148c;
+}
+
+/* Ø­Ø¯ÙˆØ¯ Ù†Ù‡Ø§ÙŠØ© Ø§Ù„ÙØªØ±Ø© */
+.employee-period-end .employee-period-indicator {
+    border-right: 3px solid;
+    border-radius: 0 0 6px 0;
+}
+
+.employee-period-odd.employee-period-end .employee-period-indicator {
+    border-right-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-end .employee-period-indicator {
+    border-right-color: #4a148c;
+}
+
+/* ÙØªØ±Ø© ÙˆØ§Ø­Ø¯Ø© ÙÙ‚Ø· */
+.employee-period-single .employee-period-indicator {
+    border-left: 3px solid;
+    border-right: 3px solid;
+    border-radius: 0 0 6px 6px;
+}
+
+.employee-period-odd.employee-period-single .employee-period-indicator {
+    border-left-color: #0d47a1;
+    border-right-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-single .employee-period-indicator {
+    border-left-color: #4a148c;
+    border-right-color: #4a148c;
+}
+
+/* Ø´Ø§Ø±Ø© Ø§Ø³Ù… Ø§Ù„Ù…ÙˆØ¸Ù */
+.employee-name-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: bold;
+    white-space: nowrap;
+    z-index: 10;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.employee-period-odd .employee-name-badge {
+    background: #1565c0;
+}
+
+.employee-period-even .employee-name-badge {
+    background: #6a1b9a;
+}
+
+/* ØªÙˆÙ„ØªÙŠØ¨ Ø§Ù„ØªÙ…Ø±ÙŠØ± */
+.hover-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 50;
+    margin-bottom: 5px;
+}
+
+.hover-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+/* ØªØ£Ø«ÙŠØ±Ø§Øª Ø§Ù„ØªÙ…Ø±ÙŠØ± */
+.table-cell-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* ØªØ­Ø³ÙŠÙ† Ù„Ù„Ø´Ø§Ø´Ø§Øª Ø§Ù„ØµØºÙŠØ±Ø© */
+@media (max-width: 768px) {
+    .employee-name-badge {
+        font-size: 7px;
+        padding: 1px 2px;
+    }
+    
+    .employee-period-indicator {
+        height: 4px;
+    }
+    
+    .hover-tooltip {
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+}
+
+/* ØªØ­Ø³ÙŠÙ†Ø§Øª Ù„Ù„Ø·Ø¨Ø§Ø¹Ø© */
+@media print {
+    .employee-period-indicator {
+        border-width: 2px !important;
+    }
+    
+    .employee-name-badge {
+        background: #000 !important;
+        color: #fff !important;
+    }
+    
+    .hover-tooltip {
+        display: none !important;
+    }
+}

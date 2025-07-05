@@ -37,6 +37,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+         Filament::serving(function () {
+        Filament::registerRenderHook(
+            'panels::head.end',
+            fn (): string => '<link rel="stylesheet" href="' . asset('css/additional-styles.css') . '">'
+        );
+    });
+      Filament::serving(function () {
+        Filament::registerRenderHook(
+            'panels::head.end',
+            fn (): string => '<link rel="stylesheet" href="' . asset('css/attendance-css-only.css') . '">'
+        );
+    });
 
         Storage::extend('google', function ($app, $config) {
             $client = new GoogleClient;

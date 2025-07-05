@@ -361,6 +361,27 @@ class Shift extends Model
 
     // }
 
+    public function getWorkPatternForDate(string $date): string
+{
+    if (! $this->zone || ! $this->zone->pattern || ! $this->start_date) {
+        return 'off';
+    }
+
+    $pattern = $this->zone->pattern;
+    $workingDays = (int) $pattern->working_days;
+    $offDays = (int) $pattern->off_days;
+    $cycleLength = $workingDays + $offDays;
+
+    $startDate = \Carbon\Carbon::parse($this->start_date);
+    $targetDate = \Carbon\Carbon::parse($date);
+    $totalDays = $startDate->diffInDays($targetDate);
+
+    $currentDayInCycle = $totalDays % $cycleLength;
+
+    return $currentDayInCycle < $workingDays ? 'working' : 'off';
+}
+
+
     public function getShiftActiveStatus(Carbon $now): array
     {
         $pattern = $this->zone?->pattern;

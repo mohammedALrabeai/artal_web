@@ -18,6 +18,13 @@ class ExportController extends Controller
 
         return Excel::download(new AttendanceExport($startDate, $endDate), 'attendance_report.xlsx');
     }
+     public function exportEnhancedAttendance(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        return Excel::download(new AttendanceExport($startDate, $endDate), 'attendance_report.xlsx');
+    }
 
     public function export(Request $request)
     {

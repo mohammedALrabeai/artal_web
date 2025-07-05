@@ -1,0 +1,465 @@
+/* ملف CSS لمؤشرات الحضور - نسخة منفصلة */
+
+/* تحسينات الخلايا */
+.table-cell-enhanced {
+    position: relative;
+    min-height: 45px;
+    vertical-align: middle;
+}
+
+/* شريط الألوان أسفل الخلية */
+.employee-period-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    border-radius: 0 0 4px 4px;
+    z-index: 5;
+}
+
+/* ألوان الفترات الفردية */
+.employee-period-odd .employee-period-indicator {
+    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    border-top: 1px solid #1565c0;
+}
+
+/* ألوان الفترات الزوجية */
+.employee-period-even .employee-period-indicator {
+    background: linear-gradient(90deg, #7b1fa2, #ba68c8);
+    border-top: 1px solid #6a1b9a;
+}
+
+/* حدود بداية الفترة */
+.employee-period-start .employee-period-indicator {
+    border-left: 3px solid;
+    border-radius: 0 0 0 6px;
+}
+
+.employee-period-odd.employee-period-start .employee-period-indicator {
+    border-left-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-start .employee-period-indicator {
+    border-left-color: #4a148c;
+}
+
+/* حدود نهاية الفترة */
+.employee-period-end .employee-period-indicator {
+    border-right: 3px solid;
+    border-radius: 0 0 6px 0;
+}
+
+.employee-period-odd.employee-period-end .employee-period-indicator {
+    border-right-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-end .employee-period-indicator {
+    border-right-color: #4a148c;
+}
+
+/* فترة واحدة فقط */
+.employee-period-single .employee-period-indicator {
+    border-left: 3px solid;
+    border-right: 3px solid;
+    border-radius: 0 0 6px 6px;
+}
+
+.employee-period-odd.employee-period-single .employee-period-indicator {
+    border-left-color: #0d47a1;
+    border-right-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-single .employee-period-indicator {
+    border-left-color: #4a148c;
+    border-right-color: #4a148c;
+}
+
+/* مؤشرات الحضور - الكرات الصفراء */
+.attendance-indicators {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    margin-bottom: 8px;
+}
+
+.attendance-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffd700;
+    border: 2px solid #ffb300;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.attendance-dot:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.5);
+}
+
+.attendance-dot.check-in {
+    background: linear-gradient(135deg, #ffd700, #ffeb3b);
+}
+
+.attendance-dot.check-out {
+    background: linear-gradient(135deg, #ff9800, #ffc107);
+}
+
+/* تولتيب أوقات الحضور */
+.attendance-tooltip {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: bold;
+    white-space: nowrap;
+    z-index: 60;
+    margin-bottom: 5px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.attendance-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.attendance-tooltip.check-in-tooltip {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+}
+
+.attendance-tooltip.check-out-tooltip {
+    background: linear-gradient(135deg, #d84315, #f57c00);
+}
+
+/* عرض اسم الموظف في بداية الفترة فقط */
+.employee-name-display {
+    font-size: 10px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+/* تأثيرات التمرير */
+.table-cell-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* حالة عدم وجود حضور */
+.no-attendance {
+    color: #999;
+    font-size: 10px;
+    text-align: center;
+}
+
+/* تحسين للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .attendance-dot {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .employee-name-display {
+        font-size: 8px;
+    }
+    
+    .employee-period-indicator {
+        height: 4px;
+    }
+    
+    .attendance-tooltip {
+        font-size: 9px;
+        padding: 4px 6px;
+    }
+}
+
+/* تحسينات للطباعة */
+@media print {
+    .employee-period-indicator {
+        border-width: 2px !important;
+    }
+    
+    .attendance-dot {
+        background: #000 !important;
+        border-color: #000 !important;
+    }
+    
+    .attendance-tooltip {
+        display: none !important;
+    }
+}
+
+
+/* Ù…Ù„Ù CSS Ù…Ø­Ø³Ù† Ù„Ù„ØªÙˆÙ„ØªÙŠØ¨ Ù…Ø¹ z-index Ø¹Ø§Ù„ÙŠ */
+
+/* ØªØ­Ø³ÙŠÙ†Ø§Øª Ø§Ù„Ø®Ù„Ø§ÙŠØ§ */
+.table-cell-enhanced {
+    position: relative;
+    min-height: 45px;
+    vertical-align: middle;
+}
+
+/* Ø´Ø±ÙŠØ· Ø§Ù„Ø£Ù„ÙˆØ§Ù† Ø£Ø³ÙÙ„ Ø§Ù„Ø®Ù„ÙŠØ© */
+.employee-period-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    border-radius: 0 0 4px 4px;
+    z-index: 5;
+}
+
+/* Ø£Ù„ÙˆØ§Ù† Ø§Ù„ÙØªØ±Ø§Øª */
+.employee-period-odd .employee-period-indicator {
+    background: linear-gradient(90deg, #1976d2, #42a5f5);
+    border-top: 1px solid #1565c0;
+}
+
+.employee-period-even .employee-period-indicator {
+    background: linear-gradient(90deg, #7b1fa2, #ba68c8);
+    border-top: 1px solid #6a1b9a;
+}
+
+/* Ø­Ø¯ÙˆØ¯ Ø§Ù„ÙØªØ±Ø§Øª */
+.employee-period-start .employee-period-indicator {
+    border-left: 3px solid;
+    border-radius: 0 0 0 6px;
+}
+
+.employee-period-end .employee-period-indicator {
+    border-right: 3px solid;
+    border-radius: 0 0 6px 0;
+}
+
+.employee-period-single .employee-period-indicator {
+    border-left: 3px solid;
+    border-right: 3px solid;
+    border-radius: 0 0 6px 6px;
+}
+
+.employee-period-odd.employee-period-start .employee-period-indicator,
+.employee-period-odd.employee-period-single .employee-period-indicator {
+    border-left-color: #0d47a1;
+}
+
+.employee-period-odd.employee-period-end .employee-period-indicator,
+.employee-period-odd.employee-period-single .employee-period-indicator {
+    border-right-color: #0d47a1;
+}
+
+.employee-period-even.employee-period-start .employee-period-indicator,
+.employee-period-even.employee-period-single .employee-period-indicator {
+    border-left-color: #4a148c;
+}
+
+.employee-period-even.employee-period-end .employee-period-indicator,
+.employee-period-even.employee-period-single .employee-period-indicator {
+    border-right-color: #4a148c;
+}
+
+/* Ù…Ø¤Ø´Ø±Ø§Øª Ø§Ù„Ø­Ø¶ÙˆØ± */
+.attendance-indicators {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+
+.attendance-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffd700;
+    border: 2px solid #ffb300;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.attendance-dot:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.5);
+}
+
+.attendance-dot.check-in {
+    background: linear-gradient(135deg, #ffd700, #ffeb3b);
+}
+
+.attendance-dot.check-out {
+    background: linear-gradient(135deg, #ff9800, #ffc107);
+}
+
+/* Ù…Ø¤Ø´Ø±Ø§Øª Ø§Ù„ØªØºØ·ÙŠØ§Øª */
+.coverage-indicators {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.coverage-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    border: 1px solid #388e3c;
+    box-shadow: 0 1px 3px rgba(76, 175, 80, 0.4);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.coverage-dot:hover {
+    transform: scale(1.3);
+    box-shadow: 0 3px 6px rgba(76, 175, 80, 0.6);
+}
+
+/* Ø§Ù„ØªÙˆÙ„ØªÙŠØ¨ Ø§Ù„Ù…Ø­Ø³Ù† Ù…Ø¹ z-index Ø¹Ø§Ù„ÙŠ */
+.cell-main-tooltip {
+    position: fixed !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    color: white !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    z-index: 99999 !important; /* Ø£Ø¹Ù„Ù‰ z-index Ù…Ù…ÙƒÙ† */
+    text-align: center !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    pointer-events: none !important;
+}
+
+.attendance-tooltip {
+    position: fixed !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    color: white !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    z-index: 100000 !important; /* Ø£Ø¹Ù„Ù‰ Ù…Ù† Ø§Ù„ØªÙˆÙ„ØªÙŠØ¨ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ */
+    min-width: 80px !important;
+    text-align: center !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(12px) !important;
+    pointer-events: none !important;
+}
+
+.attendance-tooltip.check-in-tooltip {
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.95), rgba(56, 142, 60, 0.95)) !important;
+    border-color: rgba(76, 175, 80, 0.4) !important;
+}
+
+.attendance-tooltip.check-out-tooltip {
+    background: linear-gradient(135deg, rgba(216, 67, 21, 0.95), rgba(245, 124, 0, 0.95)) !important;
+    border-color: rgba(255, 152, 0, 0.4) !important;
+}
+
+.coverage-tooltip {
+    position: fixed !important;
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.95), rgba(56, 142, 60, 0.95)) !important;
+    color: white !important;
+    padding: 10px 14px !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    white-space: nowrap !important;
+    z-index: 100001 !important; /* Ø£Ø¹Ù„Ù‰ Ù…Ù† Ø¬Ù…ÙŠØ¹ Ø§Ù„ØªÙˆÙ„ØªÙŠØ¨Ø§Øª */
+    min-width: 120px !important;
+    text-align: center !important;
+    max-width: 200px !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(76, 175, 80, 0.4) !important;
+    backdrop-filter: blur(15px) !important;
+    pointer-events: none !important;
+}
+
+/* Ø¹Ø±Ø¶ Ø§Ø³Ù… Ø§Ù„Ù…ÙˆØ¸Ù */
+.employee-name-display {
+    font-size: 10px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+/* ØªØ£Ø«ÙŠØ±Ø§Øª Ø§Ù„ØªÙ…Ø±ÙŠØ± */
+.table-cell-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* ØªØ­Ø³ÙŠÙ† Ù„Ù„Ø´Ø§Ø´Ø§Øª Ø§Ù„ØµØºÙŠØ±Ø© */
+@media (max-width: 768px) {
+    .attendance-dot {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .coverage-dot {
+        width: 6px;
+        height: 6px;
+    }
+    
+    .employee-name-display {
+        font-size: 8px;
+    }
+    
+    .employee-period-indicator {
+        height: 4px;
+    }
+    
+    .attendance-tooltip, .coverage-tooltip, .cell-main-tooltip {
+        font-size: 9px !important;
+        padding: 6px 8px !important;
+    }
+}
+
+/* Ø¥Ø®ÙØ§Ø¡ Ø§Ù„ØªÙˆÙ„ØªÙŠØ¨ Ø¹Ù†Ø¯ Ø§Ù„Ø·Ø¨Ø§Ø¹Ø© */
+@media print {
+    .attendance-tooltip, .coverage-tooltip, .cell-main-tooltip {
+        display: none !important;
+    }
+    
+    .employee-period-indicator {
+        border-width: 2px !important;
+    }
+    
+    .attendance-dot, .coverage-dot {
+        background: #000 !important;
+        border-color: #000 !important;
+    }
+}
+
+
