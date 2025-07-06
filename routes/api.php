@@ -125,6 +125,11 @@ Route::prefix('v3')->middleware('auth:employee')->group(function () {
 });
 
 
+// routes/api.php
+
+Route::middleware(['auth:employee'])->get('/employee/attendances/recent', [\App\Http\Controllers\Api\EmployeeAttendanceController::class, 'recent']);
+
+
 
 
 
