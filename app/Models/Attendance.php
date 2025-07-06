@@ -28,6 +28,7 @@ class Attendance extends Model
         'coverage_id',
         'is_coverage',
         'out_of_zone',
+        'auto_checked_out', // جديد: حقل لتحديد ما إذا كان الخروج تلقائيًا
     ];
 
     protected $casts = [

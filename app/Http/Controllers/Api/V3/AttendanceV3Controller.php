@@ -417,6 +417,7 @@ class AttendanceV3Controller extends Controller
             'check_out_datetime' => $currentDateTime, // العمود الجديد
             'work_hours' => $workHours,
             'notes' => $attendance->notes . ' | ' . $request->input('notes'),
+            'auto_checked_out' => $request->boolean('auto_checked_out', false), // جديد: حقل لتحديد ما إذا كان الخروج تلقائيًا
         ]);
 
         return response()->json([
@@ -465,6 +466,7 @@ class AttendanceV3Controller extends Controller
             'check_out_datetime' => $currentDateTime,
             'work_hours' => $workHours,
             'notes' => $attendance->notes . ' | ' . $request->input('notes'),
+            'auto_checked_out' => $request->boolean('auto_checked_out', false),
         ]);
 
         return response()->json([

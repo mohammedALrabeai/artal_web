@@ -43,6 +43,7 @@ class EmployeeAttendanceController extends Controller
     // 'is_coverage',
     // 'out_of_zone',
     // 'updated_at',
+    'auto_checked_out'
 ]);
 
 
