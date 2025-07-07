@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Zone;
 
 use Illuminate\Support\Arr;
+    use Illuminate\Support\Facades\DB;
+use App\Models\Shift;
 
 class EmployeeStatusController extends Controller
 {
@@ -167,4 +169,78 @@ if ($employee && $status->is_inside === true) {
 
         return $distance <= $radius;
     }
+
+
+
+public function getEmployeeStatusInActiveShifts()
+{
+    $enabledShifts = Shift::with(['zone.pattern'])
+        ->where('status', true)
+        ->get();
+
+    $activeShiftIds = [];
+
+    foreach ($enabledShifts as $shift) {
+        [$isActive] = $shift->getShiftActiveStatus2(now());
+        if ($isActive) {
+            $activeShiftIds[] = $shift->id;
+        }
+    }
+
+    if (empty($activeShiftIds)) {
+        return response()->json([
+            'data' => [],
+            'message' => 'لا توجد ورديات حالية نشطة.',
+        ]);
+    }
+
+    $shiftIdsStr = implode(',', $activeShiftIds);
+
+    $results = DB::select("
+        SELECT 
+            es.id,
+            es.employee_id,
+            CONCAT(e.first_name, ' ', e.father_name, ' ', e.grandfather_name, ' ', e.family_name) AS full_name,
+            e.mobile_number,
+            es.last_seen_at,
+            es.gps_enabled,
+            es.last_gps_status_at,
+            es.last_location,
+            es.created_at,
+            es.updated_at,
+            es.is_inside,
+            es.notification_enabled,
+            p.name AS project_name,
+            z.name AS zone_name,
+            s.name AS shift_name
+
+        FROM employee_statuses es
+
+        JOIN employees e ON e.id = es.employee_id
+        JOIN employee_project_records epr ON epr.employee_id = e.id
+        JOIN projects p ON p.id = epr.project_id
+        JOIN zones z ON z.id = epr.zone_id
+        JOIN shifts s ON s.id = epr.shift_id
+
+        WHERE epr.shift_id IN ($shiftIdsStr)
+          AND epr.status = true
+          AND epr.start_date <= CURDATE()
+          AND (epr.end_date IS NULL OR epr.end_date >= CURDATE())
+
+        ORDER BY 
+            CASE
+                WHEN es.gps_enabled = 0 THEN 1
+                WHEN es.is_inside = 0 THEN 2
+                WHEN TIMESTAMPDIFF(MINUTE, es.updated_at, NOW()) > 20 THEN 3
+                ELSE 4
+            END
+    ");
+
+    return response()->json([
+        'data' => $results,
+    ]);
+}
+
+
+
 }

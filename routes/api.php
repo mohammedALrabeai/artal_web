@@ -339,6 +339,7 @@ Route::middleware('auth:employee')->group(function () {
 });
 // Route::middleware('auth:sanctum')->group(function () {
 Route::get('/employee-statuses', [EmployeeStatusController::class, 'index']);
+Route::get('/employee-statuses2', [EmployeeStatusController::class, 'getEmployeeStatusInActiveShifts']);
 // });
 
 Route::get('/absent-employees', [AbsentController::class, 'getTrulyAbsentEmployees']);
