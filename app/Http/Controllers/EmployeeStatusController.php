@@ -232,7 +232,7 @@ public function getEmployeeStatusInActiveShifts()
             CASE
                 WHEN es.gps_enabled = 0 THEN 1
                 WHEN es.is_inside = 0 THEN 2
-                WHEN TIMESTAMPDIFF(MINUTE, es.updated_at, NOW()) > 20 THEN 3
+                WHEN TIMESTAMPDIFF(MINUTE, es.updated_at, NOW()) > 30 THEN 3
                 ELSE 4
             END
     ");
