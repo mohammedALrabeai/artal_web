@@ -99,10 +99,10 @@ class AttendanceV3Controller extends Controller
             ->where('status', 'present')
             ->first();
 
-            //  return response()->json([
-            //             'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
-                       
-            //         ], 400);
+        //  return response()->json([
+        //             'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
+
+        //         ], 400);
 
         if ($existingAttendance) {
             return response()->json([
@@ -205,6 +205,39 @@ class AttendanceV3Controller extends Controller
                 ]);
             }
         }
+
+        $expectedStartTime = Carbon::createFromFormat('H:i', $request->input('expected_start_time'), 'Asia/Riyadh');
+        $currentTime = Carbon::now('Asia/Riyadh');
+
+        // نتحقق فقط إذا الوقت الحالي بعد المتوقع
+        $lateMinutes = $currentTime->greaterThan($expectedStartTime)
+            ? $expectedStartTime->diffInMinutes($currentTime)
+            : 0;
+
+        // \Log::info('حساب وقت التأخير', [
+        //     'employee_id' => $employee->id,
+        //     'expected_start_time' => $expectedStartTime->toTimeString(),
+        //     'current_time' => $currentTime->toTimeString(),
+        //     'late_minutes' => $lateMinutes,
+        // ]);
+
+        if ($lateMinutes >= 60) {
+            // إطلاق إشعار واتساب دون التأثير على التحضير
+            try {
+                dispatch(new \App\Jobs\SendLateCheckInWhatsapp($employee, $lateMinutes));
+                \Log::info('جدولة رسالة التأخير عبر واتساب', [
+                    'employee_id' => $employee->id,
+                    'late_minutes' => $lateMinutes,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('فشل جدولة رسالة التأخير عبر واتساب', [
+                    'employee_id' => $employee->id,
+                    'late_minutes' => $lateMinutes,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         $this->updateEmployeeStatusOnCheckIn($employee);
 
         return response()->json([
@@ -373,7 +406,7 @@ class AttendanceV3Controller extends Controller
         $employee = $request->user();
         $currentDateTime = Carbon::now('Asia/Riyadh');
 
-        
+
 
         // إذا تم استلام المتغير main_attendance_id، استرجع السجل بناءً عليه
         if ($request->has('main_attendance_id')) {
@@ -475,6 +508,14 @@ class AttendanceV3Controller extends Controller
         ]);
     }
 
+    /*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Sync check-in for given employee, zone, shift, and morning flag.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    /*******  1cb2e983-5a47-4f3c-870a-22fc79a5efc7  *******/
     public function syncCheckIn(Request $request)
     {
         $employee = $request->user();
@@ -1160,388 +1201,388 @@ class AttendanceV3Controller extends Controller
     }
 
     public function getAttendanceStatusV4(Request $request)
-{
-    $request->validate([
-        'project_id' => 'required|integer',
-        'zone_id' => 'required|integer',
-        'date' => 'required|date',
-    ]);
+    {
+        $request->validate([
+            'project_id' => 'required|integer',
+            'zone_id' => 'required|integer',
+            'date' => 'required|date',
+        ]);
 
-    try {
-        $projectId = $request->input('project_id');
-        $zoneId = $request->input('zone_id');
-        $date = Carbon::parse($request->input('date'))->toDateString();
-        $currentTime = Carbon::now('Asia/Riyadh');
+        try {
+            $projectId = $request->input('project_id');
+            $zoneId = $request->input('zone_id');
+            $date = Carbon::parse($request->input('date'))->toDateString();
+            $currentTime = Carbon::now('Asia/Riyadh');
 
-        $threshold = now()->subHours(12);
-        $employeeStatuses = EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
-            ->whereHas('employee.attendances', function ($query) use ($threshold) {
-                $query->where(function ($q) use ($threshold) {
-                    $q->where('check_in_datetime', '>=', $threshold)
-                        ->orWhere(function ($q2) use ($threshold) {
-                            $q2->where('is_coverage', true)
-                                ->where('created_at', '>=', $threshold);
-                        });
-                });
-            })
-            ->get()
-            ->keyBy('employee_id');
-
-        $shifts = Shift::with(['attendances.employee', 'zone.project'])
-            ->where('status', 1)
-            ->whereHas('zone', function ($query) use ($projectId) {
-                $query->where('status', 1)
-                    ->where('project_id', $projectId)
-                    ->whereHas('project', function ($q) {
-                        $q->where('status', 1);
+            $threshold = now()->subHours(12);
+            $employeeStatuses = EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
+                ->whereHas('employee.attendances', function ($query) use ($threshold) {
+                    $query->where(function ($q) use ($threshold) {
+                        $q->where('check_in_datetime', '>=', $threshold)
+                            ->orWhere(function ($q2) use ($threshold) {
+                                $q2->where('is_coverage', true)
+                                    ->where('created_at', '>=', $threshold);
+                            });
                     });
-            })
-            ->where('zone_id', $zoneId)
-            ->get();
-
-        $dataByShift = [];
-
-        foreach ($shifts as $shift) {
-            $employeeRecords = EmployeeProjectRecord::with('employee')
-                ->where('project_id', $projectId)
-                ->where('zone_id', $zoneId)
-                ->where('shift_id', $shift->id)
-                ->where('status', true)
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('end_date')->orWhere('end_date', '>=', $date);
                 })
-                ->where('start_date', '<=', $date)
+                ->get()
+                ->keyBy('employee_id');
+
+            $shifts = Shift::with(['attendances.employee', 'zone.project'])
+                ->where('status', 1)
+                ->whereHas('zone', function ($query) use ($projectId) {
+                    $query->where('status', 1)
+                        ->where('project_id', $projectId)
+                        ->whereHas('project', function ($q) {
+                            $q->where('status', 1);
+                        });
+                })
+                ->where('zone_id', $zoneId)
+                ->get();
+
+            $dataByShift = [];
+
+            foreach ($shifts as $shift) {
+                $employeeRecords = EmployeeProjectRecord::with('employee')
+                    ->where('project_id', $projectId)
+                    ->where('zone_id', $zoneId)
+                    ->where('shift_id', $shift->id)
+                    ->where('status', true)
+                    ->where(function ($query) use ($date) {
+                        $query->whereNull('end_date')->orWhere('end_date', '>=', $date);
+                    })
+                    ->where('start_date', '<=', $date)
+                    ->whereHas('employee', function ($q) {
+                        $q->where('status', 1);
+                    })
+                    ->get();
+
+                $attendances = $shift->attendances->where('date', $date);
+
+                $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses, $date) {
+                    $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
+                    $employee = $record->employee;
+                    $statusData = $employeeStatuses[$employee->id] ?? null;
+
+                    $coveragesToday = \App\Models\Attendance::with('zone.project', 'shift')
+                        ->where('employee_id', $record->employee_id)
+                        ->where('status', 'coverage')
+                        ->whereDate('date', $date)
+                        ->get()
+                        ->map(function ($cov) {
+                            return [
+                                'zone_name' => $cov->zone->name ?? 'غير معروف',
+                                'project_name' => $cov->zone->project->name ?? 'غير معروف',
+                                'shift_name' => $cov->shift->name ?? 'غير معروف',
+                                'check_in' => $cov->check_in,
+                                'check_out' => $cov->check_out,
+                            ];
+                        });
+
+                    return [
+                        'employee_id' => $record->employee_id,
+                        'employee_name' => $employee->name(),
+                        'status' => $attendance?->status ?? 'absent',
+                        'check_in' => $attendance?->check_in,
+                        'check_out' => $attendance?->check_out,
+                        'notes' => $attendance?->notes,
+                        'mobile_number' => $employee->mobile_number,
+                        'is_coverage' => false,
+                        'out_of_zone' => $employee->out_of_zone,
+                        'is_checked_in' => $attendance !== null,
+                        'is_late' => $attendance?->is_late ?? false,
+                        'gps_enabled' => $statusData?->gps_enabled ?? null,
+                        'is_inside' => $statusData?->is_inside ?? null,
+                        'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
+                        'coverages_today' => $coveragesToday,
+                    ];
+                });
+
+                $shiftType = $shift->shift_type;
+                $startTime = $shiftType === 1 ? $shift->morning_start : $shift->evening_start;
+                $endTime = $shiftType === 1 ? $shift->morning_end : $shift->evening_end;
+
+                // ✅ استخدام الدالة الجديدة بدلًا من isWorkingDay2 مباشرة
+                $isWorkingDay = $this->adjustedIsWorkingDay($shift, Carbon::parse($date . ' 00:00:00', 'Asia/Riyadh'), $currentTime);
+
+                $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $shift->zone);
+
+                $dataByShift[] = [
+                    'shift_id' => $shift->id,
+                    'shift_name' => $shift->name,
+                    'is_current_shift' => $isCurrentShift,
+                    'is_working_day' => $isWorkingDay,
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'employees' => $employees,
+                ];
+            }
+
+            $coverageAttendances = Attendance::with('employee')
+                ->where('zone_id', $zoneId)
+                ->where('status', 'coverage')
+                ->whereDate('date', $date)
                 ->whereHas('employee', function ($q) {
                     $q->where('status', 1);
                 })
                 ->get();
 
-            $attendances = $shift->attendances->where('date', $date);
-
-            $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses, $date) {
-                $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
-                $employee = $record->employee;
+            $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date) {
+                $employee = $attendance->employee;
                 $statusData = $employeeStatuses[$employee->id] ?? null;
 
-                $coveragesToday = \App\Models\Attendance::with('zone.project', 'shift')
-                    ->where('employee_id', $record->employee_id)
-                    ->where('status', 'coverage')
-                    ->whereDate('date', $date)
-                    ->get()
-                    ->map(function ($cov) {
-                        return [
-                            'zone_name' => $cov->zone->name ?? 'غير معروف',
-                            'project_name' => $cov->zone->project->name ?? 'غير معروف',
-                            'shift_name' => $cov->shift->name ?? 'غير معروف',
-                            'check_in' => $cov->check_in,
-                            'check_out' => $cov->check_out,
-                        ];
-                    });
+                $assignment = \App\Models\EmployeeProjectRecord::with(['project', 'zone', 'shift'])
+                    ->where('employee_id', $employee->id)
+                    ->where('start_date', '<=', $date)
+                    ->where(function ($q) use ($date) {
+                        $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
+                    })
+                    ->latest('start_date')
+                    ->first();
 
                 return [
-                    'employee_id' => $record->employee_id,
+                    'employee_id' => $attendance->employee_id,
                     'employee_name' => $employee->name(),
-                    'status' => $attendance?->status ?? 'absent',
-                    'check_in' => $attendance?->check_in,
-                    'check_out' => $attendance?->check_out,
-                    'notes' => $attendance?->notes,
+                    'status' => 'coverage',
+                    'check_in' => $attendance->check_in,
+                    'check_out' => $attendance->check_out,
+                    'notes' => $attendance->notes,
                     'mobile_number' => $employee->mobile_number,
-                    'is_coverage' => false,
+                    'is_coverage' => true,
                     'out_of_zone' => $employee->out_of_zone,
-                    'is_checked_in' => $attendance !== null,
-                    'is_late' => $attendance?->is_late ?? false,
+                    'is_checked_in' => true,
+                    'is_late' => false,
                     'gps_enabled' => $statusData?->gps_enabled ?? null,
                     'is_inside' => $statusData?->is_inside ?? null,
                     'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
-                    'coverages_today' => $coveragesToday,
+                    'project_name' => $assignment?->project?->name ?? 'غير معروف',
+                    'zone_name' => $assignment?->zone?->name ?? 'غير معروف',
+                    'shift_name' => $assignment?->shift?->name ?? 'غير معروف',
                 ];
             });
 
-            $shiftType = $shift->shift_type;
-            $startTime = $shiftType === 1 ? $shift->morning_start : $shift->evening_start;
-            $endTime = $shiftType === 1 ? $shift->morning_end : $shift->evening_end;
+            return response()->json([
+                'status' => 'success',
+                'date' => $date,
+                'zone_id' => $zoneId,
+                'data' => [
+                    'shifts' => $dataByShift,
+                    'coverage' => $coverageEmployees,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
-            // ✅ استخدام الدالة الجديدة بدلًا من isWorkingDay2 مباشرة
-            $isWorkingDay = $this->adjustedIsWorkingDay($shift, Carbon::parse($date . ' 00:00:00', 'Asia/Riyadh'), $currentTime);
+    private function adjustedIsWorkingDay($shift, Carbon $date, Carbon $now): bool
+    {
+        $isTodayWorking = $shift->isWorkingDay2($date);
 
-            $isCurrentShift = $this->isCurrentShift($shift, $currentTime, $shift->zone);
+        if (! $isTodayWorking) {
+            $yesterday = $date->copy()->subDay();
+            $isYesterdayWorking = $shift->isWorkingDay2($yesterday);
 
-            $dataByShift[] = [
-                'shift_id' => $shift->id,
-                'shift_name' => $shift->name,
-                'is_current_shift' => $isCurrentShift,
-                'is_working_day' => $isWorkingDay,
-                'start_time' => $startTime,
-                'end_time' => $endTime,
-                'employees' => $employees,
-            ];
+            $eveningStart = Carbon::parse("{$yesterday->toDateString()} {$shift->evening_start}", 'Asia/Riyadh');
+            $eveningEnd   = Carbon::parse("{$yesterday->toDateString()} {$shift->evening_end}", 'Asia/Riyadh');
+
+            if ($eveningEnd->lessThan($eveningStart)) {
+                $eveningEnd->addDay();
+            }
+
+            if ($isYesterdayWorking && $now->between($eveningStart, $eveningEnd)) {
+                return true;
+            }
         }
 
-        $coverageAttendances = Attendance::with('employee')
-            ->where('zone_id', $zoneId)
-            ->where('status', 'coverage')
-            ->whereDate('date', $date)
-            ->whereHas('employee', function ($q) {
-                $q->where('status', 1);
-            })
-            ->get();
+        return $isTodayWorking;
+    }
 
-        $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date) {
-            $employee = $attendance->employee;
-            $statusData = $employeeStatuses[$employee->id] ?? null;
-
-            $assignment = \App\Models\EmployeeProjectRecord::with(['project', 'zone', 'shift'])
-                ->where('employee_id', $employee->id)
-                ->where('start_date', '<=', $date)
-                ->where(function ($q) use ($date) {
-                    $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
-                })
-                ->latest('start_date')
-                ->first();
-
-            return [
-                'employee_id' => $attendance->employee_id,
-                'employee_name' => $employee->name(),
-                'status' => 'coverage',
-                'check_in' => $attendance->check_in,
-                'check_out' => $attendance->check_out,
-                'notes' => $attendance->notes,
-                'mobile_number' => $employee->mobile_number,
-                'is_coverage' => true,
-                'out_of_zone' => $employee->out_of_zone,
-                'is_checked_in' => true,
-                'is_late' => false,
-                'gps_enabled' => $statusData?->gps_enabled ?? null,
-                'is_inside' => $statusData?->is_inside ?? null,
-                'last_seen_at' => optional($statusData?->last_seen_at)?->toDateTimeString(),
-                'project_name' => $assignment?->project?->name ?? 'غير معروف',
-                'zone_name' => $assignment?->zone?->name ?? 'غير معروف',
-                'shift_name' => $assignment?->shift?->name ?? 'غير معروف',
-            ];
-        });
-
-        return response()->json([
-            'status' => 'success',
-            'date' => $date,
-            'zone_id' => $zoneId,
-            'data' => [
-                'shifts' => $dataByShift,
-                'coverage' => $coverageEmployees,
-            ],
+    public function getAttendanceStatusV5(Request $request)
+    {
+        $request->validate([
+            'project_id' => 'required|integer',
+            'zone_id' => 'required|integer',
+            'date' => 'required|date',
         ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
 
-private function adjustedIsWorkingDay($shift, Carbon $date, Carbon $now): bool
-{
-    $isTodayWorking = $shift->isWorkingDay2($date);
+        try {
+            $projectId   = $request->input('project_id');
+            $zoneId      = $request->input('zone_id');
+            $date        = Carbon::parse($request->input('date'))->toDateString();
+            $currentTime = Carbon::now('Asia/Riyadh');
 
-    if (! $isTodayWorking) {
-        $yesterday = $date->copy()->subDay();
-        $isYesterdayWorking = $shift->isWorkingDay2($yesterday);
-
-        $eveningStart = Carbon::parse("{$yesterday->toDateString()} {$shift->evening_start}", 'Asia/Riyadh');
-        $eveningEnd   = Carbon::parse("{$yesterday->toDateString()} {$shift->evening_end}", 'Asia/Riyadh');
-
-        if ($eveningEnd->lessThan($eveningStart)) {
-            $eveningEnd->addDay();
-        }
-
-        if ($isYesterdayWorking && $now->between($eveningStart, $eveningEnd)) {
-            return true;
-        }
-    }
-
-    return $isTodayWorking;
-}
-
-public function getAttendanceStatusV5(Request $request)
-{
-    $request->validate([
-        'project_id' => 'required|integer',
-        'zone_id' => 'required|integer',
-        'date' => 'required|date',
-    ]);
-
-    try {
-        $projectId   = $request->input('project_id');
-        $zoneId      = $request->input('zone_id');
-        $date        = Carbon::parse($request->input('date'))->toDateString();
-        $currentTime = Carbon::now('Asia/Riyadh');
-
-        // ⬅️ الحالة اللحظية
-        $threshold = now()->subHours(12);
-        $employeeStatuses = EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
-            ->whereHas('employee.attendances', function ($query) use ($threshold) {
-                $query->where(function ($q) use ($threshold) {
-                    $q->where('check_in_datetime', '>=', $threshold)
-                        ->orWhere(function ($q2) use ($threshold) {
-                            $q2->where('is_coverage', true)
-                                ->where('created_at', '>=', $threshold);
-                        });
-                });
-            })
-            ->get()
-            ->keyBy('employee_id');
-
-        $shifts = Shift::with(['attendances.employee', 'zone.project'])
-            ->where('status', 1)
-            ->whereHas('zone', function ($query) use ($projectId) {
-                $query->where('status', 1)
-                    ->where('project_id', $projectId)
-                    ->whereHas('project', function ($q) {
-                        $q->where('status', 1);
+            // ⬅️ الحالة اللحظية
+            $threshold = now()->subHours(12);
+            $employeeStatuses = EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
+                ->whereHas('employee.attendances', function ($query) use ($threshold) {
+                    $query->where(function ($q) use ($threshold) {
+                        $q->where('check_in_datetime', '>=', $threshold)
+                            ->orWhere(function ($q2) use ($threshold) {
+                                $q2->where('is_coverage', true)
+                                    ->where('created_at', '>=', $threshold);
+                            });
                     });
-            })
-            ->where('zone_id', $zoneId)
-            ->get();
+                })
+                ->get()
+                ->keyBy('employee_id');
 
-        $dataByShift = [];
-
-        foreach ($shifts as $shift) {
-            [$isCurrentShift, $startedAt] = $shift->getShiftActiveStatus2($currentTime);
-
-            // تحديد تاريخ الحضور بناءً على بداية الوردية (اليوم أو أمس)
-            $attendanceDate = $startedAt === 'yesterday'
-                ? Carbon::parse($date)->subDay()->toDateString()
-                : $date;
-
-            $attendances = $shift->attendances->where('date', $attendanceDate);
-
-            $employeeRecords = EmployeeProjectRecord::with('employee')
-                ->where('project_id', $projectId)
+            $shifts = Shift::with(['attendances.employee', 'zone.project'])
+                ->where('status', 1)
+                ->whereHas('zone', function ($query) use ($projectId) {
+                    $query->where('status', 1)
+                        ->where('project_id', $projectId)
+                        ->whereHas('project', function ($q) {
+                            $q->where('status', 1);
+                        });
+                })
                 ->where('zone_id', $zoneId)
-                ->where('shift_id', $shift->id)
-                ->where('status', true)
-                ->where(function ($query) use ($attendanceDate) {
-                    $query->whereNull('end_date')->orWhere('end_date', '>=', $attendanceDate);
-                })
-                ->where('start_date', '<=', $attendanceDate)
-                ->whereHas('employee', function ($q) {
-                    $q->where('status', 1);
-                })
                 ->get();
 
-            $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses, $attendanceDate) {
-                $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
-                $employee   = $record->employee;
+            $dataByShift = [];
+
+            foreach ($shifts as $shift) {
+                [$isCurrentShift, $startedAt] = $shift->getShiftActiveStatus2($currentTime);
+
+                // تحديد تاريخ الحضور بناءً على بداية الوردية (اليوم أو أمس)
+                $attendanceDate = $startedAt === 'yesterday'
+                    ? Carbon::parse($date)->subDay()->toDateString()
+                    : $date;
+
+                $attendances = $shift->attendances->where('date', $attendanceDate);
+
+                $employeeRecords = EmployeeProjectRecord::with('employee')
+                    ->where('project_id', $projectId)
+                    ->where('zone_id', $zoneId)
+                    ->where('shift_id', $shift->id)
+                    ->where('status', true)
+                    ->where(function ($query) use ($attendanceDate) {
+                        $query->whereNull('end_date')->orWhere('end_date', '>=', $attendanceDate);
+                    })
+                    ->where('start_date', '<=', $attendanceDate)
+                    ->whereHas('employee', function ($q) {
+                        $q->where('status', 1);
+                    })
+                    ->get();
+
+                $employees = $employeeRecords->map(function ($record) use ($attendances, $employeeStatuses, $attendanceDate) {
+                    $attendance = $attendances->firstWhere('employee_id', $record->employee_id);
+                    $employee   = $record->employee;
+                    $statusData = $employeeStatuses[$employee->id] ?? null;
+
+                    $coveragesToday = Attendance::with('zone.project', 'shift')
+                        ->where('employee_id', $record->employee_id)
+                        ->where('status', 'coverage')
+                        ->whereDate('date', $attendanceDate)
+                        ->get()
+                        ->map(function ($cov) {
+                            return [
+                                'zone_name'    => $cov->zone->name ?? 'غير معروف',
+                                'project_name' => $cov->zone->project->name ?? 'غير معروف',
+                                'shift_name'   => $cov->shift->name ?? 'غير معروف',
+                                'check_in'     => $cov->check_in,
+                                'check_out'    => $cov->check_out,
+                            ];
+                        });
+
+                    return [
+                        'employee_id'    => $record->employee_id,
+                        'employee_name'  => $employee->name(),
+                        'status'         => $attendance?->status ?? 'absent',
+                        'check_in'       => $attendance?->check_in,
+                        'check_out'      => $attendance?->check_out,
+                        'notes'          => $attendance?->notes,
+                        'mobile_number'  => $employee->mobile_number,
+                        'is_coverage'    => false,
+                        'out_of_zone'    => $employee->out_of_zone,
+                        'is_checked_in'  => $attendance !== null,
+                        'is_late'        => $attendance?->is_late ?? false,
+                        'gps_enabled'    => $statusData?->gps_enabled ?? null,
+                        'is_inside'      => $statusData?->is_inside ?? null,
+                        'last_seen_at'   => optional($statusData?->last_seen_at)?->toDateTimeString(),
+                        'coverages_today' => $coveragesToday,
+                    ];
+                });
+
+                $shiftType = $shift->shift_type;
+                $startTime = $shiftType === 1 ? $shift->morning_start : $shift->evening_start;
+                $endTime   = $shiftType === 1 ? $shift->morning_end   : $shift->evening_end;
+
+                $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($attendanceDate . ' 00:00:00', 'Asia/Riyadh'));
+
+                $dataByShift[] = [
+                    'shift_id'         => $shift->id,
+                    'shift_name'       => $shift->name,
+                    'is_current_shift' => $isCurrentShift,
+                    'is_working_day'   => $isWorkingDay,
+                    'start_time'       => $startTime,
+                    'end_time'         => $endTime,
+                    'employees'        => $employees,
+                ];
+            }
+
+            $coverageAttendances = Attendance::with('employee')
+                ->where('zone_id', $zoneId)
+                ->where('status', 'coverage')
+                ->whereDate('date', $date)
+                ->whereHas('employee', fn($q) => $q->where('status', 1))
+                ->get();
+
+            $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date) {
+                $employee   = $attendance->employee;
                 $statusData = $employeeStatuses[$employee->id] ?? null;
 
-                $coveragesToday = Attendance::with('zone.project', 'shift')
-                    ->where('employee_id', $record->employee_id)
-                    ->where('status', 'coverage')
-                    ->whereDate('date', $attendanceDate)
-                    ->get()
-                    ->map(function ($cov) {
-                        return [
-                            'zone_name'    => $cov->zone->name ?? 'غير معروف',
-                            'project_name' => $cov->zone->project->name ?? 'غير معروف',
-                            'shift_name'   => $cov->shift->name ?? 'غير معروف',
-                            'check_in'     => $cov->check_in,
-                            'check_out'    => $cov->check_out,
-                        ];
-                    });
+                $assignment = EmployeeProjectRecord::with(['project', 'zone', 'shift'])
+                    ->where('employee_id', $employee->id)
+                    ->where('start_date', '<=', $date)
+                    ->where(function ($q) use ($date) {
+                        $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
+                    })
+                    ->latest('start_date')
+                    ->first();
 
                 return [
-                    'employee_id'    => $record->employee_id,
+                    'employee_id'    => $attendance->employee_id,
                     'employee_name'  => $employee->name(),
-                    'status'         => $attendance?->status ?? 'absent',
-                    'check_in'       => $attendance?->check_in,
-                    'check_out'      => $attendance?->check_out,
-                    'notes'          => $attendance?->notes,
+                    'status'         => 'coverage',
+                    'check_in'       => $attendance->check_in,
+                    'check_out'      => $attendance->check_out,
+                    'notes'          => $attendance->notes,
                     'mobile_number'  => $employee->mobile_number,
-                    'is_coverage'    => false,
+                    'is_coverage'    => true,
                     'out_of_zone'    => $employee->out_of_zone,
-                    'is_checked_in'  => $attendance !== null,
-                    'is_late'        => $attendance?->is_late ?? false,
+                    'is_checked_in'  => true,
+                    'is_late'        => false,
                     'gps_enabled'    => $statusData?->gps_enabled ?? null,
                     'is_inside'      => $statusData?->is_inside ?? null,
                     'last_seen_at'   => optional($statusData?->last_seen_at)?->toDateTimeString(),
-                    'coverages_today'=> $coveragesToday,
+                    'project_name'   => $assignment?->project?->name ?? 'غير معروف',
+                    'zone_name'      => $assignment?->zone?->name ?? 'غير معروف',
+                    'shift_name'     => $assignment?->shift?->name ?? 'غير معروف',
                 ];
             });
 
-            $shiftType = $shift->shift_type;
-            $startTime = $shiftType === 1 ? $shift->morning_start : $shift->evening_start;
-            $endTime   = $shiftType === 1 ? $shift->morning_end   : $shift->evening_end;
-
-            $isWorkingDay = $shift->isWorkingDay2(Carbon::parse($attendanceDate . ' 00:00:00', 'Asia/Riyadh'));
-
-            $dataByShift[] = [
-                'shift_id'         => $shift->id,
-                'shift_name'       => $shift->name,
-                'is_current_shift' => $isCurrentShift,
-                'is_working_day'   => $isWorkingDay,
-                'start_time'       => $startTime,
-                'end_time'         => $endTime,
-                'employees'        => $employees,
-            ];
+            return response()->json([
+                'status'   => 'success',
+                'date'     => $date,
+                'zone_id'  => $zoneId,
+                'data'     => [
+                    'shifts'   => $dataByShift,
+                    'coverage' => $coverageEmployees,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        $coverageAttendances = Attendance::with('employee')
-            ->where('zone_id', $zoneId)
-            ->where('status', 'coverage')
-            ->whereDate('date', $date)
-            ->whereHas('employee', fn($q) => $q->where('status', 1))
-            ->get();
-
-        $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date) {
-            $employee   = $attendance->employee;
-            $statusData = $employeeStatuses[$employee->id] ?? null;
-
-            $assignment = EmployeeProjectRecord::with(['project', 'zone', 'shift'])
-                ->where('employee_id', $employee->id)
-                ->where('start_date', '<=', $date)
-                ->where(function ($q) use ($date) {
-                    $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
-                })
-                ->latest('start_date')
-                ->first();
-
-            return [
-                'employee_id'    => $attendance->employee_id,
-                'employee_name'  => $employee->name(),
-                'status'         => 'coverage',
-                'check_in'       => $attendance->check_in,
-                'check_out'      => $attendance->check_out,
-                'notes'          => $attendance->notes,
-                'mobile_number'  => $employee->mobile_number,
-                'is_coverage'    => true,
-                'out_of_zone'    => $employee->out_of_zone,
-                'is_checked_in'  => true,
-                'is_late'        => false,
-                'gps_enabled'    => $statusData?->gps_enabled ?? null,
-                'is_inside'      => $statusData?->is_inside ?? null,
-                'last_seen_at'   => optional($statusData?->last_seen_at)?->toDateTimeString(),
-                'project_name'   => $assignment?->project?->name ?? 'غير معروف',
-                'zone_name'      => $assignment?->zone?->name ?? 'غير معروف',
-                'shift_name'     => $assignment?->shift?->name ?? 'غير معروف',
-            ];
-        });
-
-        return response()->json([
-            'status'   => 'success',
-            'date'     => $date,
-            'zone_id'  => $zoneId,
-            'data'     => [
-                'shifts'   => $dataByShift,
-                'coverage' => $coverageEmployees,
-            ],
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'حدث خطأ أثناء جلب بيانات الحضور',
-            'error'   => $e->getMessage(),
-        ], 500);
     }
-}
 
     /**
      * الحصول على الورديات النشطة حاليًا لعرض حالة الحضور
@@ -1766,30 +1807,30 @@ public function getAttendanceStatusV5(Request $request)
             ->orderByDesc('check_in_datetime')
             ->get();
 
-       $last = Attendance::where('employee_id', $employeeId)
-    ->latest('check_in_datetime')
-    ->first();
+        $last = Attendance::where('employee_id', $employeeId)
+            ->latest('check_in_datetime')
+            ->first();
 
-$canCheckIn = false;
-$canCheckOut = false;
-$checkOutType = null;
+        $canCheckIn = false;
+        $canCheckOut = false;
+        $checkOutType = null;
 
-if ($last) {
-    if ($last->check_out === null) {
-        $hoursSinceCheckIn = now('Asia/Riyadh')->diffInHours(Carbon::parse($last->check_in_datetime));
+        if ($last) {
+            if ($last->check_out === null) {
+                $hoursSinceCheckIn = now('Asia/Riyadh')->diffInHours(Carbon::parse($last->check_in_datetime));
 
-        if ($hoursSinceCheckIn < 12) {
-            $canCheckOut = true;
-            $checkOutType = $last->status === 'coverage' ? 'coverage' : 'attendance';
+                if ($hoursSinceCheckIn < 12) {
+                    $canCheckOut = true;
+                    $checkOutType = $last->status === 'coverage' ? 'coverage' : 'attendance';
+                } else {
+                    $canCheckIn = true;
+                }
+            } else {
+                $canCheckIn = true;
+            }
         } else {
             $canCheckIn = true;
         }
-    } else {
-        $canCheckIn = true;
-    }
-} else {
-    $canCheckIn = true;
-}
 
 
         return response()->json([
