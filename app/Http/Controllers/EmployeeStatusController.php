@@ -176,6 +176,7 @@ public function getEmployeeStatusInActiveShifts()
 {
     $enabledShifts = Shift::with(['zone.pattern'])
         ->where('status', true)
+        ->where('exclude_from_auto_absence', false)
         ->get();
 
     $activeShiftIds = [];
