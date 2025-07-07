@@ -40,8 +40,8 @@ class SendUnassignedEmployeesReport extends Command
             </head>
             <body style='font-family: Tahoma, Arial, sans-serif; background-color: #f4f4f4; padding: 20px;'>
                 <div style='background-color: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
-                    <h2 style='color: #333;'>📄 تقرير الموظفين غير المرتبطين بأي Slot</h2>
-                    <p style='font-size: 16px; color: #555;'>تجد في المرفق قائمة بالموظفين الذين لا يوجد لهم سلوت محدد في الورديات.</p>
+                    <h2 style='color: #333;'>📄 تقرير الموظفين غير المرتبطين بأي شاغر</h2>
+                    <p style='font-size: 16px; color: #555;'>تجد في المرفق قائمة بالموظفين الذين لا يوجد لهم شاغر محدد في الورديات.</p>
                     <p style='font-size: 15px; color: #666;'>يرجى مراجعة الورديات واتخاذ الإجراء اللازم.</p>
                     <p style='margin-top: 30px; font-size: 14px; color: #888;'>
                         مع تحيات<br>
@@ -54,7 +54,7 @@ class SendUnassignedEmployeesReport extends Command
         try {
             Mail::send([], [], function ($mail) use ($email, $fullPath, $htmlMessage) {
                 $mail->to($email)
-                    ->subject('📄 تقرير الموظفين غير المرتبطين بأي Slot')
+                    ->subject('📄 تقرير الموظفين غير المرتبطين بأي شاغر')
                     ->html($htmlMessage)
                     ->attach($fullPath);
             });

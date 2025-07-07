@@ -134,7 +134,7 @@ class EmployeeProjectRecordResource extends Resource
                 ->required(),
 
            Select::make('shift_slot_id')
-    ->label('Slot')
+    ->label(__('Slot'))
     ->options(function (callable $get, ?EmployeeProjectRecord $record) {
         $shiftId = $get('shift_id');
         if (! $shiftId) return [];
@@ -162,7 +162,7 @@ class EmployeeProjectRecordResource extends Resource
     ->searchable()
     ->required()
     ->visible(fn (callable $get) => $get('shift_id'))
-    ->helperText('اختر Slot متاح ضمن هذه الوردية')
+    ->helperText('اختر شاغر متاح ضمن هذه الوردية')
     ->reactive(),
 
 

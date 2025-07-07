@@ -9,7 +9,7 @@
                 <ul class="mt-2 space-y-2">
                     @foreach ($shift['slots'] as $slot)
                         <li class="text-sm">
-                            🔢 سلوت #{{ $slot['id'] }} — 👤 {{ $slot['employee_name'] ?? 'غير مخصص' }}
+                            🔢 شاغر #{{ $slot['id'] }} — 👤 {{ $slot['employee_name'] ?? 'غير مخصص' }}
                         </li>
                     @endforeach
                 </ul>

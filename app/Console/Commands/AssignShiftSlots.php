@@ -74,7 +74,7 @@ class AssignShiftSlots extends Command
                     $record->shift_slot_id = $availableSlot->id;
                     $record->save();
 
-                    // logger()->info("🔗 تم ربط الموظف {$record->employee_id} بالسلوت رقم {$availableSlot->slot_number} (ID: {$availableSlot->id}) في الوردية {$record->shift_id}");
+                    // logger()->info("🔗 تم ربط الموظف {$record->employee_id} بالشاغر رقم {$availableSlot->slot_number} (ID: {$availableSlot->id}) في الوردية {$record->shift_id}");
                 } else {
                     logger()->error("🚫 لا يوجد مكان متاح → employee_id={$record->employee_id}, shift_id={$record->shift_id}, record_id={$record->id}");
                     logger()->info("    👀 تحقق من: emp_no < عدد الإسنادات الحالية أو تجاوز في الربط.");

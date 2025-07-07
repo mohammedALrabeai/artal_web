@@ -79,8 +79,8 @@ class DistributeAssignments extends Page implements Forms\Contracts\HasForms
 
                                     return Grid::make(12)->schema([
                                         Placeholder::make("slot_number_{$slotId}")
-                                            ->label('رقم السلوت')
-                                            ->content('سلوت رقم ' . ($slot['slot_number'] ?? ($index + 1)))
+                                            ->label('رقم الشاغر')
+                                            ->content('رقم الشاغر ' . ($slot['slot_number'] ?? ($index + 1)))
                                             ->columnSpan(2),
 
                                         EmployeeSelectV2::make("slotValues.{$slotId}.employee_id", false, true)

@@ -19,11 +19,11 @@ class ReportUnassignedShiftSlots extends Command
             ->get();
 
         if ($records->isEmpty()) {
-            $this->info('🎉 لا يوجد موظفون معلقون بدون سلوت.');
+            $this->info('🎉 لا يوجد موظفون معلقون بدون شاغر.');
             return self::SUCCESS;
         }
 
-        $this->info('تقرير الموظفين المعلقين بدون سلوت:');
+        $this->info('تقرير الموظفين المعلقين بدون شاغر:');
         $this->table(
             ['#', 'الموظف', 'رقم الهوية', 'المشروع', 'الموقع', 'الوردية', 'ID السجل'],
             $records->map(function ($rec, $i) {
@@ -41,7 +41,7 @@ class ReportUnassignedShiftSlots extends Command
 
         // تخزين في اللوج أيضًا (اختياري)
         foreach ($records as $rec) {
-            logger()->warning("🔗 موظف بدون سلوت: {$rec->employee?->first_name} {$rec->employee?->family_name}، رقم الهوية: {$rec->employee?->national_id}، الوردية: {$rec->shift?->name}، الموقع: {$rec->zone?->name}");
+            logger()->warning("🔗 موظف بدون شاغر: {$rec->employee?->first_name} {$rec->employee?->family_name}، رقم الهوية: {$rec->employee?->national_id}، الوردية: {$rec->shift?->name}، الموقع: {$rec->zone?->name}");
         }
 
         return self::SUCCESS;

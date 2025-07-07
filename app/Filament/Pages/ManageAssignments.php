@@ -153,7 +153,7 @@ protected function getFormSchema(): array
                     ->columnSpan(2),
 
                 Select::make('shift_slot_id')
-                    ->label('المكان (Slot)')
+                    ->label('المكان (الشاغر)')
                     ->options(function (callable $get) {
                         $shiftId = $get('shift_id');
                         if (! $shiftId) {
@@ -163,7 +163,7 @@ protected function getFormSchema(): array
                         return \App\Models\ShiftSlot::where('shift_id', $shiftId)
                             ->orderBy('slot_number')
                             ->pluck('slot_number', 'id')
-                            ->map(fn ($num) => "مكان رقم $num");
+                            ->map(fn ($num) => "شاغر رقم $num");
                     })
                     ->required()
                     ->columnSpan(1),
