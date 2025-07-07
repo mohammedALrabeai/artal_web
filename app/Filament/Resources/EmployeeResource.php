@@ -12,6 +12,7 @@ use App\Models\Exclusion;
 use Illuminate\Support\Carbon;
 
 use App\Models\User;
+use App\Models\Zone;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -489,6 +490,9 @@ class EmployeeResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        // ->query(
+        //     fn () => Employee::query()->with(['latestZone.zone'])
+        // )
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
@@ -523,9 +527,7 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('latest_project')
                     ->label(__('Latest Project'))
                     ->getStateUsing(function ($record) {
-                        $currentProjectRecord = $record->latestZone; // استدعاء العلاقة الحالية
-
-                        return $currentProjectRecord ? $currentProjectRecord->name : __('Not Assigned');
+                        return $record->latestZone?->zone?->name ?? __('Not Assigned');
                     })
                     ->sortable()
                     ->copyable()

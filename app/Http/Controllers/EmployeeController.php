@@ -93,80 +93,74 @@ class EmployeeController extends Controller
         ], 200);
     }
 
-    public function store(Request $request)
-    {
-        // 1. تحقق من صحة المدخلات
-        $data = $request->validate([
-            'type' => 'required|in:transfer,exclude,new_employee',
-            'employee_id' => 'required_if:type,transfer,exclude|integer|exists:employees,id',
-            'zone_name' => 'required_if:type,transfer|string|max:255',
-            'national_id' => 'required_if:type,new_employee|string|max:50',
-            'full_name' => 'required_if:type,new_employee|string|max:255',
-            'new_zone' => 'required_if:type,new_employee|string|max:255',
-        ]);
+  public function store(Request $request)
+{
+    // 0. جلب الموظف المرسل من التوكن
+    $sender     = $request->user('employee');
+    $senderName = $sender ? $sender->name : 'غير معروف';
 
-        // 2. بناء عنوان ورسالة الإشعار
-        switch ($data['type']) {
-            case 'transfer':
-                $employee = Employee::find($data['employee_id']);
-                $title = 'طلب نقل موظف';
-                $message = "👷‍♂️ الموظف: {$employee->name} (ID: {$employee->id})\n"
-                         ."📌 نُقل إلى الموقع: {$data['zone_name']}";
-                break;
+    // 1. التحقق من المدخلات، مع إضافة نوع "note" وحقل "note"
+    $data = $request->validate([
+        'type'         => 'required|in:transfer,exclude,new_employee,note',
+        'employee_id'  => 'required_if:type,transfer,exclude,note|integer|exists:employees,id',
+        'zone_name'    => 'required_if:type,transfer|string|max:255',
+        'national_id'  => 'required_if:type,new_employee|string|max:50',
+        'full_name'    => 'required_if:type,new_employee|string|max:255',
+        'new_zone'     => 'required_if:type,new_employee|string|max:255',
+        'note'         => 'required_if:type,note|string|max:1000',
+    ]);
 
-            case 'exclude':
-                $employee = Employee::find($data['employee_id']);
-                $title = 'طلب استبعاد موظف';
-                $message = "👷‍♂️ الموظف: {$employee->name} (ID: {$employee->id})\n"
-                         .'⚠️ طلب استبعاده قُدم للمراجعة';
-                break;
+    // 2. بناء العنوان والرسالة حسب النوع
+    switch ($data['type']) {
+        case 'transfer':
+            $employee = Employee::find($data['employee_id']);
+            $title    = 'طلب نقل موظف';
+            $message  = "👷‍♂️ الموظف: {$employee->name} (ID: {$employee->id})\n"
+                      . "📌 نُقل إلى الموقع: {$data['zone_name']}";
+            break;
 
-            case 'new_employee':
-                $title = 'إضافة موظف جديد';
-                $message = "🆕 موظف جديد\n"
-                         ."🆔 الهوية: {$data['national_id']}\n"
-                         ."👤 الاسم: {$data['full_name']}\n"
-                         ."📍 الموقع: {$data['new_zone']}";
-                break;
-        }
+        case 'exclude':
+            $employee = Employee::find($data['employee_id']);
+            $title    = 'طلب استبعاد موظف';
+            $message  = "👷‍♂️ الموظف: {$employee->name} (ID: {$employee->id})\n"
+                      . "⚠️ طلب استبعاده قُدم للمراجعة";
+            break;
 
-        // // 3. إرسال الإشعار داخل النظام (لواجهة HR)
-        // $notificationService = app(NotificationService::class);
-        // $notificationService->sendNotification(
-        //     ['hr'],        // فقط دور الموارد البشرية
-        //     $title,
-        //     $message,
-        //     [
-        //         $notificationService->createAction(
-        //             'عرض الطلبات',
-        //             '/admin/employee-actions',
-        //             'heroicon-s-list'
-        //         ),
-        //     ]
-        // );
+        case 'new_employee':
+            $title   = 'إضافة موظف جديد';
+            $message = "🆕 موظف جديد\n"
+                      . "🆔 الهوية: {$data['national_id']}\n"
+                      . "👤 الاسم: {$data['full_name']}\n"
+                      . "📍 الموقع: {$data['new_zone']}";
+            break;
 
-        $message_with_title = "🔔 {$title}\n\n{$message}";
-
-        // 4. إرسال رسالة واتساب بنفس المحتوى عبر OtpService
-        $otpService = new OtpService;
-
-        // أ. إلى الموظف (في حال النقل أو الاستبعاد)
-        // if (in_array($data['type'], ['transfer', 'exclude'])) {
-        //     $otpService->sendOtp($employee->mobile_number, $message);
-        // }
-
-        // ب. إلى جروب الموارد البشرية
-        $otpService->sendOtp(
-            '120363385699307538@g.us',
-            $message_with_title
-        );
-
-        // 5. رد الـ API
-        return response()->json([
-            'status' => 'success',
-            'message' => 'تم إرسال الإشعار داخل النظام وعبر واتساب.',
-        ], 200);
+        case 'note':
+            $employee = Employee::find($data['employee_id']);
+            $title    = 'ملاحظة عن موظف';
+            $message  = "📝 الملاحظة للموظف: {$employee->name} (ID: {$employee->id})\n\n"
+                      . "{$data['note']}";
+            break;
     }
+
+    // 3. ضم العنوان والمرسل مع الرسالة
+    $fullMessage = "🔔 {$title}\n"
+                 . "👤 من: {$senderName}\n\n"
+                 . "{$message}";
+
+    // 4. إرسال الرسالة عبر واتساب إلى جروب الـ HR
+    $otpService = new OtpService;
+    $otpService->sendOtp(
+        '120363385699307538@g.us',
+        $fullMessage
+    );
+
+    // 5. رد الـ API
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'تم إرسال الإشعار عبر واتساب.',
+    ], 200);
+}
+
 
     public function schedule(Request $request)
     {

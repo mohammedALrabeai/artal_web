@@ -15,8 +15,8 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
     {
         // إذا لم يتم تمرير استعلام نستخدم الكل
         $this->query = $query
-            ? $query->with(['currentZone', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])
-            : Employee::with(['currentZone', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])->latest();
+            ? $query->with(['currentZone','latestZone.zone', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])
+            : Employee::with(['currentZone','latestZone.zone', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])->latest();
     }
 
     public function collection()
@@ -96,7 +96,9 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             $employee->insurance_number,
             $employee->preferred_zone_name, // اسم الموقع المرشح ✅ جديد
             // optional($employee->currentZone)->name,
-            optional($employee->latestZone)->name, // اسم الموقع الحالي
+            // ✅ صحيح
+optional($employee->latestZone?->zone)->name,
+ // اسم الموقع الحالي
             $employee->status == 1 ? 'نشط' : 'غير نشط',
             $exclusion?->exclusion_date,       // ✅ جديد
             $exclusion?->reason,               // ✅ جديد

@@ -210,17 +210,14 @@ class Employee extends Model
             ->latest('start_date'); // جلب أحدث سجل بناءً على تاريخ البداية
     }
 
-    public function latestZone()
-    {
-        return $this->hasOneThrough(
-            Zone::class,
-            EmployeeProjectRecord::class,
-            'employee_id', // المفتاح الأجنبي في EmployeeProjectRecord
-            'id',          // المفتاح الأساسي في Zone
-            'id',          // المفتاح الأساسي في Employee
-            'zone_id'      // المفتاح الأجنبي في EmployeeProjectRecord الذي يشير إلى Zone
-        )->latest('start_date'); // نجلب أحدث سجل بناءً على تاريخ البداية
-    }
+ public function latestZone()
+{
+    return $this->hasOne(EmployeeProjectRecord::class, 'employee_id')
+        ->whereNotNull('zone_id')
+        ->orderByDesc('start_date');
+}
+
+
 
     public function commercialRecord()
     {

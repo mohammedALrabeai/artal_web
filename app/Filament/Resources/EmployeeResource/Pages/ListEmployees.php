@@ -2,19 +2,20 @@
 
 namespace App\Filament\Resources\EmployeeResource\Pages;
 
-use App\Filament\Resources\EmployeeResource;
-use App\Models\Exclusion;
-use Filament\Actions;
-use Filament\Facades\Filament;
 use Filament\Forms;
-use Filament\Notifications\Notification;
-use Filament\Resources\Components\Tab;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Actions;
+use App\Models\Employee;
+use App\Models\Exclusion;
+use Tables\Actions\Action;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
-use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
+use Filament\Resources\Components\Tab;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ListRecords;
+use App\Filament\Resources\EmployeeResource;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
-use Tables\Actions\Action;
+use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
 
 // use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 
@@ -226,8 +227,11 @@ class ListEmployees extends ListRecords
         ];
     }
 
-    protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
-    {
-        return parent::getTableQuery()->latest();
-    }
+    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
+{
+    return Employee::query()
+        ->with(['latestZone.zone']) // تحميل علاقة latestZone والـ zone التابعة لها
+        ->latest(); // ترتيب حسب created_at
+}
+
 }
