@@ -45,24 +45,33 @@
         @csrf
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div class="space-y-2">
+          <div x-data x-init="
+    const tom = new TomSelect($refs.projectSelect, {
+        plugins: ['remove_button'],
+        placeholder: 'اختر مشروعًا أو أكثر...',
+        onItemAdd(value) {
+            if (value === 'all') {
+                this.items
+                    .filter(v => v !== 'all')
+                    .forEach(v => this.removeItem(v));
+            } else if (this.items.includes('all')) {
+                this.removeItem('all');
+            }
+        }
+    });
+" class="space-y-2">
+
     <label for="projects" class="text-sm font-medium text-gray-700 dark:text-gray-300">اختر المشاريع</label>
 
-    <select id="projects" name="projects[]" multiple required
-        class="w-full border-gray-300 rounded-lg filament-input dark:border-gray-700"
-        x-data
-        x-init="
-            new TomSelect($el, {
-                plugins: ['remove_button'],
-                placeholder: 'اختر مشروعًا أو أكثر...',
-                allowEmptyOption: false
-            })
-        ">
+    <select x-ref="projectSelect" id="projects" name="projects[]" multiple required
+        class="w-full border-gray-300 rounded-lg filament-input dark:border-gray-700">
+        <option value="all">جميع المشاريع</option>
         @foreach(\App\Models\Project::where('status', true)->orderBy('name')->get() as $project)
             <option value="{{ $project->id }}">{{ $project->name }}</option>
         @endforeach
     </select>
 </div>
+
 
 
             <div class="space-y-2">

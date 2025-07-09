@@ -137,12 +137,25 @@ Route::post('/exports/employee-changes', function () {
 })->name('exports.employee-changes')->middleware(['auth']);
 
 
+
+
 Route::post('/exports/work-schedule', function () {
     $projectIds = request()->input('projects', []);
     $startDate = request()->input('start_date');
 
-    if (! is_array($projectIds) || empty($startDate)) {
-        abort(400, 'يرجى تحديد المشاريع وتاريخ البداية.');
+    // ✅ إذا لم يتم اختيار شيء
+    if (empty($projectIds)) {
+        return back()->withErrors(['projects' => 'يرجى اختيار مشروع واحد على الأقل.']);
+    }
+
+    // ✅ إذا اختار "جميع المشاريع"
+    if (in_array('all', $projectIds)) {
+        $projectIds = \App\Models\Project::where('status', true)->pluck('id')->toArray();
+    }
+
+    // تحقق من التاريخ
+    if (! $startDate) {
+        return back()->withErrors(['start_date' => 'يرجى تحديد تاريخ البداية.']);
     }
 
     return Excel::download(
@@ -150,6 +163,7 @@ Route::post('/exports/work-schedule', function () {
         'جداول_التشغيل.xlsx'
     );
 })->name('exports.work-schedule')->middleware(['auth']);
+
 
 
 

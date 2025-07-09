@@ -47,6 +47,7 @@ class EmployeeChangesExport implements FromCollection, WithHeadings, WithStyles,
                 $record->shift?->name,
                 $record->shiftSlot?->slot_number,
                 $previous?->employee?->name,
+                $previous?->end_date ? \Carbon\Carbon::parse($previous->end_date)->format('Y-m-d') : '-', // ✅ الجديد
             ];
         });
     }
@@ -63,6 +64,7 @@ class EmployeeChangesExport implements FromCollection, WithHeadings, WithStyles,
             'الوردية',
             'رقم الشاغر',
             'بديل عن',
+            'تاريخ خروج البديل',
         ];
     }
 
@@ -77,62 +79,64 @@ class EmployeeChangesExport implements FromCollection, WithHeadings, WithStyles,
         ];
     }
 
-  public function registerEvents(): array
-{
-    return [
-        AfterSheet::class => function (AfterSheet $event) {
-            $sheet = $event->sheet->getDelegate();
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
 
-            // اتجاه الصفحة من اليمين لليسار
-            $sheet->setRightToLeft(true);
+                // اتجاه الصفحة من اليمين لليسار
+                $sheet->setRightToLeft(true);
 
-            $highestRow = $sheet->getHighestRow();
+                $highestRow = $sheet->getHighestRow();
 
-            // تحديد حدود النطاق الكامل
-            $sheet->getStyle("A1:I{$highestRow}")->applyFromArray([
-                'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    'vertical' => Alignment::VERTICAL_CENTER,
-                ],
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => Border::BORDER_THIN,
-                        'color' => ['argb' => 'FFCCCCCC'],
+                // تحديد حدود النطاق الكامل
+                $sheet->getStyle("A1:J{$highestRow}")->applyFromArray([
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
                     ],
-                ],
-            ]);
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['argb' => 'FFCCCCCC'],
+                        ],
+                    ],
+                ]);
 
-            // تنسيق رأس الجدول (السطر الأول)
-            $sheet->getStyle("A1:I1")->applyFromArray([
-                'font' => [
-                    'bold' => true,
-                    'size' => 14,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '4F81BD'], // أزرق احترافي
-                ],
-            ]);
 
-            // تحديد عرض الأعمدة يدويًا (A إلى I)
-            $columnWidths = [
-                'A' => 25, // اسم الموظف
-                'B' => 20, // الهوية
-                'C' => 20, // الجوال
-                'D' => 20, // تاريخ التوظيف
-                'E' => 20, // المشروع
-                'F' => 20, // الموقع
-                'G' => 20, // الوردية
-                'H' => 15, // الشاغر
-                'I' => 25, // بدل من الموظف
-            ];
+                // تنسيق رأس الجدول (السطر الأول)
+                $sheet->getStyle("A1:J1")->applyFromArray([
+                    'font' => [
+                        'bold' => true,
+                        'size' => 14,
+                        'color' => ['rgb' => 'FFFFFF'],
+                    ],
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => '4F81BD'],
+                    ],
+                ]);
 
-            foreach ($columnWidths as $col => $width) {
-                $sheet->getColumnDimension($col)->setWidth($width);
-            }
-        },
-    ];
-}
 
+                // تحديد عرض الأعمدة يدويًا (A إلى I)
+                $columnWidths = [
+                    'A' => 25, // اسم الموظف
+                    'B' => 20, // الهوية
+                    'C' => 20, // الجوال
+                    'D' => 20, // تاريخ التوظيف
+                    'E' => 20, // المشروع
+                    'F' => 20, // الموقع
+                    'G' => 20, // الوردية
+                    'H' => 15, // الشاغر
+                    'I' => 25, // بدل من الموظف
+                    'J' => 20,
+                ];
+
+                foreach ($columnWidths as $col => $width) {
+                    $sheet->getColumnDimension($col)->setWidth($width);
+                }
+            },
+        ];
+    }
 }
