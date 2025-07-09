@@ -1,0 +1,227 @@
+/* ملف CSS إضافي للتحسينات - يوضع في public/css/pdf-viewer.css */
+
+/* تحسينات إضافية للواجهة */
+.pdf-viewer-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.pdf-container {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+}
+
+.toolbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.toolbar .btn-outline-secondary {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.toolbar .btn-outline-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+.text-field-overlay {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.text-field-overlay:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.text-field-overlay.active {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+}
+
+.field-label {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.field-input {
+    transition: all 0.3s ease;
+}
+
+.field-input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    transform: scale(1.01);
+}
+
+/* تحسينات للطباعة */
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
+    .field-input {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        font-weight: 600 !important;
+    }
+    
+    .text-field-overlay {
+        box-shadow: none !important;
+        transform: none !important;
+    }
+}
+
+/* تحسينات للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .toolbar {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .page-controls,
+    .zoom-controls,
+    .action-buttons {
+        justify-content: center;
+    }
+    
+    .pdf-container {
+        margin: 10px;
+    }
+    
+    .canvas-container {
+        overflow-x: auto;
+    }
+}
+
+/* تأثيرات التحميل */
+.loading-spinner {
+    background: white;
+    border-radius: 8px;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* تحسينات للأزرار */
+.btn {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+    border: none;
+}
+
+/* تحسينات للرسائل */
+.success-message {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+    border: none;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* تحسينات للتفاعل */
+.text-field-overlay::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #007bff, #28a745, #ffc107, #dc3545);
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.text-field-overlay:hover::before {
+    opacity: 0.1;
+}
+
+/* تحسينات للنص العربي */
+.field-input[dir="rtl"] {
+    text-align: right;
+}
+
+.field-label {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* تحسينات للأداء */
+.pdf-canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* تحسينات للوصولية */
+.text-field-overlay:focus-within {
+    outline: 3px solid #007bff;
+    outline-offset: 2px;
+}
+
+.field-input:focus {
+    outline: none;
+}
+
+/* تحسينات للحالات الخاصة */
+.field-input:invalid {
+    border-color: #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.05) !important;
+}
+
+.field-input:valid {
+    border-color: #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.05) !important;
+}
+
+/* تحسينات للتمرير */
+.pdf-viewer::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pdf-viewer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
