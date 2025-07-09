@@ -87,9 +87,9 @@ class Request extends Model
     {
         $approvals = $this->approvals; // جلب جميع الموافقات المرتبطة بالطلب
 
-        if ($approvals->every(fn ($approval) => $approval->status === 'approved')) {
+        if ($approvals->every(fn($approval) => $approval->status === 'approved')) {
             $this->status = 'approved'; // إذا تمت الموافقة على جميع المستويات
-        } elseif ($approvals->contains(fn ($approval) => $approval->status === 'rejected')) {
+        } elseif ($approvals->contains(fn($approval) => $approval->status === 'rejected')) {
             $this->status = 'rejected'; // إذا تم رفض أحد المستويات
         } else {
             $this->status = 'pending'; // إذا كانت الموافقة قيد الانتظار
@@ -185,8 +185,14 @@ class Request extends Model
                     'status' => Exclusion::STATUS_APPROVED,
                 ]);
                 $this->employee->update(['status' => false, 'job_status' => $this->exclusion->type]);
-                $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
-                
+                if ($this->exclusion->employee_project_record_id) {
+                    $this->exclusion->employeeProjectRecord?->update([
+                        'status' => false,
+                        'end_date' => now(),
+                    ]);
+                } else {
+                    $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
+                }
             }
             if ($this->type === 'coverage' && $this->coverage) {
                 $this->coverage->update([
@@ -197,7 +203,6 @@ class Request extends Model
                 $this->coverage->attendance()->update([
                     'approval_status' => 'approved',
                 ]);
-
             }
         }
 
@@ -291,7 +296,6 @@ class Request extends Model
         //     new RequestStatusNotification($this, 'rejected', $approver, $comments)
         // );
         \Log::info('Notification sent successfully.');
-
     }
 
     public function makeLeaveAttendance()
@@ -367,7 +371,7 @@ class Request extends Model
                         'shift_id' => $shiftId,
                         'ismorning' => true,
                         'status' => 'leave', // حالة الحضور "إجازة"
-                        'notes' => 'Leave: '.$this->leave->id.' - request ID: '.$this->id.': '.$this->leave->type.' - '.$this->leave->reason.' - '.$this->leave->start_date.' - '.$this->leave->end_date, // ملاحظات
+                        'notes' => 'Leave: ' . $this->leave->id . ' - request ID: ' . $this->id . ': ' . $this->leave->type . ' - ' . $this->leave->reason . ' - ' . $this->leave->start_date . ' - ' . $this->leave->end_date, // ملاحظات
                         // 'request_id' => $this->id, // ربط بالسجل الخاص بالطلب
                     ]
                 );

@@ -18,6 +18,7 @@ class Exclusion extends Model
         'attachment',
         'notes',
         'status', // إضافة الحقل الجديد
+        'employee_project_record_id'
     ];
 
     // تعريف الحالات كقائمة ثابتة
@@ -55,4 +56,12 @@ class Exclusion extends Model
     {
         return $this->hasOne(Request::class, 'exclusion_id');
     }
+
+    // App\Models\Exclusion.php
+
+public function employeeProjectRecord()
+{
+    return $this->belongsTo(\App\Models\EmployeeProjectRecord::class);
+}
+
 }

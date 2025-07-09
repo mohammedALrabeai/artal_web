@@ -88,6 +88,7 @@ class ExclusionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+        
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label(__('Employee'))
@@ -116,6 +117,33 @@ class ExclusionResource extends Resource
                 Tables\Columns\TextColumn::make('exclusion_date')
                     ->label(__('Exclusion Date'))
                     ->date(),
+
+
+                   Tables\Columns\TextColumn::make('employeeProjectRecordDetails')
+    ->label(__('Assignment'))
+    ->getStateUsing(function ($record) {
+        \Log::info('EP Record:', [
+            'record_id' => $record->id,
+            'ep_id' => $record->employee_project_record_id,
+            'has_relation' => $record->relationLoaded('employeeProjectRecord'),
+            'relation_data' => $record->employeeProjectRecord?->toArray(),
+        ]);
+
+        $assignment = $record->employeeProjectRecord;
+
+        if (! $assignment) {
+            return '-';
+        }
+
+        return optional($assignment->project)->name . ' - ' .
+               optional($assignment->zone)->name . ' - ' .
+               optional($assignment->shift)->name;
+    })
+     ->limit(30) // ✅ اختصار العرض
+    ->tooltip(fn($state) => $state),
+
+
+
 
                 Tables\Columns\TextColumn::make('reason')
                     ->label(__('Reason'))

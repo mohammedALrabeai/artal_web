@@ -35,9 +35,12 @@ class EditRequest extends EditRecord
         }
 
         if ($this->record->type === 'exclusion' && $this->record->exclusion) {
+            $data['employee_id'] = $this->record->employee_id;
             $data['exclusion_type'] = $this->record->exclusion->type;
             $data['exclusion_date'] = $this->record->exclusion->exclusion_date;
             $data['description'] = $this->record->exclusion->reason;
+            $data['employee_project_record_id'] = $this->record->exclusion->employee_project_record_id;
+
         }
 
         return $data;
@@ -80,9 +83,11 @@ class EditRequest extends EditRecord
             case 'exclusion':
                 if ($this->record->exclusion) {
                     $this->record->exclusion->update([
+                        'employee_id' => $data['employee_id'],
                         'type' => $data['exclusion_type'],
                         'exclusion_date' => $data['exclusion_date'],
                         'reason' => $data['description'],
+                        'employee_project_record_id' => $data['employee_project_record_id'],
                     ]);
                 }
                 break;

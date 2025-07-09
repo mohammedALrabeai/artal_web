@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Builder;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
+use App\Models\EmployeeProjectRecord;
+
 class RequestResource extends Resource
 {
     protected static ?string $model = Request::class;
@@ -81,7 +83,27 @@ class RequestResource extends Resource
                             //     ->searchable()
                             //     ->nullable()
                             //     ->required(),
-                            EmployeeSelect::make(),
+                      EmployeeSelect::make()
+    ->reactive()
+    ->afterStateUpdated(function ($state, callable $set, callable $get, $livewire) {
+        $set('employee_project_record_id', null);
+
+        $today = Carbon::today()->toDateString();
+        $records = EmployeeProjectRecord::where('employee_id', $state)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
+            })
+            ->pluck('id');
+
+        if ($records->count() === 1) {
+            // ✅ إذا وُجد إسناد واحد فقط يتم اختياره مباشرة
+            $set('employee_project_record_id', $records->first());
+        }
+
+        // إذا أردت فرض إعادة تحميل الحقول الديناميكية يمكنك تحديث أي متغير آخر
+        // $livewire->dispatch('refreshAssignmentOptions');
+    }),
+
 
                             // المقدم
                             Forms\Components\Select::make('submitted_by')
@@ -162,6 +184,57 @@ class RequestResource extends Resource
                             Forms\Components\DatePicker::make('exclusion_date')
                                 ->label(__('Exclusion Date'))
                                 ->required(),
+
+
+
+
+                           Forms\Components\Select::make('employee_project_record_id')
+    ->label(__('Assignment'))
+    ->reactive()
+    ->afterStateHydrated(function (callable $set, callable $get, $state) {
+        $employeeId = $get('employee_id');
+       
+        if (! $employeeId) return;
+
+        $today = Carbon::today()->toDateString();
+
+        $records = EmployeeProjectRecord::where('employee_id', $employeeId)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('end_date')
+                    ->orWhereDate('end_date', '>=', $today);
+            })
+            ->pluck('id');
+
+        if ($records->count() === 1) {
+            $set('exclusion.employee_project_record_id', $records->first());
+        }
+    })
+    ->options(function ($livewire) {
+        $employeeId = data_get($livewire->data, 'employee_id');
+
+        if (! $employeeId) return [];
+
+        $today = Carbon::today()->toDateString();
+
+        $records = EmployeeProjectRecord::with(['project', 'zone', 'shift'])
+            ->where('employee_id', $employeeId)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('end_date')
+                    ->orWhereDate('end_date', '>=', $today);
+            })
+            ->get();
+
+        return $records->mapWithKeys(fn($record) => [
+            $record->id => $record->project->name . ' - ' .
+                           $record->zone->name . ' - ' .
+                           $record->shift->name
+        ])->toArray();
+    })
+    ->required(fn($get) => $get('type') === 'exclusion')
+    ->visible(fn($get) => $get('type') === 'exclusion')
+    ->columnSpanFull()
+    ->searchable(),
+
 
                             // Forms\Components\Textarea::make('exclusion_reason')
                             //     ->label(__('Reason'))
@@ -324,11 +397,11 @@ class RequestResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->label(__('Description'))
                     ->searchable(),
-            Tables\Columns\TextColumn::make('exclusion_date')
-    ->label(__('Exclusion Date'))
-    ->getStateUsing(fn ($record) => $record->exclusion?->exclusion_date)
-    ->formatStateUsing(fn ($state) => $state ? \Carbon\Carbon::parse($state)->format('Y-m-d') : '-')
-    ->sortable(),
+                Tables\Columns\TextColumn::make('exclusion_date')
+                    ->label(__('Exclusion Date'))
+                    ->getStateUsing(fn($record) => $record->exclusion?->exclusion_date)
+                    ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->format('Y-m-d') : '-')
+                    ->sortable(),
 
 
                 Tables\Columns\TextColumn::make('amount')
@@ -581,7 +654,7 @@ class RequestResource extends Resource
                     }),
 
                 Tables\Actions\EditAction::make()
-                ->hidden(fn($record) => in_array($record->status, ['approved', 'rejected'])),
+                    ->hidden(fn($record) => in_array($record->status, ['approved', 'rejected'])),
             ])
             ->paginationPageOptions([10, 25, 50, 100])
             ->bulkActions([

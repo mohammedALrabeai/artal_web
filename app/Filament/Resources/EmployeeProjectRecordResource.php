@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-    use App\Filament\Resources\EmployeeProjectRecordResource\RelationManagers\ActivityLogsRelationManager;
+use App\Filament\Resources\EmployeeProjectRecordResource\RelationManagers\ActivityLogsRelationManager;
 
 
 class EmployeeProjectRecordResource extends Resource
@@ -129,41 +129,41 @@ class EmployeeProjectRecordResource extends Resource
 
                     return \App\Models\Shift::where('zone_id', $zoneId)->pluck('name', 'id');
                 })
-                 ->reactive()
+                ->reactive()
                 ->searchable()
                 ->required(),
 
-           Select::make('shift_slot_id')
-    ->label(__('Slot'))
-    ->options(function (callable $get, ?EmployeeProjectRecord $record) {
-        $shiftId = $get('shift_id');
-        if (! $shiftId) return [];
+            Select::make('shift_slot_id')
+                ->label(__('Slot'))
+                ->options(function (callable $get, ?EmployeeProjectRecord $record) {
+                    $shiftId = $get('shift_id');
+                    if (! $shiftId) return [];
 
-        // جلب الـ IDs المحجوزة حاليًا
-        $usedSlotIds = EmployeeProjectRecord::query()
-            ->where('shift_id', $shiftId)
-            ->where('status', true)
-            ->whereNull('end_date')
-            ->when($record, fn($q) => $q->where('id', '!=', $record->id)) // استثناء السجل الحالي
-            ->pluck('shift_slot_id')
-            ->filter()
-            ->toArray();
+                    // جلب الـ IDs المحجوزة حاليًا
+                    $usedSlotIds = EmployeeProjectRecord::query()
+                        ->where('shift_id', $shiftId)
+                        ->where('status', true)
+                        ->whereNull('end_date')
+                        ->when($record, fn($q) => $q->where('id', '!=', $record->id)) // استثناء السجل الحالي
+                        ->pluck('shift_slot_id')
+                        ->filter()
+                        ->toArray();
 
-        $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
-            ->when(count($usedSlotIds), fn($q) => $q->whereNotIn('id', $usedSlotIds));
+                    $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
+                        ->when(count($usedSlotIds), fn($q) => $q->whereNotIn('id', $usedSlotIds));
 
-        // ✅ إضافة مكانه الحالي ضمن القائمة إن وُجد حتى لو كان محجوزًا
-        if ($record && $record->shift_slot_id) {
-            $query->orWhere('id', $record->shift_slot_id);
-        }
+                    // ✅ إضافة مكانه الحالي ضمن القائمة إن وُجد حتى لو كان محجوزًا
+                    if ($record && $record->shift_slot_id) {
+                        $query->orWhere('id', $record->shift_slot_id);
+                    }
 
-        return $query->orderBy('slot_number')->get()->pluck('slot_number', 'id');
-    })
-    ->searchable()
-    ->required()
-    ->visible(fn (callable $get) => $get('shift_id'))
-    ->helperText('اختر شاغر متاح ضمن هذه الوردية')
-    ->reactive(),
+                    return $query->orderBy('slot_number')->get()->pluck('slot_number', 'id');
+                })
+                ->searchable()
+                ->required()
+                ->visible(fn(callable $get) => $get('shift_id'))
+                ->helperText('اختر شاغر متاح ضمن هذه الوردية')
+                ->reactive(),
 
 
 
@@ -180,12 +180,12 @@ class EmployeeProjectRecordResource extends Resource
                 ->offColor('danger') // لون عند الإيقاف
                 ->required()
                 ->default(true)
-                  ->afterStateUpdated(function (callable $set, callable $get, $state) {
-        // إذا تم تغيير الحالة إلى غير نشط
-        if ($state === false && empty($get('end_date'))) {
-            $set('end_date', now('Asia/Riyadh')->format('Y-m-d'));
-        }
-    }),
+                ->afterStateUpdated(function (callable $set, callable $get, $state) {
+                    // إذا تم تغيير الحالة إلى غير نشط
+                    if ($state === false && empty($get('end_date'))) {
+                        $set('end_date', now('Asia/Riyadh')->format('Y-m-d'));
+                    }
+                }),
 
         ]);
     }
@@ -200,10 +200,11 @@ class EmployeeProjectRecordResource extends Resource
                 //     ->searchable(),
                 TextColumn::make('full_name')
                     ->label(__('Employee'))
-                    ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
-                        $record->employee->father_name.' '.
-                        $record->employee->grandfather_name.' '.
-                        $record->employee->family_name
+                    ->getStateUsing(
+                        fn($record) => $record->employee->first_name . ' ' .
+                            $record->employee->father_name . ' ' .
+                            $record->employee->grandfather_name . ' ' .
+                            $record->employee->family_name
                     )
                     ->searchable(query: function ($query, $search) {
                         return $query->whereHas('employee', function ($subQuery) use ($search) {
@@ -254,12 +255,12 @@ class EmployeeProjectRecordResource extends Resource
                     ->sortable(),
                 TextColumn::make('previous_month_attendance')
                     ->label('دوام الشهر الماضي')
-                    ->getStateUsing(fn ($record) => self::getPreviousMonthAttendance($record))
+                    ->getStateUsing(fn($record) => self::getPreviousMonthAttendance($record))
                     ->html()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('work_pattern')
                     ->label('نمط العمل')
-                    ->getStateUsing(fn ($record) => self::calculateWorkPattern($record))
+                    ->getStateUsing(fn($record) => self::calculateWorkPattern($record))
                     ->html()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('assignedBy.name')
@@ -321,7 +322,7 @@ class EmployeeProjectRecordResource extends Resource
             ->actions([
 
                 Action::make('replace_employee')
-                    ->visible(fn () => auth()->user()?->can('create_employee::project::record'))
+                    ->visible(fn() => auth()->user()?->can('create_employee::project::record'))
 
                     ->label('استبدال الموظف')
                     // ->icon('heroicon-o-user-switch')
@@ -356,6 +357,8 @@ class EmployeeProjectRecordResource extends Resource
                                 'project_id' => $record->project_id,
                                 'zone_id' => $record->zone_id,
                                 'shift_id' => $record->shift_id,
+                                'shift_slot_id' => $record->shift_slot_id, // 🔁 نفس الشاغر
+
                                 'start_date' => $currentDate,
                                 'status' => true, // تنشيط السجل الجديد
                             ]);
@@ -378,7 +381,7 @@ class EmployeeProjectRecordResource extends Resource
                 Action::make('print')
                     ->label(__('Print Contract'))
                     ->icon('heroicon-o-printer')
-                    ->url(fn ($record) => route('employee_project_record.pdf', $record)) // إعادة توجيه إلى رابط PDF
+                    ->url(fn($record) => route('employee_project_record.pdf', $record)) // إعادة توجيه إلى رابط PDF
                     ->color('primary'),
                 EditAction::make(),
                 DeleteAction::make(),
@@ -418,12 +421,11 @@ class EmployeeProjectRecordResource extends Resource
                                     ->success()
                                     ->body("تم إعادة إرسال الرسالة إلى {$employee->name()}.")
                                     ->send();
-
                             } catch (\Exception $e) {
                                 Notification::make()
                                     ->title('❌ خطأ')
                                     ->danger()
-                                    ->body('حدث خطأ أثناء إعادة إرسال الرسالة: '.$e->getMessage())
+                                    ->body('حدث خطأ أثناء إعادة إرسال الرسالة: ' . $e->getMessage())
                                     ->send();
                             }
                         }
@@ -481,7 +483,7 @@ class EmployeeProjectRecordResource extends Resource
                         } catch (\Exception $e) {
                             Notification::make()
                                 ->title('❌ خطأ في الإرسال')
-                                ->body('حدث خطأ أثناء إرسال الموقع: '.$e->getMessage())
+                                ->body('حدث خطأ أثناء إرسال الموقع: ' . $e->getMessage())
                                 ->danger()
                                 ->send();
                         }
@@ -496,20 +498,20 @@ class EmployeeProjectRecordResource extends Resource
             ]);
     }
 
-//    protected function mutateFormDataBeforeSave(array $data): array
-// {
-//     if (
-//         isset($data['status']) &&
-//         $this->record &&
-//         $this->record->status === true &&   // كان نشطًا
-//         $data['status'] === false &&        // أصبح غير نشط
-//         empty($data['end_date'])            // لا يوجد end_date
-//     ) {
-//         $data['end_date'] = now('Asia/Riyadh');
-//     }
+    //    protected function mutateFormDataBeforeSave(array $data): array
+    // {
+    //     if (
+    //         isset($data['status']) &&
+    //         $this->record &&
+    //         $this->record->status === true &&   // كان نشطًا
+    //         $data['status'] === false &&        // أصبح غير نشط
+    //         empty($data['end_date'])            // لا يوجد end_date
+    //     ) {
+    //         $data['end_date'] = now('Asia/Riyadh');
+    //     }
 
-//     return $data;
-// }
+    //     return $data;
+    // }
 
 
     public static function getPages(): array
@@ -522,12 +524,12 @@ class EmployeeProjectRecordResource extends Resource
     }
 
 
-public static function getRelations(): array
-{
-    return [
-        ActivityLogsRelationManager::class,
-    ];
-}
+    public static function getRelations(): array
+    {
+        return [
+            ActivityLogsRelationManager::class,
+        ];
+    }
 
     // private static function calculateWorkPattern($record)
     // {

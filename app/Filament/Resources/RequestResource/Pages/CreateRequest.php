@@ -179,6 +179,7 @@ class CreateRequest extends CreateRecord
                         'reason' => $data['description'],  // $data['exclusion_reason'],
                         'attachment' => $data['exclusion_attachment'] ?? null,
                         'notes' => $data['description'], // $data['exclusion_notes'] ?? null,
+                        'employee_project_record_id' => $data['employee_project_record_id'],
                     ]);
 
                     $data['exclusion_id'] = $exclusion->id; // ربط الطلب بسجل الاستبعاد
