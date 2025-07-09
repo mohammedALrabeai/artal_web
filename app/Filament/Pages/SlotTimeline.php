@@ -9,8 +9,14 @@ use Mockery\Matcher\Not;
 use App\Models\Attendance;
 use Filament\Facades\Filament;
 use Illuminate\Support\Carbon;
+use Filament\Pages\Actions\Action;
+use Filament\Forms\Components\Grid;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\NewAssignmentsExport;
 use App\Models\EmployeeProjectRecord;
+use App\Exports\EmployeeChangesExport;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\DatePicker;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 class SlotTimeline extends Page
@@ -189,5 +195,37 @@ class SlotTimeline extends Page
 
         return compact('projects', 'projectId', 'from', 'to', 'days', 'data');
     }
+
+
+
+protected function getHeaderActions(): array
+{
+    return [
+        Action::make('exportChanges')
+            ->label('تصدير المتغيرات')
+            ->icon('heroicon-o-arrow-down-tray')
+            ->form([
+                Grid::make()
+                    ->schema([
+                        DatePicker::make('from')
+                            ->label('من تاريخ')
+                            ->required(),
+
+                        DatePicker::make('to')
+                            ->label('إلى تاريخ')
+                            ->required(),
+                    ]),
+            ])
+            ->action(function (array $data) {
+                $from = \Carbon\Carbon::parse($data['from'])->startOfDay()->toDateString();
+                $to   = \Carbon\Carbon::parse($data['to'])->endOfDay()->toDateString();
+
+                $fileName = 'المتغيرات_' . $from . '_حتى_' . $to . '.xlsx';
+
+                return Excel::download(new EmployeeChangesExport($from, $to), $fileName);
+            }),
+    ];
+}
+
 }
 
