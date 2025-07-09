@@ -16,6 +16,11 @@ use App\Http\Controllers\SlotTimelineController;
 use App\Http\Controllers\attendance\AttendanceExport2Controller;
 use App\Http\Controllers\attendance\AttendanceYearlyExportController;
 use App\Http\Controllers\attendance\ImprovedAttendanceExport2Controller;
+use App\Exports\EmployeeChangesExport;
+use Maatwebsite\Excel\Facades\Excel;
+
+use App\Exports\SelectedProjectsEmployeeExport;
+
   use App\Models\Shift;
 
 Route::get('/', function () {
@@ -113,6 +118,38 @@ Route::get('/admin/timeline-demo/{project}', [\App\Http\Controllers\TimelineCont
     Route::get('/slot-timeline', [SlotTimelineController::class, 'index'])->name('slot.timeline');
 
 
+
+
+
+
+
+Route::post('/exports/employee-changes', function () {
+    $from = request()->input('from');
+    $to = request()->input('to');
+
+    if (! $from || ! $to || $from > $to) {
+        abort(400, 'تأكد من صحة التواريخ');
+    }
+
+    $fileName = 'المتغيرات_' . $from . '_حتى_' . $to . '.xlsx';
+
+    return Excel::download(new EmployeeChangesExport($from, $to), $fileName);
+})->name('exports.employee-changes')->middleware(['auth']);
+
+
+Route::post('/exports/work-schedule', function () {
+    $projectIds = request()->input('projects', []);
+    $startDate = request()->input('start_date');
+
+    if (! is_array($projectIds) || empty($startDate)) {
+        abort(400, 'يرجى تحديد المشاريع وتاريخ البداية.');
+    }
+
+    return Excel::download(
+        new SelectedProjectsEmployeeExport($projectIds, onlyActive: true, startDate: $startDate),
+        'جداول_التشغيل.xlsx'
+    );
+})->name('exports.work-schedule')->middleware(['auth']);
 
 
 
