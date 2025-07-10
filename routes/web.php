@@ -4,23 +4,22 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use App\Models\EmployeeCoordinate;
 use App\Services\EmployeePdfService;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Filament\Pages\EmployeePaths;
 use App\Models\EmployeeProjectRecord;
 use Illuminate\Support\Facades\Route;
-use App\Exports\EmployeeChangesExport;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\S3TestController;
 use App\Services\ProjectEmployeesPdfService;
-use App\Http\Controllers\PdfViewerController;
-use App\Exports\SelectedProjectsEmployeeExport;
 use App\Http\Controllers\FileUploadController2;
 use App\Http\Controllers\SlotTimelineController;
 use App\Http\Controllers\attendance\AttendanceExport2Controller;
-
 use App\Http\Controllers\attendance\AttendanceYearlyExportController;
 use App\Http\Controllers\attendance\ImprovedAttendanceExport2Controller;
+use App\Exports\EmployeeChangesExport;
+use Maatwebsite\Excel\Facades\Excel;
+
+use App\Exports\SelectedProjectsEmployeeExport;
 
   use App\Models\Shift;
 
@@ -164,16 +163,6 @@ Route::post('/exports/work-schedule', function () {
         'جداول_التشغيل.xlsx'
     );
 })->name('exports.work-schedule')->middleware(['auth']);
-
-
-Route::get('/pdf/{pdfDocument}/viewer', [PdfViewerController::class, 'show'])
-    ->name('pdf.viewer');
-
-Route::post('/pdf/{pdfDocument}/save-field-data', [PdfViewerController::class, 'saveFieldData'])
-    ->name('pdf.save-field-data');
-
-Route::post('/pdf/{pdfDocument}/generate-printable', [PdfViewerController::class, 'generatePrintablePdf'])
-    ->name('pdf.generate-printable');
 
 
 
