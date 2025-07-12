@@ -182,7 +182,8 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
             };
 
             if ($record && $record->start_date && $date->lt(Carbon::parse($record->start_date))) {
-                $color = 'FFF599'; // أصفر قبل البداية
+                $color = 'C00000'; // أصفر قبل البداية
+                $sheftType = ''; // لا يمكن العمل قبل البداية
             } elseif ($record && $record->end_date && $date->gt(Carbon::parse($record->end_date))) {
                 $color = 'C00000'; // أحمر بعد النهاية
             }
