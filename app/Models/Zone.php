@@ -42,6 +42,12 @@ class Zone extends Model
         return $this->hasMany(Shift::class);
     }
 
+    // سكوب الورديات النشطة 
+    public function activeShifts()
+    {
+        return $this->shifts()->where('status', true);
+    }
+
     // public function employees()
     // {
     //     return $this->hasMany(Employee::class, 'zone_id');

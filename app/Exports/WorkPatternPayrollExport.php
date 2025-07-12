@@ -34,6 +34,7 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
     {
         $zones = Zone::with(['shifts.slots'])
             ->whereIn('project_id', $this->projectIds)
+             ->where('status', true)
             ->get();
 
         $assignments = EmployeeProjectRecord::with(['employee', 'shiftSlot'])
@@ -49,7 +50,7 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
         $period = $this->startDate->toPeriod($this->endDate);
 
         foreach ($zones as $zone) {
-            foreach ($zone->shifts as $shift) {
+            foreach ($zone->activeShifts as $shift) {
                 foreach ($shift->slots as $slot) {
                     $record = $assignments->first(fn($rec) =>
                         $rec->zone_id === $zone->id &&
@@ -68,7 +69,9 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
                         $employee?->leaveBalances->where('leave_type', 'annual')->sum('balance') ?? '-',
                         $employee?->leaveBalances->where('leave_type', 'sick')->sum('balance') ?? '-',
                         $zone->project?->name ?? '-',
+                          $zone->name,
                         number_format($employee?->total_salary ?? 0, 2),
+                       // ✅ إضافة اسم الوردية هنا
                     ];
 
                     $pattern = $this->getWorkPatternDays($shift, $record);
@@ -88,7 +91,7 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
 
     public function headings(): array
     {
-        $base = ['#', 'الرقم الوظيفي', 'الاسم', 'رقم الهوية', 'رصيد الغياب', 'الإجازة المرضية', 'المشروع', 'الراتب'];
+        $base = ['#', 'الرقم الوظيفي', 'الاسم', 'رقم الهوية', 'رصيد الغياب', 'الإجازة المرضية', 'المشروع', 'الموقع', 'الراتب'];
         $days = collect();
         $period = $this->startDate->toPeriod($this->endDate);
         foreach ($period as $date) {
@@ -105,7 +108,7 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
 
         // دمج الأعمدة الثابتة كل 3 صفوف
         for ($row = 2; $row <= $highestRow; $row += 3) {
-            foreach (range('A', 'H') as $col) {
+            foreach (range('A', 'I') as $col) { // تحديث النطاق ليشمل عمود الوردية الجديد
                 $sheet->mergeCells("{$col}{$row}:{$col}" . ($row + 2));
             }
         }
@@ -125,7 +128,7 @@ class WorkPatternPayrollExport implements FromCollection, WithHeadings, WithStyl
         // تطبيق الألوان على نمط العمل
         foreach ($this->workPatternValues as $rowIndex => $days) {
             foreach ($days as $i => $day) {
-                $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(9 + $i);
+                $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(10 + $i); // بداية من العمود العاشر
                 $row = ($rowIndex * 3) + 2;
                 if ($day['color']) {
                     $sheet->getStyle("{$col}{$row}")->applyFromArray([
