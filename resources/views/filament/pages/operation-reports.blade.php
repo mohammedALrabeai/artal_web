@@ -91,4 +91,21 @@
     </form>
 </x-filament::section>
 
+<x-filament::section>
+    <x-slot name="heading">تقرير جدول التشغيل وتحضيرات الرواتب</x-slot>
+    <x-slot name="description">
+        تصدير تقرير نمط العمل لكافة الموظفين والشواغر في جميع المشاريع النشطة، لمدة شهر كامل.
+    </x-slot>
+
+    <form method="POST" action="{{ route('exports.work-pattern-payroll') }}">
+        @csrf
+
+        <x-filament::button type="submit" icon="heroicon-o-arrow-down-tray" color="primary">
+            تصدير التقرير الشهري لجميع المشاريع
+        </x-filament::button>
+    </form>
+</x-filament::section>
+
+
+
 </x-filament::page>

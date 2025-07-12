@@ -18,6 +18,8 @@ use App\Http\Controllers\attendance\AttendanceYearlyExportController;
 use App\Http\Controllers\attendance\ImprovedAttendanceExport2Controller;
 use App\Exports\EmployeeChangesExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\WorkPatternPayrollExport;
+
 
 use App\Exports\SelectedProjectsEmployeeExport;
 
@@ -164,6 +166,16 @@ Route::post('/exports/work-schedule', function () {
     );
 })->name('exports.work-schedule')->middleware(['auth']);
 
+
+
+Route::post('/exports/work-pattern-payroll', function () {
+    $projectIds = \App\Models\Project::where('status', true)->pluck('id')->toArray();
+
+    $export = new WorkPatternPayrollExport($projectIds);
+    $fileName = 'تقرير جدول التشغيل وتحضيرات الرواتب - ' . now()->translatedFormat('F_Y') . '.xlsx';
+
+    return Excel::download($export, $fileName);
+})->name('exports.work-pattern-payroll')->middleware(['auth']);
 
 
 

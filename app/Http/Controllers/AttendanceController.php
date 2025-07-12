@@ -98,6 +98,11 @@ class AttendanceController extends Controller
             ->where('status', 'present')
             ->first();
 
+                  return response()->json([
+                    'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
+
+                ], 400);
+
         if ($existingAttendance) {
             return response()->json([
                 'message' => 'You have already checked in today.',
@@ -218,6 +223,11 @@ class AttendanceController extends Controller
             // 'shift_id' => 'required|exists:shifts,id',
             'notes' => 'nullable|string',
         ]);
+
+              return response()->json([
+                    'message' => 'يرجى تحديث التطبيق إلى أحدث إصدار لتسجيل الحضور.',
+
+                ], 400);
 
         // البحث عن آخر تغطية اليوم للموظف نفسه والتي لم يتم تسجيل الانصراف لها
         $existingCoverage = Attendance::where('employee_id', $employee->id)
