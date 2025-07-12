@@ -249,6 +249,7 @@ class EmployeeProjectRecordResource extends Resource
 
                 TextColumn::make('end_date')
                     ->label(__('End Date'))
+                    ->sortable()
                     ->date(),
                 BooleanColumn::make('status')
                     ->label(__('Status'))
