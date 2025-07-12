@@ -24,6 +24,7 @@ class EmployeeAttendanceController extends Controller
 
         $query = Attendance::where('employee_id', $employeeId)
             ->whereDate('date', '>=', now()->subDays(1)->toDateString())
+            ->where('status', '!=', 'off')
             ->orderByDesc('date');
 
         // فلترة حسب وقت التحديث (للتحديث الذكي)
@@ -31,20 +32,20 @@ class EmployeeAttendanceController extends Controller
             $query->where('updated_at', '>', $request->last_synced_at);
         }
 
-       $attendances = $query->get([
-    'id',
-    'date',
-    'check_in',
-    'check_out',
-    // 'check_in_datetime',
-    // 'check_out_datetime',
-    'status',
-    // 'is_late',
-    // 'is_coverage',
-    // 'out_of_zone',
-    // 'updated_at',
-    'auto_checked_out'
-]);
+        $attendances = $query->get([
+            'id',
+            'date',
+            'check_in',
+            'check_out',
+            // 'check_in_datetime',
+            // 'check_out_datetime',
+            'status',
+            // 'is_late',
+            // 'is_coverage',
+            // 'out_of_zone',
+            // 'updated_at',
+            'auto_checked_out'
+        ]);
 
 
         return response()->json([
