@@ -20,6 +20,7 @@ class ExportWorkPatternPayrollJob implements ShouldQueue
     protected array $projectIds;
     protected ?string $date;
     protected int $userId;
+     public int $timeout = 600; 
 
     public function __construct(array $projectIds, ?string $date, int $userId)
     {
