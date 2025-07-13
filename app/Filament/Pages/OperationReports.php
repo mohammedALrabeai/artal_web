@@ -86,11 +86,11 @@ public function exportChanges()
                 $currentDate = now()->format('Y-m-d');
                 $user = Auth::user();
 
-                // Notification::make()
-                //     ->title('طلبك قيد المعالجة')
-                //     ->body('لقد بدأنا في إعداد تقرير جدول التشغيل. سنقوم بإعلامك فور انتهائه.')
-                //     ->info()
-                //     ->send();
+                Notification::make()
+                ->title('تم استلام طلبك بنجاح')
+                ->body('جاري تجهيز تقرير جدول التشغيل. سيصلك إشعار آخر هنا يحتوي على رابط التنزيل فور اكتماله.')
+                ->info()
+                ->send();
 
                 ExportWorkPatternPayrollJob::dispatch($projectIds, $currentDate, $user->id);
             });
