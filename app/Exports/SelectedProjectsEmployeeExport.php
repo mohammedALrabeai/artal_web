@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\EmployeeProjectRecord;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -11,15 +12,15 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Carbon\Carbon;
-
 
 class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles
 {
     protected Collection $records;
 
     protected array $workPatternValues = [];
+
     protected Carbon $startDate;
+
     protected array $missingShifts = [];
 
     public function __construct(array $projectIds, bool $onlyActive = true, ?string $startDate = null)
@@ -31,7 +32,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             $query->where('status', true);
         }
 
-        $this->records = $query->get()->sortBy(fn($r) => $r->shift->id ?? 0);
+        $this->records = $query->get()->sortBy(fn ($r) => $r->shift->id ?? 0);
         $this->startDate = $startDate ? Carbon::parse($startDate) : Carbon::now('Asia/Riyadh');
 
         // ✅ نحصل على جميع المناطق (zones) التابعة للمشاريع المطلوبة
@@ -49,8 +50,6 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             })
             ->get();
 
-
-
         foreach ($allShifts as $shift) {
             $assignedCount = $this->records->where('shift.id', $shift->id)->count();
 
@@ -64,9 +63,6 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             }
         }
     }
-
-
-
 
     public function collection()
     {
@@ -90,7 +86,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
                 if ($shift && $shift->emp_no > $group->count()) {
                     $missingCount = $shift->emp_no - $group->count();
                     for ($i = 0; $i < $missingCount; $i++) {
-                        $orderedRows->push((object)[
+                        $orderedRows->push((object) [
                             'is_missing_row' => true,
                             'shift' => $shift,
                             'project' => $project,
@@ -105,15 +101,16 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
         // نضيفها فقط إن لم تكن ضمن السجلات بالفعل
         foreach ($this->missingShifts as $item) {
             $alreadyHandled = $orderedRows->contains(
-                fn($r) =>
-                !empty($r->is_missing_row) &&
+                fn ($r) => ! empty($r->is_missing_row) &&
                     $r->shift->id === $item['shift']->id
             );
 
-            if ($alreadyHandled) continue;
+            if ($alreadyHandled) {
+                continue;
+            }
 
             for ($i = 0; $i < $item['missing_count']; $i++) {
-                $orderedRows->push((object)[
+                $orderedRows->push((object) [
                     'is_missing_row' => true,
                     'shift' => $item['shift'],
                     'project' => $item['project'],
@@ -124,11 +121,6 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
 
         return $orderedRows;
     }
-
-
-
-
-
 
     public function headings(): array
     {
@@ -144,7 +136,8 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
             'الحالة',
         ];
 
-        $dates = collect(range(0, 30))->map(fn($i) => $this->startDate->copy()->addDays($i)->format('d M'));
+        $dates = collect(range(0, 30))->map(fn ($i) => $this->startDate->copy()->addDays($i)->format('d M'));
+
         return array_merge($baseHeadings, $dates->toArray());
     }
 
@@ -163,7 +156,7 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
                 '-', // الحالة
             ];
 
-            $workPattern = $this->getWorkPatternDays($record,);
+            $workPattern = $this->getWorkPatternDays($record);
             $this->workPatternValues[] = $workPattern;
 
             return array_merge($base, $workPattern);
@@ -194,7 +187,6 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
 
         return array_merge($base, $workPattern);
     }
-
 
     public function styles(Worksheet $sheet)
     {
@@ -263,8 +255,6 @@ class SelectedProjectsEmployeeExport implements FromCollection, ShouldAutoSize, 
                 $sheet->getStyle("E{$rowIndex}")->getFont()->getColor()->setRGB('FFFFFF');
             }
         }
-
-
 
         return [];
     }

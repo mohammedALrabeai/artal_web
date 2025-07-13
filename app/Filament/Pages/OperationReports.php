@@ -10,6 +10,8 @@ use App\Exports\EmployeeChangesExport;
 use Filament\Notifications\Notification;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
     use Livewire\WithFileUploads;
+use App\Jobs\ExportWorkPatternPayrollJob; // <-- استيراد الـ Job
+use Illuminate\Support\Facades\Auth;
 use Livewire\WithPagination;
 
 class OperationReports extends Page
@@ -45,5 +47,53 @@ public function exportChanges()
         echo Excel::raw(new EmployeeChangesExport($this->from, $this->to), \Maatwebsite\Excel\Excel::XLSX);
     }, $fileName);
 }
+
+
+ protected function getHeaderActions(): array
+    {
+        return [
+            // Action::make('exportWorkPatternPayroll')
+            //     ->label('تصدير التقرير الشهري لجميع المشاريع')
+            //     ->icon('heroicon-o-arrow-down-tray')
+            //     ->color('primary')
+            //     ->action(function () {
+            //         $projectIds = \App\Models\Project::where('status', true)->pluck('id')->toArray();
+            //         $currentDate = now()->format('Y-m-d');
+            //         $user = Auth::user();
+
+            //         // 1. إرسال إشعار "جاري المعالجة" الفوري
+            //         Notification::make()
+            //             ->title('طلبك قيد المعالجة')
+            //             ->body('لقد بدأنا في إعداد تقرير جدول التشغيل. سنقوم بإعلامك فور انتهائه.')
+            //             ->info()
+            //             ->send(); // ->send() كافية هنا لإظهارها للمستخدم الحالي
+
+            //         // 2. إرسال الـ Job إلى قائمة الانتظار
+            //         ExportWorkPatternPayrollJob::dispatch($projectIds, $currentDate, $user->id);
+            //     }),
+        ];
+    }
+
+
+     public function exportWorkPatternPayroll(): Action
+    {
+        return Action::make('exportWorkPatternPayroll')
+            ->label('تصدير التقرير الشهري لجميع المشاريع')
+            ->icon('heroicon-o-arrow-down-tray')
+            ->color('primary')
+            ->action(function () {
+                $projectIds = \App\Models\Project::where('status', true)->pluck('id')->toArray();
+                $currentDate = now()->format('Y-m-d');
+                $user = Auth::user();
+
+                // Notification::make()
+                //     ->title('طلبك قيد المعالجة')
+                //     ->body('لقد بدأنا في إعداد تقرير جدول التشغيل. سنقوم بإعلامك فور انتهائه.')
+                //     ->info()
+                //     ->send();
+
+                ExportWorkPatternPayrollJob::dispatch($projectIds, $currentDate, $user->id);
+            });
+    }
 
 }

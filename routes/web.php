@@ -4,24 +4,29 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use App\Models\EmployeeCoordinate;
 use App\Services\EmployeePdfService;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Filament\Pages\EmployeePaths;
 use App\Models\EmployeeProjectRecord;
 use Illuminate\Support\Facades\Route;
+use App\Exports\EmployeeChangesExport;
+use App\Exports\WorkPatternPayrollExport;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\S3TestController;
 use App\Services\ProjectEmployeesPdfService;
+use App\Exports\SelectedProjectsEmployeeExport;
 use App\Http\Controllers\FileUploadController2;
 use App\Http\Controllers\SlotTimelineController;
+use App\Exports\CombinedAttendanceWorkPatternExport;
 use App\Http\Controllers\attendance\AttendanceExport2Controller;
+use Illuminate\Support\Facades\Storage;
+use App\Jobs\ExportWorkPatternPayrollJob;
+use Illuminate\Support\Facades\Auth;
+
+
+
 use App\Http\Controllers\attendance\AttendanceYearlyExportController;
 use App\Http\Controllers\attendance\ImprovedAttendanceExport2Controller;
-use App\Exports\EmployeeChangesExport;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\WorkPatternPayrollExport;
-
-
-use App\Exports\SelectedProjectsEmployeeExport;
 
   use App\Models\Shift;
 
@@ -168,16 +173,32 @@ Route::post('/exports/work-schedule', function () {
 
 
 
-Route::post('/exports/work-pattern-payroll', function () {
+// في routes/web.php
+
+
+
+Route::post('/exports/work-pattern-payroll', function (Request $request) {
     $projectIds = \App\Models\Project::where('status', true)->pluck('id')->toArray();
+    $currentDate = now()->format('Y-m-d'); // يمكنك تمرير تاريخ محدد إذا أردت
 
-    $export = new WorkPatternPayrollExport($projectIds);
-    $fileName = 'تقرير جدول التشغيل وتحضيرات الرواتب - ' . now()->translatedFormat('F_Y') . '.xlsx';
+    // هذا هو الجزء الذي يرسل المهمة إلى قائمة الانتظار
+    ExportWorkPatternPayrollJob::dispatch([80, 81], $currentDate, Auth::id());
 
-    return Excel::download($export, $fileName);
+    // إعادة توجيه المستخدم مع رسالة نجاح فورية
+    return back()->with('success', 'تم إرسال طلب التقرير بنجاح. سيتم إعلامك عند اكتمال التصدير.');
 })->name('exports.work-pattern-payroll')->middleware(['auth']);
 
 
+
+Route::get("/downloads/reports/{fileName}", function ($fileName) {
+    $path = Storage::disk("public")->path("exports/{$fileName}");
+
+    if (!Storage::disk("public")->exists("exports/{$fileName}")) {
+        abort(404, "الملف غير موجود.");
+    }
+
+    return response()->download($path, $fileName);
+})->name("downloads.report")->middleware(["auth"]);
 
 // Route::get('/filament/employee-route/{employeeId}', function ($employeeId) {
 //     $coordinates = EmployeeCoordinate::where('employee_id', $employeeId)
