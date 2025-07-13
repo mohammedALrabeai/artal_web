@@ -54,7 +54,7 @@ class ExportWorkPatternPayrollJob implements ShouldQueue
             $downloadUrl = route('downloads.report', ['fileName' => $fileName]);
 
             $notificationService->sendNotification(
-                [$user], // أرسل الإشعار للمستخدم الذي طلب التقرير
+                 ['manager', 'general_manager', 'hr'], // أرسل الإشعار للمستخدم الذي طلب التقرير
                 $user->name,
                 "اكتمل إعداد تقرير \"{$fileName}\" وهو الآن جاهز للتحميل.",
                 [

@@ -182,7 +182,7 @@ Route::post('/exports/work-pattern-payroll', function (Request $request) {
     $currentDate = now()->format('Y-m-d'); // يمكنك تمرير تاريخ محدد إذا أردت
 
     // هذا هو الجزء الذي يرسل المهمة إلى قائمة الانتظار
-    ExportWorkPatternPayrollJob::dispatch([80, 81], $currentDate, Auth::id());
+    ExportWorkPatternPayrollJob::dispatch($projectIds, $currentDate, Auth::id());
 
     // إعادة توجيه المستخدم مع رسالة نجاح فورية
     return back()->with('success', 'تم إرسال طلب التقرير بنجاح. سيتم إعلامك عند اكتمال التصدير.');
