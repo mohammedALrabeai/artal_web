@@ -230,7 +230,7 @@ class RequestResource extends Resource
                            $record->shift->name
         ])->toArray();
     })
-    ->required(fn($get) => $get('type') === 'exclusion')
+    // ->required(fn($get) => $get('type') === 'exclusion')
     ->visible(fn($get) => $get('type') === 'exclusion')
     ->columnSpanFull()
     ->searchable(),
