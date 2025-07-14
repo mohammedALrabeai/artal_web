@@ -3,16 +3,20 @@
 namespace App\Filament\Pages;
 
 use Carbon\Carbon;
+use Filament\Forms;
+use App\Models\Employee;
 use Filament\Pages\Page;
+use App\Models\Exclusion;
+use Livewire\WithPagination;
+use App\Exports\EmployeesExport;
 use Filament\Pages\Actions\Action;
+    use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\EmployeeChangesExport;
 use Filament\Notifications\Notification;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
-    use Livewire\WithFileUploads;
 use App\Jobs\ExportWorkPatternPayrollJob; // <-- استيراد الـ Job
-use Illuminate\Support\Facades\Auth;
-use Livewire\WithPagination;
 
 class OperationReports extends Page
 {
@@ -95,5 +99,54 @@ public function exportChanges()
                 ExportWorkPatternPayrollJob::dispatch($projectIds, $currentDate, $user->id);
             });
     }
+
+
+       public function exportAllEmployees(): Action
+{
+    return Action::make('exportAllEmployees')
+        ->label('تصدير الموظفين')
+        ->icon('heroicon-o-users')
+        ->color('success')
+        // ✅ نموذج يختار التبويب
+        ->form([
+            Forms\Components\Select::make('tab')
+                ->label('اختر الفئة')
+                ->options([
+                    'all'                 => 'كل الموظفين',
+                    'with_insurance'      => 'مع التأمين',
+                    'without_insurance'   => 'بدون التأمين',
+                    'unassigned'          => 'غير مسندين',
+                    'assigned'            => 'مسندين',
+                    'onboarding'          => 'قيد المباشرة',
+                    'excluded'            => 'مستبعدون',
+                ])
+                ->default('all')
+                ->required(),
+        ])
+        ->action(function (array $data) {
+
+            // بناء الاستعلام حسب الخيار المختار
+            $query = Employee::query();
+            match ($data['tab']) {
+                'with_insurance'    => $query->whereNotNull('commercial_record_id'),
+                'without_insurance' => $query->whereNull('commercial_record_id'),
+                'unassigned'        => $query->active()->whereDoesntHave('projectRecords'),
+                'assigned'          => $query->whereHas('currentZone'),
+                'onboarding'        => $query->active()
+                                             ->whereHas('currentZone')
+                                             ->whereDoesntHave('attendances',
+                                                fn ($q) => $q->whereIn('status', ['present','coverage'])
+                                             ),
+                'excluded'          => $query->whereHas('exclusions',
+                                                fn ($q) => $q->where('status', Exclusion::STATUS_APPROVED)),
+                default             => $query,
+            };
+
+            $fileName = 'employees_'.now('Asia/Riyadh')->format('Y-m-d_H-i').'.xlsx';
+
+            return Excel::download(new EmployeesExport($query), $fileName);
+        });
+}
+
 
 }

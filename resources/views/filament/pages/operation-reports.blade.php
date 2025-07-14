@@ -106,20 +106,26 @@
     </form>
 </x-filament::section> --}}
 
- <x-filament::section>
-        <x-slot name="heading">
-            تقرير جدول التشغيل وتحضيرات الرواتب
-        </x-slot>
-        <x-slot name="description">
-            تصدير تقرير نمط العمل لكافة الموظفين والشواغر في جميع المشاريع النشطة، لمدة شهر كامل.
-        </x-slot>
+<x-filament::section>
+    <x-slot name="heading">
+        تقارير العمليات الشهرية
+    </x-slot>
 
-        {{-- ---==** الطريقة الصحيحة لعرض Action مخصصة **==--- --}}
-        <div class="mt-4">
-            {{ $this->exportWorkPatternPayroll() }}
-        </div>
+    <x-slot name="description">
+        ▪︎ تقرير جدول التشغيل وتحضيرات الرواتب  
+        ▪︎ تصدير جميع الموظفين
+    </x-slot>
 
-    </x-filament::section>
+    {{-- صف أفقي بعمودين يبدأ عمودياً على الشاشات الصغيرة --}}
+    <div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
+        {{-- الزر الأول --}}
+        {{ $this->exportWorkPatternPayroll() }}
+
+        {{-- الزر الثاني --}}
+        {{ $this->exportAllEmployees() }}
+    </div>
+</x-filament::section>
+
 
 
 </x-filament::page>
