@@ -1,6 +1,16 @@
 <?php
 // resources/views/filament/pages/slot-timeline.blade.php
 ?>
+
+@push('styles')
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css">
+@endpush
+
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+@endpush
+
 <x-filament::page>
     <style>
         /* تحسينات CSS للجدول مع نظام التولتيب المحسن */
@@ -293,17 +303,37 @@
         <h2 class="text-xl font-bold">المخطط الزمني للشواغر</h2>
 
         <form method="get" class="flex flex-col gap-4 md:flex-row md:items-end">
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700">المشروع</label>
-                <select name="project_id" class="block w-full mt-1 rounded-md shadow-sm form-input">
-                    <option value="">اختر مشروع</option>
-                    @foreach ($projects as $project)
-                        <option value="{{ $project->id }}" {{ request('project_id') == $project->id ? 'selected' : '' }}>
-                            {{ $project->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+           <div class="flex-1"           
+     x-data
+     x-init="
+         const ts = new TomSelect($refs.projectSelect, {
+             placeholder: 'ابحث عن مشروع…',
+             allowEmptyOption: true,
+             hideSelected: true,
+             plugins: { 'dropdown_input': {} }
+         });
+
+         // ⬅️ بعد التهيئة: أجعل الـ Wrapper نفسه يتمدّد داخل Flex
+         ts.wrapper.classList.add('flex-1', 'w-full');
+     "
+     wire:ignore            
+>
+    <label class="block text-sm font-medium text-gray-700">المشروع</label>
+
+    <select x-ref="projectSelect"
+            name="project_id"
+            class="w-full mt-1 rounded-md shadow-sm form-input">
+        <option value="">اختر مشروعًا…</option>
+        @foreach ($projects as $project)
+            <option value="{{ $project->id }}"
+                    {{ request('project_id') == $project->id ? 'selected' : '' }}>
+                {{ $project->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
+
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">من</label>
@@ -500,6 +530,7 @@
         </div>
     </div>
 
+
     <script>
         function tooltipManager() {
             return {
@@ -563,5 +594,7 @@
             }
         }
     </script>
+
+
 </x-filament::page>
 
