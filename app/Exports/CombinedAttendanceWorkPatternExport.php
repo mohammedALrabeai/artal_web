@@ -34,13 +34,15 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
         $this->endDate = $this->startDate->copy()->endOfMonth();
         $this->numDaysInMonth = $this->startDate->daysInMonth;
 
+        // ---==** التعديل 1: تعريف الحالات والألوان الجديدة **==---
         $this->attendanceColors = [
-            'OFF' => 'FFC7CE',
-            'N'   => '999999',
-            'M'   => 'D9D9D9',
-            '❌' => 'FF0000',
-            '--'  => 'F0F0F0',
-            'PRE_ASSIGNMENT' => 'FF0000', // لون أحمر صريح
+            'OFF' => 'FFC7CE', // أحمر فاتح للإجازة
+            'N'   => '999999', // رمادي غامق
+            'M'   => 'D9D9D9', // رمادي فاتح
+            '❌' => 'FF0000', // أحمر صريح للخطأ
+            '--'  => 'F0F0F0', // رمادي فاتح جدًا
+            'PRE_ASSIGNMENT'  => 'C6E0B4', // أخضر فاتح
+            'POST_ASSIGNMENT' => 'FF0000', // أحمر صريح
         ];
     }
 
@@ -71,8 +73,9 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
                 'zones.id as zone_id', 'zones.name as zone_name',
                 'shifts.id as shift_id', 'shifts.name as shift_name', 'shifts.start_date as shift_start_date', 'shifts.type as shift_type',
                 'patterns.working_days', 'patterns.off_days',
-                // ---==** التصحيح الحاسم هنا: قمنا بإضافة هذا السطر لجلب تاريخ الإسناد **==---
-                'employee_project_records.start_date as assignment_start_date'
+                // ---==** التعديل 2: جلب تاريخي البدء والانتهاء **==---
+                'employee_project_records.start_date as assignment_start_date',
+                'employee_project_records.end_date as assignment_end_date'
             );
 
         $assignedCountsSubQuery = DB::table('employee_project_records')->select('shift_id', DB::raw('count(*) as assigned_count'))->where('status', true)->groupBy('shift_id');
@@ -93,16 +96,13 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
                 'projects.name as project_name', 'zones.id as zone_id', 'zones.name as zone_name',
                 'shifts.id as shift_id', 'shifts.name as shift_name', 'shifts.start_date as shift_start_date', 'shifts.type as shift_type',
                 'patterns.working_days', 'patterns.off_days',
-                DB::raw('NULL as assignment_start_date')
+                DB::raw('NULL as assignment_start_date'),
+                DB::raw('NULL as assignment_end_date')
             );
 
         return $employeesQuery->unionAll($missingShiftsQuery)
             ->orderBy('zone_id')->orderBy('shift_id')->orderBy('is_missing_row');
     }
-
-    // ... باقي الكود يبقى كما هو بدون تغيير ...
-    // ... (headings, map, calculateSummary, styles, registerEvents, getWorkPatternDays) ...
-    // ... لقد تم تصميمها بالفعل للتعامل مع هذا التغيير بشكل صحيح ...
 
     public function headings(): array
     {
@@ -149,11 +149,12 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
     {
         $counts = array_count_values($workPattern);
         $totalHours = (($counts['M'] ?? 0) + ($counts['N'] ?? 0)) * 8;
+        // ---==** التعديل 4: تحديث حساب الإجمالي **==---
         return [
             $counts['OFF'] ?? 0,
             $counts['M'] ?? 0,
             $counts['N'] ?? 0,
-            count($workPattern) - ($counts['--'] ?? 0) - ($counts['❌'] ?? 0) - ($counts['PRE_ASSIGNMENT'] ?? 0),
+            count($workPattern) - ($counts['--'] ?? 0) - ($counts['❌'] ?? 0) - ($counts['PRE_ASSIGNMENT'] ?? 0) - ($counts['POST_ASSIGNMENT'] ?? 0),
             $totalHours
         ];
     }
@@ -201,19 +202,31 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
     {
         $days = [];
         
-        // الآن هذا الشرط سيعمل بشكل صحيح لأن `assignment_start_date` موجود
-        $assignmentDate = !$record->is_missing_row && !empty($record->assignment_start_date)
+        // ---==** التعديل 3: منطق رسم الأيام المحدث **==---
+        $assignmentStartDate = !$record->is_missing_row && !empty($record->assignment_start_date)
             ? Carbon::parse($record->assignment_start_date)
             : Carbon::parse($record->shift_start_date);
+
+        $assignmentEndDate = !$record->is_missing_row && !empty($record->assignment_end_date)
+            ? Carbon::parse($record->assignment_end_date)
+            : null;
 
         for ($i = 0; $i < $this->numDaysInMonth; $i++) {
             $targetDate = $this->startDate->copy()->addDays($i);
 
-            if ($targetDate->isBefore($assignmentDate)) {
+            // الحالة الأولى: اليوم قبل تاريخ بدء الإسناد
+            if ($targetDate->isBefore($assignmentStartDate)) {
                 $days[] = 'PRE_ASSIGNMENT';
                 continue;
             }
 
+            // الحالة الثانية: اليوم بعد تاريخ انتهاء الإسناد (إذا كان موجودًا)
+            if ($assignmentEndDate && $targetDate->isAfter($assignmentEndDate)) {
+                $days[] = 'POST_ASSIGNMENT';
+                continue;
+            }
+
+            // الحالة الثالثة (الافتراضية): خلال فترة العمل
             if (empty($record->working_days) && empty($record->off_days)) {
                 $days[] = '❌';
                 continue;
