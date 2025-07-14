@@ -2,20 +2,20 @@
 
 namespace App\Filament\Resources\EmployeeResource\Pages;
 
-use Filament\Forms;
-use Filament\Actions;
+use App\Filament\Resources\EmployeeResource;
 use App\Models\Employee;
 use App\Models\Exclusion;
-use Tables\Actions\Action;
+use Filament\Actions;
 use Filament\Facades\Filament;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
+use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
-use Filament\Resources\Components\Tab;
-use Filament\Notifications\Notification;
-use Filament\Resources\Pages\ListRecords;
-use App\Filament\Resources\EmployeeResource;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
 use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use Tables\Actions\Action;
 
 // use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 
@@ -217,7 +217,10 @@ class ListEmployees extends ListRecords
                 ->modifyQueryUsing(fn ($query) => $query->
                     active() // ✅ الموظفون النشطون فقط
                         ->whereHas('currentZone') // ✅ الموظفون الذين لديهم موقع مسند إليهم
-                        ->whereDoesntHave('attendances', fn ($q) => $q->where('status', 'present')) // ✅ لا يوجد لهم أي تحضير بحالة "حضور"
+                        ->whereDoesntHave(
+                            'attendances',
+                            fn ($q) => $q->whereIn('status', ['present', 'coverage'])
+                        )  // ✅ لا يوجد لهم أي تحضير بحالة "حضور"
                 ),
             // ✅ **إضافة تبويب الموظفين المستبعدين**
             'excluded_employees' => Tab::make(__('Excluded Employees'))
@@ -228,10 +231,9 @@ class ListEmployees extends ListRecords
     }
 
     protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
-{
-    return Employee::query()
-        ->with(['latestZone.zone']) // تحميل علاقة latestZone والـ zone التابعة لها
-        ->latest(); // ترتيب حسب created_at
-}
-
+    {
+        return Employee::query()
+            ->with(['latestZone.zone']) // تحميل علاقة latestZone والـ zone التابعة لها
+            ->latest(); // ترتيب حسب created_at
+    }
 }
