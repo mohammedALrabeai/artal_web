@@ -17,6 +17,7 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use App\Models\EmployeeProjectRecord;
 
 class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping, WithStyles, WithEvents
@@ -34,7 +35,6 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
         $this->endDate = $this->startDate->copy()->endOfMonth();
         $this->numDaysInMonth = $this->startDate->daysInMonth;
 
-        // ---==** التعديل 1: تعريف الحالات والألوان الجديدة **==---
         $this->attendanceColors = [
             'OFF' => 'FFC7CE', // أحمر فاتح للإجازة
             'N'   => '999999', // رمادي غامق
@@ -73,7 +73,6 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
                 'zones.id as zone_id', 'zones.name as zone_name',
                 'shifts.id as shift_id', 'shifts.name as shift_name', 'shifts.start_date as shift_start_date', 'shifts.type as shift_type',
                 'patterns.working_days', 'patterns.off_days',
-                // ---==** التعديل 2: جلب تاريخي البدء والانتهاء **==---
                 'employee_project_records.start_date as assignment_start_date',
                 'employee_project_records.end_date as assignment_end_date'
             );
@@ -106,10 +105,11 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
 
     public function headings(): array
     {
+        // ---==** التعديل 3: تعديل رأس الجدول ليحتوي على رقم اليوم فقط **==---
         $base = ['تسلسل', 'الرقم الوظيفي', 'الاسم (Name)', 'رقم الهوية (I.D#)', 'رصيد الغياب', 'رصيد الإجازات المرضية', 'موقع العمل (UTILIZED PROJECT)', 'الراتب (Salary)', 'HRS'];
         $dates = [];
-        for ($i = 0; $i < $this->numDaysInMonth; $i++) {
-            $dates[] = "{$this->startDate->copy()->addDays($i)->format('Y-m-d')}\n{$this->startDate->copy()->addDays($i)->format('l')}";
+        for ($i = 1; $i <= $this->numDaysInMonth; $i++) {
+            $dates[] = $i; // رقم اليوم فقط
         }
         $summary = ['أوفOFF', 'عمل M', 'عمل N', 'إجمالي Total', 'إجمالي الساعات'];
         return array_merge($base, $dates, $summary);
@@ -149,7 +149,6 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
     {
         $counts = array_count_values($workPattern);
         $totalHours = (($counts['M'] ?? 0) + ($counts['N'] ?? 0)) * 8;
-        // ---==** التعديل 4: تحديث حساب الإجمالي **==---
         return [
             $counts['OFF'] ?? 0,
             $counts['M'] ?? 0,
@@ -161,8 +160,7 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:ZZ1')->getFont()->setBold(true);
-        $sheet->freezePane('J2');
+        // يتم تطبيق الأنماط الآن في AfterSheet event
     }
 
     public function registerEvents(): array
@@ -170,24 +168,69 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
+                $headerStartRow = 5; // يبدأ رأس الجدول الفعلي من الصف الخامس
+                $sheet->insertNewRowBefore(1, 4); // إضافة 4 صفوف جديدة في الأعلى
+
+                $totalColumns = $sheet->getHighestDataColumn();
+                $mergeRange = "A1:{$totalColumns}1";
+                $mergeRange2 = "A2:{$totalColumns}2";
+                $mergeRange3 = "A3:{$totalColumns}3";
+
+                // ---==** التعديل 1: إضافة العناوين الرئيسية ودمج الخلايا **==---
+                $sheet->mergeCells($mergeRange);
+                $sheet->setCellValue('A1', 'تحضيرات الموظفين المسجلين في التأمينات الاجتماعية');
+                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+                $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                $sheet->mergeCells($mergeRange2);
+                $sheet->setCellValue('A2', 'Time Sheet Employees registered with social insurance');
+                $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
+                $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                $sheet->mergeCells($mergeRange3);
+                $dateRange = sprintf('%s - %s of %s', $this->startDate->format('d'), $this->endDate->format('d'), $this->startDate->format('F Y'));
+                $sheet->setCellValue('A3', $dateRange);
+                $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(12);
+                $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                // ---==** التعديل 2: إضافة صف أسماء الأيام **==---
+                $dayRow = 4;
+                $dailyColStart = 10; // 'J'
+                for ($i = 0; $i < $this->numDaysInMonth; $i++) {
+                    $date = $this->startDate->copy()->addDays($i);
+                    $dayName = $date->format('l'); // اسم اليوم بالإنجليزية
+                    $sheet->setCellValueByColumnAndRow($dailyColStart + $i, $dayRow, $dayName);
+                }
+                $sheet->getStyle("J{$dayRow}:{$totalColumns}{$dayRow}")->getFont()->setBold(true);
+                $sheet->getStyle("J{$dayRow}:{$totalColumns}{$dayRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                // تطبيق التنسيق على رأس الجدول الرئيسي
+                $sheet->getStyle("A{$headerStartRow}:{$totalColumns}{$headerStartRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerStartRow}:{$totalColumns}{$headerStartRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+
+                // ---==** التعديل 4: تحديث منطق التنسيق ليتناسب مع الصفوف الجديدة **==---
                 $highestRow = $sheet->getHighestDataRow();
-                $dailyColStart = 10;
                 $dailyColEnd = $dailyColStart + $this->numDaysInMonth - 1;
 
-                for ($i = 1; $i <= ($highestRow / 2); $i++) {
-                    $currentRowNum = ($i * 2);
-                    $sheet->setCellValue("A{$currentRowNum}", $i);
+                for ($i = 1; $i <= (($highestRow - ($headerStartRow)) / 2); $i++) {
+                    $currentRowNum = $headerStartRow + ($i * 2) - 1; // حساب رقم الصف الحالي للبيانات
+                    $sheet->setCellValue("A{$currentRowNum}", $i); // ترقيم تسلسلي
                     $isMissingRow = $sheet->getCell("B{$currentRowNum}")->getValue() === 'نقص';
 
+                    // دمج الخلايا العمودية للبيانات الأساسية
                     for ($col = 'A'; $col <= 'I'; $col++) {
                         $sheet->mergeCells("{$col}{$currentRowNum}:{$col}" . ($currentRowNum + 1));
+                        $sheet->getStyle("{$col}{$currentRowNum}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
                     }
 
+                    // تلوين صفوف النقص
                     if ($isMissingRow) {
                         $sheet->getStyle("A{$currentRowNum}:I{$currentRowNum}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FF0000');
                         $sheet->getStyle("A{$currentRowNum}:I{$currentRowNum}")->getFont()->getColor()->setRGB('FFFFFF');
                     }
 
+                    // تلوين خلايا الحضور والغياب
                     for ($colIndex = $dailyColStart; $colIndex <= $dailyColEnd; $colIndex++) {
                         $cellValue = $sheet->getCellByColumnAndRow($colIndex, $currentRowNum)->getValue();
                         $color = $this->attendanceColors[$cellValue] ?? 'FFFFFF';
@@ -202,7 +245,6 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
     {
         $days = [];
         
-        // ---==** التعديل 3: منطق رسم الأيام المحدث **==---
         $assignmentStartDate = !$record->is_missing_row && !empty($record->assignment_start_date)
             ? Carbon::parse($record->assignment_start_date)
             : Carbon::parse($record->shift_start_date);
@@ -214,19 +256,16 @@ class CombinedAttendanceWorkPatternExport implements FromQuery, ShouldAutoSize, 
         for ($i = 0; $i < $this->numDaysInMonth; $i++) {
             $targetDate = $this->startDate->copy()->addDays($i);
 
-            // الحالة الأولى: اليوم قبل تاريخ بدء الإسناد
             if ($targetDate->isBefore($assignmentStartDate)) {
                 $days[] = 'PRE_ASSIGNMENT';
                 continue;
             }
 
-            // الحالة الثانية: اليوم بعد تاريخ انتهاء الإسناد (إذا كان موجودًا)
             if ($assignmentEndDate && $targetDate->isAfter($assignmentEndDate)) {
                 $days[] = 'POST_ASSIGNMENT';
                 continue;
             }
 
-            // الحالة الثالثة (الافتراضية): خلال فترة العمل
             if (empty($record->working_days) && empty($record->off_days)) {
                 $days[] = '❌';
                 continue;
