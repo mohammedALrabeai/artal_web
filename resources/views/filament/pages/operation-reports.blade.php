@@ -7,9 +7,20 @@
 @endpush
 
 <x-filament::page>
+        {{-- <x-filament::section>
+        <div class="w-full h-[180vh] overflow-hidden rounded-xl">
+            <iframe 
+                src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSz68Uxox3TBuiVQUCisYXqToHZckkC24dxiaXRDOM7_q-GH1VZFkAIbL5XYQevJMftj3Ph3dy5CzIh/pubhtml?gid=925806691&amp;single=true&amp;widget=true&amp;headers=false"
+                class="w-full h-full border-0"
+                frameborder="0" 
+                allowfullscreen>
+            </iframe>
+        </div>
+    </x-filament::section> --}}
     <x-filament::section>
         <x-slot name="heading">تقرير المتغيرات</x-slot>
-        <x-slot name="description">تصدير الموظفين الذين تم توظيفهم خلال فترة معينة مع تحديد الموظف المستبدل إن وجد.</x-slot>
+        <x-slot name="description">تصدير الموظفين الذين تم توظيفهم خلال فترة معينة مع تحديد الموظف المستبدل إن
+            وجد.</x-slot>
 
         <form method="POST" action="{{ route('exports.employee-changes') }}" class="space-y-4">
             @csrf
@@ -38,60 +49,60 @@
         </form>
     </x-filament::section>
     <x-filament::section>
-    <x-slot name="heading">تقرير جدول التشغيل (نمط العمل)</x-slot>
-    <x-slot name="description">تصدير نمط العمل لمدة 30 يومًا للمشاريع المختارة حسب التاريخ.</x-slot>
+        <x-slot name="heading">تقرير جدول التشغيل (نمط العمل)</x-slot>
+        <x-slot name="description">تصدير نمط العمل لمدة 30 يومًا للمشاريع المختارة حسب التاريخ.</x-slot>
 
-    <form method="POST" action="{{ route('exports.work-schedule') }}" class="space-y-4">
-        @csrf
+        <form method="POST" action="{{ route('exports.work-schedule') }}" class="space-y-4">
+            @csrf
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div x-data x-init="
-    const tom = new TomSelect($refs.projectSelect, {
-        plugins: ['remove_button'],
-        placeholder: 'اختر مشروعًا أو أكثر...',
-        onItemAdd(value) {
-            if (value === 'all') {
-                this.items
-                    .filter(v => v !== 'all')
-                    .forEach(v => this.removeItem(v));
-            } else if (this.items.includes('all')) {
-                this.removeItem('all');
-            }
-        }
-    });
-" class="space-y-2">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div x-data x-init="const tom = new TomSelect($refs.projectSelect, {
+                    plugins: ['remove_button'],
+                    placeholder: 'اختر مشروعًا أو أكثر...',
+                    onItemAdd(value) {
+                        if (value === 'all') {
+                            this.items
+                                .filter(v => v !== 'all')
+                                .forEach(v => this.removeItem(v));
+                        } else if (this.items.includes('all')) {
+                            this.removeItem('all');
+                        }
+                    }
+                });" class="space-y-2">
 
-    <label for="projects" class="text-sm font-medium text-gray-700 dark:text-gray-300">اختر المشاريع</label>
+                    <label for="projects" class="text-sm font-medium text-gray-700 dark:text-gray-300">اختر
+                        المشاريع</label>
 
-    <select x-ref="projectSelect" id="projects" name="projects[]" multiple required
-        class="w-full border-gray-300 rounded-lg filament-input dark:border-gray-700">
-        <option value="all">جميع المشاريع</option>
-        @foreach(\App\Models\Project::where('status', true)->orderBy('name')->get() as $project)
-            <option value="{{ $project->id }}">{{ $project->name }}</option>
-        @endforeach
-    </select>
-</div>
-
+                    <select x-ref="projectSelect" id="projects" name="projects[]" multiple required
+                        class="w-full border-gray-300 rounded-lg filament-input dark:border-gray-700">
+                        <option value="all">جميع المشاريع</option>
+                        @foreach (\App\Models\Project::where('status', true)->orderBy('name')->get() as $project)
+                            <option value="{{ $project->id }}">{{ $project->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
 
-            <div class="space-y-2">
-                <label for="start_date" class="text-sm font-medium text-gray-700 dark:text-gray-300">تاريخ البداية</label>
-                <input type="date" id="start_date" name="start_date" required
-                    value="{{ now('Asia/Riyadh')->toDateString() }}"
-                    class="w-full border-gray-300 rounded-lg shadow-sm filament-input dark:border-gray-700" />
+
+                <div class="space-y-2">
+                    <label for="start_date" class="text-sm font-medium text-gray-700 dark:text-gray-300">تاريخ
+                        البداية</label>
+                    <input type="date" id="start_date" name="start_date" required
+                        value="{{ now('Asia/Riyadh')->toDateString() }}"
+                        class="w-full border-gray-300 rounded-lg shadow-sm filament-input dark:border-gray-700" />
+                </div>
             </div>
-        </div>
 
-        <div class="mt-6">
-            <x-filament::button type="submit" icon="heroicon-o-calendar-days" color="primary">
-    تصدير جدول التشغيل
-</x-filament::button>
+            <div class="mt-6">
+                <x-filament::button type="submit" icon="heroicon-o-calendar-days" color="primary">
+                    تصدير جدول التشغيل
+                </x-filament::button>
 
-        </div>
-    </form>
-</x-filament::section>
+            </div>
+        </form>
+    </x-filament::section>
 
-{{-- <x-filament::section>
+    {{-- <x-filament::section>
     <x-slot name="heading">تقرير جدول التشغيل وتحضيرات الرواتب</x-slot>
     <x-slot name="description">
         تصدير تقرير نمط العمل لكافة الموظفين والشواغر في جميع المشاريع النشطة، لمدة شهر كامل.
@@ -106,25 +117,25 @@
     </form>
 </x-filament::section> --}}
 
-<x-filament::section>
-    <x-slot name="heading">
-        تقارير العمليات الشهرية
-    </x-slot>
+    <x-filament::section>
+        <x-slot name="heading">
+            تقارير العمليات الشهرية
+        </x-slot>
 
-    <x-slot name="description">
-        ▪︎ تقرير جدول التشغيل وتحضيرات الرواتب  
-        ▪︎ تصدير جميع الموظفين
-    </x-slot>
+        <x-slot name="description">
+            ▪︎ تقرير جدول التشغيل وتحضيرات الرواتب
+            ▪︎ تصدير جميع الموظفين
+        </x-slot>
 
-    {{-- صف أفقي بعمودين يبدأ عمودياً على الشاشات الصغيرة --}}
-    <div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
-        {{-- الزر الأول --}}
-        {{ $this->exportWorkPatternPayroll() }}
+        {{-- صف أفقي بعمودين يبدأ عمودياً على الشاشات الصغيرة --}}
+        <div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
+            {{-- الزر الأول --}}
+            {{ $this->exportWorkPatternPayroll() }}
 
-        {{-- الزر الثاني --}}
-        {{ $this->exportAllEmployees() }}
-    </div>
-</x-filament::section>
+            {{-- الزر الثاني --}}
+            {{ $this->exportAllEmployees() }}
+        </div>
+    </x-filament::section>
 
 
 

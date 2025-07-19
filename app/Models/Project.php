@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Project extends Model
 {
@@ -17,7 +18,25 @@ class Project extends Model
         'end_date',
         'emp_no',
         'status',
+          'has_whatsapp_group',
+    'whatsapp_group_id',
+    'whatsapp_group_name',
+    'whatsapp_group_created_at',
+    'whatsapp_created_by',
     ];
+
+    protected $casts = [
+
+    'has_whatsapp_group' => 'boolean',
+    'whatsapp_group_created_at' => 'datetime',
+];
+
+public function whatsappCreator(): BelongsTo
+{
+    return $this->belongsTo(User::class, 'whatsapp_created_by');
+}
+
+
 
     // علاقة مع المنطقة
     public function area()

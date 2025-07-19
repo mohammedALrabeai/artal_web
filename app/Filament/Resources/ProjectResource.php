@@ -3,7 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProjectResource\Pages;
+use App\Forms\Components\EmployeeSelectV2;
 use App\Models\Project;
+use App\Services\WhatsApp\WhatsAppGroupService;
+use App\Services\WhatsApp\WhatsAppMessageService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -130,7 +133,7 @@ class ProjectResource extends Resource
                     //     return $record->employeeProjectRecords()->count().' موظف';
                     // })
                     ->state(function ($record) {
-                        return $record->emp_no . ' موظف';
+                        return $record->emp_no.' موظف';
                     })
                     ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
                     ->action(
@@ -139,13 +142,13 @@ class ProjectResource extends Resource
                             ->modalHeading('الموظفون المسندون للمشروع')
                             ->modalSubmitAction(false)
                             ->modalWidth('4xl')
-                            ->action(fn() => null)
+                            ->action(fn () => null)
                             ->mountUsing(function (Tables\Actions\Action $action, $record) {
                                 $employees = \App\Models\EmployeeProjectRecord::with(['employee', 'zone', 'shift'])
                                     ->where('project_id', $record->id)
                                     ->where('status', 1) // ✅ فقط الإسنادات النشطة
                                     ->get()
-                                    ->sortBy(fn($record) => $record->zone->name ?? '');
+                                    ->sortBy(fn ($record) => $record->zone->name ?? '');
 
                                 $action->modalContent(view('filament.modals.project-employees', compact('employees')));
                             })
@@ -176,6 +179,141 @@ class ProjectResource extends Resource
                     ->placeholder(__('All Areas')),
             ])
             ->actions([
+
+             
+
+Tables\Actions\Action::make('add_members_to_group')
+    ->label('➕ إضافة أعضاء للجروب')
+    // ->icon('heroicon-o-user-plus')
+    ->color('primary')
+    ->visible(fn($record) => $record->has_whatsapp_group && $record->whatsapp_group_id)
+    ->form([
+        \App\Forms\Components\EmployeeSelectV2::make('employee_ids')
+            ->label('اختر الموظفين لإرسال رابط دعوة')
+            ->multiple()
+            ->required()
+    ])
+    ->action(function (Project $record, array $data) {
+        $groupJid = $record->whatsapp_group_id;
+
+        // جلب أرقام الجوال للموظفين المحددين
+        $mobileNumbers = \App\Models\Employee::whereIn('id', $data['employee_ids'])
+            ->pluck('mobile_number')
+            ->map(fn($num) => preg_replace('/[^0-9]/', '', $num))
+            ->filter(fn($num) => strlen($num) >= 10)
+            ->values()
+            ->toArray();
+
+        if (empty($mobileNumbers)) {
+            \Filament\Notifications\Notification::make()
+                ->title('لم يتم العثور على أرقام جوال صالحة')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        $groupService = new WhatsAppGroupService();
+        $messageService = new WhatsAppMessageService();
+
+        // 1. محاولة الإضافة (ولو لن نستفيد من النتيجة مباشرة)
+        $groupService->addParticipants($groupJid, $mobileNumbers);
+
+        // 2. جلب رابط الدعوة
+        $inviteLink = $groupService->getInviteLink($groupJid);
+
+        if (!$inviteLink) {
+            \Filament\Notifications\Notification::make()
+                ->title('فشل في جلب رابط الدعوة')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        // 3. إرسال رسالة لكل رقم برابط الدعوة
+        foreach ($mobileNumbers as $number) {
+            $messageService->sendMessage($number, "تمت إضافتك إلى مجموعة المشروع: {$record->name}\nانضم عبر الرابط:\n{$inviteLink}");
+        }
+
+        \Filament\Notifications\Notification::make()
+            ->title('📤 تم إرسال رابط الدعوة')
+            ->body("عدد الرسائل المرسلة: " . count($mobileNumbers))
+            ->success()
+            ->send();
+    }),
+
+
+                Tables\Actions\Action::make('create_whatsapp_group')
+                    ->label('تفعيل جروب واتساب')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->visible(fn ($record) => ! $record->has_whatsapp_group)
+                    ->requiresConfirmation()
+                    ->modalHeading('تأكيد إنشاء جروب واتساب')
+                    ->modalDescription('سيتم إنشاء جروب وإرسال رابط دعوة لمن لم يُضاف تلقائيًا.')
+                    ->action(function (Project $record) {
+                        $numbers = \App\Models\EmployeeProjectRecord::with('employee')
+                            ->where('project_id', $record->id)
+                            ->where('status', 1)
+                            ->where(function ($q) {
+                                $q->whereNull('end_date')
+                                    ->orWhere('end_date', '>=', now());
+                            })
+                            ->get()
+                            ->pluck('employee.mobile_number')
+                            ->filter()
+                            ->unique()
+                            ->values()
+                            ->toArray();
+                        if (count($numbers) === 0) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('لا يوجد موظفون فعّالون')
+                                ->body('لا يمكن إنشاء جروب واتساب بدون موظفين فعّالين.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $groupService = new WhatsAppGroupService;
+                        $messageService = new WhatsAppMessageService;
+                        $groupName = mb_substr($record->name, 0, 99); // دعم UTF-8
+
+                        $result = $groupService->createGroup($groupName, $numbers);
+
+                        if (! $result) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('فشل إنشاء الجروب')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $groupJid = $result['group_jid'];
+                        $participants = $result['participants'];
+
+                        $inviteLink = $groupService->getInviteLink($groupJid);
+
+                        foreach ($participants as $participant) {
+                            if (! $participant->added && $inviteLink) {
+                                $messageService->sendMessage($participant->phoneNumber, "انضم إلى جروب المشروع عبر الرابط:\n{$inviteLink}");
+                            }
+                        }
+
+                        $record->update([
+                            'has_whatsapp_group' => true,
+                            'whatsapp_group_id' => $groupJid,
+                            'whatsapp_group_name' => $record->name,
+                            'whatsapp_group_created_at' => now(),
+                            'whatsapp_created_by' => auth()->id(),
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('تم إنشاء الجروب بنجاح')
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\EditAction::make(),
 
             ])
