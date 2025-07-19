@@ -32,13 +32,13 @@ class SettingsController extends Controller
         }
     }
 
-    logger()->info('Settings retrieved from platform: ' . $platform, [
-        'user_agent' => request()->header('User-Agent'),
-        'ip' => request()->ip(),
-        'time' => now()->toDateTimeString(),
-        'platform' => $platform,
-        'app_version' => request()->header('X-App-Version'),
-    ]);
+    // logger()->info('Settings retrieved from platform: ' . $platform, [
+    //     'user_agent' => request()->header('User-Agent'),
+    //     'ip' => request()->ip(),
+    //     'time' => now()->toDateTimeString(),
+    //     'platform' => $platform,
+    //     'app_version' => request()->header('X-App-Version'),
+    // ]);
     } catch (\Throwable $e) {
         
         // لا تفعل شيئًا حتى لا يتأثر المستخدم
