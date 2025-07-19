@@ -34,6 +34,7 @@ class ShiftShortagesExport implements FromCollection, WithHeadings
                     $shift->emp_no ?? 0,                              // الموظفين المطلوبين
                     $assignedEmployees ?? 0,                          // الموظفين الحاليين
                     $shortage,                                         // النقص
+                    $shift->shortage_days_count ?? 0,                 // عدد أيام النقص
                     $absentEmployees ?? 0,                             // عدد الغياب
                     $coverageEmployees ?? 0,                           // عدد المغطيين
                 ];
@@ -50,6 +51,7 @@ class ShiftShortagesExport implements FromCollection, WithHeadings
             'الموظفين المطلوبين',
             'الموظفين الحاليين',
             'النقص',
+            'عدد ايام النقص',
             'عدد الغياب',
             'عدد المغطيين',
         ];

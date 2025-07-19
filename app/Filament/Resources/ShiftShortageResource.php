@@ -37,17 +37,42 @@ class ShiftShortageResource extends Resource
                         ->where('status', 1)
                         ->count()
                     ),
-                Tables\Columns\TextColumn::make('shortage')
-                    ->label('النقص')
-                    ->getStateUsing(fn ($record) => max(0, $record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)
-                        ->where('status', 1)
-                        ->count())
-                    )
-                    ->color(fn ($record) => ($record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)->where('status', 1)->count()) > 0 ? 'danger' : 'success')
-                    ->formatStateUsing(fn ($record) => ($record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)->where('status', 1)->count()) > 0
-                        ? max(0, $record->emp_no - EmployeeProjectRecord::where('shift_id', $record->id)->where('status', 1)->count()).' ⛔'
-                        : 'مكتمل ✅'
-                    ),
+                Tables\Columns\TextColumn::make('shortage_days_count')
+                    ->label('أيام النقص الحالية')
+                    ->formatStateUsing(function ($state, $record) {
+                        // عدد الموظفين المسندين فعليًا
+                        $assigned = \App\Models\EmployeeProjectRecord::where('shift_id', $record->id)
+                            ->where('status', 1)
+                            ->count();
+
+                        $hasShortage = $record->emp_no > $assigned;
+
+                        if (! $hasShortage) {
+                            return 'لا يوجد نقص ✅';
+                        }
+
+                        if ($state === 0) {
+                            return 'قيد التحديث... ⏳';
+                        }
+
+                        return "{$state} يوم ⏳";
+                    })
+                    ->color(function ($state, $record) {
+                        $assigned = \App\Models\EmployeeProjectRecord::where('shift_id', $record->id)
+                            ->where('status', 1)
+                            ->count();
+
+                        return $record->emp_no > $assigned
+                            ? 'danger'
+                            : 'success';
+                    })
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('shortage_days_count')
+                    ->label('أيام النقص الحالية')
+                    ->color(fn ($state) => $state > 0 ? 'danger' : 'success')
+                    ->formatStateUsing(fn ($state) => $state > 0 ? "{$state} يوم ⛔" : 'لا يوجد نقص ✅'),
+
                 Tables\Columns\TextColumn::make('absent_employees')
                     ->label('عدد الغياب')
                     ->getStateUsing(fn ($record) => Attendance::where('shift_id', $record->id)
@@ -84,6 +109,7 @@ class ShiftShortageResource extends Resource
 
                         return $isAllActive ? 'success' : 'danger';
                     })
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
 
             ])

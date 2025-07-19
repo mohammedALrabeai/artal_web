@@ -29,6 +29,7 @@ class Shift extends Model
         'emp_no',
         'status',
         'exclude_from_auto_absence',
+        'shortage_days_count',
     ];
 
     protected $casts = [
