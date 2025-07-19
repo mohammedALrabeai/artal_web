@@ -20,26 +20,30 @@ class EmployeesGoogleContactsExport implements FromCollection, WithHeadings, Wit
         )->get();
     }
 
-   public function headings(): array
+  public function headings(): array
 {
     return [
-        'Name',
-        'Phone 1 - Value',
-        'Phone 1 - Type',
+        'First Name',
+        'Middle Name',
+        'Last Name',
         'Phone 1 - Label',
+        'Phone 1 - Value',
     ];
 }
 
 
-   public function map($employee): array
+
+public function map($employee): array
 {
     return [
-        $employee->name,
+        $employee->first_name,
+        $employee->father_name ." " . $employee->grandfather_name,
+        $employee->family_name, // أو grandfather_name إن رغبت
+        'Mobile',
         $this->formatPhone($employee->mobile_number),
-        'Mobile',
-        'Mobile',
     ];
 }
+
 
 
    private function formatPhone($phone)
