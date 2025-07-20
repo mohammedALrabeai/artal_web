@@ -30,11 +30,14 @@ class Shift extends Model
         'status',
         'exclude_from_auto_absence',
         'shortage_days_count',
+     
+
     ];
 
     protected $casts = [
 
         'exclude_from_auto_absence' => 'boolean',
+      
     ];
 
     // علاقة مع المواقع

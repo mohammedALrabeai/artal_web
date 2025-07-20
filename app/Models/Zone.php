@@ -22,12 +22,15 @@ class Zone extends Model
         'emp_no',
         'status',
         'project_id',
+        'last_unattended_started_at',
     ];
 
     protected $casts = [
         'lat' => 'float',
         'longg' => 'float', // التأكد من استخدام الاسم الجديد
         'area' => 'integer', // تحديد النوع كعدد صحيح
+        'last_unattended_started_at' => 'datetime', // تحويل إلى تاريخ ووقت
+
     ];
 
     // علاقة مع الأنماط

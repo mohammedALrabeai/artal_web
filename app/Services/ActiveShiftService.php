@@ -61,6 +61,7 @@ class ActiveShiftService
                             'zones' => $project->zones->map(function ($zone) use (&$missingMap, $coveredToday, $coveredYesterday, $now) {
                                 $activeShifts = [];
                                 $currentShiftEmpNo = 0;
+                                $allCurrentShiftsAttendeesCount = 0;
 
                                 foreach ($zone->shifts as $shift) {
                                     [$isCurrent, $startedAt] = $shift->getShiftActiveStatus2($now); // ← ✅
@@ -132,6 +133,7 @@ class ActiveShiftService
                                         'attendees_count' => $attendeesCount,
                                         'emp_no' => $shift->emp_no,
                                     ];
+                                   
 
                                     // نضيف الحقل فقط إذا كان مستثنًى
                                     if ($shift->exclude_from_auto_absence) {
@@ -142,6 +144,7 @@ class ActiveShiftService
 
                                     if ($isCurrent) {
                                         $currentShiftEmpNo += $shift->emp_no;
+                                        $allCurrentShiftsAttendeesCount += $attendeesCount;
                                     }
                                 }
 
@@ -153,57 +156,103 @@ class ActiveShiftService
                                         $query->where('out_of_zone', true);
                                     })
                                     ->count();
-                                    //                                 $outsideAfterMinutes = 1;                 // 👈 عدّلها متى شئت
-                                    // $threshold = $now->copy()->subMinutes($outsideAfterMinutes);
+                                //                                 $outsideAfterMinutes = 1;                 // 👈 عدّلها متى شئت
+                                // $threshold = $now->copy()->subMinutes($outsideAfterMinutes);
 
-                                    // $outOfZoneCount = \App\Models\Attendance::query()
-                                    //     ->where('zone_id',    $zone->id)
-                                    //     ->where('status',     'present')
-                                    //     ->whereNull('check_out')
-                                    //     ->whereDate('date',   $now->toDateString())
-                                    //     ->join('employee_statuses as es', 'es.employee_id', '=', 'attendances.employee_id')
-                                    //     ->where(function ($q) use ($threshold) {
+                                // $outOfZoneCount = \App\Models\Attendance::query()
+                                //     ->where('zone_id',    $zone->id)
+                                //     ->where('status',     'present')
+                                //     ->whereNull('check_out')
+                                //     ->whereDate('date',   $now->toDateString())
+                                //     ->join('employee_statuses as es', 'es.employee_id', '=', 'attendances.employee_id')
+                                //     ->where(function ($q) use ($threshold) {
 
-                                    //         // ↙️ 1) خارج الحدود المكانية منذ أكثر من X دقيقة
-                                    //         $q->where(function ($q1) use ($threshold) {
-                                    //                $q1->where('es.is_inside', false)
-                                    //                   ->where('es.last_seen_at', '<', $threshold);
-                                    //            })
+                                //         // ↙️ 1) خارج الحدود المكانية منذ أكثر من X دقيقة
+                                //         $q->where(function ($q1) use ($threshold) {
+                                //                $q1->where('es.is_inside', false)
+                                //                   ->where('es.last_seen_at', '<', $threshold);
+                                //            })
 
-                                    //         // ↙️ 2) GPS مُعطّل منذ أكثر من X دقيقة
-                                    //           ->orWhere(function ($q2) use ($threshold) {
-                                    //                $q2->where('es.gps_enabled', false)
-                                    //                   ->where('es.last_gps_status_at', '<', $threshold);
-                                    //            })
+                                //         // ↙️ 2) GPS مُعطّل منذ أكثر من X دقيقة
+                                //           ->orWhere(function ($q2) use ($threshold) {
+                                //                $q2->where('es.gps_enabled', false)
+                                //                   ->where('es.last_gps_status_at', '<', $threshold);
+                                //            })
 
-                                    //         // ↙️ 3) لم يُرصد آخر ظهور منذ 20 دقيقة (يمكنك تكييفها أو إزالتها)
-                                    //           ->orWhere('es.last_seen_at', '<', $now->copy()->subMinutes(20));
-                                    //     })
-                                    //     // ->distinct('attendances.employee_id')   // فعّلها إن وُجِد احتمال تسجيلين للموظف
-                                    //     ->count();
+                                //         // ↙️ 3) لم يُرصد آخر ظهور منذ 20 دقيقة (يمكنك تكييفها أو إزالتها)
+                                //           ->orWhere('es.last_seen_at', '<', $now->copy()->subMinutes(20));
+                                //     })
+                                //     // ->distinct('attendances.employee_id')   // فعّلها إن وُجِد احتمال تسجيلين للموظف
+                                //     ->count();
 
 
-                                return [
+
+
+                                // 🟢 حساب أقدم وقت بداية وردية نشطة
+                                $earliestStart = null;
+                                foreach ($zone->shifts as $shift) {
+                                    [$isCurrent, $startedAt] = $shift->getShiftActiveStatus2($now);
+                                    if (! $isCurrent) continue;
+
+                                    $baseDate = $startedAt === 'yesterday'
+                                        ? $now->copy()->subDay()->startOfDay()
+                                        : $now->copy()->startOfDay();
+
+                                    $shiftType = $shift->getShiftTypeAttribute(); // 1 = صباح، 2 = مساء
+
+                                    $startTime = match ($shiftType) {
+                                        1 => $shift->morning_start,
+                                        2 => $shift->evening_start,
+                                        default => null,
+                                    };
+
+                                    if (! $startTime) continue;
+
+                                    $shiftStart = Carbon::parse("{$baseDate->toDateString()} {$startTime}", 'Asia/Riyadh');
+
+                                    if (! $earliestStart || $shiftStart->lt($earliestStart)) {
+                                        $earliestStart = $shiftStart;
+                                    }
+                                }
+
+                                // 🟢 تحديد وقت بداية النقص الفعلي لعرضه
+                                $unattendedStart = null;
+                                if ($zone->last_unattended_started_at) {
+                                    $unattendedStart = $zone->last_unattended_started_at->gt($earliestStart ?? now())
+                                        ? $zone->last_unattended_started_at
+                                        : $earliestStart;
+                                } elseif ($earliestStart) {
+                                    $unattendedStart = $earliestStart;
+                                }
+
+
+                                $active_coverages_count  =$zone->attendances()
+                                        // ->whereNull('shift_id')
+                                        ->where('status', 'coverage')
+                                        ->whereNull('check_out')
+                                        ->whereDate('created_at', $now->toDateString())
+                                        ->count();
+
+                              $missingCount = max(0, $currentShiftEmpNo - ($allCurrentShiftsAttendeesCount + $active_coverages_count));
+
+                                return array_merge([
                                     'id' => $zone->id,
                                     'name' => $zone->name,
                                     'emp_no' => $zone->emp_no,
                                     'shifts' => $activeShifts,
                                     'current_shift_emp_no' => $currentShiftEmpNo,
-                                    'active_coverages_count' => $zone->attendances()
-                                        // ->whereNull('shift_id')
-                                        ->where('status', 'coverage')
-                                        ->whereNull('check_out')
-                                        ->whereDate('created_at', $now->toDateString())
-                                        ->count(),
+                                    'active_coverages_count' => $active_coverages_count,
                                     'out_of_zone_count' => $outOfZoneCount, // مخصص لاحقًا إذا عندك منطق خاص به
-                                ];
+                                ], array_filter([
+                                    'unattended_duration_start' => $missingCount > 0 ? $unattendedStart : null,
+                                ]));
                             }),
                         ];
                     }),
                 ];
             })->toArray();
             // ⬅️ هنا مكان الكاش الصحيح بعد جمع $missingMap بالكامل
-            cache()->put('missing_employees_summary_'.$now->toDateString(), $missingMap, now()->addMinutes(3));
+            cache()->put('missing_employees_summary_' . $now->toDateString(), $missingMap, now()->addMinutes(3));
 
             return $summary;
         });
