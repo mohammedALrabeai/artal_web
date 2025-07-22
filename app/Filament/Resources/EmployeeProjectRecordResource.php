@@ -463,7 +463,7 @@ class EmployeeProjectRecordResource extends Resource
                         $message .= "🕒 الوردية: {$shift->name}\n";
                         $message .= "📍 الموقع على الخريطة:\n{$googleMapsUrl}\n\n";
                         $message .= "📞 بيانات الاتصال:\n";
-                        $message .= "- قسم الموارد البشرية: hradmin@artalgroup.net | 0598161013\n";
+                        $message .= "- قسم الموارد البشرية: hradmin@artalgroup.net | 0581797003\n";
                         $message .= "- العمليات: 0595639648\n";
                         $message .= '- الدعم الفني: 0593222287';
 

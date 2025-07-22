@@ -359,7 +359,7 @@
 
                     @foreach ($zoneBlock['shifts'] as $shiftBlock)
                         <h4 class="mt-4 mb-2 font-semibold text-gray-700 text-md">
-                            🕒 {{ $shiftBlock['shift']->name }} ({{ $shiftBlock['shift']->start_time }} - {{ $shiftBlock['shift']->end_time }})
+                            🕒 {{ $shiftBlock['shift']->name }} ({{ __($shiftBlock['shift']->type) }} )
                         </h4>
 
                         <div class="overflow-x-auto">

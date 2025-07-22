@@ -71,7 +71,7 @@ class SlotTimeline extends Page
                 $days->push($date->toDateString());
             }
 
-            $zones = Zone::with(['shifts.slots'])->where('project_id', $projectId)->get();
+            $zones = Zone::with(['activeShifts.slots'])->where('project_id', $projectId)->get();
 
             // تحميل الموظفين المسندين حسب الشفت سلوت خلال الفترة
             $assignments = EmployeeProjectRecord::with(['employee', 'shiftSlot'])
@@ -107,7 +107,7 @@ class SlotTimeline extends Page
                     'shifts' => [],
                 ];
 
-                foreach ($zone->shifts as $shift) {
+                foreach ($zone->activeShifts as $shift) {
                     $shiftData = [
                         'shift' => $shift,
                         'slots' => [],
