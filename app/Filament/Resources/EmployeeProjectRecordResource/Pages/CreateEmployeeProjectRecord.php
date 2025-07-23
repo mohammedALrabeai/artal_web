@@ -43,28 +43,27 @@ class CreateEmployeeProjectRecord extends CreateRecord
         }
 
         $zone = Zone::find($this->data['zone_id']);
-$project = Project::find($this->data['project_id']);
+        $project = Project::find($this->data['project_id']);
 
-if ($shift && $zone && $project && $shift->zone_id !== $zone->id) {
-    Notification::make()
-        ->title('⚠️ وردية لا تتبع الموقع المحدد')
-        ->danger()
-        ->body("❌ الوردية المختارة ({$shift->name}) لا تتبع الموقع المحدد ({$zone->name}). يرجى اختيار وردية تابعة للموقع.")
-        ->send();
+        if ($shift && $zone && $project && $shift->zone_id !== $zone->id) {
+            Notification::make()
+                ->title('⚠️ وردية لا تتبع الموقع المحدد')
+                ->danger()
+                ->body("❌ الوردية المختارة ({$shift->name}) لا تتبع الموقع المحدد ({$zone->name}). يرجى اختيار وردية تابعة للموقع.")
+                ->send();
 
-    $this->halt(); // ⛔ منع الإسناد
-}
+            $this->halt(); // ⛔ منع الإسناد
+        }
 
-if ($zone && $project && $zone->project_id !== $project->id) {
-    Notification::make()
-        ->title('⚠️ الموقع لا يتبع المشروع المحدد')
-        ->danger()
-        ->body("❌ الموقع المحدد ({$zone->name}) لا يتبع المشروع المحدد ({$project->name}).")
-        ->send();
+        if ($zone && $project && $zone->project_id !== $project->id) {
+            Notification::make()
+                ->title('⚠️ الموقع لا يتبع المشروع المحدد')
+                ->danger()
+                ->body("❌ الموقع المحدد ({$zone->name}) لا يتبع المشروع المحدد ({$project->name}).")
+                ->send();
 
-    $this->halt(); // ⛔ منع الإسناد
-}
-
+            $this->halt(); // ⛔ منع الإسناد
+        }
     }
 
     protected function afterCreate(): void
@@ -87,16 +86,16 @@ if ($zone && $project && $zone->project_id !== $project->id) {
             $notificationService->sendNotification(
                 ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
                 '📌 إسناد موظف إلى موقع جديد', // عنوان الإشعار
-                "👤 *تم إسناد موظف جديد إلى موقع العمل!*\n\n".
-                "👷 *اسم الموظف:* {$employee->name()}\n".
-                "📌 *الموقع:* {$zone->name} - {$project->name}\n".
-                "🕒 *الوردية:* {$shift->name}\n".
-                "📅 *تاريخ البدء:* {$this->record->start_date}\n".
-                '📅 *تاريخ الانتهاء:* '.($this->record->end_date ?? 'غير محدد')."\n\n".
-                "🆔 *رقم الهوية:* {$employee->national_id}\n".
-                "📞 *رقم الجوال:* {$employee->mobile_number}\n".
-                '📧 *البريد الإلكتروني:* '.(! empty($employee->email) ? $employee->email : 'غير متوفر')."\n\n".
-                "📢 *تم الإسناد بواسطة:* {$assignedBy}\n",
+                "👤 *تم إسناد موظف جديد إلى موقع العمل!*\n\n" .
+                    "👷 *اسم الموظف:* {$employee->name()}\n" .
+                    "📌 *الموقع:* {$zone->name} - {$project->name}\n" .
+                    "🕒 *الوردية:* {$shift->name}\n" .
+                    "📅 *تاريخ البدء:* {$this->record->start_date}\n" .
+                    '📅 *تاريخ الانتهاء:* ' . ($this->record->end_date ?? 'غير محدد') . "\n\n" .
+                    "🆔 *رقم الهوية:* {$employee->national_id}\n" .
+                    "📞 *رقم الجوال:* {$employee->mobile_number}\n" .
+                    '📧 *البريد الإلكتروني:* ' . (! empty($employee->email) ? $employee->email : 'غير متوفر') . "\n\n" .
+                    "📢 *تم الإسناد بواسطة:* {$assignedBy}\n",
                 [
                     $notificationService->createAction(' عرض تفاصيل الموظف', "/admin/employees/{$employee->id}/view", 'heroicon-s-eye'),
                     $notificationService->createAction(' عرض الموقع', "/admin/zones/{$zone->id}", 'heroicon-s-map'),
@@ -106,6 +105,7 @@ if ($zone && $project && $zone->project_id !== $project->id) {
 
             // 🛑 إرسال رسالة إلى الموظف تحتوي على جميع بياناته
             try {
+
                 $otpService = new OtpService;
                 $mobileNumber = preg_replace('/^966/', '', $employee->mobile_number);
 
@@ -121,12 +121,31 @@ if ($zone && $project && $zone->project_id !== $project->id) {
                 $message .= "▶️ *Android:* [Google Play](https://play.google.com/store/apps/details?id=com.intshar.artalapp)\n";
                 $message .= "🍏 *iOS:* [App Store](https://apps.apple.com/us/app/artal/id6740813953)\n\n";
 
+                if ($project && $project->has_whatsapp_group && $project->whatsapp_group_id && $employee->mobile_number) {
+                    // إضافة إلى الجروب (بدون تعطيل لو فشل)
+                    try {
+                        $whatsappService = new \App\Services\WhatsApp\WhatsAppGroupService();
+                        $cleanNumber = preg_replace('/[^0-9]/', '', $employee->mobile_number);
+
+                        $whatsappService->addParticipants($project->whatsapp_group_id, [$cleanNumber]);
+
+                        $inviteLink = $whatsappService->getInviteLink($project->whatsapp_group_id);
+                        if ($inviteLink) {
+                            $message .= "📣 *رابط مجموعة المشروع:*\n{$inviteLink}\n\n";
+                        }
+                    } catch (\Exception $ex) {
+                        \Log::warning('فشل إضافة الموظف للجروب أو جلب الرابط', [
+                            'employee_id' => $employee->id,
+                            'project_id' => $project->id,
+                            'exception' => $ex->getMessage(),
+                        ]);
+                    }
+                }
                 $message .= 'شكراً.';
 
                 // 📲 إرسال الرسالة إلى رقم الجوال
                 $otpService->sendOtp($employee->mobile_number, $message);
-                $otpService->sendOtp('120363385699307538@g.us', $message);
-
+                // $otpService->sendOtp('120363385699307538@g.us', $message);
             } catch (\Exception $e) {
                 \Log::error('Error sending OTP message to assigned employee.', [
                     'exception' => $e,
