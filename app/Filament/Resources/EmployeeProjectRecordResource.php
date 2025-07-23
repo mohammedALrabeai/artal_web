@@ -180,36 +180,10 @@ class EmployeeProjectRecordResource extends Resource
                 ->offColor('danger') // لون عند الإيقاف
                 ->required()
                 ->default(true)
-                ->afterStateUpdated(function (callable $set, callable $get, $state, $livewire) {
-                    // ✅ فقط إذا تم تغيير الحالة إلى غير نشط
-                    if ($state === false) {
-                        // إذا لم يكن هناك تاريخ إنهاء نضبطه تلقائيًا
-                        if (empty($get('end_date'))) {
-                            $set('end_date', now('Asia/Riyadh')->format('Y-m-d'));
-                        }
-
-                        try {
-                            $record = $livewire->record;
-
-                            $employee = \App\Models\Employee::find($record->employee_id);
-                            $project = \App\Models\Project::find($record->project_id);
-
-                            if (
-                                $employee &&
-                                $employee->mobile_number &&
-                                $project &&
-                                $project->has_whatsapp_group &&
-                                $project->whatsapp_group_id
-                            ) {
-                                $cleanNumber = preg_replace('/[^0-9]/', '', $employee->mobile_number);
-                                $whatsapp = new \App\Services\WhatsApp\WhatsAppGroupService();
-                                $whatsapp->removeParticipant($project->whatsapp_group_id, $cleanNumber);
-                            }
-                        } catch (\Throwable $e) {
-                            \Log::warning('فشل في إزالة الموظف من جروب واتساب عند تحويله إلى غير نشط', [
-                                'exception' => $e->getMessage(),
-                            ]);
-                        }
+                ->afterStateUpdated(function (callable $set, callable $get, $state) {
+                    // إذا تم تغيير الحالة إلى غير نشط
+                    if ($state === false && empty($get('end_date'))) {
+                        $set('end_date', now('Asia/Riyadh')->format('Y-m-d'));
                     }
                 }),
 
