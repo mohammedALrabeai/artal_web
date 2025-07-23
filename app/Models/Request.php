@@ -190,8 +190,31 @@ class Request extends Model
                         'status' => false,
                         'end_date' => now(),
                     ]);
+
+                    try {
+                        $record = $this->exclusion->employeeProjectRecord
+                            ?? $this->employee->currentProjectRecord();
+                        \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
+                    } catch (\Throwable $e) {
+                        \Log::warning('فشل إزالة الموظف من جروب واتساب عند الموافقة على طلب استبعاد', [
+                            'employee_id' => $this->employee->id,
+                            'project_id' => $record->project_id,
+                            'exception' => $e->getMessage(),
+                        ]);
+                    }
                 } else {
                     $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
+                    try {
+                         $record = $this->exclusion->employeeProjectRecord
+                            ?? $this->employee->currentProjectRecord();
+                        \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
+                    } catch (\Throwable $e) {
+                        \Log::warning('فشل إزالة الموظف من جروب واتساب عند الموافقة على طلب استبعاد', [
+                            'employee_id' => $this->employee->id,
+                            'project_id' => $record->project_id,
+                            'exception' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
             if ($this->type === 'coverage' && $this->coverage) {

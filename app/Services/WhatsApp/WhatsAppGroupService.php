@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Services\WhatsApp;
 
@@ -41,44 +41,67 @@ class WhatsAppGroupService
         ];
     }
 
-   public function getInviteLink(string $groupJid): ?string
-{
-    $url = "{$this->baseUrl}/group/invitelink/get?profile_id={$this->profileId}&group_id={$groupJid}";
+    public function getInviteLink(string $groupJid): ?string
+    {
+        $url = "{$this->baseUrl}/group/invitelink/get?profile_id={$this->profileId}&group_id={$groupJid}";
 
-    $response = Http::withHeaders([
-        'Authorization' => $this->authToken,
-    ])->get($url);
+        $response = Http::withHeaders([
+            'Authorization' => $this->authToken,
+        ])->get($url);
 
-    return $response->successful() && isset($response['detail'])
-        ? $response['detail']
-        : null;
-}
+        return $response->successful() && isset($response['detail'])
+            ? $response['detail']
+            : null;
+    }
 
 
 
 
     public function addParticipants(string $groupJid, array $participants): ?array
-{
-    $url = "{$this->baseUrl}/group/participant/add?profile_id={$this->profileId}";
+    {
+        $url = "{$this->baseUrl}/group/participant/add?profile_id={$this->profileId}";
 
-    $response = Http::withHeaders([
-        'Authorization' => $this->authToken,
-        'Content-Type' => 'application/json',
-    ])->post($url, [
-        'group_id' => $groupJid,
-        'participants' => $participants,
-    ]);
+        $response = Http::withHeaders([
+            'Authorization' => $this->authToken,
+            'Content-Type' => 'application/json',
+        ])->post($url, [
+            'group_id' => $groupJid,
+            'participants' => $participants,
+        ]);
 
-    if ($response->successful() && isset($response['result'])) {
-        return $response['result'];
+        if ($response->successful() && isset($response['result'])) {
+            return $response['result'];
+        }
+
+        Log::error('Failed to add participants to WhatsApp group (manual)', [
+            'group_id' => $groupJid,
+            'response' => $response->json(),
+        ]);
+
+        return null;
     }
 
-    Log::error('Failed to add participants to WhatsApp group (manual)', [
-        'group_id' => $groupJid,
-        'response' => $response->json(),
-    ]);
+    public function removeParticipant(string $groupJid, string $phoneNumber): bool
+    {
+        $url = "{$this->baseUrl}/group/participant/remove?profile_id={$this->profileId}";
 
-    return null;
-}
+        $response = Http::withHeaders([
+            'Authorization' => $this->authToken,
+            'Content-Type' => 'application/json',
+        ])->post($url, [
+            'group_id' => $groupJid,
+            'participant' => $phoneNumber,
+        ]);
 
+        if (! $response->successful()) {
+            \Log::error('Failed to remove participant from WhatsApp group', [
+                'group_id' => $groupJid,
+                'participant' => $phoneNumber,
+                'response' => $response->json(),
+            ]);
+            return false;
+        }
+
+        return true;
+    }
 }
