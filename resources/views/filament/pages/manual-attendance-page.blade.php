@@ -27,7 +27,9 @@
                     <tr>
                         <th class="p-2 border">الموظف</th>
                         @foreach ($this->days as $day)
-                            <th class="p-2 border whitespace-nowrap">
+                            <th class="p-2 border whitespace-nowrap"
+                                @if ($day === $this->editableDate) style="min-width: 100px;" {{-- ✅ عرض أكبر لهذا العمود --}} @endif>
+
                                 {{ \Carbon\Carbon::parse($day)->day }}
                             </th>
                         @endforeach
@@ -91,30 +93,24 @@
                                     $isEditing = $this->editingEmployeeId === $row->id && $this->editingDate === $day;
                                 @endphp
 
-                               <td
-    class="p-1 border text-xs text-center align-middle {{ $textColor }} {{ $day === $this->editableDate ? 'cursor-pointer' : 'cursor-default' }}"
-    style="background-color: {{ $bgColor }}"
-    @if ($day === $this->editableDate)
-        wire:click="editCell({{ $row->id }}, '{{ $day }}')"
-    @endif
->
-    @if ($isEditing && $day === $this->editableDate)
-        <select
-            wire:change="saveStatus({{ $row->id }}, '{{ $day }}', $event.target.value)"
-            class="w-full p-1 text-xs rounded"
-        >
-            <option value="">اختر</option>
-            @foreach (['present', 'absent', 'leave', 'coverage', 'UV', 'W'] as $option)
-                <option value="{{ $option }}" @selected($status === $option)>
-                    {{ strtoupper($option) }}
-                </option>
-            @endforeach
-        </select>
-    @else
-        {{ $status }}
-    @endif
-</td>
-
+                                <td class="p-1 border text-xs text-center align-middle {{ $textColor }} {{ $day === $this->editableDate ? 'cursor-pointer' : 'cursor-default' }}"
+    style="background-color: {{ $bgColor }}; {{ $day === $this->editableDate ? 'min-width: 100px;' : '' }}"
+                                    @if ($day === $this->editableDate) wire:click="editCell({{ $row->id }}, '{{ $day }}')" @endif>
+                                    @if ($isEditing && $day === $this->editableDate)
+                                        <select
+                                            wire:change="saveStatus({{ $row->id }}, '{{ $day }}', $event.target.value)"
+                                            class="w-full p-1 text-xs rounded">
+                                            <option value="">اختر</option>
+                                            @foreach (['present', 'absent', 'leave', 'coverage', 'UV', 'W'] as $option)
+                                                <option value="{{ $option }}" @selected($status === $option)>
+                                                    {{ strtoupper($option) }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @else
+                                        {{ $status }}
+                                    @endif
+                                </td>
                             @endforeach
                         </tr>
                     @endforeach

@@ -131,7 +131,17 @@ class EmployeeProjectRecordResource extends Resource
                 })
                 ->reactive()
                 ->searchable()
-                ->required(),
+                ->required()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    $shift = \App\Models\Shift::find($state);
+                    if ($shift) {
+                        $start = \Carbon\Carbon::parse($shift->start_date)->toDateString();
+                        $today = now('Asia/Riyadh')->toDateString();
+
+                        // إذا اليوم أصغر من بداية الوردية، نضبط التاريخ على بداية الوردية
+                        $set('start_date', $today < $start ? $start : $today);
+                    }
+                }),
 
             Select::make('shift_slot_id')
                 ->label(__('Slot'))
@@ -169,6 +179,8 @@ class EmployeeProjectRecordResource extends Resource
 
             DatePicker::make('start_date')
                 ->label(__('Start Date'))
+    ->minDate(fn(callable $get) => \App\Models\Shift::find($get('shift_id'))?->start_date)
+
                 ->required(),
 
             DatePicker::make('end_date')
@@ -628,12 +640,41 @@ class EmployeeProjectRecordResource extends Resource
 
         // ✅ حساب بداية الدورة من `shift.start_date`
         $startDate = Carbon::parse($record->shift->start_date);
+            $assignStart = \Carbon\Carbon::parse($record->start_date);
+
         $currentDate = Carbon::now('Asia/Riyadh');
 
         $daysView = [];
 
         for ($i = 0; $i < 30; $i++) {
             $targetDate = $currentDate->copy()->addDays($i); // ✅ تحديد تاريخ الخلية
+
+
+            $recordStart = Carbon::parse($record->start_date);
+            $shiftStart = Carbon::parse($record->shift->start_date);
+            // $minStart = $recordStart->greaterThan($shiftStart) ? $recordStart : $shiftStart;
+            $displayDate = $targetDate->format('d M');
+
+             // ❗️إذا التاريخ قبل بداية الوردية أو بداية الإسناد
+        if ($targetDate->lt($shiftStart) || $targetDate->lt($assignStart)) {
+            $daysView[] = "
+            <span style='
+                padding: 4px;
+                border-radius: 5px;
+                background-color: #9E9E9E; /* رمادي غامق */
+                color: white;
+                display: inline-block;
+                width: 110px;
+                height: 30px;
+                margin-bottom: 0px;
+                text-align: center;
+                margin-right: 5px;
+                font-weight: bold;
+            '>
+                $displayDate - 🕒
+            </span>";
+            continue;
+        }
             $totalDays = $startDate->diffInDays($targetDate); // ✅ حساب الفرق من بداية الوردية وليس من اليوم الحالي
 
             // ✅ حساب اليوم داخل الدورة بناءً على `totalDays`
