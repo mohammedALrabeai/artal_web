@@ -206,8 +206,7 @@ class Request extends Model
                 } else {
                     
                     $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
-                     $record = $this->exclusion->employeeProjectRecord
-                            ?? $this->employee->currentProjectRecord();
+                     $record =  $this->employee->currentProjectRecord();
                     try {
                         
                         \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
