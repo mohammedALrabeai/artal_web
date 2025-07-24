@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         InsuranceCompanySeeder::class,
         CommercialRecordSeeder::class,
         EmployeeSeeder::class,
+          LeaveTypeSeeder::class,
     ]);
 }
 }

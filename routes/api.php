@@ -28,6 +28,7 @@ use App\Http\Controllers\EmployeeNotificationController;
 use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\V2\UncoveredZonesController;
 use App\Http\Controllers\Api\OperationNotificationController;
+use App\Http\Controllers\Api\ManulAttendanceController;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -423,3 +424,9 @@ Route::get('/uncovered-zones', function () {
 });
 
 
+
+
+
+// ... (أي مسارات أخرى موجودة)
+
+Route::post('/attendance-data', [ManulAttendanceController::class, 'getAttendanceData']);

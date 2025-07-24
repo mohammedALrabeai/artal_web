@@ -106,10 +106,13 @@ class CreateRequest extends CreateRecord
                     'employee_id' => $data['employee_id'],
                     'start_date' => $data['start_date'],
                     'end_date' => $data['end_date'],
-                    'type' => $data['leave_type'],
-                    'reason' => $data['reason'],
-                    'aproved' => false,
+                    'leave_type_id' => $data['leave']['leave_type_id'] ?? null,
+                    'reason' => $data['reason'] ?? null,
+                    'approved' => false,
+                    'employee_project_record_id' => $data['leave']['employee_project_record_id'] ?? null,
                 ]);
+
+
                 $data['leave_id'] = $leave->id;
 
                 // تحديث الرصيد في جدول leave_balances عند إنشاء الطلب
@@ -119,16 +122,21 @@ class CreateRequest extends CreateRecord
                     'last_updated' => now(),
                 ]);
 
+                $leaveTypeName = \App\Models\LeaveType::find($data['leave']['leave_type_id'])?->name;
+                $employeeName = $employee->first_name . ' ' . $employee->family_name;
+                $start = \Carbon\Carbon::parse($data['start_date'])->format('Y-m-d');
+                $end = \Carbon\Carbon::parse($data['end_date'])->format('Y-m-d');
+
                 $notificationService = new NotificationService;
                 $notificationService->sendNotification(
-                    ['hr', 'manager'], // الأدوار المستهدفة
-                    'طلب اجازة', // عنوان الإشعار
-                    'يرجى مراجعة طلب الاجازة', // نص الإشعار
+                    ['hr', 'manager'],
+                    'طلب إجازة جديد',
+                    "تم تقديم طلب {$leaveTypeName} للموظف {$employeeName} من {$start} إلى {$end}",
                     [
-                        // $notificationService->createAction('View Bank', "/admin/banks/{$this->record->id}", 'heroicon-s-eye'),
                         $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
                     ]
                 );
+
 
                 break;
 
@@ -146,7 +154,7 @@ class CreateRequest extends CreateRecord
                 $notificationService->sendNotification(
                     ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
                     'طلب قرض جديد ', // عنوان الإشعار
-                    $data['amount'].'  | '.$employee->first_name.' '.$employee->family_name.' | '.auth()->user()->name, // نص الإشعار
+                    $data['amount'] . '  | ' . $employee->first_name . ' ' . $employee->family_name . ' | ' . auth()->user()->name, // نص الإشعار
                     [
                         // $notificationService->createAction('View Bank', "/admin/banks/{$this->record->id}", 'heroicon-s-eye'),
                         $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
@@ -189,12 +197,11 @@ class CreateRequest extends CreateRecord
                     $notificationService->sendNotification(
                         ['manager', 'general_manager', 'hr'], // الأدوار المستهدفة
                         'طلب استبعاد', // عنوان الإشعار
-                        'يرجى مراجعة طلب الاستبعاد للموظف '.$employee->first_name.' '.$employee->family_name, // نص الإشعار
+                        'يرجى مراجعة طلب الاستبعاد للموظف ' . $employee->first_name . ' ' . $employee->family_name, // نص الإشعار
                         [
                             $notificationService->createAction('عرض قائمة الطلبات', '/admin/requests', 'heroicon-s-eye'),
                         ]
                     );
-
                 } catch (\Exception $e) {
                     dd($e->getMessage());
                 }

@@ -1,121 +1,175 @@
 <x-filament::page>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- قسم الفلاتر يبقى كما هو --}}
     <x-filament::section>
         <x-slot name="header">خيارات الفلترة</x-slot>
-
         <form wire:submit.prevent>
             <div class="flex flex-wrap gap-4">
-                <div class="inline-block min-w-[220px] grow">
-                    {{ $this->form->getComponent('projectId') }}
-                </div>
-                <div class="inline-block min-w-[220px] grow">
-                    {{ $this->form->getComponent('zoneId') }}
-                </div>
-                <div class="inline-block min-w-[220px] grow">
-                    {{ $this->form->getComponent('shiftId') }}
-                </div>
-                <div class="inline-block min-w-[220px] grow">
-                    {{ $this->form->getComponent('month') }}
-                </div>
+                <div class="inline-block min-w-[220px] grow">{{ $this->form->getComponent('projectId') }}</div>
+                <div class="inline-block min-w-[220px] grow">{{ $this->form->getComponent('zoneId') }}</div>
+                <div class="inline-block min-w-[220px] grow">{{ $this->form->getComponent('shiftId') }}</div>
+                <div class="inline-block min-w-[220px] grow">{{ $this->form->getComponent('month') }}</div>
             </div>
         </form>
     </x-filament::section>
 
-    @if ($this->employees->isNotEmpty())
-        <div class="mt-4 overflow-auto border rounded-lg">
-            <table class="min-w-full text-sm text-center rtl:text-right">
-                <thead class="text-xs bg-gray-100">
-                    <tr>
-                        <th class="p-2 border">الموظف</th>
-                        @foreach ($this->days as $day)
-                            <th class="p-2 border whitespace-nowrap"
-                                @if ($day === $this->editableDate) style="min-width: 100px;" {{-- ✅ عرض أكبر لهذا العمود --}} @endif>
+    {{-- حاوية الجدول الجديد --}}
+    <div id="ag-grid-container" class="mt-4" wire:ignore>
+        <div id="myGrid" class="ag-theme-alpine" style="height: 600px; width: 100%;"></div>
+    </div>
 
-                                {{ \Carbon\Carbon::parse($day)->day }}
-                            </th>
-                        @endforeach
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($this->employees as $row)
-                        <tr class="hover:bg-gray-50">
-                            <td class="p-2 font-medium text-gray-800 border whitespace-nowrap">
-                                {{ $row->projectRecord->employee->name }}
-                            </td>
+    {{-- تضمين مكتبة AG Grid --}}
+    @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+    <script>
+        document.addEventListener('livewire:load', function ( ) {
+            // --- إعدادات AG Grid ---
+            let gridOptions;
+            let gridApi;
 
-                            @foreach ($this->days as $day)
-                                @php
-                                    $attendance = $row->attendances->firstWhere('date', $day);
-                                    $record = $row->projectRecord;
-                                    $workPattern = app(
-                                        \App\Filament\Pages\ManualAttendancePage::class,
-                                    )->getWorkPatternLabel($record, $day);
+            // 1. تعريف الأعمدة
+            function createColumnDefs(monthStr) {
+                const month = new Date(monthStr);
+                const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+                
+                // الأعمدة الثابتة
+                const staticColumns = [
+                    { 
+                        headerName: 'الموظف', 
+                        field: 'name', 
+                        pinned: 'left', // تثبيت عمود الاسم على اليسار
+                        width: 200,
+                        cellStyle: {'font-weight': 'bold'}
+                    },
+                    { headerName: 'حضور', field: 'stats.present', width: 90, pinned: 'left' },
+                    { headerName: 'غياب', field: 'stats.absent', width: 90, pinned: 'left' },
+                ];
 
-                                    $start = $record->start_date;
-                                    $end = $record->end_date;
+                // إنشاء أعمدة الأيام بشكل ديناميكي
+                const dayColumns = [];
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const day = String(i).padStart(2, '0');
+                    dayColumns.push({
+                        headerName: day,
+                        field: `attendance.${day}`, // الوصول للبيانات مثل: attendance.01, attendance.02
+                        width: 70,
+                        cellStyle: params => { // تلوين الخلية بناءً على القيمة
+                            const status = params.value;
+                            const backgrounds = {
+                                'present': '#2E7D32', 'absent': '#D32F2F', 'coverage': '#F9A825',
+                                'M': '#D9D9D9', 'N': '#999999', 'leave': '#388E3C',
+                                'UV': '#F57C00', 'W': '#795548', 'OFF': '#FFC7CE',
+                            };
+                            const colors = {
+                                'present': 'white', 'absent': 'white', 'N': 'white',
+                                'leave': 'white', 'UV': 'white', 'W': 'white',
+                            };
+                            return {
+                                backgroundColor: backgrounds[status] || '#ECEFF1',
+                                color: colors[status] || 'black',
+                                textAlign: 'center'
+                            };
+                        }
+                    });
+                }
+                return [...staticColumns, ...dayColumns];
+            }
 
-                                    $isBefore = $start && $day < $start;
-                                    $isAfter = $end && $day > $end;
+            // 2. مصدر البيانات (Datasource) الذي يتصل بالـ API
+            const datasource = {
+                getRows: (params) => {
+                    console.log('AG-Grid requesting rows:', params.startRow, 'to', params.endRow);
+                    
+                    // جلب الفلاتر الحالية من Livewire
+                    const livewireFilters = @this.getFilterData();
 
-                                    $status = $attendance?->status ?? $workPattern;
+                    fetch('/api/attendance-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            // مهم: إضافة CSRF token للحماية
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            offset: params.startRow,
+                            limit: params.endRow - params.startRow,
+                            month: livewireFilters.month,
+                            filters: livewireFilters
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.rows) {
+                            params.successCallback(data.rows, data.total);
+                        } else {
+                            params.failCallback();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                        params.failCallback();
+                    });
+                }
+            };
 
-                                    $colors = [
-                                        'present' => 'text-white',
-                                        'absent' => 'text-white',
-                                        'coverage' => 'text-black',
-                                        'M' => 'text-black',
-                                        'N' => 'text-white',
-                                        'leave' => 'text-white',
-                                        'UV' => 'text-white',
-                                        'W' => 'text-white',
-                                        'OFF' => 'text-black',
-                                    ];
+            // 3. إعدادات الجدول الرئيسية
+            const month = @this.get('month');
+            gridOptions = {
+                columnDefs: createColumnDefs(month),
+                rowModelType: 'infinite', // هذا هو مفتاح التمرير الافتراضي (Virtual Scrolling)
+                datasource: datasource,
+                paginationPageSize: 50, // حجم الدفعة التي يتم طلبها
+                cacheBlockSize: 50,     // نفس حجم الدفعة
+                rowHeight: 35,
+                defaultColDef: {
+                    resizable: true,
+                    sortable: false, // يمكن تفعيله إذا أردت
+                },
+                onGridReady: (params) => {
+                    gridApi = params.api;
+                }
+            };
 
-                                    $backgrounds = [
-                                        'present' => '#2E7D32',
-                                        'absent' => '#D32F2F',
-                                        'coverage' => '#F9A825',
-                                        'M' => '#D9D9D9',
-                                        'N' => '#999999',
-                                        'leave' => '#388E3C',
-                                        'UV' => '#F57C00',
-                                        'W' => '#795548',
-                                        'OFF' => '#FFC7CE',
-                                    ];
+            // 4. إنشاء الجدول
+            const gridDiv = document.querySelector('#myGrid');
+            new agGrid.Grid(gridDiv, gridOptions);
 
-                                    $bgColor = $isBefore
-                                        ? '#C8E6C9'
-                                        : ($isAfter
-                                            ? '#FFCDD2'
-                                            : $backgrounds[$status] ?? '#ECEFF1');
 
-                                    $textColor = $colors[$status] ?? 'text-black';
+            // 5. الاستماع لتغييرات الفلاتر في Livewire
+            Livewire.hook('message.processed', (message, component) => {
+                // إذا كان اسم المكون هو صفحتنا
+                if (component.name === 'filament.pages.manual-attendance-page') {
+                    console.log('Filters changed, refreshing grid...');
+                    
+                    // تحديث أعمدة الأيام إذا تغير الشهر
+                    const newMonth = @this.get('month');
+                    const newColumns = createColumnDefs(newMonth);
+                    gridApi.setColumnDefs(newColumns);
 
-                                    $isEditing = $this->editingEmployeeId === $row->id && $this->editingDate === $day;
-                                @endphp
+                    // إعادة تعيين الجدول ليطلب البيانات من جديد مع الفلاتر المحدثة
+                    gridApi.setDatasource(datasource);
+                }
+            });
+        });
+    </script>
+    @endpush
 
-                                <td class="p-1 border text-xs text-center align-middle {{ $textColor }} {{ $day === $this->editableDate ? 'cursor-pointer' : 'cursor-default' }}"
-    style="background-color: {{ $bgColor }}; {{ $day === $this->editableDate ? 'min-width: 100px;' : '' }}"
-                                    @if ($day === $this->editableDate) wire:click="editCell({{ $row->id }}, '{{ $day }}')" @endif>
-                                    @if ($isEditing && $day === $this->editableDate)
-                                        <select
-                                            wire:change="saveStatus({{ $row->id }}, '{{ $day }}', $event.target.value)"
-                                            class="w-full p-1 text-xs rounded">
-                                            <option value="">اختر</option>
-                                            @foreach (['present', 'absent', 'leave', 'coverage', 'UV', 'W'] as $option)
-                                                <option value="{{ $option }}" @selected($status === $option)>
-                                                    {{ strtoupper($option) }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    @else
-                                        {{ $status }}
-                                    @endif
-                                </td>
-                            @endforeach
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    {{-- إضافة CSS الخاص بـ AG Grid --}}
+    @push('styles')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css">
+    <style>
+        /* تعديلات بسيطة لتحسين المظهر */
+        .ag-header-cell-label {
+            justify-content: center;
+        }
+    </style>
+    @endpush
+
+    {{-- إضافة CSRF Token Meta Tag --}}
+    @section('meta' )
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    @endsection
+
 </x-filament::page>

@@ -190,14 +190,14 @@ class Request extends Model
                         'status' => false,
                         'end_date' => now(),
                     ]);
-                     $record = $this->exclusion->employeeProjectRecord
-                            ?? $this->employee->currentProjectRecord();
+                    $record = $this->exclusion->employeeProjectRecord
+                        ?? $this->employee->currentProjectRecord();
 
                     try {
-                       if($record) {
+                        if ($record) {
                             // إزالة الموظف من جروب واتساب
-                        \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
-                       }
+                            \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
+                        }
                     } catch (\Throwable $e) {
                         \Log::warning('فشل إزالة الموظف من جروب واتساب عند الموافقة على طلب استبعاد', [
                             'employee_id' => $this->employee->id,
@@ -206,14 +206,13 @@ class Request extends Model
                         ]);
                     }
                 } else {
-                    
+
                     $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
-                     $record =  $this->employee->currentProjectRecord();
+                    $record =  $this->employee->currentProjectRecord();
                     try {
-                        if($record) {
+                        if ($record) {
                             \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
                         }
-                       
                     } catch (\Throwable $e) {
                         \Log::warning('فشل إزالة الموظف من جروب واتساب عند الموافقة على طلب استبعاد', [
                             'employee_id' => $this->employee->id,
@@ -329,29 +328,19 @@ class Request extends Model
 
     public function makeLeaveAttendance()
     {
-        // التحقق من وجود الإجازة
         if (! $this->leave) {
-            \Log::error('Leave record not found for this request.', [
-                'request_id' => $this->id,
-            ]);
-
+            \Log::error('Leave record not found for this request.', ['request_id' => $this->id]);
             return;
         }
 
-        // جلب تواريخ البداية والنهاية
         $startDate = \Carbon\Carbon::parse($this->leave->start_date);
         $endDate = \Carbon\Carbon::parse($this->leave->end_date);
 
-        // التحقق من الموظف
         if (! $this->employee) {
-            \Log::error('Employee not found for this request.', [
-                'request_id' => $this->id,
-            ]);
-
+            \Log::error('Employee not found for this request.', ['request_id' => $this->id]);
             return;
         }
 
-        // جلب سجل المشروع الحالي للموظف
         $projectRecord = $this->employee->currentProjectRecord;
 
         if (! $projectRecord || ! $projectRecord->zone || ! $projectRecord->shift) {
@@ -359,55 +348,33 @@ class Request extends Model
                 'employee_id' => $this->employee->id,
                 'request_id' => $this->id,
             ]);
-
             return;
         }
 
-        // جلب المنطقة والوردية من سجل المشروع
         $zoneId = $projectRecord->zone_id;
         $shiftId = $projectRecord->shift_id;
+        $leaveCode = $this->leave->leaveType?->code ?? 'LV'; // رمز الإجازة
+        $reason = $this->leave->reason ?? '-';
 
-        // التحقق من تواريخ البداية والنهاية
-        if (! $startDate || ! $endDate) {
-            \Log::error('Invalid start or end date for leave.', [
-                'leave_id' => $this->leave->id,
-            ]);
-
-            return;
-        }
-
-        // إنشاء السجلات في جدول التحضيرات لكل يوم ضمن فترة الإجازة
         $currentDate = $startDate->copy();
         while ($currentDate->lte($endDate)) {
             try {
-                // التحقق مما إذا كان اليوم يوم عمل
-                $isWorkingDay = $projectRecord->isWorkingDay();
-                if (! $isWorkingDay) {
-                    \Log::info('Skipping non-working day.', [
-                        'employee_id' => $this->employee->id,
-                        'date' => $currentDate->toDateString(),
-                    ]);
-                    $currentDate->addDay();
-
-                    continue;
-                }
-
-                // إنشاء سجل الحضور
                 \App\Models\Attendance::firstOrCreate(
                     ['employee_id' => $this->employee_id, 'date' => $currentDate->toDateString()],
                     [
                         'zone_id' => $zoneId,
                         'shift_id' => $shiftId,
                         'ismorning' => true,
-                        'status' => 'leave', // حالة الحضور "إجازة"
-                        'notes' => 'Leave: ' . $this->leave->id . ' - request ID: ' . $this->id . ': ' . $this->leave->type . ' - ' . $this->leave->reason . ' - ' . $this->leave->start_date . ' - ' . $this->leave->end_date, // ملاحظات
-                        // 'request_id' => $this->id, // ربط بالسجل الخاص بالطلب
+                        'status' => $leaveCode,
+                        'notes' => "{$this->leave->leaveType?->name} - {$reason}",
                     ]
                 );
+
                 \Log::info('Attendance record created for leave.', [
                     'employee_id' => $this->employee_id,
                     'date' => $currentDate->toDateString(),
                     'status' => 'leave',
+                    'code' => $leaveCode,
                 ]);
             } catch (\Exception $e) {
                 \Log::error('Failed to create attendance record.', [
@@ -417,9 +384,10 @@ class Request extends Model
                 ]);
             }
 
-            $currentDate->addDay(); // الانتقال إلى اليوم التالي
+            $currentDate->addDay();
         }
     }
+
 
     public function attachments()
     {

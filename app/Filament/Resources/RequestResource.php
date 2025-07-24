@@ -83,26 +83,26 @@ class RequestResource extends Resource
                             //     ->searchable()
                             //     ->nullable()
                             //     ->required(),
-                      EmployeeSelect::make()
-    ->reactive()
-    ->afterStateUpdated(function ($state, callable $set, callable $get, $livewire) {
-        $set('employee_project_record_id', null);
+                            EmployeeSelect::make()
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get, $livewire) {
+                                    $set('employee_project_record_id', null);
 
-        $today = Carbon::today()->toDateString();
-        $records = EmployeeProjectRecord::where('employee_id', $state)
-            ->where(function ($query) use ($today) {
-                $query->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
-            })
-            ->pluck('id');
+                                    $today = Carbon::today()->toDateString();
+                                    $records = EmployeeProjectRecord::where('employee_id', $state)
+                                        ->where(function ($query) use ($today) {
+                                            $query->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
+                                        })
+                                        ->pluck('id');
 
-        if ($records->count() === 1) {
-            // ✅ إذا وُجد إسناد واحد فقط يتم اختياره مباشرة
-            $set('employee_project_record_id', $records->first());
-        }
+                                    if ($records->count() === 1) {
+                                        // ✅ إذا وُجد إسناد واحد فقط يتم اختياره مباشرة
+                                        $set('employee_project_record_id', $records->first());
+                                    }
 
-        // إذا أردت فرض إعادة تحميل الحقول الديناميكية يمكنك تحديث أي متغير آخر
-        // $livewire->dispatch('refreshAssignmentOptions');
-    }),
+                                    // إذا أردت فرض إعادة تحميل الحقول الديناميكية يمكنك تحديث أي متغير آخر
+                                    // $livewire->dispatch('refreshAssignmentOptions');
+                                }),
 
 
                             // المقدم
@@ -151,15 +151,40 @@ class RequestResource extends Resource
                                 ->visible(fn($get) => $get('type') === 'leave'),
 
                             // نوع الإجازة
-                            Forms\Components\Select::make('leave_type')
-                                ->label(__('Leave Type'))
-                                ->options([
-                                    'annual' => __('Annual Leave'),
-                                    'sick' => __('Sick Leave'),
-                                    'unpaid' => __('Unpaid Leave'),
-                                ])
+                            Forms\Components\Select::make('leave.leave_type_id')
+                                ->label('نوع الإجازة')
+                                ->relationship('leave.leaveType', 'name')
+                                ->searchable()
                                 ->required()
-                                ->visible(fn($get) => $get('type') === 'leave'),
+                                ->visible(fn($get) => $get('type') === 'leave')
+                                ->preload(),
+                            Forms\Components\Select::make('leave.employee_project_record_id')
+                                ->label('الإسناد (الموقع والوردية)')
+                                ->reactive()
+                                ->required()
+                                ->visible(fn($get) => $get('type') === 'leave')
+                                ->options(function ($livewire) {
+                                    $employeeId = data_get($livewire->data, 'employee_id');
+
+                                    if (! $employeeId) return [];
+
+                                    $today = now()->toDateString();
+
+                                    return \App\Models\EmployeeProjectRecord::with(['project', 'zone', 'shift'])
+                                        ->where('employee_id', $employeeId)
+                                        ->where(function ($q) use ($today) {
+                                            $q->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
+                                        })
+                                        ->get()
+                                        ->mapWithKeys(fn($record) => [
+                                            $record->id => $record->project->name . ' - ' .
+                                                $record->zone->name . ' - ' .
+                                                $record->shift->name
+                                        ])
+                                        ->toArray();
+                                })
+                                ->searchable(),
+
 
                             // السبب
                             Forms\Components\Textarea::make('reason')
@@ -188,52 +213,52 @@ class RequestResource extends Resource
 
 
 
-                           Forms\Components\Select::make('employee_project_record_id')
-    ->label(__('Assignment'))
-    ->reactive()
-    ->afterStateHydrated(function (callable $set, callable $get, $state) {
-        $employeeId = $get('employee_id');
-       
-        if (! $employeeId) return;
+                            Forms\Components\Select::make('employee_project_record_id')
+                                ->label(__('Assignment'))
+                                ->reactive()
+                                ->afterStateHydrated(function (callable $set, callable $get, $state) {
+                                    $employeeId = $get('employee_id');
 
-        $today = Carbon::today()->toDateString();
+                                    if (! $employeeId) return;
 
-        $records = EmployeeProjectRecord::where('employee_id', $employeeId)
-            ->where(function ($query) use ($today) {
-                $query->whereNull('end_date')
-                    ->orWhereDate('end_date', '>=', $today);
-            })
-            ->pluck('id');
+                                    $today = Carbon::today()->toDateString();
 
-        if ($records->count() === 1) {
-            $set('exclusion.employee_project_record_id', $records->first());
-        }
-    })
-    ->options(function ($livewire) {
-        $employeeId = data_get($livewire->data, 'employee_id');
+                                    $records = EmployeeProjectRecord::where('employee_id', $employeeId)
+                                        ->where(function ($query) use ($today) {
+                                            $query->whereNull('end_date')
+                                                ->orWhereDate('end_date', '>=', $today);
+                                        })
+                                        ->pluck('id');
 
-        if (! $employeeId) return [];
+                                    if ($records->count() === 1) {
+                                        $set('exclusion.employee_project_record_id', $records->first());
+                                    }
+                                })
+                                ->options(function ($livewire) {
+                                    $employeeId = data_get($livewire->data, 'employee_id');
 
-        $today = Carbon::today()->toDateString();
+                                    if (! $employeeId) return [];
 
-        $records = EmployeeProjectRecord::with(['project', 'zone', 'shift'])
-            ->where('employee_id', $employeeId)
-            ->where(function ($query) use ($today) {
-                $query->whereNull('end_date')
-                    ->orWhereDate('end_date', '>=', $today);
-            })
-            ->get();
+                                    $today = Carbon::today()->toDateString();
 
-        return $records->mapWithKeys(fn($record) => [
-            $record->id => $record->project->name . ' - ' .
-                           $record->zone->name . ' - ' .
-                           $record->shift->name
-        ])->toArray();
-    })
-    // ->required(fn($get) => $get('type') === 'exclusion')
-    ->visible(fn($get) => $get('type') === 'exclusion')
-    ->columnSpanFull()
-    ->searchable(),
+                                    $records = EmployeeProjectRecord::with(['project', 'zone', 'shift'])
+                                        ->where('employee_id', $employeeId)
+                                        ->where(function ($query) use ($today) {
+                                            $query->whereNull('end_date')
+                                                ->orWhereDate('end_date', '>=', $today);
+                                        })
+                                        ->get();
+
+                                    return $records->mapWithKeys(fn($record) => [
+                                        $record->id => $record->project->name . ' - ' .
+                                            $record->zone->name . ' - ' .
+                                            $record->shift->name
+                                    ])->toArray();
+                                })
+                                // ->required(fn($get) => $get('type') === 'exclusion')
+                                ->visible(fn($get) => $get('type') === 'exclusion')
+                                ->columnSpanFull()
+                                ->searchable(),
 
 
                             // Forms\Components\Textarea::make('exclusion_reason')

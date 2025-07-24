@@ -30,7 +30,9 @@ class EditRequest extends EditRecord
         if ($this->record->type === 'leave' && $this->record->leave) {
             $data['start_date'] = $this->record->leave->start_date;
             $data['end_date'] = $this->record->leave->end_date;
-            $data['leave_type'] = $this->record->leave->type;
+            $data['leave']['leave_type_id'] = $this->record->leave?->leave_type_id;
+            $data['leave']['employee_project_record_id'] = $this->record->leave?->employee_project_record_id;
+
             $data['reason'] = $this->record->leave->reason;
         }
 
@@ -74,7 +76,9 @@ class EditRequest extends EditRecord
                     $this->record->leave->update([
                         'start_date' => $data['start_date'],
                         'end_date' => $data['end_date'],
-                        'type' => $data['leave_type'],
+                        'leave_type_id' => $data['leave']['leave_type_id'] ?? null,
+                        'employee_project_record_id' => $data['leave']['employee_project_record_id'] ?? null,
+
                         'reason' => $data['reason'],
                     ]);
                 }
