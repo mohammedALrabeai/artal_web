@@ -194,12 +194,14 @@ class Request extends Model
                             ?? $this->employee->currentProjectRecord();
 
                     try {
-                       
+                       if($record) {
+                            // إزالة الموظف من جروب واتساب
                         \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
+                       }
                     } catch (\Throwable $e) {
                         \Log::warning('فشل إزالة الموظف من جروب واتساب عند الموافقة على طلب استبعاد', [
                             'employee_id' => $this->employee->id,
-                            'project_id' => $record->project_id,
+                            // 'project_id' => $record->project_id,
                             'exception' => $e->getMessage(),
                         ]);
                     }
@@ -208,12 +210,14 @@ class Request extends Model
                     $this->employee->currentProjectRecord()->update(['status' => false, 'end_date' => now()]);
                      $record =  $this->employee->currentProjectRecord();
                     try {
-                        
-                        \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
+                        if($record) {
+                            \App\Services\WhatsApp\WhatsappGroupManager::removeEmployee($record);
+                        }
+                       
                     } catch (\Throwable $e) {
                         \Log::warning('فشل إزالة الموظف من جروب واتساب عند الموافقة على طلب استبعاد', [
                             'employee_id' => $this->employee->id,
-                            'project_id' => $record->project_id,
+                            // 'project_id' => $record->project_id,
                             'exception' => $e->getMessage(),
                         ]);
                     }
