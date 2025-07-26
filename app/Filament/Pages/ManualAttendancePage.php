@@ -19,7 +19,7 @@ class ManualAttendancePage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-    protected static ?string $title = 'دفتر الحضور اليدوي (سريع)';
+    protected static ?string $title = 'دفتر الحضور اليدوي';
     protected static string $view = 'filament.pages.manual-attendance-page';
 
     // هذه الخصائص ستبقى لتخزين قيم الفلاتر
