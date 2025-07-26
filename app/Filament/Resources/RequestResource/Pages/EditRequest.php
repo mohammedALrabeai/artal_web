@@ -19,11 +19,11 @@ class EditRequest extends EditRecord
         ];
     }
     protected function beforeFill(): void
-{
-    if (in_array($this->record->status, ['approved', 'rejected'])) {
-        abort(403, __('Cannot edit an approved or rejected request.'));
+    {
+        if (in_array($this->record->status, ['approved', 'rejected'])) {
+            abort(403, __('Cannot edit an approved or rejected request.'));
+        }
     }
-}
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
@@ -42,7 +42,6 @@ class EditRequest extends EditRecord
             $data['exclusion_date'] = $this->record->exclusion->exclusion_date;
             $data['description'] = $this->record->exclusion->reason;
             $data['employee_project_record_id'] = $this->record->exclusion->employee_project_record_id;
-
         }
 
         return $data;
@@ -81,7 +80,17 @@ class EditRequest extends EditRecord
 
                         'reason' => $data['reason'],
                     ]);
+                    $this->record->leave->substitutes()->delete(); // حذف القدامى
+
+                    foreach ($data['leave_substitutes'] as $subData) {
+                        $this->record->leave->substitutes()->create([
+                            'substitute_employee_id' => $subData['substitute_employee_id'],
+                            'start_date' => $subData['start_date'],
+                            'end_date' => $subData['end_date'],
+                        ]);
+                    }
                 }
+
                 break;
 
             case 'exclusion':

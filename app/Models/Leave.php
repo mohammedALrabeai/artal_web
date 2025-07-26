@@ -23,6 +23,12 @@ class Leave extends Model
         return $this->belongsTo(Employee::class);
     }
 
+    public function substitutes()
+{
+    return $this->hasMany(LeaveSubstitute::class);
+}
+
+
     public function employeeProjectRecord()
 {
     return $this->belongsTo(EmployeeProjectRecord::class, 'employee_project_record_id');

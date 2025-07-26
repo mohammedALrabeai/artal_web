@@ -112,6 +112,17 @@ class CreateRequest extends CreateRecord
                     'employee_project_record_id' => $data['leave']['employee_project_record_id'] ?? null,
                 ]);
 
+                if (isset($data['leave_substitutes'])) {
+                    foreach ($data['leave_substitutes'] as $subData) {
+                        $leave->substitutes()->create([
+                            'substitute_employee_id' => $subData['substitute_employee_id'],
+                            'start_date' => $subData['start_date'],
+                            'end_date' => $subData['end_date'],
+                        ]);
+                    }
+                }
+
+
 
                 $data['leave_id'] = $leave->id;
 

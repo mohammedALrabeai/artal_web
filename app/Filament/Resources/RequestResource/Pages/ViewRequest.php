@@ -20,12 +20,12 @@ class ViewRequest extends ViewRecord
         return [
             Actions\Action::make('employee')
                 ->label(__('View Employee'))
-                 // ->icon('')
-                ->url(fn ($record) => EmployeeResource::getUrl('view', ['record' => $record->employee]))
+                // ->icon('')
+                ->url(fn($record) => EmployeeResource::getUrl('view', ['record' => $record->employee]))
                 ->openUrlInNewTab(true),
 
             Actions\EditAction::make()
-                ->hidden(fn ($record) => in_array($record->status, ['approved', 'rejected'])),
+                ->hidden(fn($record) => in_array($record->status, ['approved', 'rejected'])),
         ];
     }
 
@@ -40,14 +40,14 @@ class ViewRequest extends ViewRecord
                         TextEntry::make('submittedBy.name')->label(__('Submitted By')),
                         TextEntry::make('employee_details')
                             ->label(__('Employee'))
-                            ->state(fn ($record) => $record->employee
+                            ->state(fn($record) => $record->employee
                                 ? "{$record->employee->first_name} {$record->employee->father_name} {$record->employee->family_name} (ID: {$record->employee->id}, National ID: {$record->employee->national_id})"
                                 : __('No Employee'))
                             ->default('-'),
 
                         TextEntry::make('status')->label(__('Status'))
                             ->badge()
-                            ->color(fn ($state) => match ($state) {
+                            ->color(fn($state) => match ($state) {
                                 'pending' => 'warning',
                                 'approved' => 'success',
                                 'rejected' => 'danger',
@@ -69,7 +69,7 @@ class ViewRequest extends ViewRecord
                                 if (json_last_error() === JSON_ERROR_NONE) {
                                     // ✅ إذا كانت البيانات JSON، قم بعرضها بتنسيق مناسب
                                     return collect($decoded)
-                                        ->map(fn ($value, $key) => ucfirst(str_replace('_', ' ', $key)).': '.(is_array($value) ? json_encode($value) : $value))
+                                        ->map(fn($value, $key) => ucfirst(str_replace('_', ' ', $key)) . ': ' . (is_array($value) ? json_encode($value) : $value))
                                         ->join(' | ');
                                 }
 
@@ -86,17 +86,40 @@ class ViewRequest extends ViewRecord
                     ->schema([
                         // 🔹 **تفاصيل الإجازة**
                         Section::make(__('Leave Details'))
-                            ->visible(fn ($record) => $record->type === 'leave' && $record->leave)
+                            ->visible(fn($record) => $record->type === 'leave' && $record->leave)
                             ->schema([
                                 TextEntry::make('leave.start_date')->label(__('Start Date')),
                                 TextEntry::make('leave.end_date')->label(__('End Date')),
-                                TextEntry::make('leave.type')->label(__('Leave Type')),
+                                TextEntry::make('leave.leaveType.name')->label(__('Leave Type')),
                                 TextEntry::make('leave.reason')->label(__('Reason')),
+                                TextEntry::make('leave.employeeProjectRecord')->label(__('Assignment'))
+                                    ->state(function ($record) {
+                                        $assignment = $record->leave?->employeeProjectRecord;
+                                        return $assignment
+                                            ? optional($assignment->project)->name . ' - ' . optional($assignment->zone)->name . ' - ' . optional($assignment->shift)->name
+                                            : '-';
+                                    }),
+                                TextEntry::make('leave.substitutes')->label(__('Substitutes'))
+                                    ->state(function ($record) {
+                                        return $record->leave?->substitutes?->map(function ($sub) {
+                                            $employee = optional($sub->substitute);
+                                            $fullName = "{$employee->first_name} {$employee->father_name} {$employee->grandfather_name} {$employee->family_name}";
+                                            $nationalId = $employee->national_id ?? '؟';
+                                            $id = $employee->id ?? '؟';
+                                            $from = \Carbon\Carbon::parse($sub->start_date)->format('Y-m-d');
+                                            $to = \Carbon\Carbon::parse($sub->end_date)->format('Y-m-d');
+
+                                            return "{$fullName} - {$nationalId} (ID: {$id}) ({$from} → {$to})";
+                                        })->implode(' • ') ?? '-';
+                                    })
+                                    ->default('-')
+                                    ->html(),
+
                             ]),
 
                         // 🔹 **تفاصيل الاستبعاد**
                         Section::make(__('Exclusion Details'))
-                            ->visible(fn ($record) => $record->type === 'exclusion' && $record->exclusion)
+                            ->visible(fn($record) => $record->type === 'exclusion' && $record->exclusion)
                             ->schema([
                                 TextEntry::make('exclusion.type')->label(__('Type')),
                                 TextEntry::make('exclusion.reason')->label(__('Exclusion Reason')),
@@ -109,17 +132,19 @@ class ViewRequest extends ViewRecord
                             ->schema([
                                 TextEntry::make('coverage.employee.full_name')
                                     ->label(__('Covering Employee'))
-                                    ->state(fn ($record) => $record->coverage?->employee
-                                        ? "{$record->coverage->employee->first_name} {$record->coverage->employee->father_name} {$record->coverage->employee->family_name} - {$record->coverage->employee->national_id} (ID: {$record->coverage->employee->id})"
-                                        : '-'
+                                    ->state(
+                                        fn($record) => $record->coverage?->employee
+                                            ? "{$record->coverage->employee->first_name} {$record->coverage->employee->father_name} {$record->coverage->employee->family_name} - {$record->coverage->employee->national_id} (ID: {$record->coverage->employee->id})"
+                                            : '-'
                                     )
                                     ->default('-'),
 
                                 TextEntry::make('coverage.absentEmployee.full_name')
                                     ->label(__('Absent Employee'))
-                                    ->state(fn ($record) => $record->coverage?->absentEmployee
-                                        ? "{$record->coverage->absentEmployee->first_name} {$record->coverage->absentEmployee->father_name} {$record->coverage->absentEmployee->family_name} - {$record->coverage->absentEmployee->national_id} (ID: {$record->coverage->absentEmployee->id})"
-                                        : '-'
+                                    ->state(
+                                        fn($record) => $record->coverage?->absentEmployee
+                                            ? "{$record->coverage->absentEmployee->first_name} {$record->coverage->absentEmployee->father_name} {$record->coverage->absentEmployee->family_name} - {$record->coverage->absentEmployee->national_id} (ID: {$record->coverage->absentEmployee->id})"
+                                            : '-'
                                     )
                                     ->default('-'),
                                 TextEntry::make('coverage.date')->label(__('Coverage Date'))->date()->default('-'),
@@ -138,16 +163,16 @@ class ViewRequest extends ViewRecord
                                     ->default('-'),
 
                             ])
-                            ->visible(fn ($record) => $record->coverage_id !== null),
+                            ->visible(fn($record) => $record->coverage_id !== null),
                     ]),
 
                 // ✅ **القسم الثالث: المرفقات باستخدام `Spatie Media Library`**
-                Section::make(fn ($record) => sprintf('%s (%d)', __('Attachments'), $record->attachments->count()))
+                Section::make(fn($record) => sprintf('%s (%d)', __('Attachments'), $record->attachments->count()))
                     ->schema([
                         Group::make()
-                            ->state(fn ($record) => $record->attachments) // ✅ جلب المرفقات المرتبطة بالطلب
+                            ->state(fn($record) => $record->attachments) // ✅ جلب المرفقات المرتبطة بالطلب
                             ->columns(2)
-                            ->schema(fn ($state) => collect($state)->map(function ($attachment) {
+                            ->schema(fn($state) => collect($state)->map(function ($attachment) {
                                 $file = $attachment->getFirstMedia('attachments');
 
                                 return Section::make($attachment->title)
@@ -159,7 +184,7 @@ class ViewRequest extends ViewRecord
                                         TextEntry::make('preview')
                                             ->label(__('Preview'))
                                             ->html()
-                                            ->state(fn () => $file ? match ($file->mime_type) {
+                                            ->state(fn() => $file ? match ($file->mime_type) {
                                                 'image/png', 'image/jpeg', 'image/gif' => "<a href='{$file->getTemporaryUrl(now()->addMinutes(30))}' target='_blank'>
                                     <img src='{$file->getTemporaryUrl(now()->addMinutes(30))}' width='80' class='rounded shadow' />
                                 </a>",
@@ -167,12 +192,12 @@ class ViewRequest extends ViewRecord
                                   <source src='{$file->getTemporaryUrl(now()->addMinutes(30))}' type='video/mp4'>
                                </video>",
                                                 'application/pdf' => "<a href='{$file->getTemporaryUrl(now()->addMinutes(30))}' target='_blank' class='font-bold text-primary'>
-                                 📄 ".__('View PDF').'
+                                 📄 " . __('View PDF') . '
                               </a>',
                                                 default => "<a href='{$file->getTemporaryUrl(now()->addMinutes(30))}' target='_blank' class='font-bold text-primary'>
-                                📂 ".__('Download File').'
+                                📂 " . __('Download File') . '
                             </a>',
-                                            } : '<span class="text-gray-500">'.__('No File Available').'</span>'),
+                                            } : '<span class="text-gray-500">' . __('No File Available') . '</span>'),
 
                                         TextEntry::make('expiry_date')
                                             ->label(__('Expiry Date'))
@@ -184,7 +209,7 @@ class ViewRequest extends ViewRecord
                                     ]);
                             })->toArray()),
                     ])
-                    ->visible(fn ($record) => $record->attachments->isNotEmpty()) // ✅ إخفاء القسم إذا لم يكن هناك مرفقات
+                    ->visible(fn($record) => $record->attachments->isNotEmpty()) // ✅ إخفاء القسم إذا لم يكن هناك مرفقات
                 // ->badge(fn ($record) => count($record->attachments))
                 , // ✅ عرض عدد المرفقات كـ badge
 
@@ -192,9 +217,9 @@ class ViewRequest extends ViewRecord
                 Section::make(__('Approval History'))
                     ->schema([
                         Group::make()
-                            ->state(fn ($record) => $record->approvals) // ✅ جلب الموافقات يدويًا
+                            ->state(fn($record) => $record->approvals) // ✅ جلب الموافقات يدويًا
                             ->columns(2)
-                            ->schema(fn ($state) => collect($state)->map(function ($approval) {
+                            ->schema(fn($state) => collect($state)->map(function ($approval) {
                                 return Section::make($approval->approver->name)
                                     ->schema([
                                         TextEntry::make('approver_role')->label(__('Role'))->state($approval->approver_role),

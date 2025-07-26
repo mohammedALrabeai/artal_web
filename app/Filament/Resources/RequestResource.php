@@ -2,25 +2,26 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\RequestResource\Pages;
-use App\Filament\Resources\RequestResource\RelationManagers;
-use App\Forms\Components\EmployeeSelect;
-use App\Models\Attachment;
-use App\Models\Employee;
-use App\Models\Request;
-use App\Models\User;
-use App\Tables\Filters\EmployeeFilter;
-use Filament\Forms;
-use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
 use Carbon\Carbon;
-
+use Filament\Forms;
+use App\Models\User;
 use Filament\Tables;
-use Illuminate\Database\Eloquent\Builder;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
-
+use App\Models\Request;
+use App\Models\Employee;
+use App\Models\Attachment;
+use Filament\Resources\Resource;
 use App\Models\EmployeeProjectRecord;
+use App\Tables\Filters\EmployeeFilter;
+use App\Forms\Components\EmployeeSelect;
+use Filament\Notifications\Notification;
+
+use Illuminate\Database\Eloquent\Builder;
+use App\Forms\Components\EmployeeSelectV2;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use App\Filament\Resources\RequestResource\Pages;
+
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\RequestResource\RelationManagers;
 
 class RequestResource extends Resource
 {
@@ -191,6 +192,47 @@ class RequestResource extends Resource
                                 ->label(__('Reason'))
                                 ->nullable()
                                 ->visible(fn($get) => $get('type') === 'leave'),
+
+                            Forms\Components\Repeater::make('leave_substitutes') // أي اسم مؤقت غير مرتبط مباشرة
+                                ->label('الموظفون البدلاء أثناء الإجازة')
+                                ->schema([
+                                    // Forms\Components\Select::make('substitute_employee_id')
+                                    //     ->label('الموظف البديل')
+                                    //     ->searchable()
+                                    //     ->options(\App\Models\Employee::pluck('full_name', 'id')),
+                                    EmployeeSelectV2::make('substitute_employee_id')
+                                        ->label('الموظف البديل')
+                                        ->preload(),
+
+                                    Forms\Components\DatePicker::make('start_date')
+                                        ->label('من تاريخ')
+                                        ->required(),
+
+                                    Forms\Components\DatePicker::make('end_date')
+                                        ->label('إلى تاريخ')
+                                        ->required(),
+                                ])
+                                ->minItems(0)
+                                ->columnSpanFull()
+                                ->afterStateHydrated(function ($component, $state) {
+                                    // تحميل البدلاء من العلاقة اليدويًا
+                                    if (request()->routeIs('filament.admin.resources.requests.edit')) {
+                                        $leave = $component->getContainer()->getLivewire()->record->leave;
+                                        if ($leave) {
+                                            $component->state(
+                                                $leave->substitutes->map(fn($sub) => [
+                                                    'substitute_employee_id' => $sub->substitute_employee_id,
+                                                    'start_date' => $sub->start_date,
+                                                    'end_date' => $sub->end_date,
+                                                ])->toArray()
+                                            );
+                                        }
+                                    }
+                                })
+                                ->columns(3)
+                                ->afterStateUpdated(function ($state, $livewire) {
+                                    $livewire->data['leave_substitutes'] = $state;
+                                }),
                         ])->columns(2)
                         ->visible(fn($get) => $get('type') === 'leave'),
 
