@@ -11,6 +11,7 @@ class ManulAttendanceController extends Controller
 {
     public function getAttendanceData(Request $request)
     {
+
         $validated = $request->validate([
             'month' => 'required|date_format:Y-m-d',
             'offset' => 'required|integer|min:0',
@@ -25,42 +26,50 @@ class ManulAttendanceController extends Controller
             ->where('attendance_month', $month->toDateString());
 
         if (!empty($filters['projectId'])) {
-            $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('project_id', $filters['projectId']));
+            $baseQuery->whereHas('projectRecord', fn($q) => $q->where('project_id', $filters['projectId']));
         }
         if (!empty($filters['zoneId'])) {
-            $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('zone_id', $filters['zoneId']));
+            $baseQuery->whereHas('projectRecord', fn($q) => $q->where('zone_id', $filters['zoneId']));
         }
         if (!empty($filters['shiftId'])) {
-            $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('shift_id', $filters['shiftId']));
+            $baseQuery->whereHas('projectRecord', fn($q) => $q->where('shift_id', $filters['shiftId']));
         }
 
         $allEmployeeIds = $baseQuery->pluck('id')->toArray();
         $totalEmployees = count($allEmployeeIds);
-        $visibleEmployeeIds = array_slice($allEmployeeIds, $validated['offset'], $validated['limit']);
+        $visibleEmployeeIds = array_slice(
+            $allEmployeeIds,
+            (int) floor($validated['offset'] / 2),
+            (int) ceil($validated['limit'] / 2)
+        );
+
+
+
 
         if (empty($visibleEmployeeIds)) {
             return response()->json(['rows' => [], 'total' => $totalEmployees]);
         }
 
         $employees = ManualAttendanceEmployee::with([
-            'projectRecord.employee:id,first_name,family_name', // ✅ تأكد من أن هذا هو اسم العمود الصحيح
+            'projectRecord.employee:id,first_name,father_name,grandfather_name,family_name,national_id,english_name,basic_salary,living_allowance,other_allowances', // ✅ تأكد من أن هذا هو اسم العمود الصحيح
             'projectRecord.shift.zone.pattern',
-            'attendances' => fn ($q) => $q->whereBetween('date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
+            'attendances' => fn($q) => $q->whereBetween('date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
         ])
-        ->whereIn('id', $visibleEmployeeIds)
-        ->get();
+            ->whereIn('id', $visibleEmployeeIds)
+            ->get();
 
         $rows = $this->formatDataForGrid($employees, $month);
 
-        return response()->json(['rows' => $rows, 'total' => $totalEmployees]);
+        return response()->json(['rows' => $rows, 'total' => $totalEmployees * 2]);
     }
 
     private function formatDataForGrid($employees, Carbon $month)
     {
         $daysInMonth = $month->daysInMonth;
         $daysArray = range(1, $daysInMonth);
+        $rows = [];
 
-        return $employees->map(function ($employee) use ($daysArray, $month) {
+        foreach ($employees as $employee) {
             $attendanceByDate = $employee->attendances->keyBy('date');
             $record = $employee->projectRecord;
             $formattedAttendance = [];
@@ -69,7 +78,6 @@ class ManulAttendanceController extends Controller
                 $currentDateStr = $month->copy()->day($day)->toDateString();
                 $attendanceRecord = $attendanceByDate->get($currentDateStr);
 
-                // ✅ تطبيق نفس منطق الكود القديم
                 $isBefore = $record->start_date && $currentDateStr < $record->start_date;
                 $isAfter = $record->end_date && $currentDateStr > $record->end_date;
 
@@ -79,22 +87,62 @@ class ManulAttendanceController extends Controller
                     $workPattern = $this->getWorkPatternLabel($record, $currentDateStr);
                     $status = $attendanceRecord->status ?? $workPattern;
                 }
-                
+
                 $dayKey = str_pad($day, 2, '0', STR_PAD_LEFT);
                 $formattedAttendance[$dayKey] = $status;
             }
 
-            return [
+            // الأسماء
+            $arabicName = $employee->projectRecord->employee->first_name . ' ' .
+                $employee->projectRecord->employee->father_name . ' ' .
+                $employee->projectRecord->employee->grandfather_name . ' ' .
+                $employee->projectRecord->employee->family_name;
+
+            $englishName = $employee->projectRecord->employee->english_name;
+
+            // معلومات المشروع والموقع
+            $projectName = $employee->projectRecord->project->name ?? '';
+            $zoneName = $employee->projectRecord->zone->name ?? '';
+
+            // الراتب (يمكنك تعديله حسب مصدرك)
+          $salary = ($employee->projectRecord->employee->basic_salary ?? 0)
+        + ($employee->projectRecord->employee->living_allowance ?? 0)
+        + ($employee->projectRecord->employee->other_allowances ?? 0);
+            // ✅ الصف الأول: العربي
+            $rows[] = [
                 'id' => $employee->id,
-                'name' => $employee->projectRecord->employee->first_name . ' ' . $employee->projectRecord->employee->family_name, // ✅ تأكد من اسم العمود
+                'name' => $arabicName,
+                'national_id' => $employee->projectRecord->employee->national_id ?? '',
                 'attendance' => $formattedAttendance,
                 'stats' => [
                     'present' => $employee->attendances->where('status', 'present')->count(),
                     'absent' => $employee->attendances->where('status', 'absent')->count(),
-                ]
+                ],
+                'project_utilized' => $projectName ,
+                'salary' => $salary,
+                'is_english' => false,
             ];
-        })->values();
+
+            // ✅ الصف الثاني: الإنجليزي
+            $rows[] = [
+                'id' => "{$employee->id}-en",
+                'name' => $englishName,
+                'national_id' => '',
+                'attendance' => [],
+                'stats' => [
+                    'present' => '',
+                    'absent' => '',
+                ],
+                'project_utilized' => $zoneName,
+                'salary' => '',
+                'is_english' => true,
+            ];
+        }
+
+        return collect($rows)->values();
     }
+
+
 
     /**
      * ✅ تم نسخ هذه الدالة مباشرة من الكود القديم.
