@@ -131,12 +131,15 @@ class RequestResource extends Resource
                             Forms\Components\DatePicker::make('start_date')
                                 ->label(__('Start Date'))
                                 ->required()
+                                ->minDate(now()->startOfDay())
                                 ->reactive()
                                 ->visible(fn($get) => $get('type') === 'leave'),
 
                             // تاريخ النهاية
                             Forms\Components\DatePicker::make('end_date')
                                 ->label(__('End Date'))
+                                ->minDate(fn(callable $get) => $get('start_date') ?? now()->startOfDay())
+
                                 ->required()
                                 ->reactive()
                                 ->visible(fn($get) => $get('type') === 'leave'),
