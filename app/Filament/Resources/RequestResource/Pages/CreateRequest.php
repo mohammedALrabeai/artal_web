@@ -127,11 +127,11 @@ class CreateRequest extends CreateRecord
                 $data['leave_id'] = $leave->id;
 
                 // تحديث الرصيد في جدول leave_balances عند إنشاء الطلب
-                $leaveBalance->update([
-                    'balance' => $leaveBalance->balance - $data['duration'],
-                    'used_balance' => $leaveBalance->used_balance + $data['duration'],
-                    'last_updated' => now(),
-                ]);
+                // $leaveBalance->update([
+                //     'balance' => $leaveBalance->balance - $data['duration'],
+                //     'used_balance' => $leaveBalance->used_balance + $data['duration'],
+                //     'last_updated' => now(),
+                // ]);
 
                 $leaveTypeName = \App\Models\LeaveType::find($data['leave']['leave_type_id'])?->name;
                 $employeeName = $employee->first_name . ' ' . $employee->family_name;
