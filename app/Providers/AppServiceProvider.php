@@ -37,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        //      FilamentAsset::register([
+        //     // هذا يخبر Filament بتجاهل أي أصل JS يحمل المعرف 'filament-echo'
+        //     Js::make('filament-echo', '')->core(),
+        // ], 'filament/filament');
          Filament::serving(function () {
         Filament::registerRenderHook(
             'panels::head.end',

@@ -6,31 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\ManualAttendanceEmployee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class ManulAttendanceController extends Controller
 {
-    /**
-     * نقطة النهاية الرئيسية لجلب بيانات الحضور بشكل مجزأ وفعال.
-     */
     public function getAttendanceData(Request $request)
     {
-        // 1. التحقق من المدخلات الأساسية (الشهر)
         $validated = $request->validate([
             'month' => 'required|date_format:Y-m-d',
             'offset' => 'required|integer|min:0',
-            'limit' => 'required|integer|min:1|max:100', // حد أقصى 100 صف في كل طلب
+            'limit' => 'required|integer|min:1|max:100',
             'filters' => 'nullable|array'
         ]);
 
         $month = Carbon::parse($validated['month'])->startOfMonth();
         $filters = $validated['filters'] ?? [];
 
-        // 2. بناء الاستعلام الأساسي لجلب IDs الموظفين فقط (سريع جدًا)
         $baseQuery = ManualAttendanceEmployee::query()
             ->where('attendance_month', $month->toDateString());
 
-        // تطبيق الفلاتر (المشروع، الموقع، الوردية)
         if (!empty($filters['projectId'])) {
             $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('project_id', $filters['projectId']));
         }
@@ -38,72 +31,108 @@ class ManulAttendanceController extends Controller
             $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('zone_id', $filters['zoneId']));
         }
         if (!empty($filters['shiftId'])) {
-            $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('shift_id', '>=', $filters['shiftId']));
+            $baseQuery->whereHas('projectRecord', fn ($q) => $q->where('shift_id', $filters['shiftId']));
         }
 
-        // 3. جلب كل IDs الموظفين المطابقين وحساب العدد الإجمالي
-        // نستخدم DB::table للحصول على أداء أفضل في جلب الـ IDs فقط
         $allEmployeeIds = $baseQuery->pluck('id')->toArray();
         $totalEmployees = count($allEmployeeIds);
-
-        // 4. تحديد "النافذة" المطلوبة من الـ IDs
         $visibleEmployeeIds = array_slice($allEmployeeIds, $validated['offset'], $validated['limit']);
 
-        // إذا لم تكن هناك IDs في النافذة، أرجع استجابة فارغة
         if (empty($visibleEmployeeIds)) {
-            return response()->json([
-                'rows' => [],
-                'total' => $totalEmployees,
-            ]);
+            return response()->json(['rows' => [], 'total' => $totalEmployees]);
         }
 
-        // 5. الآن فقط، جلب البيانات الكاملة للنافذة المحددة بكفاءة
         $employees = ManualAttendanceEmployee::with([
-            'projectRecord.employee:id,name', // جلب الأعمدة المطلوبة فقط
-            'attendances' => fn ($q) => $q->whereBetween('date', [
-                $month->copy()->startOfMonth()->toDateString(),
-                $month->copy()->endOfMonth()->toDateString()
-            ])
+            'projectRecord.employee:id,first_name,family_name', // ✅ تأكد من أن هذا هو اسم العمود الصحيح
+            'projectRecord.shift.zone.pattern',
+            'attendances' => fn ($q) => $q->whereBetween('date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
         ])
         ->whereIn('id', $visibleEmployeeIds)
         ->get();
 
-        // 6. معالجة البيانات وتحويلها إلى صيغة بسيطة جاهزة للعرض
-        $rows = $this->formatDataForGrid($employees);
+        $rows = $this->formatDataForGrid($employees, $month);
 
-        // 7. إرجاع البيانات النهائية
-        return response()->json([
-            'rows' => $rows,
-            'total' => $totalEmployees,
-        ]);
+        return response()->json(['rows' => $rows, 'total' => $totalEmployees]);
     }
 
-    /**
-     * دالة مساعدة لتحويل بيانات الموظفين إلى صيغة مناسبة للجدول.
-     */
-    private function formatDataForGrid($employees)
+    private function formatDataForGrid($employees, Carbon $month)
     {
-        return $employees->map(function ($employee) {
-            // تحويل مجموعة الحضور إلى مصفوفة (key-value) للوصول السريع في الواجهة الأمامية
-            // المفتاح هو اليوم (e.g., '01', '02') والقيمة هي الحالة
-            $attendanceMap = $employee->attendances->keyBy(function ($att) {
-                return Carbon::parse($att->date)->format('d');
-            })->map->status;
+        $daysInMonth = $month->daysInMonth;
+        $daysArray = range(1, $daysInMonth);
 
-            // حساب الإحصائيات
-            $presentCount = $employee->attendances->where('status', 'present')->count();
-            $absentCount = $employee->attendances->where('status', 'absent')->count();
+        return $employees->map(function ($employee) use ($daysArray, $month) {
+            $attendanceByDate = $employee->attendances->keyBy('date');
+            $record = $employee->projectRecord;
+            $formattedAttendance = [];
+
+            foreach ($daysArray as $day) {
+                $currentDateStr = $month->copy()->day($day)->toDateString();
+                $attendanceRecord = $attendanceByDate->get($currentDateStr);
+
+                // ✅ تطبيق نفس منطق الكود القديم
+                $isBefore = $record->start_date && $currentDateStr < $record->start_date;
+                $isAfter = $record->end_date && $currentDateStr > $record->end_date;
+
+                if ($isBefore || $isAfter) {
+                    $status = $isBefore ? 'BEFORE' : 'AFTER';
+                } else {
+                    $workPattern = $this->getWorkPatternLabel($record, $currentDateStr);
+                    $status = $attendanceRecord->status ?? $workPattern;
+                }
+                
+                $dayKey = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $formattedAttendance[$dayKey] = $status;
+            }
 
             return [
                 'id' => $employee->id,
-                'name' => $employee->projectRecord->employee->name,
-                'attendance' => $attendanceMap,
+                'name' => $employee->projectRecord->employee->first_name . ' ' . $employee->projectRecord->employee->family_name, // ✅ تأكد من اسم العمود
+                'attendance' => $formattedAttendance,
                 'stats' => [
-                    'present' => $presentCount,
-                    'absent' => $absentCount,
-                    // أضف أي إحصائيات أخرى هنا
+                    'present' => $employee->attendances->where('status', 'present')->count(),
+                    'absent' => $employee->attendances->where('status', 'absent')->count(),
                 ]
             ];
-        })->values(); // .values() لإعادة الفهرسة
+        })->values();
+    }
+
+    /**
+     * ✅ تم نسخ هذه الدالة مباشرة من الكود القديم.
+     * تحسب نمط العمل (M, N, OFF) ليوم محدد.
+     */
+    public function getWorkPatternLabel($record, $date): string
+    {
+        if (!$record->shift || !$record->shift->zone || !$record->shift->zone->pattern) {
+            return '❌';
+        }
+
+        $pattern = $record->shift->zone->pattern;
+        $workingDays = (int) $pattern->working_days;
+        $offDays = (int) $pattern->off_days;
+        $cycleLength = $workingDays + $offDays;
+
+        if ($cycleLength === 0) return 'ERR'; // تجنب القسمة على صفر
+
+        $startDate = Carbon::parse($record->shift->start_date);
+        $targetDate = Carbon::parse($date);
+        $totalDays = $startDate->diffInDays($targetDate);
+        $currentDayInCycle = $totalDays % $cycleLength;
+        $cycleNumber = (int) floor($totalDays / $cycleLength) + 1;
+
+        $isWorkDay = $currentDayInCycle < $workingDays;
+
+        if (!$isWorkDay) {
+            return 'OFF';
+        }
+
+        $type = $record->shift->type;
+
+        return match ($type) {
+            'morning' => 'M',
+            'evening' => 'N',
+            'morning_evening' => ($cycleNumber % 2 == 1 ? 'M' : 'N'),
+            'evening_morning' => ($cycleNumber % 2 == 1 ? 'N' : 'M'),
+            default => 'M',
+        };
     }
 }

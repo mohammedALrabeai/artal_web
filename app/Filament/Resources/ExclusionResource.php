@@ -103,7 +103,8 @@ class ExclusionResource extends Resource
                                 ->orWhere('father_name', 'like', "%{$search}%")
                                 ->orWhere('grandfather_name', 'like', "%{$search}%")
                                 ->orWhere('family_name', 'like', "%{$search}%")
-                                ->orWhere('national_id', 'like', "%{$search}%");
+                                // ->orWhere('national_id', 'like', "%{$search}%")
+                                ;
                         });
                     }),
                 Tables\Columns\TextColumn::make('employee.national_id')
