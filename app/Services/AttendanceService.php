@@ -22,7 +22,9 @@ class AttendanceService
 
         try {
             $activeEmployees = EmployeeProjectRecord::where('status', true)->whereNotNull('shift_id')
-                ->whereHas('shift', fn ($q) => $q->where('exclude_from_auto_absence', false)
+                ->whereHas(
+                    'shift',
+                    fn($q) => $q->where('exclude_from_auto_absence', false)
                 )
                 ->with(['shift.zone.pattern'])->get();
             Log::info('Active employees retrieved', ['count' => $activeEmployees->count()]);
@@ -82,7 +84,6 @@ class AttendanceService
             }
 
             Log::info('processAttendance completed successfully');
-
         } catch (\Exception $e) {
             Log::error('Error in processAttendance', ['message' => $e->getMessage()]);
         }
@@ -118,14 +119,23 @@ class AttendanceService
      */
     private function markAttendance(EmployeeProjectRecord $record, $status): bool
     {
-        $existingAttendance = Attendance::where('employee_id', $record->employee_id)
-            ->whereDate('date', Carbon::today('Asia/Riyadh'))
-            ->where('status', $status)
+        $today = Carbon::today('Asia/Riyadh');
+
+        // رموز الإجازات من قاعدة البيانات
+        $leaveCodes = \App\Models\LeaveType::pluck('code')->toArray();
+
+        // الحالات التي نمنع معها التسجيل (تحضير فعلي أو إجازة أو نفس الحالة المُرسلة)
+        $excludedStatuses = array_merge(['present'], $leaveCodes, [$status]);
+
+        $alreadyMarked = Attendance::where('employee_id', $record->employee_id)
+            ->whereDate('date', $today)
+            ->whereIn('status', $excludedStatuses)
             ->exists();
 
-        if ($existingAttendance) {
-            return false; // لم يتم تسجيل شيء جديد
+        if ($alreadyMarked) {
+            return false; // تم تحضيره أو تسجيـل الحالة مسبقًا
         }
+
 
         if ($status === 'absent') {
             $record->employee->update(['out_of_zone' => false]);
