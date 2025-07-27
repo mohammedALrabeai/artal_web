@@ -41,6 +41,21 @@ class EmployeeProjectRecord extends Model
             }
         });
 
+        static::created(function (self $record) {
+        $month = Carbon::now('Asia/Riyadh')->startOfMonth()->toDateString();
+
+        $alreadyExists = ManualAttendanceEmployee::where('employee_project_record_id', $record->id)
+            ->where('attendance_month', $month)
+            ->exists();
+
+        if (! $alreadyExists) {
+            ManualAttendanceEmployee::create([
+                'employee_project_record_id' => $record->id,
+                'attendance_month' => $month,
+            ]);
+        }
+    });
+
            // عند التحديث: إذا تغيّر status من true إلى false → نحدّث end_date
     // static::saving(function (self $record) {
     //     if (
