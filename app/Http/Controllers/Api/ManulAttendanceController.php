@@ -11,7 +11,6 @@ class ManulAttendanceController extends Controller
 {
     public function getAttendanceData(Request $request)
     {
-
         $validated = $request->validate([
             'month' => 'required|date_format:Y-m-d',
             'offset' => 'required|integer|min:0',
@@ -22,6 +21,7 @@ class ManulAttendanceController extends Controller
         $month = Carbon::parse($validated['month'])->startOfMonth();
         $filters = $validated['filters'] ?? [];
 
+        // الأساس
         $baseQuery = ManualAttendanceEmployee::query()
             ->where('attendance_month', $month->toDateString());
 
@@ -35,32 +35,38 @@ class ManulAttendanceController extends Controller
             $baseQuery->whereHas('projectRecord', fn($q) => $q->where('shift_id', $filters['shiftId']));
         }
 
-        $allEmployeeIds = $baseQuery->pluck('id')->toArray();
-        $totalEmployees = count($allEmployeeIds);
-        $visibleEmployeeIds = array_slice(
-            $allEmployeeIds,
-            (int) floor($validated['offset'] / 2),
-            (int) ceil($validated['limit'] / 2)
-        );
+        // إجمالي عدد الموظفين (بدون صفين)
+        $totalEmployees = (clone $baseQuery)->count();
 
+        // تحميل فقط الموظفين المطلوبين
+        $visibleEmployees = (clone $baseQuery)
+            ->skip((int) floor($validated['offset'] / 2))
+            ->take((int) ceil($validated['limit'] / 2))
+            ->get();
 
-
-
-        if (empty($visibleEmployeeIds)) {
-            return response()->json(['rows' => [], 'total' => $totalEmployees]);
-        }
-
+        // استخراج البيانات بالكامل مرة واحدة
         $employees = ManualAttendanceEmployee::with([
-            'projectRecord.employee:id,first_name,father_name,grandfather_name,family_name,national_id,english_name,basic_salary,living_allowance,other_allowances', // ✅ تأكد من أن هذا هو اسم العمود الصحيح
-            'projectRecord.shift.zone.pattern',
-            'attendances' => fn($q) => $q->whereBetween('date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
+            'projectRecord' => fn($q) => $q->select('id', 'employee_id', 'project_id', 'zone_id', 'shift_id', 'start_date', 'end_date'),
+            'projectRecord.employee' => fn($q) => $q->select('id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'english_name', 'national_id', 'basic_salary', 'living_allowance', 'other_allowances'),
+            'projectRecord.project:id,name',
+            'projectRecord.zone:id,name',
+            'projectRecord.shift:id,type,start_date,zone_id',
+            'projectRecord.shift.zone:id,pattern_id',
+            'projectRecord.shift.zone.pattern:id,working_days,off_days',
+            'attendances' => fn($q) => $q->whereRaw('DATE(`date`) BETWEEN ? AND ?', [
+                $month->copy()->startOfMonth()->toDateString(),
+                $month->copy()->endOfMonth()->toDateString(),
+            ])
         ])
-            ->whereIn('id', $visibleEmployeeIds)
+            ->whereIn('id', $visibleEmployees->pluck('id'))
             ->get();
 
         $rows = $this->formatDataForGrid($employees, $month);
 
-        return response()->json(['rows' => $rows, 'total' => $totalEmployees * 2]);
+        return response()->json([
+            'rows' => $rows,
+            'total' => $totalEmployees * 2
+        ]);
     }
 
     private function formatDataForGrid($employees, Carbon $month)
