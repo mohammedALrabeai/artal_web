@@ -6,187 +6,224 @@ use App\Http\Controllers\Controller;
 use App\Models\ManualAttendanceEmployee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ManulAttendanceController extends Controller
 {
 
-      public function getAttendanceData(Request $request)
-{
-    $validated = $request->validate([
-        'month' => 'required|date_format:Y-m-d',
-        'offset' => 'required|integer|min:0',
-        'limit' => 'required|integer|min:1|max:100',
-        'filters' => 'nullable|array'
-    ]);
+    public function getAttendanceData(Request $request)
+    {
+        /** 1️⃣ التحقق من البيانات الواردة */
+        $validated = $request->validate([
+            'month'   => 'required|date_format:Y-m-d',
+            'offset'  => 'required|integer|min:0',
+            'limit'   => 'required|integer|min:1|max:100',
+            'filters' => 'nullable|array',
+        ]);
 
-    $month = Carbon::parse($validated['month'])->startOfMonth();
-    $filters = $validated['filters'] ?? [];
+        $month   = Carbon::parse($validated['month'])->startOfMonth();
+        $filters = $validated['filters'] ?? [];
 
-    // الانضمام لتفعيل الفلترة والترتيب
-    $baseQuery = ManualAttendanceEmployee::query()
-        ->join('employee_project_records as epr', 'manual_attendance_employees.employee_project_record_id', '=', 'epr.id')
-        ->where('attendance_month', $month->toDateString());
+        /** 2️⃣ بناء الاستعلام الأساسى مع الانضمام لترتيب/فلترة سريعة */
+        $baseQuery = ManualAttendanceEmployee::query()
+            ->join('employee_project_records as epr', 'manual_attendance_employees.employee_project_record_id', '=', 'epr.id')
+            ->where('manual_attendance_employees.attendance_month', $month->toDateString());
 
-    if (!empty($filters['projectId'])) {
-        $baseQuery->where('epr.project_id', $filters['projectId']);
-    }
-    if (!empty($filters['zoneId'])) {
-        $baseQuery->where('epr.zone_id', $filters['zoneId']);
-    }
-    if (!empty($filters['shiftId'])) {
-        $baseQuery->where('epr.shift_id', $filters['shiftId']);
-    }
+        if (!empty($filters['projectId'])) {
+            $baseQuery->where('epr.project_id', $filters['projectId']);
+        }
+        if (!empty($filters['zoneId'])) {
+            $baseQuery->where('epr.zone_id', $filters['zoneId']);
+        }
+        if (!empty($filters['shiftId'])) {
+            $baseQuery->where('epr.shift_id', $filters['shiftId']);
+        }
 
-    // عدد كل الموظفين (قبل التقسيم لصفين)
-    $totalEmployees = (clone $baseQuery)->count();
+        /** عدد الموظفين قبل تقسيم الصفين */
+        $totalEmployees = (clone $baseQuery)->count();
 
-    // جلب الموظفين المطلوبين فقط مع الترتيب حسب المشروع ثم الموقع
-    $visibleEmployees = (clone $baseQuery)
-        ->orderBy('epr.project_id')
-        ->orderBy('epr.zone_id')
-        ->select('manual_attendance_employees.*')
-        ->skip((int) floor($validated['offset'] / 2))
-        ->take((int) ceil($validated['limit'] / 2))
-        ->get();
+        /** 3️⃣ الموظفون المطلوبون لهذه الدفعة (25 صف ⇒ 12.5 موظف تقريباً) */
+        $visibleEmployees = (clone $baseQuery)
+            ->orderBy('epr.project_id')
+            ->orderBy('epr.zone_id')
+            ->select('manual_attendance_employees.*')
+            ->skip((int) floor($validated['offset'] / 2))
+            ->take((int) ceil($validated['limit'] / 2))
+            ->get();
 
-    // تحميل البيانات مع العلاقات وترتيبها
-    $employees = ManualAttendanceEmployee::with([
-        'projectRecord' => fn($q) => $q->select('id', 'employee_id', 'project_id', 'zone_id', 'shift_id', 'start_date', 'end_date'),
-        'projectRecord.employee' => fn($q) => $q->select('id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'english_name', 'national_id', 'basic_salary', 'living_allowance', 'other_allowances'),
-        'projectRecord.project:id,name',
-        'projectRecord.zone:id,name',
-        'projectRecord.shift:id,type,start_date,zone_id',
-        'projectRecord.shift.zone:id,pattern_id',
-        'projectRecord.shift.zone.pattern:id,working_days,off_days',
-        'attendances' => fn($q) => $q->whereRaw('DATE(`date`) BETWEEN ? AND ?', [
-            $month->copy()->startOfMonth()->toDateString(),
-            $month->copy()->endOfMonth()->toDateString(),
+        /** 4️⃣ تجميع عدد الحضور/الغياب فى SQL بدلاً من حلقات PHP */
+        $attendanceCounts = DB::table('manual_attendances')
+            ->selectRaw('manual_attendance_employee_id AS id, status, COUNT(*) AS c')
+            ->whereIn('manual_attendance_employee_id', $visibleEmployees->pluck('id'))
+            ->whereBetween('date', [
+                $month->copy()->startOfMonth()->toDateString(),
+                $month->copy()->endOfMonth()->toDateString(),
+            ])
+            ->whereIn('status', ['present', 'absent'])
+            ->groupBy('manual_attendance_employee_id', 'status')
+            ->get()
+            ->groupBy('id');      // => [ employeeId => Collection( {status,c}, … ) ]
+
+        /** 5️⃣ تحميل علاقات الموظفين وترتيبهم */
+        $employees = ManualAttendanceEmployee::with([
+            'projectRecord' => fn($q) => $q->select('id', 'employee_id', 'project_id', 'zone_id', 'shift_id', 'start_date', 'end_date'),
+            'projectRecord.employee' => fn($q) => $q->select('id', 'first_name', 'father_name', 'grandfather_name', 'family_name', 'english_name', 'national_id', 'basic_salary', 'living_allowance', 'other_allowances'),
+            'projectRecord.project:id,name',
+            'projectRecord.zone:id,name',
+            'projectRecord.shift:id,type,start_date,zone_id',
+            'projectRecord.shift.zone:id,pattern_id',
+            'projectRecord.shift.zone.pattern:id,working_days,off_days',
+            'attendances' => fn($q) => $q->whereRaw('DATE(`date`) BETWEEN ? AND ?', [
+                $month->copy()->startOfMonth()->toDateString(),
+                $month->copy()->endOfMonth()->toDateString(),
+            ]),
         ])
-    ])
-        ->whereIn('id', $visibleEmployees->pluck('id'))
-        ->get()
-        ->sortBy([
-            fn($emp) => $emp->projectRecord->project_id,
-            fn($emp) => $emp->projectRecord->zone_id,
-        ])
-        ->values();
+            ->whereIn('id', $visibleEmployees->pluck('id'))
+            ->get()
+            ->sortBy([
+                fn($emp) => $emp->projectRecord->project_id,
+                fn($emp) => $emp->projectRecord->zone_id,
+            ])
+            ->values();
 
-    // تجهيز البيانات النهائية
-    $rows = $this->formatDataForGrid($employees, $month);
+        /** 6️⃣ تجهيز الصفوف وتمرير تجميعة الإحصاءات */
+        $rows = $this->formatDataForGrid($employees, $month, $attendanceCounts);
 
-    return response()->json([
-        'rows' => $rows,
-        'total' => $totalEmployees * 2, // لأن كل موظف له سطرين
-    ]);
-}
+        /** 7️⃣ الإرجاع للواجهة */
+        return response()->json([
+            'rows'  => $rows,
+            'total' => $totalEmployees * 2,   // كل موظف = صفان
+        ]);
+    }
 
-   private function formatDataForGrid($employees, Carbon $month)
+
+  /**
+ * تبنى صفَّـين (عربى + إنجليزى) لكل موظف،
+ * مع الاعتماد على $counts لتعبئة present / absent بسرعة.
+ *
+ * @param \Illuminate\Support\Collection        $employees
+ * @param \Illuminate\Support\Carbon            $month
+ * @param \Illuminate\Support\Collection|null   $counts   // تجميعة SQL {id,status,c}
+ * @return \Illuminate\Support\Collection
+ */
+private function formatDataForGrid($employees, Carbon $month, $counts = null)
 {
     $daysInMonth   = $month->daysInMonth;
-    $firstMonthDay = $month->copy()->startOfMonth();   // Carbon واحد فقط
+    $firstMonthDay = $month->copy()->startOfMonth();
     $rows          = [];
 
     foreach ($employees as $employee) {
-        $record         = $employee->projectRecord;
-        $attKeyed       = $employee->attendances->keyBy('date');
-        $patternCache   = $this->buildPatternCache($record, $firstMonthDay, $daysInMonth);
+        $record          = $employee->projectRecord;
+        $attKeyed        = $employee->attendances->keyBy('date');
+        $patternCache    = $this->buildPatternCache($record, $firstMonthDay, $daysInMonth);
+        $formattedAttend = [];
 
-        $formatted = [];
+        /* ▸◂  الحلقــة اليومية السريعة  ▸◂ */
         for ($d = 1; $d <= $daysInMonth; $d++) {
-            $key  = str_pad($d, 2, '0', STR_PAD_LEFT);
-            $date = $firstMonthDay->copy()->day($d)->toDateString();   // Carbon .clone رخيص
-            $att  = $attKeyed[$date] ?? null;
+            $dayKey   = str_pad($d, 2, '0', STR_PAD_LEFT);
+            $dateStr  = $firstMonthDay->copy()->day($d)->toDateString();
+            $attRec   = $attKeyed[$dateStr] ?? null;
 
-            $status = $att?->status ?? $patternCache[$d];
-            $formatted[$key] = $status;
+            $status = $attRec?->status ?? $patternCache[$d];
+
+            // BEFORE / AFTER حسب تواريخ الإسناد
+            if ($record->start_date && $dateStr < $record->start_date) $status = 'BEFORE';
+            elseif ($record->end_date && $dateStr > $record->end_date) $status = 'AFTER';
+
+            $formattedAttend[$dayKey] = $status;
         }
 
-            // الأسماء
-            $arabicName = $employee->projectRecord->employee->first_name . ' ' .
-                $employee->projectRecord->employee->father_name . ' ' .
-                $employee->projectRecord->employee->grandfather_name . ' ' .
-                $employee->projectRecord->employee->family_name;
+        /* ▸◂  البيانات الثابتة  ▸◂ */
+        $emp         = $record->employee;
+        $arabicName  = "{$emp->first_name} {$emp->father_name} {$emp->grandfather_name} {$emp->family_name}";
+        $englishName = $emp->english_name;
+        $projectName = $record->project->name ?? '';
+        $zoneName    = $record->zone->name ?? '';
+        $salary      = ($emp->basic_salary ?? 0) + ($emp->living_allowance ?? 0) + ($emp->other_allowances ?? 0);
 
-            $englishName = $employee->projectRecord->employee->english_name;
+        /* ▸◂  إحصاءات الحضور/الغياب من تجميعة SQL  ▸◂ */
+        $empCounts = $counts?->get($employee->id, collect()) ?? collect();
+        $present   = optional($empCounts->firstWhere('status', 'present'))->c ?? 0;
+        $absent    = optional($empCounts->firstWhere('status', 'absent'))->c  ?? 0;
 
-            // معلومات المشروع والموقع
-            $projectName = $employee->projectRecord->project->name ?? '';
-            $zoneName = $employee->projectRecord->zone->name ?? '';
+        /** الصف الأول (العربى) */
+        $rows[] = [
+            'id'               => $employee->id,
+            'name'             => $arabicName,
+            'national_id'      => $emp->national_id ?? '',
+            'attendance'       => $formattedAttend,
+            'stats'            => ['present' => $present, 'absent' => $absent],
+            'project_utilized' => $projectName,
+            'salary'           => $salary,
+            'is_english'       => false,
+        ];
 
-            // الراتب (يمكنك تعديله حسب مصدرك)
-          $salary = ($employee->projectRecord->employee->basic_salary ?? 0)
-        + ($employee->projectRecord->employee->living_allowance ?? 0)
-        + ($employee->projectRecord->employee->other_allowances ?? 0);
-            // ✅ الصف الأول: العربي
-            $rows[] = [
-                'id' => $employee->id,
-                'name' => $arabicName,
-                'national_id' => $employee->projectRecord->employee->national_id ?? '',
-                'attendance' => $formatted,
-                'stats' => [
-                    'present' => $employee->attendances->where('status', 'present')->count(),
-                    'absent' => $employee->attendances->where('status', 'absent')->count(),
-                ],
-                'project_utilized' => $projectName ,
-                'salary' => $salary,
-                'is_english' => false,
-            ];
-
-            // ✅ الصف الثاني: الإنجليزي
-            $rows[] = [
-                'id' => "{$employee->id}-en",
-                'name' => $englishName,
-                'national_id' => '',
-                'attendance' => [],
-                'stats' => [
-                    'present' => '',
-                    'absent' => '',
-                ],
-                'project_utilized' => $zoneName,
-                'salary' => '',
-                'is_english' => true,
-            ];
-        }
-
-        return collect($rows)->values();
+        /** الصف الثانى (الإنجليزى) */
+        $rows[] = [
+            'id'               => "{$employee->id}-en",
+            'name'             => $englishName,
+            'national_id'      => '',
+            'attendance'       => [],
+            'stats'            => ['present' => '', 'absent' => ''],
+            'project_utilized' => $zoneName,
+            'salary'           => '',
+            'is_english'       => true,
+        ];
     }
 
+    return collect($rows)->values();
+}
 
-    private function buildPatternCache($record, Carbon $monthStart, int $days): array
+/**
+ * تُنشئ مصفوفة نمط العمل للشهر مرة واحدة لتجنب حسابه يوميًا داخل الحلقة.
+ *
+ * @return array  مفاتيحها 1..31 والقيم M/N/OFF
+ */
+private function buildPatternCache($record, Carbon $monthStart, int $days): array
 {
-    // إذا غاب أى علاقة نعيد OFF مباشرة
     if (! $record->shift?->zone?->pattern) {
+        // فى حالة عدم وجود نمط نعيد ❌ لكل الأيام.
         return array_fill(1, $days, '❌');
     }
 
-    $pattern      = $record->shift->zone->pattern;
-    $work         = (int) $pattern->working_days;
-    $off          = (int) $pattern->off_days;
-    $cycleLen     = $work + $off ?: 1;
-    $startDate    = Carbon::parse($record->shift->start_date);
-    $type         = $record->shift->type;
-    $cache        = [];
+    $pattern  = $record->shift->zone->pattern;
+    $work     = (int) $pattern->working_days;
+    $off      = (int) $pattern->off_days;
+    $cycle    = $work + $off ?: 1;
+    $shiftTyp = $record->shift->type;
+    $start    = Carbon::parse($record->shift->start_date);
+    $cache    = [];
 
-    // نحسب فرق الأيام مرة واحدة
     for ($d = 1; $d <= $days; $d++) {
-        $diff        = $startDate->diffInDays($monthStart->copy()->day($d));
-        $idxInCycle  = $diff % $cycleLen;
-        if ($idxInCycle >= $work) {          // يوم OFF
+        $diff  = $start->diffInDays($monthStart->copy()->day($d));
+        $idx   = $diff % $cycle;
+
+        if ($idx >= $work) {        // يوم OFF
             $cache[$d] = 'OFF';
             continue;
         }
 
-        // يوم عمل – اختصر حساب الـ M/N
-        if ($type === 'morning')         $cache[$d] = 'M';
-        elseif ($type === 'evening')     $cache[$d] = 'N';
-        elseif ($type === 'morning_evening')
-            $cache[$d] = ($diff / $cycleLen) % 2 ? 'N' : 'M';
-        elseif ($type === 'evening_morning')
-            $cache[$d] = ($diff / $cycleLen) % 2 ? 'M' : 'N';
-        else $cache[$d] = 'M';
+        // يوم عمل: حسم الحرف بسرعة
+        switch ($shiftTyp) {
+            case 'morning':  $cache[$d] = 'M'; break;
+            case 'evening':  $cache[$d] = 'N'; break;
+            case 'morning_evening':
+                $cache[$d] = (int)floor($diff / $cycle) % 2 ? 'N' : 'M';
+                break;
+            case 'evening_morning':
+                $cache[$d] = (int)floor($diff / $cycle) % 2 ? 'M' : 'N';
+                break;
+            default:
+                $cache[$d] = 'M';
+        }
     }
+
     return $cache;
 }
+
+
+
+ 
 
 
 

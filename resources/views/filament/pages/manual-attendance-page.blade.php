@@ -105,12 +105,12 @@
                                     textAlign: 'center'
                                 }
                             },
-                        
+
                             {
                                 headerName: 'موقع العمل\nUTILIZED PROJECT',
                                 field: 'project_utilized',
                                 width: 240,
-                                  pinned: 'left',
+                                pinned: 'left',
                                 cellRenderer: params => {
                                     return params.value ?? '';
                                 },
@@ -126,7 +126,7 @@
                             {
                                 headerName: 'الراتب\nSalary',
                                 field: 'salary',
-                                  pinned: 'left',
+                                pinned: 'left',
                                 width: 120,
                                 cellRenderer: params => {
                                     return !params.data?.is_english ? `${params.value ?? ''}` : '';
@@ -136,7 +136,7 @@
                                     whiteSpace: 'pre-line'
                                 }
                             },
-                                {
+                            {
                                 headerName: 'حضور',
                                 field: 'stats.present',
                                 width: 90,
@@ -272,19 +272,18 @@
                         const filterData = await component.getFilterData();
 
                         const gridOptions = {
-                              getRowStyle: params => {
-        if (params.data?.is_english) {
-            return {
-                background: '#f9f9f9'
-            };
-        }
-        return {};
-    },
-  rowClassRules: {
-    'employee-color-1': params => Math.floor(params.node.rowIndex / 2) % 2 === 0,
-    'employee-color-2': params => Math.floor(params.node.rowIndex / 2) % 2 === 1,
-}
-,
+                            getRowStyle: params => {
+                                if (params.data?.is_english) {
+                                    return {
+                                        background: '#f9f9f9'
+                                    };
+                                }
+                                return {};
+                            },
+                            rowClassRules: {
+                                'employee-color-1': params => Math.floor(params.node.rowIndex / 2) % 2 === 0,
+                                'employee-color-2': params => Math.floor(params.node.rowIndex / 2) % 2 === 1,
+                            },
 
 
                             columnDefs: createColumnDefs(filterData.month, filterData.today),
@@ -327,65 +326,66 @@
         @push('styles')
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css">
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css">
-           <style>
-    /* ✅ تنسيق رأس الجدول: توسيط */
-    .ag-header-cell-label {
-        justify-content: center;
-    }
+            <style>
+                /* ✅ تنسيق رأس الجدول: توسيط */
+                .ag-header-cell-label {
+                    justify-content: center;
+                }
 
-    /* ✅ إزالة كل الحدود من الأعمدة والصفوف */
-    .ag-theme-alpine .ag-cell,
-    .ag-theme-alpine .ag-header-cell {
-        border: none !important;
-    }
+                /* ✅ إزالة كل الحدود من الأعمدة والصفوف */
+                .ag-theme-alpine .ag-cell,
+                .ag-theme-alpine .ag-header-cell {
+                    border: none !important;
+                }
 
-    .ag-theme-alpine .ag-row {
-        border: none !important;
-    }
+                .ag-theme-alpine .ag-row {
+                    border: none !important;
+                }
 
-    /* ✅ تباعد داخلي أنيق للخلايا */
-    .ag-theme-alpine .ag-cell {
-        padding: 6px 8px !important;
-        font-size: 13px;
-    }
+                /* ✅ تباعد داخلي أنيق للخلايا */
+                .ag-theme-alpine .ag-cell {
+                    padding: 6px 8px !important;
+                    font-size: 13px;
+                }
 
-    /* ✅ صفوف كل موظف: ألوان متناوبة */
-    .ag-row.employee-color-1 {
-        background-color: #ffffff !important; /* أبيض */
-    }
+                /* ✅ صفوف كل موظف: ألوان متناوبة */
+                .ag-row.employee-color-1 {
+                    background-color: #ffffff !important;
+                    /* أبيض */
+                }
 
-    .ag-row.employee-color-2 {
-        background-color: #f9f9f9 !important; /* رمادي ناعم */
-    }
+                .ag-row.employee-color-2 {
+                    background-color: #f9f9f9 !important;
+                    /* رمادي ناعم */
+                }
 
-    /* ✅ إزالة الحدود بين الصف العربي والإنجليزي */
-    .ag-row.english-row .ag-cell {
-        border-top: none !important;
-    }
+                /* ✅ إزالة الحدود بين الصف العربي والإنجليزي */
+                .ag-row.english-row .ag-cell {
+                    border-top: none !important;
+                }
 
-    /* ✅ إزالة تأثير hover من جميع الصفوف */
-   /* ✅ تمييز الصف عند التحديد بلون ناعم دون إزالة الألوان */
-.ag-row:hover {
-    filter: brightness(0.98);
-}
+                /* ✅ إزالة تأثير hover من جميع الصفوف */
+                /* ✅ تمييز الصف عند التحديد بلون ناعم دون إزالة الألوان */
+                .ag-row:hover {
+                    filter: brightness(0.98);
+                }
 
 
-    /* ✅ إزالة تأثير التحديد */
-    .ag-row.ag-row-selected .ag-cell {
-        background-color: inherit !important;
-    }
+                /* ✅ إزالة تأثير التحديد */
+                .ag-row.ag-row-selected .ag-cell {
+                    background-color: inherit !important;
+                }
 
-    /* ✅ تحسين عرض النص متعدد الأسطر (مثل project_utilized) */
-    .ag-theme-alpine .ag-cell {
-        white-space: pre-line !important;
-    }
+                /* ✅ تحسين عرض النص متعدد الأسطر (مثل project_utilized) */
+                .ag-theme-alpine .ag-cell {
+                    white-space: pre-line !important;
+                }
 
-    /* ✅ تصغير خط عمود موقع العمل فقط (تستهدف حسب field إذا أردت) */
-    .ag-cell[col-id="project_utilized"] {
-        font-size: 11px !important;
-    }
-</style>
-
+                /* ✅ تصغير خط عمود موقع العمل فقط (تستهدف حسب field إذا أردت) */
+                .ag-cell[col-id="project_utilized"] {
+                    font-size: 11px !important;
+                }
+            </style>
         @endpush
 
         @section('meta')
