@@ -240,70 +240,67 @@
 
                     // ✅ الكود الكامل لمصدر البيانات
                     const datasource = {
-                        getRows: (params) => {
-                            component.getFilterData().then(livewireFilters => {
+                        getRows: params => {
+                            component.getFilterData().then(filters => {
                                 fetch('/api/attendance-data', {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
                                             'Accept': 'application/json',
                                             'X-CSRF-TOKEN': document.querySelector(
-                                                'meta[name="csrf-token"]').getAttribute('content')
+                                                'meta[name="csrf-token"]').content
                                         },
                                         body: JSON.stringify({
                                             offset: params.startRow,
                                             limit: params.endRow - params.startRow,
-                                            month: livewireFilters.month,
-                                            filters: livewireFilters
+                                            month: filters.month,
+                                            filters
                                         })
                                     })
-                                    .then(response => response.ok ? response.json() : response.json().then(
-                                        err => Promise.reject(err)))
-                                    .then(data => params.successCallback(data.rows, data.total))
-                                    .catch(error => {
-                                        console.error('خطأ في جلب البيانات:', error);
-                                        params.failCallback();
-                                    });
+                                    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+                                    .then(data => {
+                                        // ✅ أخبر AG Grid بعدد الصفوف كلّه
+                                        params.successCallback(data.rows, data.total);
+                                    })
+                                    .catch(() => params.failCallback());
                             });
                         }
                     };
 
+
                     try {
                         const filterData = await component.getFilterData();
 
+                        // استبدل قيم gridOptions التى عرّفتها
                         const gridOptions = {
-                            getRowStyle: params => {
-                                if (params.data?.is_english) {
-                                    return {
-                                        background: '#f9f9f9'
-                                    };
-                                }
-                                return {};
+                            columnDefs: createColumnDefs(filterData.month, filterData.today),
+                            rowModelType: 'infinite',
+                            datasource: datasource,
+
+                            cacheBlockSize: 200, // ⬅️ بدّل 50 → 200
+                            maxBlocksInCache: 3, // ⬅️ يمنع ذاكرة ضخمة
+                            paginationPageSize: 200, // ⬅️ يطابق حجم البلوك
+                            rowBuffer: 10, // ⬅️ أقل من الافتراضى
+                            rowHeight: 35,
+                            getRowId: params => params.data.id, // ⬅️ يثبت هوية الصف
+                            singleClickEdit: true,
+                            stopEditingWhenCellsLoseFocus: true,
+                            defaultColDef: {
+                                resizable: true
                             },
+                            components: {
+                                SelectCellEditor
+                            },
+                            getRowStyle: params => params.data?.is_english ? {
+                                background: '#f9f9f9'
+                            } : {},
                             rowClassRules: {
                                 'employee-color-1': params => Math.floor(params.node.rowIndex / 2) % 2 === 0,
                                 'employee-color-2': params => Math.floor(params.node.rowIndex / 2) % 2 === 1,
                             },
-
-
-                            columnDefs: createColumnDefs(filterData.month, filterData.today),
-                            rowModelType: 'infinite',
-                            datasource: datasource,
-                            singleClickEdit: true,
-                            stopEditingWhenCellsLoseFocus: true,
-                            components: {
-                                SelectCellEditor: SelectCellEditor
-                            },
-                            paginationPageSize: 50,
-                            cacheBlockSize: 50,
-                            rowHeight: 35,
-                            defaultColDef: {
-                                resizable: true
-                            },
-                            onGridReady: (params) => {
-                                gridApi = params.api;
-                            },
+                            onGridReady: params => gridApi = params.api,
                         };
+
                         agGrid.createGrid(gridDiv, gridOptions);
                     } catch (e) {
                         console.error("خطأ فادح أثناء إعداد الجدول:", e);
