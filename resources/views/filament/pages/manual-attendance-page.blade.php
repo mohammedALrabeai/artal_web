@@ -277,9 +277,9 @@
                             rowModelType: 'infinite',
                             datasource: datasource,
 
-                            cacheBlockSize: 200, // ⬅️ بدّل 50 → 200
+                            cacheBlockSize: 800, // ⬅️ بدّل 50 → 200
                             maxBlocksInCache: 0, // ⬅️ يمنع ذاكرة ضخمة
-                            paginationPageSize: 200, // ⬅️ يطابق حجم البلوك
+                            paginationPageSize: 800, // ⬅️ يطابق حجم البلوك
                             rowBuffer: 10, // ⬅️ أقل من الافتراضى
                             rowHeight: 35,
                             getRowId: params => params.data.id, // ⬅️ يثبت هوية الصف
