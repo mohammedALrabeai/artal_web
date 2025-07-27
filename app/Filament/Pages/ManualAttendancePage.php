@@ -22,19 +22,33 @@ class ManualAttendancePage extends Page implements HasForms
     protected static ?string $title = 'دفتر الحضور اليدوي';
     protected static string $view = 'filament.pages.manual-attendance-page';
 
-    // هذه الخصائص ستبقى لتخزين قيم الفلاتر
+    // هذه الخصائص ستبقى لتخزين قيم الفلاتر من النموذج
     public ?int $projectId = null;
     public ?int $zoneId = null;
     public ?int $shiftId = null;
     public ?string $month = null;
 
     /**
+     * ✅ [جديد] خاصية لتخزين الفلاتر التي تم "تطبيقها" فعلياً.
+     * AG Grid سيقرأ دائماً من هذه الخاصية لضمان استخدام البيانات الصحيحة.
+     */
+    public array $filtersForGrid = [];
+
+    /**
      * يتم تنفيذها عند تحميل الصفحة لأول مرة.
      */
     public function mount(): void
     {
-        // تعيين الشهر الحالي كقيمة افتراضية
+        // تعيين الشهر الحالي كقيمة افتراضية للنموذج
         $this->month = now()->startOfMonth()->toDateString();
+        
+        // تعبئة النموذج بالقيم الافتراضية
+        $this->form->fill([
+            'month' => $this->month,
+        ]);
+
+        // ✅ [جديد] تعيين الفلاتر الأولية للشبكة عند تحميل الصفحة
+        $this->updateGridFilters();
     }
 
     /**
@@ -47,7 +61,7 @@ class ManualAttendancePage extends Page implements HasForms
                 ->label('المشروع')
                 ->options(Project::pluck('name', 'id'))
                 ->reactive()
-                ->afterStateUpdated(fn () => $this->zoneId = null), // إعادة تعيين الموقع عند تغيير المشروع
+                ->afterStateUpdated(fn () => $this->zoneId = null),
 
             Select::make('zoneId')
                 ->label('الموقع')
@@ -55,7 +69,7 @@ class ManualAttendancePage extends Page implements HasForms
                     ? Zone::where('project_id', $this->projectId)->pluck('name', 'id')
                     : [])
                 ->reactive()
-                ->afterStateUpdated(fn () => $this->shiftId = null), // إعادة تعيين الوردية عند تغيير الموقع
+                ->afterStateUpdated(fn () => $this->shiftId = null),
 
             Select::make('shiftId')
                 ->label('الوردية')
@@ -65,29 +79,45 @@ class ManualAttendancePage extends Page implements HasForms
 
             DatePicker::make('month')
                 ->label('الشهر')
-                ->displayFormat('F Y') // عرض اسم الشهر والسنة
-                ->reactive()
-                ->maxDate(now()->endOfMonth())
-                ->default(now()->startOfMonth()),
+                ->displayFormat('F Y')
+                ->default(now()->startOfMonth())
+                ->reactive(), // reactive ضرورية لربط القيمة مع خاصية $month
         ];
     }
 
     /**
-     * هذه هي الدالة العامة التي يستدعيها كود JavaScript
-     * للحصول على قيم الفلاتر الحالية بشكل آمن.
+     * ✅ [جديد] دالة يتم استدعاؤها عند الضغط على زر "تطبيق الفلاتر".
      */
-    public function getFilterData(): array
+    public function applyFilters(): void
     {
-        return [
-            'projectId' => $this->projectId,
-            'zoneId' => $this->zoneId,
-            'shiftId' => $this->shiftId,
-            'month' => $this->month,
-            'today' => now()->format('Y-m-d'),
-        ];
+        // كل ما تفعله هو تحديث الفلاتر وإرسال الحدث إلى الواجهة الأمامية
+        $this->updateGridFilters();
     }
 
-       public function saveStatus($employeeId, $date, $status)
+    /**
+     * ✅ [جديد] دالة مساعدة لتحديث الفلاتر وإعلام الواجهة الأمامية.
+     */
+    private function updateGridFilters(): void
+    {
+        // 1. تحديث الخاصية التي سيستخدمها AG Grid
+        $this->filtersForGrid = [
+            'projectId' => $this->projectId,
+            'zoneId'    => $this->zoneId,
+            'shiftId'   => $this->shiftId,
+            'month'     => $this->month,
+            'today'     => now()->format('Y-m-d'),
+        ];
+
+        // 2. إرسال حدث (event) إلى JavaScript مع الفلاتر الجديدة
+        $this->dispatch('filtersApplied', filters: $this->filtersForGrid);
+    }
+
+    /**
+     * [محذوف] لم نعد بحاجة لهذه الدالة لأننا نستخدم خاصية $filtersForGrid
+     * public function getFilterData(): array { ... }
+     */
+
+    public function saveStatus($employeeId, $date, $status)
     {
         $employee = ManualAttendanceEmployee::findOrFail($employeeId);
 
@@ -95,7 +125,5 @@ class ManualAttendancePage extends Page implements HasForms
         $attendance->status = $status;
         $attendance->updated_by = auth()->id();
         $attendance->save();
-
-        // لا نحتاج لإعادة تحميل أي شيء لأن الواجهة الأمامية ستتولى التحديث
     }
 }
