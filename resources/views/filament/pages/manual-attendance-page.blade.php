@@ -278,7 +278,7 @@
                             datasource: datasource,
 
                             cacheBlockSize: 200, // ⬅️ بدّل 50 → 200
-                            maxBlocksInCache: 3, // ⬅️ يمنع ذاكرة ضخمة
+                            maxBlocksInCache: 0, // ⬅️ يمنع ذاكرة ضخمة
                             paginationPageSize: 200, // ⬅️ يطابق حجم البلوك
                             rowBuffer: 10, // ⬅️ أقل من الافتراضى
                             rowHeight: 35,

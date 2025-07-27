@@ -17,7 +17,7 @@ class ManulAttendanceController extends Controller
         $validated = $request->validate([
             'month'   => 'required|date_format:Y-m-d',
             'offset'  => 'required|integer|min:0',
-            'limit'   => 'required|integer|min:1|max:200',
+            'limit'   => 'required|integer|min:0',
             'filters' => 'nullable|array',
         ]);
 
