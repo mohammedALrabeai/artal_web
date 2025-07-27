@@ -80,34 +80,26 @@ class ManulAttendanceController extends Controller
     ]);
 }
 
-    private function formatDataForGrid($employees, Carbon $month)
-    {
-        $daysInMonth = $month->daysInMonth;
-        $daysArray = range(1, $daysInMonth);
-        $rows = [];
+   private function formatDataForGrid($employees, Carbon $month)
+{
+    $daysInMonth   = $month->daysInMonth;
+    $firstMonthDay = $month->copy()->startOfMonth();   // Carbon واحد فقط
+    $rows          = [];
 
-        foreach ($employees as $employee) {
-            $attendanceByDate = $employee->attendances->keyBy('date');
-            $record = $employee->projectRecord;
-            $formattedAttendance = [];
+    foreach ($employees as $employee) {
+        $record         = $employee->projectRecord;
+        $attKeyed       = $employee->attendances->keyBy('date');
+        $patternCache   = $this->buildPatternCache($record, $firstMonthDay, $daysInMonth);
 
-            foreach ($daysArray as $day) {
-                $currentDateStr = $month->copy()->day($day)->toDateString();
-                $attendanceRecord = $attendanceByDate->get($currentDateStr);
+        $formatted = [];
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $key  = str_pad($d, 2, '0', STR_PAD_LEFT);
+            $date = $firstMonthDay->copy()->day($d)->toDateString();   // Carbon .clone رخيص
+            $att  = $attKeyed[$date] ?? null;
 
-                $isBefore = $record->start_date && $currentDateStr < $record->start_date;
-                $isAfter = $record->end_date && $currentDateStr > $record->end_date;
-
-                if ($isBefore || $isAfter) {
-                    $status = $isBefore ? 'BEFORE' : 'AFTER';
-                } else {
-                    $workPattern = $this->getWorkPatternLabel($record, $currentDateStr);
-                    $status = $attendanceRecord->status ?? $workPattern;
-                }
-
-                $dayKey = str_pad($day, 2, '0', STR_PAD_LEFT);
-                $formattedAttendance[$dayKey] = $status;
-            }
+            $status = $att?->status ?? $patternCache[$d];
+            $formatted[$key] = $status;
+        }
 
             // الأسماء
             $arabicName = $employee->projectRecord->employee->first_name . ' ' .
@@ -130,7 +122,7 @@ class ManulAttendanceController extends Controller
                 'id' => $employee->id,
                 'name' => $arabicName,
                 'national_id' => $employee->projectRecord->employee->national_id ?? '',
-                'attendance' => $formattedAttendance,
+                'attendance' => $formatted,
                 'stats' => [
                     'present' => $employee->attendances->where('status', 'present')->count(),
                     'absent' => $employee->attendances->where('status', 'absent')->count(),
@@ -158,6 +150,43 @@ class ManulAttendanceController extends Controller
 
         return collect($rows)->values();
     }
+
+
+    private function buildPatternCache($record, Carbon $monthStart, int $days): array
+{
+    // إذا غاب أى علاقة نعيد OFF مباشرة
+    if (! $record->shift?->zone?->pattern) {
+        return array_fill(1, $days, '❌');
+    }
+
+    $pattern      = $record->shift->zone->pattern;
+    $work         = (int) $pattern->working_days;
+    $off          = (int) $pattern->off_days;
+    $cycleLen     = $work + $off ?: 1;
+    $startDate    = Carbon::parse($record->shift->start_date);
+    $type         = $record->shift->type;
+    $cache        = [];
+
+    // نحسب فرق الأيام مرة واحدة
+    for ($d = 1; $d <= $days; $d++) {
+        $diff        = $startDate->diffInDays($monthStart->copy()->day($d));
+        $idxInCycle  = $diff % $cycleLen;
+        if ($idxInCycle >= $work) {          // يوم OFF
+            $cache[$d] = 'OFF';
+            continue;
+        }
+
+        // يوم عمل – اختصر حساب الـ M/N
+        if ($type === 'morning')         $cache[$d] = 'M';
+        elseif ($type === 'evening')     $cache[$d] = 'N';
+        elseif ($type === 'morning_evening')
+            $cache[$d] = ($diff / $cycleLen) % 2 ? 'N' : 'M';
+        elseif ($type === 'evening_morning')
+            $cache[$d] = ($diff / $cycleLen) % 2 ? 'M' : 'N';
+        else $cache[$d] = 'M';
+    }
+    return $cache;
+}
 
 
 
