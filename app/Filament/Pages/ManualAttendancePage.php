@@ -6,7 +6,7 @@ use App\Models\ManualAttendanceEmployee;
 use App\Models\Project;
 use App\Models\Shift;
 use App\Models\Zone;
-use BezhanSalleh\FilamentShield\Traits\HasPageShield; // ✅✅✅ [هذا هو السطر المطلوب] ✅✅✅
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -20,12 +20,9 @@ class ManualAttendancePage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-
     protected static ?string $title = 'دفتر الحضور اليدوي';
-
     protected static string $view = 'filament.pages.manual-attendance-page';
 
-    // ✅ [تم التصحيح] الآن سيعرف PHP ما هو #[Url]
     #[Url(as: 'p', keep: true)]
     public ?int $projectId = null;
 
@@ -128,9 +125,8 @@ class ManualAttendancePage extends Page implements HasForms
         $employee = ManualAttendanceEmployee::findOrFail($employeeId);
         $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
 
-        // ✅ إن كان سجلاً جديدًا ولم تُحدَّد حالة بعد
         if (! $attendance->exists) {
-            $attendance->status = '';   // أو 'pending'
+            $attendance->status = '';
         }
 
         $attendance->has_coverage_shift = ($covValue === 'COV');
