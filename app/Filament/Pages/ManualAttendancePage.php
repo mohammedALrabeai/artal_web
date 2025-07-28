@@ -133,4 +133,30 @@ class ManualAttendancePage extends Page implements HasForms
         $attendance->updated_by = auth()->id();
         $attendance->save();
     }
+
+       /**
+     * [جديد] دالة شاملة لحفظ كل تفاصيل الحضور لليوم المحدد.
+     * تتعامل مع الحالة، الملاحظات، وتغطية الدوام.
+     *
+     * @param int $manualAttendanceEmployeeId معرف سجل حضور الموظف للشهر.
+     * @param string $date التاريخ المراد تحديثه (Y-m-d).
+     * @param array $details مصفوفة تحتوي على بيانات الحضور.
+     */
+    public function saveAttendanceDetails(int $manualAttendanceEmployeeId, string $date, array $details)
+    {
+        $employeeAttendanceRecord = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
+
+        $attendance = $employeeAttendanceRecord->attendances()->updateOrCreate(
+            [
+                'date' => $date,
+            ],
+            [
+                'status' => $details['status'],
+                'notes' => $details['notes'],
+                'has_coverage_shift' => $details['has_coverage'],
+                'coverage_employee_id' => $details['coverage_employee_id'] ?? null, // ✨ [تعديل] حفظ معرف الموظف البديل
+                'updated_by' => auth()->id(),
+            ]
+        );
+    }
 }

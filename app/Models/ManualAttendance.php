@@ -16,6 +16,7 @@ class ManualAttendance extends Model
         'has_coverage_shift',
         'notes',
         'updated_by',
+        'coverage_employee_id'
     ];
 
     public function attendanceEmployee(): BelongsTo
@@ -26,5 +27,9 @@ class ManualAttendance extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+      public function coverageEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'coverage_employee_id');
     }
 }

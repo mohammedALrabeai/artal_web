@@ -431,3 +431,17 @@ Route::get('/uncovered-zones', function () {
 
 Route::post('/attendance-data', [ManulAttendanceController::class, 'getAttendanceData']);
 Route::post('/attendance-coverage-status', [ManulAttendanceController::class, 'saveCoverageStatus']);
+
+
+Route::get('/employees-list', function (Request $request) {
+    // جلب الموظفين النشطين فقط لتجنب عرض الموظفين المستقيلين في قائمة البدلاء
+    return Employee::where('status', 'active') // أو أي شرط يحدد الموظف النشط
+        ->get()
+        ->map(function ($employee) {
+            return [
+                'id' => $employee->id,
+                'name' => $employee->name, // يستخدم الـ accessor `getNameAttribute`
+                'national_id' => $employee->national_id,
+            ];
+        });
+});
