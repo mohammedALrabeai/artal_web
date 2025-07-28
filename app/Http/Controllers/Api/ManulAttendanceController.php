@@ -59,17 +59,17 @@ class ManulAttendanceController extends Controller
         }
 
         /** 4️⃣ تجميع عدد الحضور/الغياب فى SQL (لا تغيير هنا) */
-        $attendanceCounts = DB::table('manual_attendances')
-            ->selectRaw('manual_attendance_employee_id AS id, status, COUNT(*) AS c')
-            ->whereIn('manual_attendance_employee_id', $visibleEmployees->pluck('id'))
-            ->whereBetween('date', [
-                $month->copy()->startOfMonth()->toDateString(),
-                $month->copy()->endOfMonth()->toDateString(),
-            ])
-            ->whereIn('status', ['present', 'absent'])
-            ->groupBy('manual_attendance_employee_id', 'status')
-            ->get()
-            ->groupBy('id');
+        // $attendanceCounts = DB::table('manual_attendances')
+        //     ->selectRaw('manual_attendance_employee_id AS id, status, COUNT(*) AS c')
+        //     ->whereIn('manual_attendance_employee_id', $visibleEmployees->pluck('id'))
+        //     ->whereBetween('date', [
+        //         $month->copy()->startOfMonth()->toDateString(),
+        //         $month->copy()->endOfMonth()->toDateString(),
+        //     ])
+        //     ->whereIn('status', ['present', 'absent'])
+        //     ->groupBy('manual_attendance_employee_id', 'status')
+        //     ->get()
+        //     ->groupBy('id');
 
         /** 5️⃣ [تم التعديل] تحميل العلاقات مع الحفاظ على الترتيب الذي تم جلبه */
         $employeeIdsOrdered = $visibleEmployees->pluck('id');
@@ -93,7 +93,7 @@ class ManulAttendanceController extends Controller
             ->get();
 
         /** 6️⃣ تجهيز الصفوف وتمرير تجميعة الإحصاءات (لا تغيير هنا) */
-        $rows = $this->formatDataForGrid($employees, $month, $attendanceCounts);
+        $rows = $this->formatDataForGrid($employees, $month, null);
 
         /** 7️⃣ الإرجاع للواجهة */
         return response()->json([
@@ -148,9 +148,9 @@ class ManulAttendanceController extends Controller
             $salary      = ($emp->basic_salary ?? 0) + ($emp->living_allowance ?? 0) + ($emp->other_allowances ?? 0);
 
             /* ▸◂  إحصاءات الحضور/الغياب من تجميعة SQL  ▸◂ */
-            $empCounts = $counts?->get($employee->id, collect()) ?? collect();
-            $present   = optional($empCounts->firstWhere('status', 'present'))->c ?? 0;
-            $absent    = optional($empCounts->firstWhere('status', 'absent'))->c  ?? 0;
+            // $empCounts = $counts?->get($employee->id, collect()) ?? collect();
+            // $present   = optional($empCounts->firstWhere('status', 'present'))->c ?? 0;
+            // $absent    = optional($empCounts->firstWhere('status', 'absent'))->c  ?? 0;
 
             /** الصف الأول (العربى) */
             $rows[] = [
@@ -158,7 +158,7 @@ class ManulAttendanceController extends Controller
                 'name'             => $arabicName,
                 'national_id'      => $emp->national_id ?? '',
                 'attendance'       => $formattedAttend,
-                'stats'            => ['present' => $present, 'absent' => $absent],
+                // 'stats'            => ['present' => $present, 'absent' => $absent],
                 'project_utilized' => $projectName,
                 'salary'           => $salary,
                 'is_english'       => false,
@@ -170,7 +170,7 @@ class ManulAttendanceController extends Controller
                 'name'             => $englishName,
                 'national_id'      => '',
                 'attendance'       => [],
-                'stats'            => ['present' => '', 'absent' => ''],
+                // 'stats'            => ['present' => '', 'absent' => ''],
                 'project_utilized' => $zoneName,
                 'salary'           => '',
                 'is_english'       => true,
