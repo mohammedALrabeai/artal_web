@@ -36,14 +36,15 @@
         </x-filament::section>
 
         {{-- حالة الحفظ (لا تغيير هنا) --}}
-         <div class="flex items-center justify-between mt-4">
-             <button id="toggleSummaryBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+        <div class="flex items-center justify-between mt-4">
+            <button id="toggleSummaryBtn"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
                 إظهار الملخص
             </button>
             <div id="save-status" class="px-3 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded">
                 حالة التعديل: لا يوجد تعديل بعد.
             </div>
-           
+
         </div>
 
         {{-- 2. حاوية جدول AG Grid (لا تغيير هنا) --}}
@@ -70,12 +71,17 @@
                         init(params) {
                             this.eGui = document.createElement('select');
                             this.eGui.classList.add('w-full', 'h-full', 'border-none', 'p-0', 'bg-white');
-                            params.values.forEach(value => {
-                                const option = document.createElement('option');
-                                option.value = value;
-                                option.text = value.toUpperCase();
-                                this.eGui.appendChild(option);
+
+                            /* ✅ السطران الجديدان: إذا كان صفٌ إنجليزيًا نقيّد القائمة */
+                            const source = params.data?.is_english ? ['', 'COV'] : params.values;
+
+                            source.forEach(value => {
+                                const opt = document.createElement('option');
+                                opt.value = value;
+                                opt.text = (value || '—').toUpperCase();
+                                this.eGui.appendChild(opt);
                             });
+
                             this.eGui.value = params.value;
                             this.eGui.addEventListener('change', () => params.stopEditing());
                         }
@@ -183,17 +189,24 @@
                                 headerName: day,
                                 field: `attendance.${day}`,
                                 width: isEditable ? 100 : 70,
-                                editable: params => isEditable && !params.data?.is_english,
+                                editable: params => isEditable, // ↔ يسمح بالتحرير للصف الثانى فقط
+                                cellEditorParams: params => ({
+                                    values: params.data?.is_english ? ['', 'COV'] // ↔ صفّ ثانٍ: فارغ أو COV
+                                        :
+                                        ['present', 'absent', 'leave', 'UV',
+                                            'W'
+                                        ] // صف أول: القائمة الأصلية بلا coverage
+                                }),
                                 cellEditor: SelectCellEditor,
-                                cellEditorParams: {
-                                    values: ['present', 'absent', 'leave', 'coverage', 'UV', 'W']
-                                },
+                                // cellEditorParams: {
+                                //     values: ['present', 'absent', 'leave', 'UV', 'W']
+                                // },
                                 cellStyle: params => {
                                     const status = params.value;
                                     const backgrounds = {
                                         'present': '#2E7D32',
                                         'absent': '#D32F2F',
-                                        'coverage': '#F9A825',
+                                        'COV': '#F9A825',
                                         'M': '#D9D9D9',
                                         'N': '#999999',
                                         'leave': '#388E3C',
@@ -224,12 +237,17 @@
                                     return style;
                                 },
                                 onCellValueChanged: params => {
-                                    const employeeId = params.data.id;
+                                    const isEnglishRow = params.data.is_english; // ⬅️ جديد
+                                    const employeeId = params.data.id.toString().replace('-en',
+                                    ''); // يأخذ ID الأصلي
                                     const newValue = params.newValue;
+
                                     const statusBox = document.getElementById('save-status');
-                                    if (statusBox) statusBox.textContent = '🟡 جاري الحفظ...';
-                                    if (newValue) {
-                                        component.saveStatus(employeeId, currentDateStr, newValue)
+                                    if (statusBox) statusBox.textContent = '🟡 جاري الحفظ.';
+
+                                    if (newValue !== undefined) {
+                                        const saveFn = isEnglishRow ? 'saveCoverage' : 'saveStatus'; // ⬅️ جديد
+                                        component[saveFn](employeeId, currentDateStr, newValue)
                                             .then(() => {
                                                 if (statusBox) statusBox.textContent = '✅ تم الحفظ بنجاح';
                                             })
@@ -241,12 +259,12 @@
                             });
                         }
 
-                           const summaryValueGetter = (status) => (params) => {
+                        const summaryValueGetter = (status) => (params) => {
                             if (params.data?.is_english) return '';
                             const attendance = params.data.attendance || {};
                             return Object.values(attendance).filter(val => val === status).length;
                         };
-                        
+
                         const totalValueGetter = (params) => {
                             if (params.data?.is_english) return '';
                             const attendance = params.data.attendance || {};
@@ -255,15 +273,65 @@
                             return Object.values(attendance).filter(val => validStates.includes(val)).length;
                         };
 
-                        const summaryColumns = [
-                            { headerName: "أوف\nOFF", field: 'summary.off', valueGetter: summaryValueGetter('OFF'), colId: 'summary_off', width: 80 },
-                            { headerName: "عمل\nP", field: 'summary.present', valueGetter: summaryValueGetter('present'), colId: 'summary_present', width: 80 },
-                            { headerName: "إضافي\nCOV", field: 'summary.coverage', valueGetter: summaryValueGetter('coverage'), colId: 'summary_coverage', width: 80 },
-                            { headerName: "مرضي\nM", field: 'summary.medical', valueGetter: summaryValueGetter('M'), colId: 'summary_medical', width: 80 }, // افترضت أن M تعني مرضي
-                            { headerName: "إجازة مدفوعة\nPV", field: 'summary.paid_leave', valueGetter: summaryValueGetter('leave'), colId: 'summary_paid_leave', width: 100 }, // افترضت أن leave هي PV
-                            { headerName: "إجازة غير مدفوعة\nUV", field: 'summary.unpaid_leave', valueGetter: summaryValueGetter('UV'), colId: 'summary_unpaid_leave', width: 120 },
-                            { headerName: "غياب\nA", field: 'summary.absent', valueGetter: summaryValueGetter('absent'), colId: 'summary_absent', width: 80 },
-                            { headerName: "الإجمالي\nTotal", field: 'summary.total', valueGetter: totalValueGetter, colId: 'summary_total', width: 90, cellStyle: { fontWeight: 'bold' } },
+                        const summaryColumns = [{
+                                headerName: "أوف\nOFF",
+                                field: 'summary.off',
+                                valueGetter: summaryValueGetter('OFF'),
+                                colId: 'summary_off',
+                                width: 80
+                            },
+                            {
+                                headerName: "عمل\nP",
+                                field: 'summary.present',
+                                valueGetter: summaryValueGetter('present'),
+                                colId: 'summary_present',
+                                width: 80
+                            },
+                            {
+                                headerName: "إضافي\nCOV",
+                                field: 'summary.coverage',
+                                valueGetter: summaryValueGetter('coverage'),
+                                colId: 'summary_coverage',
+                                width: 80
+                            },
+                            {
+                                headerName: "مرضي\nM",
+                                field: 'summary.medical',
+                                valueGetter: summaryValueGetter('M'),
+                                colId: 'summary_medical',
+                                width: 80
+                            }, // افترضت أن M تعني مرضي
+                            {
+                                headerName: "إجازة مدفوعة\nPV",
+                                field: 'summary.paid_leave',
+                                valueGetter: summaryValueGetter('leave'),
+                                colId: 'summary_paid_leave',
+                                width: 100
+                            }, // افترضت أن leave هي PV
+                            {
+                                headerName: "إجازة غير مدفوعة\nUV",
+                                field: 'summary.unpaid_leave',
+                                valueGetter: summaryValueGetter('UV'),
+                                colId: 'summary_unpaid_leave',
+                                width: 120
+                            },
+                            {
+                                headerName: "غياب\nA",
+                                field: 'summary.absent',
+                                valueGetter: summaryValueGetter('absent'),
+                                colId: 'summary_absent',
+                                width: 80
+                            },
+                            {
+                                headerName: "الإجمالي\nTotal",
+                                field: 'summary.total',
+                                valueGetter: totalValueGetter,
+                                colId: 'summary_total',
+                                width: 90,
+                                cellStyle: {
+                                    fontWeight: 'bold'
+                                }
+                            },
                         ];
 
                         // دمج كل الأعمدة معاً
@@ -322,9 +390,12 @@
                                 'employee-color-2': params => Math.floor(params.node.rowIndex / 2) % 2 === 1,
                             },
                             onGridReady: params => {
-                                  gridApi = params.api;
+                                gridApi = params.api;
                                 // ✅ [جديد] إخفاء أعمدة الملخص عند التحميل الأولي
-                                const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage', 'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent', 'summary_total'];
+                                const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage',
+                                    'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave',
+                                    'summary_absent', 'summary_total'
+                                ];
                                 gridApi.setColumnsVisible(summaryColIds, false);
                             },
                         };
@@ -333,12 +404,14 @@
                         console.error("خطأ فادح أثناء إعداد الجدول:", e);
                     }
 
-                         const toggleBtn = document.getElementById('toggleSummaryBtn');
+                    const toggleBtn = document.getElementById('toggleSummaryBtn');
                     let summaryVisible = false;
                     toggleBtn.addEventListener('click', () => {
                         if (!gridApi) return;
                         summaryVisible = !summaryVisible;
-                        const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage', 'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent', 'summary_total'];
+                        const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage', 'summary_medical',
+                            'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent', 'summary_total'
+                        ];
                         gridApi.setColumnsVisible(summaryColIds, summaryVisible);
                         toggleBtn.textContent = summaryVisible ? 'إخفاء الملخص' : 'إظهار الملخص';
                     });

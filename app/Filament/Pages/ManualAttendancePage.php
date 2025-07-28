@@ -2,17 +2,17 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Zone;
-use App\Models\Shift;
-use App\Models\Project;
-use Filament\Pages\Page;
-use Livewire\Attributes\Url; // ✅✅✅ [هذا هو السطر المطلوب] ✅✅✅
-use Filament\Forms\Components\Select;
-use Filament\Forms\Contracts\HasForms;
 use App\Models\ManualAttendanceEmployee;
+use App\Models\Project;
+use App\Models\Shift;
+use App\Models\Zone;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield; // ✅✅✅ [هذا هو السطر المطلوب] ✅✅✅
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
-use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Pages\Page;
+use Livewire\Attributes\Url;
 
 class ManualAttendancePage extends Page implements HasForms
 {
@@ -20,7 +20,9 @@ class ManualAttendancePage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+
     protected static ?string $title = 'دفتر الحضور اليدوي';
+
     protected static string $view = 'filament.pages.manual-attendance-page';
 
     // ✅ [تم التصحيح] الآن سيعرف PHP ما هو #[Url]
@@ -43,7 +45,7 @@ class ManualAttendancePage extends Page implements HasForms
         if (is_null($this->month)) {
             $this->month = now()->startOfMonth()->toDateString();
         }
-        
+
         $this->form->fill([
             'projectId' => $this->projectId,
             'zoneId' => $this->zoneId,
@@ -101,10 +103,10 @@ class ManualAttendancePage extends Page implements HasForms
     {
         $this->filtersForGrid = [
             'projectId' => $this->projectId,
-            'zoneId'    => $this->zoneId,
-            'shiftId'   => $this->shiftId,
-            'month'     => $this->month,
-            'today'     => now()->format('Y-m-d'),
+            'zoneId' => $this->zoneId,
+            'shiftId' => $this->shiftId,
+            'month' => $this->month,
+            'today' => now()->format('Y-m-d'),
         ];
 
         if ($dispatch) {
@@ -117,6 +119,21 @@ class ManualAttendancePage extends Page implements HasForms
         $employee = ManualAttendanceEmployee::findOrFail($employeeId);
         $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
         $attendance->status = $status;
+        $attendance->updated_by = auth()->id();
+        $attendance->save();
+    }
+
+    public function saveCoverage($employeeId, $date, $covValue)
+    {
+        $employee = ManualAttendanceEmployee::findOrFail($employeeId);
+        $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
+
+        // ✅ إن كان سجلاً جديدًا ولم تُحدَّد حالة بعد
+        if (! $attendance->exists) {
+            $attendance->status = '';   // أو 'pending'
+        }
+
+        $attendance->has_coverage_shift = ($covValue === 'COV');
         $attendance->updated_by = auth()->id();
         $attendance->save();
     }

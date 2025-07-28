@@ -113,72 +113,77 @@ class ManulAttendanceController extends Controller
      * @return \Illuminate\Support\Collection
      */
     private function formatDataForGrid($employees, Carbon $month, $counts = null)
-    {
-        $daysInMonth   = $month->daysInMonth;
-        $firstMonthDay = $month->copy()->startOfMonth();
-        $rows          = [];
+{
+    $daysInMonth   = $month->daysInMonth;
+    $firstMonthDay = $month->copy()->startOfMonth();
+    $rows          = [];
 
-        foreach ($employees as $employee) {
-            $record          = $employee->projectRecord;
-            $attKeyed        = $employee->attendances->keyBy('date');
-            $patternCache    = $this->buildPatternCache($record, $firstMonthDay, $daysInMonth);
-            $formattedAttend = [];
+    foreach ($employees as $employee) {
+        $record          = $employee->projectRecord;
+        $attKeyed        = $employee->attendances->keyBy('date');
+        $patternCache    = $this->buildPatternCache($record, $firstMonthDay, $daysInMonth);
+        $formattedAttend = [];
+        $coverageAttend  = [];           // ⬅️ جديد: مصفوفة التغطيات للسطر الثاني
 
-            /* ▸◂  الحلقــة اليومية السريعة  ▸◂ */
-            for ($d = 1; $d <= $daysInMonth; $d++) {
-                $dayKey   = str_pad($d, 2, '0', STR_PAD_LEFT);
-                $dateStr  = $firstMonthDay->copy()->day($d)->toDateString();
-                $attRec   = $attKeyed[$dateStr] ?? null;
+        /* ▸◂  الحلقــة اليومية السريعة  ▸◂ */
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $dayKey   = str_pad($d, 2, '0', STR_PAD_LEFT);
+            $dateStr  = $firstMonthDay->copy()->day($d)->toDateString();
+            $attRec   = $attKeyed[$dateStr] ?? null;
 
-                $status = $attRec?->status ?? $patternCache[$d];
+            // حالة الحضور/الغياب أو نمط العمل الافتراضي
+            $status = $attRec?->status ?? $patternCache[$d];
 
-                // BEFORE / AFTER حسب تواريخ الإسناد
-                if ($record->start_date && $dateStr < $record->start_date) $status = 'BEFORE';
-                elseif ($record->end_date && $dateStr > $record->end_date) $status = 'AFTER';
-
-                $formattedAttend[$dayKey] = $status;
+            // BEFORE / AFTER حسب تواريخ الإسناد
+            if ($record->start_date && $dateStr < $record->start_date) {
+                $status = 'BEFORE';
+            } elseif ($record->end_date && $dateStr > $record->end_date) {
+                $status = 'AFTER';
             }
 
-            /* ▸◂  البيانات الثابتة  ▸◂ */
-            $emp         = $record->employee;
-            $arabicName  = "{$emp->first_name} {$emp->father_name} {$emp->grandfather_name} {$emp->family_name}";
-            $englishName = $emp->english_name;
-            $projectName = $record->project->name ?? '';
-            $zoneName    = $record->zone->name ?? '';
-            $salary      = ($emp->basic_salary ?? 0) + ($emp->living_allowance ?? 0) + ($emp->other_allowances ?? 0);
+            // السطر الأول (الحالة الأصلية)
+            $formattedAttend[$dayKey] = $status;
 
-            /* ▸◂  إحصاءات الحضور/الغياب من تجميعة SQL  ▸◂ */
-            // $empCounts = $counts?->get($employee->id, collect()) ?? collect();
-            // $present   = optional($empCounts->firstWhere('status', 'present'))->c ?? 0;
-            // $absent    = optional($empCounts->firstWhere('status', 'absent'))->c  ?? 0;
-
-            /** الصف الأول (العربى) */
-            $rows[] = [
-                'id'               => $employee->id,
-                'name'             => $arabicName,
-                'national_id'      => $emp->national_id ?? '',
-                'attendance'       => $formattedAttend,
-                // 'stats'            => ['present' => $present, 'absent' => $absent],
-                'project_utilized' => $projectName,
-                'salary'           => $salary,
-                'is_english'       => false,
-            ];
-
-            /** الصف الثانى (الإنجليزى) */
-            $rows[] = [
-                'id'               => "{$employee->id}-en",
-                'name'             => $englishName,
-                'national_id'      => '',
-                'attendance'       => [],
-                // 'stats'            => ['present' => '', 'absent' => ''],
-                'project_utilized' => $zoneName,
-                'salary'           => '',
-                'is_english'       => true,
-            ];
+            // السطر الثاني (التغطية فقط)
+            $coverageAttend[$dayKey] = ($attRec && $attRec->has_coverage_shift) ? 'COV' : '';
         }
 
-        return collect($rows)->values();
+        /* ▸◂  البيانات الثابتة  ▸◂ */
+        $emp         = $record->employee;
+        $arabicName  = "{$emp->first_name} {$emp->father_name} {$emp->grandfather_name} {$emp->family_name}";
+        $englishName = $emp->english_name;
+        $projectName = $record->project->name ?? '';
+        $zoneName    = $record->zone->name ?? '';
+        $salary      = ($emp->basic_salary ?? 0)
+                     + ($emp->living_allowance ?? 0)
+                     + ($emp->other_allowances ?? 0);
+
+        /** الصف الأول (العربى) */
+        $rows[] = [
+            'id'               => $employee->id,
+            'name'             => $arabicName,
+            'national_id'      => $emp->national_id ?? '',
+            'attendance'       => $formattedAttend,
+            'project_utilized' => $projectName,
+            'salary'           => $salary,
+            'is_english'       => false,
+        ];
+
+        /** الصف الثانى (الإنجليزى) — يُظهر فقط COV أو فراغ */
+        $rows[] = [
+            'id'               => "{$employee->id}-en",
+            'name'             => $englishName,
+            'national_id'      => '',
+            'attendance'       => $coverageAttend,   // ⬅️ السطر الوحيد المعدَّل فعليًا
+            'project_utilized' => $zoneName,
+            'salary'           => '',
+            'is_english'       => true,
+        ];
     }
+
+    return collect($rows)->values();
+}
+
 
     /**
      * تُنشئ مصفوفة نمط العمل للشهر مرة واحدة لتجنب حسابه يوميًا داخل الحلقة.

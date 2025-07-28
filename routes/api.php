@@ -430,3 +430,4 @@ Route::get('/uncovered-zones', function () {
 // ... (أي مسارات أخرى موجودة)
 
 Route::post('/attendance-data', [ManulAttendanceController::class, 'getAttendanceData']);
+Route::post('/attendance-coverage-status', [ManulAttendanceController::class, 'saveCoverageStatus']);
