@@ -140,7 +140,9 @@
                             {
                                 headerName: 'موقع العمل\nUTILIZED PROJECT',
                                 field: 'project_utilized',
+                              
                                 width: 240,
+                                
                                 pinned: 'left',
                                 cellRenderer: params => params.value ?? '',
                                 cellStyle: {
@@ -264,74 +266,31 @@
                             const attendance = params.data.attendance || {};
                             return Object.values(attendance).filter(val => val === status).length;
                         };
-
                         const totalValueGetter = (params) => {
                             if (params.data?.is_english) return '';
                             const attendance = params.data.attendance || {};
-                            // نجمع كل الحالات التي لا تعتبر OFF أو BEFORE/AFTER
                             const validStates = ['present', 'coverage', 'leave', 'UV', 'absent'];
                             return Object.values(attendance).filter(val => validStates.includes(val)).length;
                         };
+                       const statusColors = {
+                            'present': { bg: '#2E7D32', text: 'white' },
+                            'absent': { bg: '#D32F2F', text: 'white' },
+                            'coverage': { bg: '#F9A825', text: 'black' },
+                            'M': { bg: '#D9D9D9', text: 'black' },
+                            'leave': { bg: '#388E3C', text: 'white' },
+                            'UV': { bg: '#F57C00', text: 'white' },
+                            'OFF': { bg: '#FFC7CE', text: 'black' }
+                        };
 
-                        const summaryColumns = [{
-                                headerName: "أوف\nOFF",
-                                field: 'summary.off',
-                                valueGetter: summaryValueGetter('OFF'),
-                                colId: 'summary_off',
-                                width: 80
-                            },
-                            {
-                                headerName: "عمل\nP",
-                                field: 'summary.present',
-                                valueGetter: summaryValueGetter('present'),
-                                colId: 'summary_present',
-                                width: 80
-                            },
-                            {
-                                headerName: "إضافي\nCOV",
-                                field: 'summary.coverage',
-                                valueGetter: summaryValueGetter('coverage'),
-                                colId: 'summary_coverage',
-                                width: 80
-                            },
-                            {
-                                headerName: "مرضي\nM",
-                                field: 'summary.medical',
-                                valueGetter: summaryValueGetter('M'),
-                                colId: 'summary_medical',
-                                width: 80
-                            }, // افترضت أن M تعني مرضي
-                            {
-                                headerName: "إجازة مدفوعة\nPV",
-                                field: 'summary.paid_leave',
-                                valueGetter: summaryValueGetter('leave'),
-                                colId: 'summary_paid_leave',
-                                width: 100
-                            }, // افترضت أن leave هي PV
-                            {
-                                headerName: "إجازة غير مدفوعة\nUV",
-                                field: 'summary.unpaid_leave',
-                                valueGetter: summaryValueGetter('UV'),
-                                colId: 'summary_unpaid_leave',
-                                width: 120
-                            },
-                            {
-                                headerName: "غياب\nA",
-                                field: 'summary.absent',
-                                valueGetter: summaryValueGetter('absent'),
-                                colId: 'summary_absent',
-                                width: 80
-                            },
-                            {
-                                headerName: "الإجمالي\nTotal",
-                                field: 'summary.total',
-                                valueGetter: totalValueGetter,
-                                colId: 'summary_total',
-                                width: 90,
-                                cellStyle: {
-                                    fontWeight: 'bold'
-                                }
-                            },
+                              const summaryColumns = [
+                            { headerName: "أوف\nOFF", field: 'summary.off', valueGetter: summaryValueGetter('OFF'), colId: 'summary_off', width: 80, cellStyle: { backgroundColor: statusColors.OFF.bg, color: statusColors.OFF.text, textAlign: 'center' } },
+                            { headerName: "عمل\nP", field: 'summary.present', valueGetter: summaryValueGetter('present'), colId: 'summary_present', width: 80, cellStyle: { backgroundColor: statusColors.present.bg, color: statusColors.present.text, textAlign: 'center' } },
+                            { headerName: "إضافي\nCOV", field: 'summary.coverage', valueGetter: summaryValueGetter('coverage'), colId: 'summary_coverage', width: 80, cellStyle: { backgroundColor: statusColors.coverage.bg, color: statusColors.coverage.text, textAlign: 'center' } },
+                            { headerName: "مرضي\nM", field: 'summary.medical', valueGetter: summaryValueGetter('M'), colId: 'summary_medical', width: 80, cellStyle: { backgroundColor: statusColors.M.bg, color: statusColors.M.text, textAlign: 'center' } },
+                            { headerName: "إجازة مدفوعة\nPV", field: 'summary.paid_leave', valueGetter: summaryValueGetter('leave'), colId: 'summary_paid_leave', width: 100, cellStyle: { backgroundColor: statusColors.leave.bg, color: statusColors.leave.text, textAlign: 'center' } },
+                            { headerName: "إجازة غير مدفوعة\nUV", field: 'summary.unpaid_leave', valueGetter: summaryValueGetter('UV'), colId: 'summary_unpaid_leave', width: 120, cellStyle: { backgroundColor: statusColors.UV.bg, color: statusColors.UV.text, textAlign: 'center' } },
+                            { headerName: "غياب\nA", field: 'summary.absent', valueGetter: summaryValueGetter('absent'), colId: 'summary_absent', width: 80, cellStyle: { backgroundColor: statusColors.absent.bg, color: statusColors.absent.text, textAlign: 'center' } },
+                            { headerName: "الإجمالي\nTotal", field: 'summary.total', valueGetter: totalValueGetter, colId: 'summary_total', width: 90, cellStyle: { fontWeight: 'bold', textAlign: 'center' } }
                         ];
 
                         // دمج كل الأعمدة معاً
@@ -373,6 +332,7 @@
                             paginationPageSize: 200,
                             rowBuffer: 10,
                             rowHeight: 35,
+                             headerHeight: 45,
                             getRowId: params => params.data.id,
                             singleClickEdit: true,
                             stopEditingWhenCellsLoseFocus: true,
@@ -480,8 +440,24 @@
                 .ag-cell[col-id="project_utilized"] {
                     font-size: 11px !important;
                 }
-            </style>
-        @endpush
+            /* ✅ [جديد] كلاسات تلوين رؤوس أعمدة الملخص */
+            .summary-header-present { background-color: #2E7D32 !important; color: white !important; }
+            .summary-header-absent { background-color: #D32F2F !important; color: white !important; }
+            .summary-header-coverage { background-color: #F9A825 !important; color: black !important; }
+            .summary-header-m { background-color: #D9D9D9 !important; color: black !important; }
+            .summary-header-leave { background-color: #388E3C !important; color: white !important; }
+            .summary-header-uv { background-color: #F57C00 !important; color: white !important; }
+            .summary-header-off { background-color: #FFC7CE !important; color: black !important; }
+
+            /* تعديل بسيط لضمان أن النص يظهر بشكل جيد */
+            .ag-header-cell-label {
+                white-space: pre-line !important;
+                text-align: center;
+                line-height: 1.2;
+                padding: 4px 2px;
+            }
+        </style>
+    @endpush
 
         @section('meta')
             <meta name="csrf-token" content="{{ csrf_token() }}">
