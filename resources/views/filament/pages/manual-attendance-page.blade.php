@@ -28,15 +28,29 @@
         </x-filament::section>
 
         {{-- الأزرار وحالة الحفظ --}}
-        <div class="flex items-center justify-between mt-4">
-            <button id="toggleSummaryBtn"
-                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-                إظهار الملخص
-            </button>
-            <div id="save-status" class="px-3 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded">
-                حالة التعديل: لا يوجد تعديل بعد.
-            </div>
-        </div>
+       <div class="flex items-center justify-between mt-4">
+    <div class="flex items-center gap-2">
+        <button id="toggleSummaryBtn"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+            إظهار الملخص
+        </button>
+        
+        {{-- ✨ [جديد] زر ملء الشاشة --}}
+        <button id="fullscreenBtn" title="عرض ملء الشاشة"
+            class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+            <svg id="fullscreen-icon-open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 1v4m0 0h-4m4 0l-5-5" />
+            </svg>
+            <svg id="fullscreen-icon-close" xmlns="http://www.w3.org/2000/svg" class="hidden w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l-5 5m0 0v-4m0 4h4m11-5l-5-5m0 0v4m0-4h-4" />
+            </svg>
+        </button>
+    </div>
+
+    <div id="save-status" class="px-3 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded">
+        حالة التعديل: لا يوجد تعديل بعد.
+    </div>
+</div>
 
         {{-- حاوية الجدول --}}
         <div id="ag-grid-container" class="mt-4" wire:ignore>
@@ -321,6 +335,7 @@
                 const gridOptions = {
                     className: 'ag-theme-alpine',
                     rowModelType: 'clientSide',
+                       headerHeight: 40,
                     getRowId: params => String(params.data.id),
                     defaultColDef: {
                         resizable: true,
@@ -409,6 +424,67 @@
                         });
                     }
                 });
+
+                   const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const openIcon = document.getElementById('fullscreen-icon-open');
+            const closeIcon = document.getElementById('fullscreen-icon-close');
+            
+            // حاوية الصفحة هي العنصر الذي نريد عرضه في وضع ملء الشاشة
+            const fullscreenElement = document.querySelector('.fi-page');
+
+            function toggleFullscreen() {
+                // التحقق مما إذا كنا حاليًا في وضع ملء الشاشة
+                if (!document.fullscreenElement) {
+                    // الدخول إلى وضع ملء الشاشة
+                    if (fullscreenElement.requestFullscreen) {
+                        fullscreenElement.requestFullscreen();
+                    } else if (fullscreenElement.mozRequestFullScreen) { // Firefox
+                        fullscreenElement.mozRequestFullScreen();
+                    } else if (fullscreenElement.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                        fullscreenElement.webkitRequestFullscreen();
+                    } else if (fullscreenElement.msRequestFullscreen) { // IE/Edge
+                        fullscreenElement.msRequestFullscreen();
+                    }
+                } else {
+                    // الخروج من وضع ملء الشاشة
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.mozCancelFullScreen) { // Firefox
+                        document.mozCancelFullScreen();
+                    } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) { // IE/Edge
+                        document.msExitFullscreen();
+                    }
+                }
+            }
+
+            function updateFullscreenUI() {
+                const isFullscreen = !!document.fullscreenElement;
+                
+                // إضافة/إزالة الكلاس لتطبيق الأنماط الخاصة بنا
+                fullscreenElement.classList.toggle('fullscreen-container', isFullscreen);
+                
+                // تبديل الأيقونة والنص
+                openIcon.classList.toggle('hidden', isFullscreen);
+                closeIcon.classList.toggle('hidden', !isFullscreen);
+                fullscreenBtn.setAttribute('title', isFullscreen ? 'الخروج من وضع ملء الشاشة' : 'عرض ملء الشاشة');
+
+                // إعلام AG Grid بتغير الحجم
+                if (gridApi) {
+                    // تأخير بسيط لإعطاء المتصفح فرصة لتغيير الأبعاد
+                    setTimeout(() => gridApi.checkGridSize(), 150);
+                }
+            }
+
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+            // الاستماع إلى تغييرات وضع ملء الشاشة (مهم جدًا)
+            // هذا يضمن تحديث الواجهة حتى لو خرج المستخدم من ملء الشاشة باستخدام زر 'Esc'
+            document.addEventListener('fullscreenchange', updateFullscreenUI);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+            document.addEventListener('mozfullscreenchange', updateFullscreenUI);
+            document.addEventListener('MSFullscreenChange', updateFullscreenUI);
             });
         </script>
     @endpush
@@ -456,6 +532,39 @@
                 .summary-header-leave { background-color: #388E3C !important; color: white !important; }
                 .summary-header-uv { background-color: #F57C00 !important; color: white !important; }
                 .summary-header-off { background-color: #FFC7CE !important; color: black !important; }
+
+                   body.fullscreen-mode {
+            overflow: hidden; /* منع السكرول في الصفحة الرئيسية */
+        }
+
+        /* إخفاء كل شيء خارج حاوية الصفحة */
+        body.fullscreen-mode .fi-sidebar,
+        body.fullscreen-mode .fi-topbar,
+        body.fullscreen-mode footer {
+            display: none !important;
+        }
+
+        /* جعل حاوية الصفحة تملأ الشاشة */
+        .fi-page.fullscreen-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50; /* فوق باقي العناصر */
+            background-color: white;
+            padding: 1rem;
+            margin: 0 !important;
+            max-width: 100% !important;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* جعل الجدول ينمو ليملأ المساحة المتاحة */
+        .fi-page.fullscreen-container #ag-grid-container {
+            flex-grow: 1; /* أهم خاصية هنا */
+            height: auto !important; /* تجاهل الارتفاع المحدد سابقًا */
+        }
             </style>
         @endpush
 
