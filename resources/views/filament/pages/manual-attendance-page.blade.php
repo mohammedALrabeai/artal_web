@@ -533,37 +533,19 @@
                 .summary-header-uv { background-color: #F57C00 !important; color: white !important; }
                 .summary-header-off { background-color: #FFC7CE !important; color: black !important; }
 
-                   body.fullscreen-mode {
-            overflow: hidden; /* منع السكرول في الصفحة الرئيسية */
-        }
-
-        /* إخفاء كل شيء خارج حاوية الصفحة */
-        body.fullscreen-mode .fi-sidebar,
-        body.fullscreen-mode .fi-topbar,
-        body.fullscreen-mode footer {
-            display: none !important;
-        }
-
-        /* جعل حاوية الصفحة تملأ الشاشة */
-        .fi-page.fullscreen-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 50; /* فوق باقي العناصر */
+                   .fi-page.fullscreen-container {
+            width: 100%;
+            height: 100%;
             background-color: white;
             padding: 1rem;
-            margin: 0 !important;
-            max-width: 100% !important;
             display: flex;
             flex-direction: column;
+            /* لا حاجة لـ position: fixed أو z-index لأن المتصفح يتعامل مع ذلك */
         }
 
-        /* جعل الجدول ينمو ليملأ المساحة المتاحة */
         .fi-page.fullscreen-container #ag-grid-container {
-            flex-grow: 1; /* أهم خاصية هنا */
-            height: auto !important; /* تجاهل الارتفاع المحدد سابقًا */
+            flex-grow: 1;
+            height: auto !important;
         }
             </style>
         @endpush
