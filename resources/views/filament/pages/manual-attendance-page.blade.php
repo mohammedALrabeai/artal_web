@@ -30,21 +30,33 @@
         {{-- الأزرار وحالة الحفظ --}}
        <div class="flex items-center justify-between mt-4">
     <div class="flex items-center gap-2">
-        <button id="toggleSummaryBtn"
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+        {{-- زر الملخص --}}
+        <button id="toggleSummaryBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
             إظهار الملخص
         </button>
-        
-        {{-- ✨ [جديد] زر ملء الشاشة --}}
-        <button id="fullscreenBtn" title="عرض ملء الشاشة"
-            class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-            <svg id="fullscreen-icon-open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 1v4m0 0h-4m4 0l-5-5" />
-            </svg>
-            <svg id="fullscreen-icon-close" xmlns="http://www.w3.org/2000/svg" class="hidden w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l-5 5m0 0v-4m0 4h4m11-5l-5-5m0 0v4m0-4h-4" />
-            </svg>
+
+        {{-- زر ملء الشاشة --}}
+        <button id="fullscreenBtn" title="عرض ملء الشاشة" class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+            {{-- أيقونات ملء الشاشة --}}
+            <svg id="fullscreen-icon-open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 1v4m0 0h-4m4 0l-5-5" /></svg>
+            <svg id="fullscreen-icon-close" xmlns="http://www.w3.org/2000/svg" class="hidden w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l-5 5m0 0v-4m0 4h4m11-5l-5-5m0 0v4m0-4h-4" /></svg>
         </button>
+
+        {{-- ✨ [جديد] زر وقائمة اختيار الأعمدة --}}
+        <div class="relative" id="column-chooser-container">
+            <button id="columnChooserBtn" title="اختيار الأعمدة" class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m-6 10h6m-6 0V7" />
+                </svg>
+            </button>
+            {{-- سيتم ملء هذه القائمة بواسطة JavaScript --}}
+            <div id="columnChooserDropdown" class="absolute right-0 z-20 hidden w-64 p-4 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl">
+                <h4 class="pb-2 mb-2 font-bold border-b">إظهار/إخفاء الأعمدة</h4>
+                <div id="column-list" class="space-y-2 overflow-y-auto max-h-80">
+                    {{-- Checkboxes will be inserted here --}}
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="save-status" class="px-3 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded">
@@ -53,9 +65,10 @@
 </div>
 
         {{-- حاوية الجدول --}}
-        <div id="ag-grid-container" class="mt-4" wire:ignore>
-            <div id="myGrid" style="height: 70vh; width: 100%;"></div>
-        </div>
+       <div id="ag-grid-container" class="mt-4" wire:ignore>
+    {{-- ✨ [الإصلاح 2/3] إضافة الكلاس هنا --}}
+    <div id="myGrid" class="ag-theme-alpine" style="height: 70vh; width: 100%;"></div>
+</div>
 
           @push('scripts' )
             <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
@@ -64,7 +77,60 @@
                     let gridApi;
                     const gridDiv = document.querySelector('#myGrid');
                     if (!gridDiv) return;
+                     const STORAGE_KEY = 'agGridColumnVisibility';
 
+            function saveColumnState() {
+                if (!gridApi) return;
+                const columns = gridApi.getColumns();
+                const state = {};
+                columns.forEach(col => {
+                    if (!col.getColDef().pinned) {
+                        state[col.getColId()] = col.isVisible();
+                    }
+                });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            }
+
+            function applyColumnState() {
+                const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                if (savedState && gridApi) {
+                    const columnIds = Object.keys(savedState);
+                    columnIds.forEach(colId => {
+                        // ✨ [الإصلاح 1/3] تصحيح اسم الدالة
+                        gridApi.setColumnsVisible([colId], savedState[colId]);
+                    });
+                }
+            }
+
+            function populateColumnChooser() {
+                const columnListDiv = document.getElementById('column-list');
+                if (!gridApi || !columnListDiv) return;
+                columnListDiv.innerHTML = '';
+                const columns = gridApi.getColumns();
+
+                columns.forEach(col => {
+                    const colDef = col.getColDef();
+                    if (colDef.pinned || col.getColId() === '0') return;
+
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center p-1 space-x-2 rounded cursor-pointer hover:bg-gray-100';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = col.isVisible();
+                    checkbox.className = 'rounded text-primary-600 focus:ring-primary-500';
+                    const text = document.createTextNode(colDef.headerName);
+
+                    label.appendChild(checkbox);
+                    label.appendChild(text);
+                    columnListDiv.appendChild(label);
+
+                    checkbox.addEventListener('change', (e) => {
+                        // ✨ [الإصلاح 1/3] تصحيح اسم الدالة
+                        gridApi.setColumnsVisible([col.getColId()], e.target.checked);
+                        saveColumnState();
+                    });
+                });
+            }
                    const getEmployees = (() => {
                     let employeesPromise = null;
                     return () => {
@@ -116,6 +182,7 @@
                         currentDateStr: currentDateStr // نمرر التاريخ هنا
                     },
                             valueFormatter: params => params.value ? params.value.status : '',
+                              valueParser: params => params.newValue,
                             cellClassRules: {
                                 'ag-cell-present': params => params.value?.status === 'present',
                                 'ag-cell-absent': params => params.value?.status === 'absent',
@@ -333,8 +400,9 @@
                 }
 
                 const gridOptions = {
-                    className: 'ag-theme-alpine',
+                    // className: 'ag-theme-alpine',
                     rowModelType: 'clientSide',
+                    theme: 'legacy',
                        headerHeight: 40,
                     getRowId: params => String(params.data.id),
                     defaultColDef: {
@@ -365,9 +433,15 @@
                             const initialFilters = livewireComponent.get('filtersForGrid');
                             const newColumns = createColumnDefs(initialFilters.month, initialFilters.today);
                             gridApi.setGridOption('columnDefs', newColumns);
+
+                                // 3. تطبيق حالة الأعمدة المحفوظة
+                        applyColumnState();
+                        
+                        // 4. ملء قائمة اختيار الأعمدة
+                        populateColumnChooser();
                             const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage', 'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent', 'summary_total'];
-                            gridApi.setColumnsVisible(summaryColIds, false);
-                            fetchDataAndUpdateGrid(initialFilters);
+                                  gridApi.setColumnsVisible(summaryColIds, false);
+                              fetchDataAndUpdateGrid(initialFilters);
                         }
                     },
                     // ✨ [تحسين] تحديث الصف بعد التعديل مباشرة
@@ -424,6 +498,33 @@
                         });
                     }
                 });
+
+
+                   const columnChooserBtn = document.getElementById('columnChooserBtn');
+            const columnChooserDropdown = document.getElementById('columnChooserDropdown');
+            columnChooserBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                columnChooserDropdown.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (event) => {
+                if (!columnChooserDropdown.contains(event.target) && !columnChooserBtn.contains(event.target)) {
+                    columnChooserDropdown.classList.add('hidden');
+                }
+            });
+
+            // ربط حدث تحديث الفلاتر
+            const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute('wire:id'));
+            if (livewireComponent) {
+                livewireComponent.on('filtersApplied', ({ filters }) => {
+                    setTimeout(() => {
+                        const newColumns = createColumnDefs(filters.month, filters.today);
+                        gridApi.setGridOption('columnDefs', newColumns);
+                        applyColumnState();
+                        populateColumnChooser();
+                        fetchDataAndUpdateGrid(filters);
+                    }, 200);
+                });
+            }
 
                    const fullscreenBtn = document.getElementById('fullscreenBtn');
             const openIcon = document.getElementById('fullscreen-icon-open');
@@ -485,6 +586,8 @@
             document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
             document.addEventListener('mozfullscreenchange', updateFullscreenUI);
             document.addEventListener('MSFullscreenChange', updateFullscreenUI);
+
+            
             });
         </script>
     @endpush
