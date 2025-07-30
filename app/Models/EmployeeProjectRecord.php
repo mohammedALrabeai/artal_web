@@ -42,32 +42,34 @@ class EmployeeProjectRecord extends Model
         });
 
         static::created(function (self $record) {
-        $month = Carbon::now('Asia/Riyadh')->startOfMonth()->toDateString();
+            $month = Carbon::now('Asia/Riyadh')->startOfMonth()->toDateString();
 
-        $alreadyExists = ManualAttendanceEmployee::where('employee_project_record_id', $record->id)
-            ->where('attendance_month', $month)
-            ->exists();
+            $alreadyExists = ManualAttendanceEmployee::where('employee_project_record_id', $record->id)
+                ->where('attendance_month', $month)
+                ->exists();
 
-        if (! $alreadyExists) {
-            ManualAttendanceEmployee::create([
-                'employee_project_record_id' => $record->id,
-                'attendance_month' => $month,
-            ]);
-        }
-    });
+            if (! $alreadyExists) {
+                ManualAttendanceEmployee::create([
+                    'employee_project_record_id' => $record->id,
+                    'attendance_month' => $month,
+                ]);
+            }
+        });
 
-           // عند التحديث: إذا تغيّر status من true إلى false → نحدّث end_date
-    // static::saving(function (self $record) {
-    //     if (
-    //         $record->isDirty('status') &&
-    //         $record->getOriginal('status') === true &&
-    //         $record->status === false &&
-    //         is_null($record->end_date)
-    //     ) {
-    //         $record->end_date = now('Asia/Riyadh');
-    //     }
-    // });
+        // عند التحديث: إذا تغيّر status من true إلى false → نحدّث end_date
+        // static::saving(function (self $record) {
+        //     if (
+        //         $record->isDirty('status') &&
+        //         $record->getOriginal('status') === true &&
+        //         $record->status === false &&
+        //         is_null($record->end_date)
+        //     ) {
+        //         $record->end_date = now('Asia/Riyadh');
+        //     }
+        // });
     }
+
+
 
     public function assignedBy()
     {
@@ -75,9 +77,9 @@ class EmployeeProjectRecord extends Model
     }
 
     public function shiftSlot()
-{
-    return $this->belongsTo(ShiftSlot::class);
-}
+    {
+        return $this->belongsTo(ShiftSlot::class);
+    }
 
 
     // علاقة مع المشروع
@@ -116,7 +118,7 @@ class EmployeeProjectRecord extends Model
 
         $cycleLength = $workingDays + $offDays;
 
-       
+
         $startDate = Carbon::parse($this->shift->start_date);
 
         $daysSinceStart = $startDate->diffInDays(Carbon::today());
@@ -138,16 +140,17 @@ class EmployeeProjectRecord extends Model
                 $q->whereNull('end_date')
                     ->orWhere('end_date', '>=', now('Asia/Riyadh'));
             })
-            ->whereHas('shift', fn ($q) => $q->where('exclude_from_auto_absence', false)
+            ->whereHas(
+                'shift',
+                fn($q) => $q->where('exclude_from_auto_absence', false)
             );
     }
 
     public function getActivitylogOptions(): LogOptions
-{
-    return LogOptions::defaults()
-        ->logAll() // سجل جميع الحقول
-        ->logOnlyDirty() // فقط الحقول المتغيرة
-        ->dontSubmitEmptyLogs(); // تجاهل إذا لم يتغير شيء فعلياً
-}
-
+    {
+        return LogOptions::defaults()
+            ->logAll() // سجل جميع الحقول
+            ->logOnlyDirty() // فقط الحقول المتغيرة
+            ->dontSubmitEmptyLogs(); // تجاهل إذا لم يتغير شيء فعلياً
+    }
 }

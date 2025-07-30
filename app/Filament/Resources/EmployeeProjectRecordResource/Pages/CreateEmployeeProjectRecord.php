@@ -41,6 +41,33 @@ class CreateEmployeeProjectRecord extends CreateRecord
 
             $this->halt(); // ⛔ منع الإسناد
         }
+        $data = $this->data;
+
+         if (! $data['shift_slot_id']) {
+        Notification::make()
+            ->title('❌ لا يمكن الحفظ بدون شاغر')
+            ->danger()
+            ->body('يرجى تحديد الشاغر قبل إنشاء الإسناد.')
+            ->send();
+
+        $this->halt();
+    }
+
+    $conflict = EmployeeProjectRecord::where('shift_id', $data['shift_id'])
+        ->where('shift_slot_id', $data['shift_slot_id'])
+        ->where('status', true)
+        ->whereNull('end_date')
+        ->exists();
+
+    if ($conflict) {
+        Notification::make()
+            ->title('❌ الشاغر مستخدم بالفعل')
+            ->danger()
+            ->body('تم حجز هذا الشاغر مسبقًا لموظف آخر.')
+            ->send();
+
+        $this->halt();
+    }
 
         $zone = Zone::find($this->data['zone_id']);
         $project = Project::find($this->data['project_id']);

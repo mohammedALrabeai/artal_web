@@ -25,12 +25,12 @@ use Illuminate\Support\Facades\DB;
 
 class DistributeAssignments extends Page implements Forms\Contracts\HasForms
 {
-    use Forms\Concerns\InteractsWithForms,HasPageShield;
+    use Forms\Concerns\InteractsWithForms, HasPageShield;
 
     protected static string $view = 'filament.pages.distribute-assignments';
 
     public ?int $projectId = null;
-       protected static ?int $navigationSort = 0;
+    protected static ?int $navigationSort = 0;
 
     public array $slotValues = []; // ← هذا سيحمل كل slot_id => [employee_id, start_date]
 
@@ -40,8 +40,8 @@ class DistributeAssignments extends Page implements Forms\Contracts\HasForms
     {
         $this->form->fill();
     }
-  
-  
+
+
 
     protected function getFormSchema(): array
     {
@@ -108,17 +108,17 @@ class DistributeAssignments extends Page implements Forms\Contracts\HasForms
                 })->toArray()
             ),
             Grid::make(1)->schema([
-    // ✅ زر حفظ الإسنادات
-    \Filament\Forms\Components\Actions::make([
-        Action::make('saveAssignments')
-            ->label('💾 حفظ الإسنادات')
-            ->action('saveAssignments')
-            ->color('success')
-            ->requiresConfirmation()
-            ->modalHeading('تأكيد حفظ الإسنادات')
-            ->modalSubheading('هل أنت متأكد أنك تريد حفظ جميع التعديلات؟'),
-    ]),
-])
+                // ✅ زر حفظ الإسنادات
+                \Filament\Forms\Components\Actions::make([
+                    Action::make('saveAssignments')
+                        ->label('💾 حفظ الإسنادات')
+                        ->action('saveAssignments')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('تأكيد حفظ الإسنادات')
+                        ->modalSubheading('هل أنت متأكد أنك تريد حفظ جميع التعديلات؟'),
+                ]),
+            ])
         ];
     }
 
@@ -204,70 +204,98 @@ class DistributeAssignments extends Page implements Forms\Contracts\HasForms
             })->toArray();
     }
 
-public function saveAssignments(): void
-{
-    $created = 0;
-    $updated = 0;
-    $transferred = 0;
-    $notificationJobs = [];
+    public function saveAssignments(): void
+    {
+        $created = 0;
+        $updated = 0;
+        $transferred = 0;
+        $notificationJobs = [];
 
-    DB::transaction(function () use (&$created, &$updated, &$transferred, &$notificationJobs) {
-        foreach ($this->slotValues as $slotId => $data) {
-            $newEmployeeId = $data['employee_id'] ?? null;
-            $newStartDate = $data['start_date'] ?? now('Asia/Riyadh')->toDateString();
+        DB::transaction(function () use (&$created, &$updated, &$transferred, &$notificationJobs) {
+            foreach ($this->slotValues as $slotId => $data) {
+                $newEmployeeId = $data['employee_id'] ?? null;
+                $newStartDate = $data['start_date'] ?? now('Asia/Riyadh')->toDateString();
 
-            $existing = EmployeeProjectRecord::where('shift_slot_id', $slotId)
-                ->where('status', 1)
-                ->whereNull('end_date')
-                ->first();
+                $existing = EmployeeProjectRecord::where('shift_slot_id', $slotId)
+                    ->where('status', 1)
+                    ->whereNull('end_date')
+                    ->first();
 
-            $oldEmployeeId = $existing?->employee_id;
+                $oldEmployeeId = $existing?->employee_id;
+                $oldStartDate = $existing?->start_date
+    ? \Illuminate\Support\Carbon::parse($existing->start_date)->toDateString()
+    : null;
 
-            if ($newEmployeeId && $oldEmployeeId == $newEmployeeId) {
-                $updated++;
-                continue;
-            }
+                // 🟠 الحالة 1: لم يتم تغيير شيء (نفس الموظف ونفس التاريخ)
+                if ($newEmployeeId && $oldEmployeeId == $newEmployeeId && $oldStartDate == $newStartDate) {
+                    $updated++;
+                    continue;
+                }
 
-            if ($existing) {
-                $existing->update([
-                    'status' => 0,
-                    'end_date' => now('Asia/Riyadh'),
-                ]);
-
-                $notificationJobs[] = ['type' => 'end', 'record' => $existing];
-            }
-
-            if ($newEmployeeId) {
-                $slot = \App\Models\ShiftSlot::with('shift.zone')->find($slotId);
-
-                if ($slot && $slot->shift && $slot->shift->zone) {
-                    $newRecord = EmployeeProjectRecord::create([
-                        'employee_id' => $newEmployeeId,
-                        'shift_slot_id' => $slotId,
-                        'start_date' => $newStartDate,
-                        'project_id' => $this->projectId,
-                        'zone_id' => $slot->shift->zone_id,
-                        'shift_id' => $slot->shift_id,
-                        'status' => 1,
+                // 🔴 الحالة 2: الشاغر أصبح فارغًا → إنهاء السجل السابق فقط
+                if (is_null($newEmployeeId) && $existing) {
+                    $existing->update([
+                        'status' => 0,
+                        'end_date' => now('Asia/Riyadh'),
                     ]);
 
-                    $newRecord->employee->update(['status' => 1]);
-
+                    $notificationJobs[] = ['type' => 'end', 'record' => $existing];
                     $transferred++;
-                    $notificationJobs[] = ['type' => 'assign', 'record' => $newRecord];
+                    continue;
+                }
+
+                // 🟡 الحالة 3: تغيير التاريخ فقط → تحديث التاريخ فقط بدون إشعار
+                if ($newEmployeeId && $oldEmployeeId == $newEmployeeId && $oldStartDate != $newStartDate) {
+                    $existing->update([
+                        'start_date' => $newStartDate,
+                    ]);
+
+                    $updated++;
+                    continue;
+                }
+
+                // 🔁 الحالة 4: تغيير الموظف → إنهاء القديم وإسناد الجديد
+                if ($existing) {
+                    $existing->update([
+                        'status' => 0,
+                        'end_date' => now('Asia/Riyadh'),
+                    ]);
+
+                    $notificationJobs[] = ['type' => 'end', 'record' => $existing];
+                }
+
+                if ($newEmployeeId) {
+                    $slot = ShiftSlot::with('shift.zone')->find($slotId);
+
+                    if ($slot && $slot->shift && $slot->shift->zone) {
+                        $newRecord = EmployeeProjectRecord::create([
+                            'employee_id' => $newEmployeeId,
+                            'shift_slot_id' => $slotId,
+                            'start_date' => $newStartDate,
+                            'project_id' => $this->projectId,
+                            'zone_id' => $slot->shift->zone_id,
+                            'shift_id' => $slot->shift_id,
+                            'status' => 1,
+                            'assigned_by' => auth()->id(), // 👍 من قام بالإسناد
+                        ]);
+
+                        $newRecord->employee->update(['status' => 1]);
+
+                        $transferred++;
+                        $notificationJobs[] = ['type' => 'assign', 'record' => $newRecord];
+                    }
                 }
             }
-        }
-    });
+        });
 
-    \App\Services\AssignmentNotifier::dispatchJobs($notificationJobs);
+        // \App\Services\AssignmentNotifier::dispatchJobs($notificationJobs);
 
-    Notification::make()
-        ->title('✅ تم حفظ الإسنادات الجماعية بنجاح')
-        ->body("📌 تم تنفيذ العمليات: {$created} إضافة، {$updated} بدون تغيير، {$transferred} نقل/إحلال")
-        ->success()
-        ->send();
-}
+        Notification::make()
+            ->title('✅ تم حفظ الإسنادات الجماعية بنجاح')
+            ->body("📌 تم تنفيذ العمليات: {$created} إضافة، {$updated} بدون تغيير، {$transferred} نقل/إحلال")
+            ->success()
+            ->send();
+    }
 
 
 
@@ -277,7 +305,7 @@ public function saveAssignments(): void
         return 'توزيع الموظفين';
     }
 
-     public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): ?string
     {
         return __('Employee Management');
     }

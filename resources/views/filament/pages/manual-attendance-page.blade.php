@@ -21,231 +21,374 @@
                         class="block w-full py-2 pl-10 pr-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500"
                         placeholder="بحث سريع بالاسم أو الهوية...">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                        <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
                     </div>
                 </div>
             </div>
         </x-filament::section>
 
         {{-- الأزرار وحالة الحفظ --}}
-       <div class="flex items-center justify-between mt-4">
-    <div class="flex items-center gap-2">
-        {{-- زر الملخص --}}
-        <button id="toggleSummaryBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-            إظهار الملخص
-        </button>
+        <div class="flex items-center justify-between mt-4">
+            <div class="flex items-center gap-2">
+                {{-- زر الملخص --}}
+                <button id="toggleSummaryBtn"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+                    إظهار الملخص
+                </button>
 
-        {{-- زر ملء الشاشة --}}
-        <button id="fullscreenBtn" title="عرض ملء الشاشة" class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-            {{-- أيقونات ملء الشاشة --}}
-            <svg id="fullscreen-icon-open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 1v4m0 0h-4m4 0l-5-5" /></svg>
-            <svg id="fullscreen-icon-close" xmlns="http://www.w3.org/2000/svg" class="hidden w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l-5 5m0 0v-4m0 4h4m11-5l-5-5m0 0v4m0-4h-4" /></svg>
-        </button>
+                {{-- زر ملء الشاشة --}}
+                <button id="fullscreenBtn" title="عرض ملء الشاشة"
+                    class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+                    {{-- أيقونات ملء الشاشة --}}
+                    <svg id="fullscreen-icon-open" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 1v4m0 0h-4m4 0l-5-5" />
+                    </svg>
+                    <svg id="fullscreen-icon-close" xmlns="http://www.w3.org/2000/svg" class="hidden w-5 h-5"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M10 14l-5 5m0 0v-4m0 4h4m11-5l-5-5m0 0v4m0-4h-4" />
+                    </svg>
+                </button>
 
-        {{-- ✨ [جديد] زر وقائمة اختيار الأعمدة --}}
-        <div class="relative" id="column-chooser-container">
-            <button id="columnChooserBtn" title="اختيار الأعمدة" class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m-6 10h6m-6 0V7" />
-                </svg>
-            </button>
-            {{-- سيتم ملء هذه القائمة بواسطة JavaScript --}}
-            <div id="columnChooserDropdown" class="absolute right-0 z-20 hidden w-64 p-4 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl">
-                <h4 class="pb-2 mb-2 font-bold border-b">إظهار/إخفاء الأعمدة</h4>
-                <div id="column-list" class="space-y-2 overflow-y-auto max-h-80">
-                    {{-- Checkboxes will be inserted here --}}
+                {{-- ✨ [جديد] زر وقائمة اختيار الأعمدة --}}
+                <div class="relative" id="column-chooser-container">
+                    <button id="columnChooserBtn" title="اختيار الأعمدة"
+                        class="flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m-6 10h6m-6 0V7" />
+                        </svg>
+                    </button>
+                    {{-- سيتم ملء هذه القائمة بواسطة JavaScript --}}
+                    <div id="columnChooserDropdown"
+                        class="absolute right-0 z-20 hidden w-64 p-4 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl">
+                        <h4 class="pb-2 mb-2 font-bold border-b">إظهار/إخفاء الأعمدة</h4>
+                        <div id="column-list" class="space-y-2 overflow-y-auto max-h-80">
+                            {{-- Checkboxes will be inserted here --}}
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div id="save-status" class="px-3 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded">
-        حالة التعديل: لا يوجد تعديل بعد.
-    </div>
-</div>
+            <div id="save-status" class="px-3 py-1 text-sm text-gray-700 bg-gray-100 border border-gray-300 rounded">
+                حالة التعديل: لا يوجد تعديل بعد.
+            </div>
+        </div>
 
         {{-- حاوية الجدول --}}
-       <div id="ag-grid-container" class="mt-4" wire:ignore>
-    {{-- ✨ [الإصلاح 2/3] إضافة الكلاس هنا --}}
-    <div id="myGrid" class="ag-theme-alpine" style="height: 70vh; width: 100%;"></div>
-</div>
+        <div id="ag-grid-container" class="mt-4" wire:ignore>
+            {{-- ✨ [الإصلاح 2/3] إضافة الكلاس هنا --}}
+            <div id="myGrid" class="ag-theme-alpine" style="height: 70vh; width: 100%;"></div>
+        </div>
 
-          @push('scripts' )
+        @push('scripts')
             <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
             <script>
-                document.addEventListener('DOMContentLoaded', (  ) => {
+                document.addEventListener('DOMContentLoaded', () => {
                     let gridApi;
                     const gridDiv = document.querySelector('#myGrid');
                     if (!gridDiv) return;
-                     const STORAGE_KEY = 'agGridColumnVisibility';
+                    const STORAGE_KEY = 'agGridColumnVisibility';
 
-            function saveColumnState() {
-                if (!gridApi) return;
-                const columns = gridApi.getColumns();
-                const state = {};
-                columns.forEach(col => {
-                    if (!col.getColDef().pinned) {
-                        state[col.getColId()] = col.isVisible();
+                    function saveColumnState() {
+                        if (!gridApi) return;
+                        const columns = gridApi.getColumns();
+                        const state = {};
+                        columns.forEach(col => {
+                            if (!col.getColDef().pinned) {
+                                state[col.getColId()] = col.isVisible();
+                            }
+                        });
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     }
-                });
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            }
 
-            function applyColumnState() {
-                const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY));
-                if (savedState && gridApi) {
-                    const columnIds = Object.keys(savedState);
-                    columnIds.forEach(colId => {
-                        // ✨ [الإصلاح 1/3] تصحيح اسم الدالة
-                        gridApi.setColumnsVisible([colId], savedState[colId]);
-                    });
-                }
-            }
-
-            function populateColumnChooser() {
-                const columnListDiv = document.getElementById('column-list');
-                if (!gridApi || !columnListDiv) return;
-                columnListDiv.innerHTML = '';
-                const columns = gridApi.getColumns();
-
-                columns.forEach(col => {
-                    const colDef = col.getColDef();
-                    if (colDef.pinned || col.getColId() === '0') return;
-
-                    const label = document.createElement('label');
-                    label.className = 'flex items-center p-1 space-x-2 rounded cursor-pointer hover:bg-gray-100';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = col.isVisible();
-                    checkbox.className = 'rounded text-primary-600 focus:ring-primary-500';
-                    const text = document.createTextNode(colDef.headerName);
-
-                    label.appendChild(checkbox);
-                    label.appendChild(text);
-                    columnListDiv.appendChild(label);
-
-                    checkbox.addEventListener('change', (e) => {
-                        // ✨ [الإصلاح 1/3] تصحيح اسم الدالة
-                        gridApi.setColumnsVisible([col.getColId()], e.target.checked);
-                        saveColumnState();
-                    });
-                });
-            }
-                   const getEmployees = (() => {
-                    let employeesPromise = null;
-                    return () => {
-                        if (!employeesPromise) {
-                            employeesPromise = fetch('/api/employees-list')
-                                .then(response => {
-                                    if (!response.ok) throw new Error('Network response was not ok');
-                                    return response.json();
-                                })
-                                .catch(error => {
-                                    console.error('Failed to fetch employees:', error);
-                                    return []; // إرجاع مصفوفة فارغة في حالة الفشل
-                                });
+                    function applyColumnState() {
+                        const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                        if (savedState && gridApi) {
+                            const columnIds = Object.keys(savedState);
+                            columnIds.forEach(colId => {
+                                // ✨ [الإصلاح 1/3] تصحيح اسم الدالة
+                                gridApi.setColumnsVisible([colId], savedState[colId]);
+                            });
                         }
-                        return employeesPromise;
-                    };
-                })();
+                    }
 
-                function createColumnDefs(monthStr, editableDateStr) {
-                    if (!monthStr) return [];
-                    const year = parseInt(monthStr.substring(0, 4), 10);
-                    const monthIndex = parseInt(monthStr.substring(5, 7), 10) - 1;
-                    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+                    function populateColumnChooser() {
+                        const columnListDiv = document.getElementById('column-list');
+                        if (!gridApi || !columnListDiv) return;
+                        columnListDiv.innerHTML = '';
+                        const columns = gridApi.getColumns();
 
-                    const staticColumns = [
-                        { headerName: '#', valueGetter: (params) => params.node.rowIndex + 1, width: 60, pinned: 'left', cellStyle: { textAlign: 'center', fontWeight: 'bold' } },
-                        { headerName: 'الاسم', field: 'name', pinned: 'left', width: 200, cellRenderer: (p) => `<b>${p.value}</b>  <i>${p.data.english_name || ''}</i>`, cellStyle: { lineHeight: '1.2', whiteSpace: 'pre-line' } },
-                        { headerName: 'الهوية', field: 'national_id', pinned: 'left', width: 150, cellStyle: { textAlign: 'center' } },
-                        { headerName: 'المشروع / الموقع', field: 'project_utilized', width: 240, pinned: 'left', cellStyle: { textAlign: 'center', whiteSpace: 'pre-line', fontSize: '11px' } },
-                        { headerName: 'الراتب', field: 'salary', pinned: 'left', width: 120, cellStyle: { textAlign: 'center' } }
-                    ];
+                        columns.forEach(col => {
+                            const colDef = col.getColDef();
+                            if (colDef.pinned || col.getColId() === '0') return;
 
-                    const dayColumns = [];
-                    for (let i = 1; i <= daysInMonth; i++) {
-                        const day = String(i).padStart(2, '0');
-                        const currentMonthPadded = String(monthIndex + 1).padStart(2, '0');
-                        const currentDateStr = `${year}-${currentMonthPadded}-${day}`;
-                        const isEditable = currentDateStr === editableDateStr;
+                            const label = document.createElement('label');
+                            label.className =
+                                'flex items-center p-1 space-x-2 rounded cursor-pointer hover:bg-gray-100';
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.checked = col.isVisible();
+                            checkbox.className = 'rounded text-primary-600 focus:ring-primary-500';
+                            const text = document.createTextNode(colDef.headerName);
 
-                        dayColumns.push({
-                            headerName: day,
-                            field: `attendance.${day}`,
-                            width: isEditable ? 100 : 70,
-                            editable: isEditable,
-                            cellEditor: 'DayCellEditor', // استخدام اسم المكون مباشرة
-                            cellEditorPopup: true,
-                            cellEditorPopupPosition: 'under',
-                               cellEditorParams: {
-                        currentDateStr: currentDateStr // نمرر التاريخ هنا
-                    },
-                            valueFormatter: params => params.value ? params.value.status : '',
-                              valueParser: params => params.newValue,
-                            cellClassRules: {
-                                'ag-cell-present': params => params.value?.status === 'present',
-                                'ag-cell-absent': params => params.value?.status === 'absent',
-                                'ag-cell-m': params => params.value?.status === 'M',
-                                'ag-cell-n': params => params.value?.status === 'N',
-                                'ag-cell-leave': params => params.value?.status === 'leave',
-                                'ag-cell-uv': params => params.value?.status === 'UV',
-                                'ag-cell-w': params => params.value?.status === 'W',
-                                'ag-cell-off': params => params.value?.status === 'OFF',
-                                'ag-cell-before': params => params.value?.status === 'BEFORE',
-                                'ag-cell-after': params => params.value?.status === 'AFTER',
-                                'ag-cell-has-coverage': params => params.value?.has_coverage,
-                                'ag-cell-editable-day': isEditable,
+                            label.appendChild(checkbox);
+                            label.appendChild(text);
+                            columnListDiv.appendChild(label);
+
+                            checkbox.addEventListener('change', (e) => {
+                                // ✨ [الإصلاح 1/3] تصحيح اسم الدالة
+                                gridApi.setColumnsVisible([col.getColId()], e.target.checked);
+                                saveColumnState();
+                            });
+                        });
+                    }
+                    const getEmployees = (() => {
+                        let employeesPromise = null;
+                        return () => {
+                            if (!employeesPromise) {
+                                employeesPromise = fetch('/api/employees-list')
+                                    .then(response => {
+                                        if (!response.ok) throw new Error('Network response was not ok');
+                                        return response.json();
+                                    })
+                                    .catch(error => {
+                                        console.error('Failed to fetch employees:', error);
+                                        return []; // إرجاع مصفوفة فارغة في حالة الفشل
+                                    });
+                            }
+                            return employeesPromise;
+                        };
+                    })();
+
+                    function createColumnDefs(monthStr, editableDateStr) {
+                        if (!monthStr) return [];
+                        const year = parseInt(monthStr.substring(0, 4), 10);
+                        const monthIndex = parseInt(monthStr.substring(5, 7), 10) - 1;
+                        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+                        const staticColumns = [{
+                                headerName: '#',
+                                valueGetter: (params) => params.node.rowIndex + 1,
+                                width: 60,
+                                pinned: 'left',
+                                cellStyle: {
+                                    textAlign: 'center',
+                                    fontWeight: 'bold'
+                                }
                             },
-                        });
+                            {
+                                headerName: 'الاسم',
+                                field: 'name',
+                                pinned: 'left',
+                                width: 200,
+                                cellRenderer: (p) => `<b>${p.value}</b>  <i>${p.data.english_name || ''}</i>`,
+                                cellStyle: {
+                                    lineHeight: '1.2',
+                                    whiteSpace: 'pre-line'
+                                }
+                            },
+                            {
+                                headerName: 'الهوية',
+                                field: 'national_id',
+                                pinned: 'left',
+                                width: 150,
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: 'المشروع / الموقع',
+                                field: 'project_utilized',
+                                width: 240,
+                                pinned: 'left',
+                                cellStyle: {
+                                    textAlign: 'center',
+                                    whiteSpace: 'pre-line',
+                                    fontSize: '11px'
+                                }
+                            },
+                            {
+                                headerName: 'الراتب',
+                                field: 'salary',
+                                pinned: 'left',
+                                width: 120,
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            }
+                        ];
+
+                        const dayColumns = [];
+                        for (let i = 1; i <= daysInMonth; i++) {
+                            const day = String(i).padStart(2, '0');
+                            const currentMonthPadded = String(monthIndex + 1).padStart(2, '0');
+                            const currentDateStr = `${year}-${currentMonthPadded}-${day}`;
+                            const isEditable = currentDateStr === editableDateStr;
+
+                            dayColumns.push({
+                                headerName: day,
+                                field: `attendance.${day}`,
+                                width: isEditable ? 100 : 70,
+                                editable: isEditable,
+                                cellEditor: 'DayCellEditor', // استخدام اسم المكون مباشرة
+                                cellEditorPopup: true,
+                                cellEditorPopupPosition: 'under',
+                                cellEditorParams: {
+                                    currentDateStr: currentDateStr // نمرر التاريخ هنا
+                                },
+                                valueFormatter: params => params.value ? params.value.status : '',
+                                valueParser: params => params.newValue,
+                                cellClassRules: {
+                                    'ag-cell-present': params => params.value?.status === 'present',
+                                    'ag-cell-absent': params => params.value?.status === 'absent',
+                                    'ag-cell-m': params => params.value?.status === 'M',
+                                    'ag-cell-n': params => params.value?.status === 'N',
+                                    'ag-cell-leave': params => params.value?.status === 'leave',
+                                    'ag-cell-uv': params => params.value?.status === 'UV',
+                                    'ag-cell-w': params => params.value?.status === 'W',
+                                    'ag-cell-off': params => params.value?.status === 'OFF',
+                                    'ag-cell-before': params => params.value?.status === 'BEFORE',
+                                    'ag-cell-after': params => params.value?.status === 'AFTER',
+                                    'ag-cell-has-coverage': params => params.value?.has_coverage,
+                                    'ag-cell-editable-day': isEditable,
+                                },
+                            });
+                        }
+
+                        const summaryValueGetter = (status) => (params) => {
+                            const attendance = params.data.attendance || {};
+                            return Object.values(attendance).filter(val => val.status === status).length;
+                        };
+                        const totalValueGetter = (params) => {
+                            const attendance = params.data.attendance || {};
+                            const validStates = ['present', 'M', 'N', 'leave', 'UV', 'W', 'absent'];
+                            return Object.values(attendance).filter(val => validStates.includes(val.status)).length;
+                        };
+
+                        const summaryColumns = [{
+                                headerName: "أوف\nOFF",
+                                valueGetter: summaryValueGetter('OFF'),
+                                colId: 'summary_off',
+                                width: 80,
+                                cellClass: 'summary-header-off',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "عمل\nP",
+                                valueGetter: summaryValueGetter('present'),
+                                colId: 'summary_present',
+                                width: 80,
+                                cellClass: 'summary-header-present',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "إضافي\nCOV",
+                                valueGetter: (p) => Object.values(p.data.attendance || {}).filter(v => v.has_coverage)
+                                    .length,
+                                colId: 'summary_coverage',
+                                width: 80,
+                                cellClass: 'summary-header-coverage',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "مرضي\nM",
+                                valueGetter: summaryValueGetter('M'),
+                                colId: 'summary_medical',
+                                width: 80,
+                                cellClass: 'summary-header-m',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "إجازة مدفوعة\nPV",
+                                valueGetter: summaryValueGetter('leave'),
+                                colId: 'summary_paid_leave',
+                                width: 100,
+                                cellClass: 'summary-header-leave',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "إجازة غير مدفوعة\nUV",
+                                valueGetter: summaryValueGetter('UV'),
+                                colId: 'summary_unpaid_leave',
+                                width: 120,
+                                cellClass: 'summary-header-uv',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "غياب\nA",
+                                valueGetter: summaryValueGetter('absent'),
+                                colId: 'summary_absent',
+                                width: 80,
+                                cellClass: 'summary-header-absent',
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "الإجمالي\nTotal",
+                                valueGetter: totalValueGetter,
+                                colId: 'summary_total',
+                                width: 90,
+                                cellStyle: {
+                                    fontWeight: 'bold',
+                                    textAlign: 'center'
+                                }
+                            }
+                        ];
+
+                        return [...staticColumns, ...dayColumns, ...summaryColumns];
                     }
 
-                    const summaryValueGetter = (status) => (params) => {
-                        const attendance = params.data.attendance || {};
-                        return Object.values(attendance).filter(val => val.status === status).length;
-                    };
-                    const totalValueGetter = (params) => {
-                        const attendance = params.data.attendance || {};
-                        const validStates = ['present', 'M', 'N', 'leave', 'UV', 'W', 'absent'];
-                        return Object.values(attendance).filter(val => validStates.includes(val.status)).length;
-                    };
+                    // ✨ [إصدار احترافي] محرر الخلية المعاد كتابته بالكامل
+                    class DayCellEditor {
+                        init(params) {
+                            this.params = params;
+                            this.currentDateStr = params.currentDateStr;
+                            this.initialValue = params.value || {
+                                status: '',
+                                has_coverage: false,
+                                coverage_employee_id: null,
+                                coverage_employee_name: '',
+                                notes: ''
+                            };
+                            this.state = {
+                                ...this.initialValue
+                            }; // العمل على نسخة من الحالة لتسهيل التراجع
 
-                    const summaryColumns = [
-                        { headerName: "أوف\nOFF", valueGetter: summaryValueGetter('OFF'), colId: 'summary_off', width: 80, cellClass: 'summary-header-off', cellStyle: { textAlign: 'center' } },
-                        { headerName: "عمل\nP", valueGetter: summaryValueGetter('present'), colId: 'summary_present', width: 80, cellClass: 'summary-header-present', cellStyle: { textAlign: 'center' } },
-                        { headerName: "إضافي\nCOV", valueGetter: (p) => Object.values(p.data.attendance || {}).filter(v => v.has_coverage).length, colId: 'summary_coverage', width: 80, cellClass: 'summary-header-coverage', cellStyle: { textAlign: 'center' } },
-                        { headerName: "مرضي\nM", valueGetter: summaryValueGetter('M'), colId: 'summary_medical', width: 80, cellClass: 'summary-header-m', cellStyle: { textAlign: 'center' } },
-                        { headerName: "إجازة مدفوعة\nPV", valueGetter: summaryValueGetter('leave'), colId: 'summary_paid_leave', width: 100, cellClass: 'summary-header-leave', cellStyle: { textAlign: 'center' } },
-                        { headerName: "إجازة غير مدفوعة\nUV", valueGetter: summaryValueGetter('UV'), colId: 'summary_unpaid_leave', width: 120, cellClass: 'summary-header-uv', cellStyle: { textAlign: 'center' } },
-                        { headerName: "غياب\nA", valueGetter: summaryValueGetter('absent'), colId: 'summary_absent', width: 80, cellClass: 'summary-header-absent', cellStyle: { textAlign: 'center' } },
-                        { headerName: "الإجمالي\nTotal", valueGetter: totalValueGetter, colId: 'summary_total', width: 90, cellStyle: { fontWeight: 'bold', textAlign: 'center' } }
-                    ];
+                            this.createUI();
+                            this.attachEventListeners();
+                            this.updateUI();
 
-                    return [...staticColumns, ...dayColumns, ...summaryColumns];
-                }
+                            // جلب الموظفين وتخزينهم
+                            getEmployees().then(employees => {
+                                this.allEmployees = employees;
+                            });
+                        }
 
-                // ✨ [إصدار احترافي] محرر الخلية المعاد كتابته بالكامل
-                class DayCellEditor {
-                    init(params) {
-                        this.params = params;
-                                  this.currentDateStr = params.currentDateStr; 
-                        this.initialValue = params.value || { status: '', has_coverage: false, coverage_employee_id: null, coverage_employee_name: '', notes: '' };
-                        this.state = { ...this.initialValue }; // العمل على نسخة من الحالة لتسهيل التراجع
-
-                        this.createUI();
-                        this.attachEventListeners();
-                        this.updateUI();
-
-                        // جلب الموظفين وتخزينهم
-                        getEmployees().then(employees => {
-                            this.allEmployees = employees;
-                        });
-                    }
-
-                    createUI() {
-                        this.eGui = document.createElement('div');
-                        this.eGui.className = 'ag-custom-cell-editor';
-                        this.eGui.innerHTML = `
+                        createUI() {
+                            this.eGui = document.createElement('div');
+                            this.eGui.className = 'ag-custom-cell-editor';
+                            this.eGui.innerHTML = `
                             <div class="p-4 space-y-4 bg-white border border-gray-300 rounded-lg shadow-lg" style="width: 350px;">
                                 <div>
                                     <label class="block mb-1 font-semibold text-gray-700">الحالة</label>
@@ -278,335 +421,410 @@
                             </div>
                         `;
 
-                        // ربط عناصر الواجهة بالـ class
-                        this.refs = {};
-                        this.eGui.querySelectorAll('[data-ref]').forEach(el => {
-                            this.refs[el.dataset.ref] = el;
-                        });
-
-                        // ملء قائمة الحالات
-                        const statusOptions = ['present', 'absent', 'leave', 'UV', 'W', 'M', 'N', 'OFF', 'BEFORE', 'AFTER', ''];
-                        statusOptions.forEach(value => {
-                            const opt = document.createElement('option');
-                            opt.value = value;
-                            opt.text = (value || '—').toUpperCase();
-                            this.refs.statusSelect.appendChild(opt);
-                        });
-                    }
-
-                    attachEventListeners() {
-                        this.refs.saveButton.addEventListener('click', () => this.saveChanges());
-                        this.refs.cancelButton.addEventListener('click', () => this.params.stopEditing(true));
-                        this.refs.statusSelect.addEventListener('change', (e) => this.handleStateChange('status', e.target.value));
-                        this.refs.coverageToggle.addEventListener('change', (e) => this.handleStateChange('has_coverage', e.target.checked));
-                        this.refs.notesTextarea.addEventListener('input', (e) => this.state.notes = e.target.value);
-                        this.refs.employeeSearchInput.addEventListener('input', () => this.filterEmployees());
-                        this.refs.employeeSearchInput.addEventListener('focus', () => this.filterEmployees());
-                        document.addEventListener('click', this.handleDocumentClick.bind(this), true);
-                    }
-
-                    handleStateChange(key, value) {
-                        this.state[key] = value;
-                        if (key === 'status') {
-                            const needsCoverage = ['absent', 'leave', 'UV', 'M', 'N'].includes(value);
-                            if (!needsCoverage) {
-                                this.state.has_coverage = false;
-                            }
-                        }
-                        if (key === 'has_coverage' && !value) {
-                            this.state.coverage_employee_id = null;
-                            this.state.coverage_employee_name = '';
-                        }
-                        this.updateUI();
-                    }
-
-                    updateUI() {
-                        this.refs.statusSelect.value = this.state.status;
-                        this.refs.notesTextarea.value = this.state.notes;
-                        this.refs.coverageToggle.checked = this.state.has_coverage;
-                        this.refs.employeeSearchInput.value = this.state.coverage_employee_name || '';
-
-                        const canHaveCoverage = ['absent', 'leave', 'UV', 'M', 'N'].includes(this.state.status);
-                        this.refs.coverageSection.style.display = canHaveCoverage ? 'block' : 'none';
-                        this.refs.employeeSearchContainer.style.display = this.state.has_coverage ? 'block' : 'none';
-                    }
-
-                    filterEmployees() {
-                        const searchTerm = this.refs.employeeSearchInput.value.toLowerCase();
-                        if (!this.allEmployees) return;
-
-                        const filtered = this.allEmployees.filter(emp =>
-                            emp.name.toLowerCase().includes(searchTerm) || emp.national_id.includes(searchTerm)
-                        );
-
-                        this.refs.searchResults.innerHTML = '';
-                        if (filtered.length > 0) {
-                            this.refs.searchResults.classList.remove('hidden');
-                            filtered.forEach(emp => {
-                                const item = document.createElement('div');
-                                item.className = 'p-2 hover:bg-primary-100 cursor-pointer';
-                                item.textContent = `${emp.name} (${emp.national_id})`;
-                                item.addEventListener('click', () => {
-                                    this.handleStateChange('coverage_employee_id', emp.id);
-                                    this.handleStateChange('coverage_employee_name', emp.name);
-                                    this.refs.searchResults.classList.add('hidden');
-                                });
-                                this.refs.searchResults.appendChild(item);
+                            // ربط عناصر الواجهة بالـ class
+                            this.refs = {};
+                            this.eGui.querySelectorAll('[data-ref]').forEach(el => {
+                                this.refs[el.dataset.ref] = el;
                             });
-                        } else {
-                            this.refs.searchResults.classList.add('hidden');
+
+                            // ملء قائمة الحالات
+                            const statusOptions = ['present', 'absent', 'leave', 'UV', 'W', 'M', 'N', 'OFF', 'BEFORE',
+                                'AFTER', ''
+                            ];
+                            statusOptions.forEach(value => {
+                                const opt = document.createElement('option');
+                                opt.value = value;
+                                opt.text = (value || '—').toUpperCase();
+                                this.refs.statusSelect.appendChild(opt);
+                            });
                         }
-                    }
 
-                    handleDocumentClick(event) {
-                        if (!this.eGui.contains(event.target)) {
-                            this.refs.searchResults.classList.add('hidden');
+                        attachEventListeners() {
+                            this.refs.saveButton.addEventListener('click', () => this.saveChanges());
+                            this.refs.cancelButton.addEventListener('click', () => this.params.stopEditing(true));
+                            this.refs.statusSelect.addEventListener('change', (e) => this.handleStateChange('status', e
+                                .target.value));
+                            this.refs.coverageToggle.addEventListener('change', (e) => this.handleStateChange(
+                                'has_coverage', e.target.checked));
+                            this.refs.notesTextarea.addEventListener('input', (e) => this.state.notes = e.target.value);
+                            this.refs.employeeSearchInput.addEventListener('input', () => this.filterEmployees());
+                            this.refs.employeeSearchInput.addEventListener('focus', () => this.filterEmployees());
+                            document.addEventListener('click', this.handleDocumentClick.bind(this), true);
                         }
-                    }
 
-                    saveChanges() {
-                const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute('wire:id'));
-                const statusBox = document.getElementById('save-status');
-                if (statusBox) statusBox.textContent = '🟡 جاري الحفظ...';
-
-                // استخدام التاريخ المخزن لضمان عدم كونه null
-                livewireComponent.call(
-                    'saveAttendanceDetails',
-                    this.params.data.id,
-                    this.currentDateStr, // <-- استخدام المتغير المخزن والمضمون
-                    this.state
-                )
-                .then(() => {
-                    if (statusBox) statusBox.textContent = '✅ تم الحفظ بنجاح';
-                    this.params.stopEditing(false);
-                })
-                .catch((error) => {
-                    console.error('Save failed:', error);
-                    if (statusBox) statusBox.textContent = '❌ فشل الحفظ';
-                    this.params.stopEditing(true);
-                });
-            }
-                    getValue() {
-                        return this.state;
-                    }
-
-                    getGui() {
-                        return this.eGui;
-                    }
-
-                    destroy() {
-                        document.removeEventListener('click', this.handleDocumentClick.bind(this), true);
-                    }
-                }
-
-                const gridOptions = {
-                    // className: 'ag-theme-alpine',
-                    rowModelType: 'clientSide',
-                    theme: 'legacy',
-                       headerHeight: 40,
-                    getRowId: params => String(params.data.id),
-                    defaultColDef: {
-                        resizable: true,
-                        tooltipValueGetter: (p) => {
-                            if (p.colDef.field && p.colDef.field.startsWith('attendance.')) {
-                                const val = p.value;
-                                if (!val) return '';
-                                let tooltip = `الحالة: ${val.status || 'فارغ'}`;
-                                if (val.has_coverage) {
-                                    tooltip += ' (مع تغطية)';
-                                    if (val.coverage_employee_name) {
-                                        tooltip += `\nالبديل: ${val.coverage_employee_name}`;
-                                    }
+                        handleStateChange(key, value) {
+                            this.state[key] = value;
+                            if (key === 'status') {
+                                const needsCoverage = ['absent', 'leave', 'UV', 'M', 'N'].includes(value);
+                                if (!needsCoverage) {
+                                    this.state.has_coverage = false;
                                 }
-                                if (val.notes) tooltip += `\nملاحظات: ${val.notes}`;
-                                return tooltip;
                             }
-                            return p.value;
+                            if (key === 'has_coverage' && !value) {
+                                this.state.coverage_employee_id = null;
+                                this.state.coverage_employee_name = '';
+                            }
+                            this.updateUI();
+                        }
+
+                        updateUI() {
+                            this.refs.statusSelect.value = this.state.status;
+                            this.refs.notesTextarea.value = this.state.notes;
+                            this.refs.coverageToggle.checked = this.state.has_coverage;
+                            this.refs.employeeSearchInput.value = this.state.coverage_employee_name || '';
+
+                            const canHaveCoverage = ['absent', 'leave', 'UV', 'M', 'N'].includes(this.state.status);
+                            this.refs.coverageSection.style.display = canHaveCoverage ? 'block' : 'none';
+                            this.refs.employeeSearchContainer.style.display = this.state.has_coverage ? 'block' :
+                            'none';
+                        }
+
+                        filterEmployees() {
+                            const searchTerm = this.refs.employeeSearchInput.value.toLowerCase();
+                            if (!this.allEmployees) return;
+
+                            const filtered = this.allEmployees.filter(emp =>
+                                emp.name.toLowerCase().includes(searchTerm) || emp.national_id.includes(searchTerm)
+                            );
+
+                            this.refs.searchResults.innerHTML = '';
+                            if (filtered.length > 0) {
+                                this.refs.searchResults.classList.remove('hidden');
+                                filtered.forEach(emp => {
+                                    const item = document.createElement('div');
+                                    item.className = 'p-2 hover:bg-primary-100 cursor-pointer';
+                                    item.textContent = `${emp.name} (${emp.national_id})`;
+                                    item.addEventListener('click', () => {
+                                        this.handleStateChange('coverage_employee_id', emp.id);
+                                        this.handleStateChange('coverage_employee_name', emp.name);
+                                        this.refs.searchResults.classList.add('hidden');
+                                    });
+                                    this.refs.searchResults.appendChild(item);
+                                });
+                            } else {
+                                this.refs.searchResults.classList.add('hidden');
+                            }
+                        }
+
+                        handleDocumentClick(event) {
+                            if (!this.eGui.contains(event.target)) {
+                                this.refs.searchResults.classList.add('hidden');
+                            }
+                        }
+
+                        saveChanges() {
+                            const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute(
+                                'wire:id'));
+                            const statusBox = document.getElementById('save-status');
+                            if (statusBox) statusBox.textContent = '🟡 جاري الحفظ...';
+
+                            // استخدام التاريخ المخزن لضمان عدم كونه null
+                            livewireComponent.call(
+                                    'saveAttendanceDetails',
+                                    this.params.data.id,
+                                    this.currentDateStr, // <-- استخدام المتغير المخزن والمضمون
+                                    this.state
+                                )
+                                .then(() => {
+                                    if (statusBox) statusBox.textContent = '✅ تم الحفظ بنجاح';
+                                    this.params.stopEditing(false);
+                                })
+                                .catch((error) => {
+                                    console.error('Save failed:', error);
+                                    if (statusBox) statusBox.textContent = '❌ فشل الحفظ';
+                                    this.params.stopEditing(true);
+                                });
+                        }
+                        getValue() {
+                            return this.state;
+                        }
+
+                        getGui() {
+                            return this.eGui;
+                        }
+
+                        destroy() {
+                            document.removeEventListener('click', this.handleDocumentClick.bind(this), true);
+                        }
+                    }
+
+                    const gridOptions = {
+                        // className: 'ag-theme-alpine',
+                        rowModelType: 'clientSide',
+                        theme: 'legacy',
+                        headerHeight: 40,
+                        getRowId: params => String(params.data.id),
+                        defaultColDef: {
+                            resizable: true,
+                            tooltipValueGetter: (p) => {
+                                if (p.colDef.field && p.colDef.field.startsWith('attendance.')) {
+                                    const val = p.value;
+                                    if (!val) return '';
+                                    let tooltip = `الحالة: ${val.status || 'فارغ'}`;
+                                    if (val.has_coverage) {
+                                        tooltip += ' (مع تغطية)';
+                                        if (val.coverage_employee_name) {
+                                            tooltip += `\nالبديل: ${val.coverage_employee_name}`;
+                                        }
+                                    }
+                                    if (val.notes) tooltip += `\nملاحظات: ${val.notes}`;
+                                    return tooltip;
+                                }
+                                return p.value;
+                            },
                         },
-                    },
-                    // تسجيل المكون الجديد
-                    components: { DayCellEditor },
-                    onGridReady: params => {
-                        gridApi = params.api;
-                        const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute('wire:id'));
-                        if (livewireComponent) {
-                            const initialFilters = livewireComponent.get('filtersForGrid');
-                            const newColumns = createColumnDefs(initialFilters.month, initialFilters.today);
-                            gridApi.setGridOption('columnDefs', newColumns);
+                        // تسجيل المكون الجديد
+                        components: {
+                            DayCellEditor
+                        },
+                        onGridReady: params => {
+                            gridApi = params.api;
+                            const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute(
+                                'wire:id'));
+                            if (livewireComponent) {
+                                const initialFilters = livewireComponent.get('filtersForGrid');
+                                const newColumns = createColumnDefs(initialFilters.month, initialFilters.today);
+                                gridApi.setGridOption('columnDefs', newColumns);
 
                                 // 3. تطبيق حالة الأعمدة المحفوظة
-                        applyColumnState();
-                        
-                        // 4. ملء قائمة اختيار الأعمدة
-                        populateColumnChooser();
-                            const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage', 'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent', 'summary_total'];
-                                  gridApi.setColumnsVisible(summaryColIds, false);
-                              fetchDataAndUpdateGrid(initialFilters);
+                                applyColumnState();
+
+                                // 4. ملء قائمة اختيار الأعمدة
+                                populateColumnChooser();
+                                const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage',
+                                    'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave',
+                                    'summary_absent', 'summary_total'
+                                ];
+                                gridApi.setColumnsVisible(summaryColIds, false);
+                                fetchDataAndUpdateGrid(initialFilters);
+                            }
+                        },
+                        // ✨ [تحسين] تحديث الصف بعد التعديل مباشرة
+                        onCellValueChanged: (event) => {
+                            // هذا يضمن أن الخلية تعكس دائمًا أحدث البيانات بعد الإغلاق
+                            event.api.refreshCells({
+                                rowNodes: [event.node]
+                            });
                         }
-                    },
-                    // ✨ [تحسين] تحديث الصف بعد التعديل مباشرة
-                    onCellValueChanged: (event) => {
-                        // هذا يضمن أن الخلية تعكس دائمًا أحدث البيانات بعد الإغلاق
-                        event.api.refreshCells({ rowNodes: [event.node] });
+                    };
+
+                    function fetchDataAndUpdateGrid(filters) {
+                        if (!gridApi) return;
+                        gridApi.setGridOption("loading", true);
+                        fetch('/api/attendance-data', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                },
+                                body: JSON.stringify({
+                                    month: filters.month,
+                                    filters: filters
+                                })
+                            })
+                            .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+                            .then(data => {
+                                gridApi.setGridOption('rowData', data.rows);
+                                gridApi.setGridOption("loading", false);
+                            })
+                            .catch((error) => {
+                                console.error('Error fetching data:', error);
+                                gridApi.setGridOption("loading", false);
+                            });
                     }
-                };
 
-                function fetchDataAndUpdateGrid(filters) {
-                    if (!gridApi) return;
-                    gridApi.setGridOption("loading", true);
-                    fetch('/api/attendance-data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                        body: JSON.stringify({ month: filters.month, filters: filters })
-                    })
-                    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
-                    .then(data => {
-                        gridApi.setGridOption('rowData', data.rows);
-                        gridApi.setGridOption("loading", false);
-                    })
-                    .catch((error) => {
-                        console.error('Error fetching data:', error);
-                        gridApi.setGridOption("loading", false);
+                    agGrid.createGrid(gridDiv, gridOptions);
+
+                    document.getElementById('quickFilterInput').addEventListener('input', (event) => {
+                        if (gridApi) gridApi.setGridOption('quickFilterText', event.target.value);
                     });
-                }
 
-                agGrid.createGrid(gridDiv, gridOptions);
+                    let summaryVisible = false;
+                    document.getElementById('toggleSummaryBtn').addEventListener('click', () => {
+                        if (!gridApi) return;
+                        summaryVisible = !summaryVisible;
+                        const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage',
+                            'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent',
+                            'summary_total'
+                        ];
+                        gridApi.setColumnsVisible(summaryColIds, summaryVisible);
+                        document.getElementById('toggleSummaryBtn').textContent = summaryVisible ? 'إخفاء الملخص' :
+                            'إظهار الملخص';
+                    });
 
-                document.getElementById('quickFilterInput').addEventListener('input', (event) => {
-                    if (gridApi) gridApi.setGridOption('quickFilterText', event.target.value);
-                });
+                    document.addEventListener('livewire:init', () => {
+                        const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute(
+                            'wire:id'));
+                        if (livewireComponent) {
+                            livewireComponent.on('filtersApplied', ({
+                                filters
+                            }) => {
+                                if (gridApi) {
+                                    document.getElementById('quickFilterInput').value = '';
+                                    const newColumns = createColumnDefs(filters.month, filters.today);
+                                    gridApi.setGridOption('columnDefs', newColumns);
+                                    fetchDataAndUpdateGrid(filters);
+                                }
+                            });
+                        }
+                    });
 
-                let summaryVisible = false;
-                document.getElementById('toggleSummaryBtn').addEventListener('click', () => {
-                    if (!gridApi) return;
-                    summaryVisible = !summaryVisible;
-                    const summaryColIds = ['summary_off', 'summary_present', 'summary_coverage', 'summary_medical', 'summary_paid_leave', 'summary_unpaid_leave', 'summary_absent', 'summary_total'];
-                    gridApi.setColumnsVisible(summaryColIds, summaryVisible);
-                    document.getElementById('toggleSummaryBtn').textContent = summaryVisible ? 'إخفاء الملخص' : 'إظهار الملخص';
-                });
 
-                document.addEventListener('livewire:init', () => {
+                    const columnChooserBtn = document.getElementById('columnChooserBtn');
+                    const columnChooserDropdown = document.getElementById('columnChooserDropdown');
+                    columnChooserBtn.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        columnChooserDropdown.classList.toggle('hidden');
+                    });
+                    document.addEventListener('click', (event) => {
+                        if (!columnChooserDropdown.contains(event.target) && !columnChooserBtn.contains(event
+                                .target)) {
+                            columnChooserDropdown.classList.add('hidden');
+                        }
+                    });
+
+                    // ربط حدث تحديث الفلاتر
                     const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute('wire:id'));
                     if (livewireComponent) {
-                        livewireComponent.on('filtersApplied', ({ filters }) => {
-                            if (gridApi) {
-                                document.getElementById('quickFilterInput').value = '';
+                        livewireComponent.on('filtersApplied', ({
+                            filters
+                        }) => {
+                            setTimeout(() => {
                                 const newColumns = createColumnDefs(filters.month, filters.today);
                                 gridApi.setGridOption('columnDefs', newColumns);
+                                applyColumnState();
+                                populateColumnChooser();
                                 fetchDataAndUpdateGrid(filters);
-                            }
+                            }, 200);
                         });
                     }
-                });
 
+                    const fullscreenBtn = document.getElementById('fullscreenBtn');
+                    const openIcon = document.getElementById('fullscreen-icon-open');
+                    const closeIcon = document.getElementById('fullscreen-icon-close');
 
-                   const columnChooserBtn = document.getElementById('columnChooserBtn');
-            const columnChooserDropdown = document.getElementById('columnChooserDropdown');
-            columnChooserBtn.addEventListener('click', (event) => {
-                event.stopPropagation();
-                columnChooserDropdown.classList.toggle('hidden');
-            });
-            document.addEventListener('click', (event) => {
-                if (!columnChooserDropdown.contains(event.target) && !columnChooserBtn.contains(event.target)) {
-                    columnChooserDropdown.classList.add('hidden');
-                }
-            });
+                    // حاوية الصفحة هي العنصر الذي نريد عرضه في وضع ملء الشاشة
+                    const fullscreenElement = document.querySelector('.fi-page');
 
-            // ربط حدث تحديث الفلاتر
-            const livewireComponent = Livewire.find(gridDiv.closest('[wire\\:id]').getAttribute('wire:id'));
-            if (livewireComponent) {
-                livewireComponent.on('filtersApplied', ({ filters }) => {
-                    setTimeout(() => {
-                        const newColumns = createColumnDefs(filters.month, filters.today);
-                        gridApi.setGridOption('columnDefs', newColumns);
-                        applyColumnState();
-                        populateColumnChooser();
-                        fetchDataAndUpdateGrid(filters);
-                    }, 200);
-                });
-            }
-
-                   const fullscreenBtn = document.getElementById('fullscreenBtn');
-            const openIcon = document.getElementById('fullscreen-icon-open');
-            const closeIcon = document.getElementById('fullscreen-icon-close');
-            
-            // حاوية الصفحة هي العنصر الذي نريد عرضه في وضع ملء الشاشة
-            const fullscreenElement = document.querySelector('.fi-page');
-
-            function toggleFullscreen() {
-                // التحقق مما إذا كنا حاليًا في وضع ملء الشاشة
-                if (!document.fullscreenElement) {
-                    // الدخول إلى وضع ملء الشاشة
-                    if (fullscreenElement.requestFullscreen) {
-                        fullscreenElement.requestFullscreen();
-                    } else if (fullscreenElement.mozRequestFullScreen) { // Firefox
-                        fullscreenElement.mozRequestFullScreen();
-                    } else if (fullscreenElement.webkitRequestFullscreen) { // Chrome, Safari and Opera
-                        fullscreenElement.webkitRequestFullscreen();
-                    } else if (fullscreenElement.msRequestFullscreen) { // IE/Edge
-                        fullscreenElement.msRequestFullscreen();
+                    function toggleFullscreen() {
+                        // التحقق مما إذا كنا حاليًا في وضع ملء الشاشة
+                        if (!document.fullscreenElement) {
+                            // الدخول إلى وضع ملء الشاشة
+                            if (fullscreenElement.requestFullscreen) {
+                                fullscreenElement.requestFullscreen();
+                            } else if (fullscreenElement.mozRequestFullScreen) { // Firefox
+                                fullscreenElement.mozRequestFullScreen();
+                            } else if (fullscreenElement.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                                fullscreenElement.webkitRequestFullscreen();
+                            } else if (fullscreenElement.msRequestFullscreen) { // IE/Edge
+                                fullscreenElement.msRequestFullscreen();
+                            }
+                        } else {
+                            // الخروج من وضع ملء الشاشة
+                            if (document.exitFullscreen) {
+                                document.exitFullscreen();
+                            } else if (document.mozCancelFullScreen) { // Firefox
+                                document.mozCancelFullScreen();
+                            } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                                document.webkitExitFullscreen();
+                            } else if (document.msExitFullscreen) { // IE/Edge
+                                document.msExitFullscreen();
+                            }
+                        }
                     }
-                } else {
-                    // الخروج من وضع ملء الشاشة
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    } else if (document.mozCancelFullScreen) { // Firefox
-                        document.mozCancelFullScreen();
-                    } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
-                        document.webkitExitFullscreen();
-                    } else if (document.msExitFullscreen) { // IE/Edge
-                        document.msExitFullscreen();
+
+                    function updateFullscreenUI() {
+                        const isFullscreen = !!document.fullscreenElement;
+
+                        // إضافة/إزالة الكلاس لتطبيق الأنماط الخاصة بنا
+                        fullscreenElement.classList.toggle('fullscreen-container', isFullscreen);
+
+                        // تبديل الأيقونة والنص
+                        openIcon.classList.toggle('hidden', isFullscreen);
+                        closeIcon.classList.toggle('hidden', !isFullscreen);
+                        fullscreenBtn.setAttribute('title', isFullscreen ? 'الخروج من وضع ملء الشاشة' : 'عرض ملء الشاشة');
+
+                        // إعلام AG Grid بتغير الحجم
+                        if (gridApi) {
+                            // تأخير بسيط لإعطاء المتصفح فرصة لتغيير الأبعاد
+                            setTimeout(() => gridApi.checkGridSize(), 150);
+                        }
                     }
-                }
-            }
 
-            function updateFullscreenUI() {
-                const isFullscreen = !!document.fullscreenElement;
-                
-                // إضافة/إزالة الكلاس لتطبيق الأنماط الخاصة بنا
-                fullscreenElement.classList.toggle('fullscreen-container', isFullscreen);
-                
-                // تبديل الأيقونة والنص
-                openIcon.classList.toggle('hidden', isFullscreen);
-                closeIcon.classList.toggle('hidden', !isFullscreen);
-                fullscreenBtn.setAttribute('title', isFullscreen ? 'الخروج من وضع ملء الشاشة' : 'عرض ملء الشاشة');
+                    fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-                // إعلام AG Grid بتغير الحجم
-                if (gridApi) {
-                    // تأخير بسيط لإعطاء المتصفح فرصة لتغيير الأبعاد
-                    setTimeout(() => gridApi.checkGridSize(), 150);
-                }
-            }
+                    // الاستماع إلى تغييرات وضع ملء الشاشة (مهم جدًا)
+                    // هذا يضمن تحديث الواجهة حتى لو خرج المستخدم من ملء الشاشة باستخدام زر 'Esc'
+                    document.addEventListener('fullscreenchange', updateFullscreenUI);
+                    document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+                    document.addEventListener('mozfullscreenchange', updateFullscreenUI);
+                    document.addEventListener('MSFullscreenChange', updateFullscreenUI);
 
-            fullscreenBtn.addEventListener('click', toggleFullscreen);
 
-            // الاستماع إلى تغييرات وضع ملء الشاشة (مهم جدًا)
-            // هذا يضمن تحديث الواجهة حتى لو خرج المستخدم من ملء الشاشة باستخدام زر 'Esc'
-            document.addEventListener('fullscreenchange', updateFullscreenUI);
-            document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
-            document.addEventListener('mozfullscreenchange', updateFullscreenUI);
-            document.addEventListener('MSFullscreenChange', updateFullscreenUI);
-
-            
-            });
-        </script>
-    @endpush
+                });
+            </script>
+        @endpush
 
         @push('styles')
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css">
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css">
             <style>
-                .ag-cell-present { background-color: #2E7D32 !important; color: white !important; }
-                .ag-cell-absent { background-color: #D32F2F !important; color: white !important; }
-                .ag-cell-m { background-color: #D9D9D9 !important; color: black !important; }
-                .ag-cell-n { background-color: #999999 !important; color: white !important; }
-                .ag-cell-leave { background-color: #388E3C !important; color: white !important; }
-                .ag-cell-uv { background-color: #F57C00 !important; color: white !important; }
-                .ag-cell-w { background-color: #795548 !important; color: white !important; }
-                .ag-cell-off { background-color: #FFC7CE !important; color: black !important; }
-                .ag-cell-before { background-color: #C8E6C9 !important; color: black !important; }
-                .ag-cell-after { background-color: #FFCDD2 !important; color: black !important; }
-                .ag-cell-has-coverage { position: relative; overflow: hidden; }
+                .ag-cell-present {
+                    background-color: #2E7D32 !important;
+                    color: white !important;
+                }
+
+                .ag-cell-absent {
+                    background-color: #D32F2F !important;
+                    color: white !important;
+                }
+
+                .ag-cell-m {
+                    background-color: #D9D9D9 !important;
+                    color: black !important;
+                }
+
+                .ag-cell-n {
+                    background-color: #999999 !important;
+                    color: white !important;
+                }
+
+                .ag-cell-leave {
+                    background-color: #388E3C !important;
+                    color: white !important;
+                }
+
+                .ag-cell-uv {
+                    background-color: #F57C00 !important;
+                    color: white !important;
+                }
+
+                .ag-cell-w {
+                    background-color: #795548 !important;
+                    color: white !important;
+                }
+
+                .ag-cell-off {
+                    background-color: #FFC7CE !important;
+                    color: black !important;
+                }
+
+                .ag-cell-before {
+                    background-color: #C8E6C9 !important;
+                    color: black !important;
+                }
+
+                .ag-cell-after {
+                    background-color: #FFCDD2 !important;
+                    color: black !important;
+                }
+
+                .ag-cell-has-coverage {
+                    position: relative;
+                    overflow: hidden;
+                }
+
                 .ag-cell-has-coverage::after {
                     content: '';
                     position: absolute;
@@ -619,37 +837,98 @@
                     border-color: transparent #F9A825 transparent transparent;
                     z-index: 1;
                 }
-                .ag-header-cell-label { justify-content: center; }
-                .ag-theme-alpine .ag-cell, .ag-theme-alpine .ag-header-cell { border: none !important; }
-                .ag-theme-alpine .ag-row { border: none !important; }
-                .ag-theme-alpine .ag-cell { padding: 6px 8px !important; font-size: 13px; text-align: center; }
-                .ag-row:hover { filter: brightness(0.98 ); }
-                .ag-row.ag-row-selected .ag-cell { background-color: inherit !important; }
-                .ag-theme-alpine .ag-cell { white-space: pre-line !important; }
-                .ag-cell[col-id="project_utilized"] { font-size: 11px !important; }
-                .ag-header-cell-label { white-space: pre-line !important; text-align: center; line-height: 1.2; padding: 4px 2px; }
-                .summary-header-present { background-color: #2E7D32 !important; color: white !important; }
-                .summary-header-absent { background-color: #D32F2F !important; color: white !important; }
-                .summary-header-coverage { background-color: #F9A825 !important; color: black !important; }
-                .summary-header-m { background-color: #D9D9D9 !important; color: black !important; }
-                .summary-header-leave { background-color: #388E3C !important; color: white !important; }
-                .summary-header-uv { background-color: #F57C00 !important; color: white !important; }
-                .summary-header-off { background-color: #FFC7CE !important; color: black !important; }
 
-                   .fi-page.fullscreen-container {
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            /* لا حاجة لـ position: fixed أو z-index لأن المتصفح يتعامل مع ذلك */
-        }
+                .ag-header-cell-label {
+                    justify-content: center;
+                }
 
-        .fi-page.fullscreen-container #ag-grid-container {
-            flex-grow: 1;
-            height: auto !important;
-        }
+                .ag-theme-alpine .ag-cell,
+                .ag-theme-alpine .ag-header-cell {
+                    border: none !important;
+                }
+
+                .ag-theme-alpine .ag-row {
+                    border: none !important;
+                }
+
+                .ag-theme-alpine .ag-cell {
+                    padding: 6px 8px !important;
+                    font-size: 13px;
+                    text-align: center;
+                }
+
+                .ag-row:hover {
+                    filter: brightness(0.98);
+                }
+
+                .ag-row.ag-row-selected .ag-cell {
+                    background-color: inherit !important;
+                }
+
+                .ag-theme-alpine .ag-cell {
+                    white-space: pre-line !important;
+                }
+
+                .ag-cell[col-id="project_utilized"] {
+                    font-size: 11px !important;
+                }
+
+                .ag-header-cell-label {
+                    white-space: pre-line !important;
+                    text-align: center;
+                    line-height: 1.2;
+                    padding: 4px 2px;
+                }
+
+                .summary-header-present {
+                    background-color: #2E7D32 !important;
+                    color: white !important;
+                }
+
+                .summary-header-absent {
+                    background-color: #D32F2F !important;
+                    color: white !important;
+                }
+
+                .summary-header-coverage {
+                    background-color: #F9A825 !important;
+                    color: black !important;
+                }
+
+                .summary-header-m {
+                    background-color: #D9D9D9 !important;
+                    color: black !important;
+                }
+
+                .summary-header-leave {
+                    background-color: #388E3C !important;
+                    color: white !important;
+                }
+
+                .summary-header-uv {
+                    background-color: #F57C00 !important;
+                    color: white !important;
+                }
+
+                .summary-header-off {
+                    background-color: #FFC7CE !important;
+                    color: black !important;
+                }
+
+                .fi-page.fullscreen-container {
+                    width: 100%;
+                    height: 100%;
+                    background-color: white;
+                    padding: 1rem;
+                    display: flex;
+                    flex-direction: column;
+                    /* لا حاجة لـ position: fixed أو z-index لأن المتصفح يتعامل مع ذلك */
+                }
+
+                .fi-page.fullscreen-container #ag-grid-container {
+                    flex-grow: 1;
+                    height: auto !important;
+                }
             </style>
         @endpush
 
