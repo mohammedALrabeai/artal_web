@@ -28,7 +28,7 @@ class ListEmployees extends ListRecords
         return [
             Actions\CreateAction::make(),
             Actions\Action::make('importEmployees')
-                ->visible(fn () => auth()->user()?->can('create_employee'))
+                ->visible(fn() => auth()->user()?->can('create_employee'))
                 ->label(__('Import Employees'))
                 ->form([
                     Forms\Components\FileUpload::make('employee_file')
@@ -43,10 +43,10 @@ class ListEmployees extends ListRecords
                         ->default(false),
                 ])
                 ->action(function (array $data) {
-                    $filePath = storage_path('app/public/uploads/'.basename($data['employee_file']));
+                    $filePath = storage_path('app/public/uploads/' . basename($data['employee_file']));
                     $useIdsFromFile = $data['use_ids_from_file'];
                     if (! file_exists($filePath)) {
-                        Filament::notify('danger', 'الملف غير موجود: '.$filePath);
+                        Filament::notify('danger', 'الملف غير موجود: ' . $filePath);
 
                         return;
                     }
@@ -89,8 +89,8 @@ class ListEmployees extends ListRecords
                         'unassigned_employees' => $query->active()->whereDoesntHave('projectRecords'),
 
                         'assigned_employees' => $query->whereHas('currentZone'),
-                        'onboarding_employees' => $query->whereHas('currentZone')->whereDoesntHave('attendances', fn ($q) => $q->where('status', 'present')),
-                        'excluded_employees' => $query->whereHas('exclusions', fn ($q) => $q->where('status', \App\Models\Exclusion::STATUS_APPROVED)),
+                        'onboarding_employees' => $query->whereHas('currentZone')->whereDoesntHave('attendances', fn($q) => $q->where('status', 'present')),
+                        'excluded_employees' => $query->whereHas('exclusions', fn($q) => $q->where('status', \App\Models\Exclusion::STATUS_APPROVED)),
                         default => $query,
                     };
 
@@ -98,7 +98,7 @@ class ListEmployees extends ListRecords
                 }),
 
             ExportAction::make()
-                ->visible(fn () => auth()->user()?->hasRole('super_admin')),
+                ->visible(fn() => auth()->user()?->hasRole('super_admin')),
             // Actions\Action::make('exportAttendance')
             // ->label('Export Attendance')
             // ->form([
@@ -204,9 +204,9 @@ class ListEmployees extends ListRecords
                     return $query
                         ->active() // 🔥 الموظفين النشطين فقط
                         ->whereDoesntHave('projectRecords', function ($q) {
-    $q->whereNull('end_date')
-        ->where('status', true);
-}); // 🔥 الذين لا يملكون أي سجل إسناد
+                            $q->whereNull('end_date')
+                                ->where('status', true);
+                        }); // 🔥 الذين لا يملكون أي سجل إسناد
                 }),
 
             'assigned_employees' => Tab::make(__('Assigned Employees'))
@@ -217,17 +217,19 @@ class ListEmployees extends ListRecords
 
             // ✅ **إضافة تبويب "الموظفون قيد المباشرة"**
             'onboarding_employees' => Tab::make(__('Onboarding Employees'))
-                ->modifyQueryUsing(fn ($query) => $query->
-                    active() // ✅ الموظفون النشطون فقط
+                ->modifyQueryUsing(
+                    fn($query) => $query->active() // ✅ الموظفون النشطون فقط
                         ->whereHas('currentZone') // ✅ الموظفون الذين لديهم موقع مسند إليهم
                         ->whereDoesntHave(
                             'attendances',
-                            fn ($q) => $q->whereIn('status', ['present', 'coverage'])
+                            fn($q) => $q->whereIn('status', ['present', 'coverage'])
                         )  // ✅ لا يوجد لهم أي تحضير بحالة "حضور"
                 ),
             // ✅ **إضافة تبويب الموظفين المستبعدين**
             'excluded_employees' => Tab::make(__('Excluded Employees'))
-                ->modifyQueryUsing(fn ($query) => $query->whereHas('exclusions', fn ($q) => $q->where('status', Exclusion::STATUS_APPROVED)
+                ->modifyQueryUsing(fn($query) => $query->whereHas(
+                    'exclusions',
+                    fn($q) => $q->where('status', Exclusion::STATUS_APPROVED)
                 )),
 
         ];
