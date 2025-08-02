@@ -203,7 +203,10 @@ class ListEmployees extends ListRecords
                 ->modifyQueryUsing(function ($query) {
                     return $query
                         ->active() // 🔥 الموظفين النشطين فقط
-                        ->whereDoesntHave('projectRecords'); // 🔥 الذين لا يملكون أي سجل إسناد
+                        ->whereDoesntHave('projectRecords', function ($q) {
+    $q->whereNull('end_date')
+        ->where('status', true);
+}); // 🔥 الذين لا يملكون أي سجل إسناد
                 }),
 
             'assigned_employees' => Tab::make(__('Assigned Employees'))
