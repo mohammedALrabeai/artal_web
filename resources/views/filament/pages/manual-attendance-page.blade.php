@@ -247,16 +247,19 @@
                                 valueFormatter: params => params.value ? params.value.status : '',
                                 valueParser: params => params.newValue,
                                 cellClassRules: {
-                                    'ag-cell-present': params => params.value?.status === 'present',
-                                    'ag-cell-absent': params => params.value?.status === 'absent',
                                     'ag-cell-m': params => params.value?.status === 'M',
+                                    'ag-cell-d': params => params.value?.status === 'D',
+                                    'ag-cell-d8': params => params.value?.status === 'D8',
+                                    'ag-cell-x': params => params.value?.status === 'X',
+                                    'ag-cell-a': params => params.value?.status === 'A',
+                                    'ag-cell-m8': params => params.value?.status === 'M8',
+                                    'ag-cell-n8': params => params.value?.status === 'N8',
+                                    'ag-cell-n12': params => params.value?.status === 'N12',
+                                    'ag-cell-m12': params => params.value?.status === 'M12',
                                     'ag-cell-n': params => params.value?.status === 'N',
-                                    'ag-cell-leave': params => params.value?.status === 'leave',
-                                    'ag-cell-uv': params => params.value?.status === 'UV',
-                                    'ag-cell-w': params => params.value?.status === 'W',
+                                    'ag-cell-cov': params => params.value?.status === 'COV',
                                     'ag-cell-off': params => params.value?.status === 'OFF',
-                                    'ag-cell-before': params => params.value?.status === 'BEFORE',
-                                    'ag-cell-after': params => params.value?.status === 'AFTER',
+                                    'ag-cell-space': params => params.value?.status === ' ',
                                     'ag-cell-has-coverage': params => params.value?.has_coverage,
                                     'ag-cell-editable-day': isEditable,
                                 },
@@ -274,6 +277,36 @@
                         };
 
                         const summaryColumns = [{
+                                headerName: "غياب\nX",
+                                valueGetter: summaryValueGetter('X'),
+                                colId: 'summary_x',
+                                width: 80,
+                                cellClass: 'summary-header-x', // <-- كلاس جديد
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "مرضي\nM",
+                                valueGetter: summaryValueGetter('M'),
+                                colId: 'summary_m',
+                                width: 80,
+                                cellClass: 'summary-header-m', // <-- كلاس جديد
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "تغطية\nCOV",
+                                valueGetter: summaryValueGetter('COV'),
+                                colId: 'summary_cov',
+                                width: 80,
+                                cellClass: 'summary-header-cov', // <-- كلاس جديد
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
                                 headerName: "أوف\nOFF",
                                 valueGetter: summaryValueGetter('OFF'),
                                 colId: 'summary_off',
@@ -284,69 +317,40 @@
                                 }
                             },
                             {
-                                headerName: "عمل\nP",
-                                valueGetter: summaryValueGetter('present'),
-                                colId: 'summary_present',
+                                headerName: "عمل\nD",
+                                valueGetter: summaryValueGetter('D'),
+                                colId: 'summary_d',
                                 width: 80,
-                                cellClass: 'summary-header-present',
+                                cellClass: 'summary-header-d', // <-- كلاس جديد
                                 cellStyle: {
                                     textAlign: 'center'
                                 }
                             },
                             {
-                                headerName: "إضافي\nCOV",
+                                headerName: "عمل\nD8",
+                                valueGetter: summaryValueGetter('D8'),
+                                colId: 'summary_d8',
+                                width: 80,
+                                cellClass: 'summary-header-d8', // <-- كلاس جديد
+                                cellStyle: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            {
+                                headerName: "إجمالي\nالتغطية",
                                 valueGetter: (p) => Object.values(p.data.attendance || {}).filter(v => v.has_coverage)
                                     .length,
-                                colId: 'summary_coverage',
-                                width: 80,
-                                cellClass: 'summary-header-coverage',
+                                colId: 'summary_total_coverage',
+                                width: 90,
+                                cellClass: 'summary-header-total-coverage', // <-- كلاس جديد
                                 cellStyle: {
-                                    textAlign: 'center'
-                                }
-                            },
-                            {
-                                headerName: "مرضي\nM",
-                                valueGetter: summaryValueGetter('M'),
-                                colId: 'summary_medical',
-                                width: 80,
-                                cellClass: 'summary-header-m',
-                                cellStyle: {
-                                    textAlign: 'center'
-                                }
-                            },
-                            {
-                                headerName: "إجازة مدفوعة\nPV",
-                                valueGetter: summaryValueGetter('leave'),
-                                colId: 'summary_paid_leave',
-                                width: 100,
-                                cellClass: 'summary-header-leave',
-                                cellStyle: {
-                                    textAlign: 'center'
-                                }
-                            },
-                            {
-                                headerName: "إجازة غير مدفوعة\nUV",
-                                valueGetter: summaryValueGetter('UV'),
-                                colId: 'summary_unpaid_leave',
-                                width: 120,
-                                cellClass: 'summary-header-uv',
-                                cellStyle: {
-                                    textAlign: 'center'
-                                }
-                            },
-                            {
-                                headerName: "غياب\nA",
-                                valueGetter: summaryValueGetter('absent'),
-                                colId: 'summary_absent',
-                                width: 80,
-                                cellClass: 'summary-header-absent',
-                                cellStyle: {
-                                    textAlign: 'center'
+                                    textAlign: 'center',
+                                    fontWeight: 'bold'
                                 }
                             },
                             {
                                 headerName: "الإجمالي\nTotal",
-                                valueGetter: totalValueGetter,
+                                valueGetter: totalValueGetter, // الدالة totalValueGetter تحسب الإجمالي كما هي
                                 colId: 'summary_total',
                                 width: 90,
                                 cellStyle: {
@@ -355,6 +359,7 @@
                                 }
                             }
                         ];
+
 
                         return [...staticColumns, ...dayColumns, ...summaryColumns];
                     }
@@ -428,9 +433,10 @@
                             });
 
                             // ملء قائمة الحالات
-                            const statusOptions = ['present', 'absent', 'leave', 'UV', 'W', 'M', 'N', 'OFF', 'BEFORE',
-                                'AFTER', ''
+                            const statusOptions = ['M', 'D', 'D8', 'X', 'A', 'M8', 'N8', 'N12', 'M12', 'N', 'COV',
+                                'OFF', ' ', ''
                             ];
+
                             statusOptions.forEach(value => {
                                 const opt = document.createElement('option');
                                 opt.value = value;
@@ -473,9 +479,11 @@
                             this.refs.coverageToggle.checked = this.state.has_coverage;
                             this.refs.employeeSearchInput.value = this.state.coverage_employee_name || '';
 
-                            const canHaveCoverage = ['absent', 'leave', 'UV', 'M', 'N'].includes(this.state.status);
+                            const canHaveCoverage = ['COV', 'X'].includes(this.state
+                            .status); // <-- هذا هو السطر الذي يتم تغييره
                             this.refs.coverageSection.style.display = canHaveCoverage ? 'block' : 'none';
                             this.refs.employeeSearchContainer.style.display = this.state.has_coverage ? 'block' :
+                                'none';
                             'none';
                         }
 
@@ -770,6 +778,84 @@
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css">
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css">
             <style>
+                /* "M" = رمادي داكن */
+                .ag-cell-m {
+                    background-color: #696969 !important;
+                    color: white !important;
+                }
+
+                /* "D" = برتقالي */
+                .ag-cell-d {
+                    background-color: #FFA500 !important;
+                    color: black !important;
+                }
+
+                /* "D8" = بني */
+                .ag-cell-d8 {
+                    background-color: #A52A2A !important;
+                    color: white !important;
+                }
+
+                /* "X" = أحمر */
+                .ag-cell-x {
+                    background-color: #FF0000 !important;
+                    color: white !important;
+                }
+
+                /* "A" = أزرق بنفسجي */
+                .ag-cell-a {
+                    background-color: #8A2BE2 !important;
+                    color: white !important;
+                }
+
+                /* "M8" = أزرق فاتح */
+                .ag-cell-m8 {
+                    background-color: #ADD8E6 !important;
+                    color: black !important;
+                }
+
+                /* "N8" = أخضر فاتح */
+                .ag-cell-n8 {
+                    background-color: #90EE90 !important;
+                    color: black !important;
+                }
+
+                /* "N12" = أخضر متوسط */
+                .ag-cell-n12 {
+                    background-color: #3CB371 !important;
+                    color: white !important;
+                }
+
+                /* "M12" = سماوي (أزرق مائي) */
+                .ag-cell-m12 {
+                    background-color: #00FFFF !important;
+                    color: black !important;
+                }
+
+                /* "N" = رمادي متوسط */
+                .ag-cell-n {
+                    background-color: #808080 !important;
+                    color: white !important;
+                }
+
+                /* "COV" = برتقالي غامق مائل للبني */
+                .ag-cell-cov {
+                    background-color: #D2691E !important;
+                    color: white !important;
+                }
+
+                /* "OFF" = رمادي فاتح مائل للبني */
+                .ag-cell-off {
+                    background-color: #D3C5BC !important;
+                    color: black !important;
+                }
+
+                /* " " (فراغ) = رمادي فاتح جدًا (بيج) */
+                .ag-cell-space {
+                    background-color: #F5F5DC !important;
+                    color: black !important;
+                }
+
                 .ag-cell-present {
                     background-color: #2E7D32 !important;
                     color: white !important;
