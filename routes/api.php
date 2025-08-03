@@ -212,7 +212,8 @@ Route::get('/attendance', [AttendanceController::class, 'getAttendanceStatus']);
 Route::get('/attendance2', [AttendanceController::class, 'getAttendanceStatusV2']);
 Route::get('/attendance3', [AttendanceController::class, 'getAttendanceStatusV3']);
 Route::get('/attendance4', [AttendanceController::class, 'getAttendanceStatusV']);
-Route::get('/attendance5', [AttendanceController::class, 'getAttendanceStatusV5']);
+Route::get('/attendance5', [AttendanceController::class, 'getAttendanceStatusV5']);  // سيتم حذفها في المستقبل
+Route::get('/attendance6', [AttendanceController::class, 'getAttendanceStatusV6']);
 
 Route::get('/active-shifts-summary', [\App\Http\Controllers\Api\ActiveShiftController::class, 'index']);
 Route::get('/active-shifts-summary-v2', [\App\Http\Controllers\Api\ActiveShiftController::class, 'indexV2']);
