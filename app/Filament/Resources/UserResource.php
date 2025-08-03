@@ -71,6 +71,9 @@ class UserResource extends Resource
                 ->password()
                 ->required()
                 ->visibleOn(['create', 'edit']),
+
+
+                
             //     ->hiddenOn('edit'),
 
             //        Forms\Components\TextInput::make('password')

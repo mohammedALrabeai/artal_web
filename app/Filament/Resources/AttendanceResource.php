@@ -224,9 +224,14 @@ class AttendanceResource extends Resource
                         'coverage' => __('Coverage'),
                         'M' => __('Morbid'),
                         'leave' => __('Paid Leave'),
+                       
                         'UV' => __('Unpaid Leave'),
                         'absent' => __('Absent'),
-                        default => __('Unknown'),
+
+                        //  'PV' => __('Paid Leave'),
+                        //  'SL' => __('Sick Leave'),
+                        //  'UL' => __('UL'),
+                        default => __($record->status),
                     };
                 })
                 ->colors([
@@ -235,6 +240,7 @@ class AttendanceResource extends Resource
                     'warning' => fn ($state) => $state === __('Coverage'), // برتقالي
                     'secondary' => fn ($state) => $state === __('Morbid'), // رمادي
                     'blue-dark' => fn ($state) => $state === __('Paid Leave'), // أزرق غامق
+                    // 'blue-dark' => fn ($state) => $state === __('Paid Vacation'), // أزرق
                     'orange-dark' => fn ($state) => $state === __('Unpaid Leave'), // برتقالي غامق
                     'danger' => fn ($state) => $state === __('Absent'), // أحمر
                 ]),

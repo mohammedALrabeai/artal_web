@@ -180,6 +180,8 @@ class EmployeeResource extends Resource
                                     ->values()
                                     ->toArray()
                             )
+                                ->disabled(fn () => !auth()->user()->can('edit_employee_bank')) // ⛔️ منع التعديل
+
                             ->required()
                             ->reactive()
                             ->helperText(fn($state) => \App\Helpers\IbanHelper::translateBankCode($state)
@@ -197,6 +199,8 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('bank_account')
                             ->label('رقم الآيبان')
                             ->required()
+                                ->disabled(fn () => !auth()->user()->can('edit_employee_bank')) // ⛔️ منع التعديل
+
                             ->rule(new \App\Rules\ValidSaudiIban())
                             ->reactive()
                             ->helperText(fn($state) => \App\Helpers\IbanHelper::translateBankCode(
@@ -469,6 +473,7 @@ class EmployeeResource extends Resource
                 ->offColor('danger')
                 ->default(true)
                 ->required()
+                ->disabled(fn () => !auth()->user()->can('edit_employee_status'))
                 ->afterStateUpdated(function ($state, callable $set, $livewire) {
                     $set('job_status', $state ? 'يعمل' : 'لا يعمل');
 

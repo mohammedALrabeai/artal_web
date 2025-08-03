@@ -12,6 +12,8 @@ use Illuminate\Notifications\Notifiable;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+    use Spatie\Permission\Models\Permission;
+
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -37,6 +39,19 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'remember_token',
     ];
+
+
+public function permissions()
+{
+    return $this->morphToMany(
+        Permission::class,
+        'model',
+        'model_has_permissions',
+        'model_id',
+        'permission_id'
+    );
+}
+
 
     // علاقة مع الموظفين (من قام بإضافة الموظف)
     public function employees()
