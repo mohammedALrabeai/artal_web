@@ -318,7 +318,10 @@ class AttendanceResource extends Resource
                         'M' => __('Morbid'),  // إضافة خيار مرضي Sick
                         'leave' => __('paid leave'),     // إضافة خيار الإجازة
                         'UV' => __('Unpaid leave'),
+                        'PV' => __('Paid leave'),
                         'absent' => __('Absent'),
+                        'SL' => __('Sick Leave'),
+                        'UL' => __('UL'),
                     ]),
                 // فلتر الحالة
 
