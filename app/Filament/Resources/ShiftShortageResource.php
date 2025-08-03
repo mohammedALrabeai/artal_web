@@ -19,6 +19,8 @@ class ShiftShortageResource extends Resource
     protected static ?string $model = Shift::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
+  
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationLabel = 'نقص الموظفين لكل وردية';
 

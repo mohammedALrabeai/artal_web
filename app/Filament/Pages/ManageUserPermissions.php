@@ -19,9 +19,16 @@ class ManageUserPermissions extends Page implements HasForms
     public ?int $user_id = null;
 
     public array $formData = [];
+    //sort
+
+    protected static ?int $navigationSort = 50;
 
     protected static string $view = 'filament.pages.manage-user-permissions';
 
+        public static function getNavigationGroup(): ?string
+    {
+        return __('User Management');
+    }
     public function mount(): void
     {
         $this->form->fill();

@@ -27,7 +27,7 @@ class SlotTimeline extends Page
     protected static string $view = 'filament.pages.slot-timeline';
     protected static ?string $navigationLabel = 'المخطط الزمني للشواغر';
     protected static ?string $title = 'المخطط الزمني للشواغر';
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 5;
 
     public function getViewData(): array
     {
