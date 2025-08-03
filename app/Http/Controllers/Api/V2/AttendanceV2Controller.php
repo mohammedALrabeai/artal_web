@@ -12,7 +12,7 @@ use App\Http\Controllers\Controller;
 
 class AttendanceV2Controller extends Controller
 {
-   public function checkIn(Request $request)
+public function checkIn(Request $request)
 {
     $request->validate([
         'code' => 'required|string|size:5',
@@ -42,23 +42,29 @@ class AttendanceV2Controller extends Controller
         ->first();
 
     if ($activeToday) {
-        return response()->json([
-            'success' => false,
-            'message' => 'لديك سجل تحضير مفتوح اليوم. يرجى تسجيل الانصراف أولاً.',
-        ], 400);
+        $checkInTime = \Carbon\Carbon::parse($activeToday->check_in_datetime);
+        $hoursPassed = $checkInTime->diffInHours($now);
+
+        // ✅ نسمح فقط بالتحضير إذا السجل النشط حالته off أو مضى أكثر من 15 ساعة
+        if ($activeToday->status !== 'off' && $hoursPassed <= 15) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لديك سجل تحضير مفتوح اليوم. يرجى تسجيل الانصراف أولاً.',
+            ], 400);
+        }
     }
 
-    // تحديد نوع التحضير بناءً على سجل اليوم
-    $attendanceToday = Attendance::where('employee_id', $employee->id)
-        ->whereDate('date', $today)
-        ->first();
-
+    // تحديد نوع التحضير بناءً على وجود سجل سابق اليوم
     $status = 'present';
 
-    if ($attendanceToday) {
-        if ($attendanceToday->status === 'coverage') {
-            $status = 'present';
-        } else {
+    $anyTodayRecord = Attendance::where('employee_id', $employee->id)
+        ->whereDate('date', $today)
+        ->where('status', '!=', 'off')
+        ->first();
+
+    if ($anyTodayRecord) {
+        // إذا كان السجل السابق اليوم حضوري عادي، نعتبر الجديد تغطية
+        if ($anyTodayRecord->status !== 'coverage') {
             $status = 'coverage';
         }
     }
@@ -74,7 +80,7 @@ class AttendanceV2Controller extends Controller
         'is_late' => false,
     ]);
 
-    if ($status === 'present' ) {
+    if ($status === 'present') {
         $this->updateEmployeeStatusOnCheckIn($employee);
     }
 
@@ -89,6 +95,7 @@ class AttendanceV2Controller extends Controller
         ],
     ]);
 }
+
 
 
     protected function updateEmployeeStatusOnCheckIn(Employee $employee): void
