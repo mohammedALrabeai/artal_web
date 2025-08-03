@@ -1638,6 +1638,7 @@ public function getAttendanceStatusV6(Request $request)
                         'substitutes' => $leave->substitutes->map(function ($sub) {
                             return [
                                 'substitute_name' => $sub->substitute->name(),
+                                'phone'           => $sub->substitute->mobile_number,
                                 'start_date'      => $sub->start_date,
                                 'end_date'        => $sub->end_date,
                             ];
