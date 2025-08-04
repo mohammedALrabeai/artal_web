@@ -483,9 +483,11 @@ class Shift extends Model
     {
         $pattern = $this->zone?->pattern;
 
-        if (! $pattern || ! $this->start_date) {
-            return [false, null];
-        }
+       $startDate = Carbon::parse($this->start_date)->startOfDay();
+
+if (! $pattern || ! $this->start_date || $startDate->gt($now->copy()->startOfDay())) {
+    return [false, null];
+}
 
         $cycleLength = $pattern->working_days + $pattern->off_days;
         if ($cycleLength <= 0) {
