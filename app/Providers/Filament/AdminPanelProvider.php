@@ -48,7 +48,9 @@ class AdminPanelProvider extends PanelProvider
 
             ->darkMode() // تفعيل الوضع الليلي
             ->sidebarCollapsibleOnDesktop() // قابلية طي القائمة الجانبية
-
+//   ->sidebarFullyCollapsibleOnDesktop()
+    ->spa() // اختياري لجعل التنقل سريع (SPA mode)
+    ->broadcasting(false)
             ->id('admin')
             ->path('admin')
             ->login()

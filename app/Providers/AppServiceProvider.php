@@ -7,6 +7,9 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\ServiceProvider;
+       use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,10 +44,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // 1️⃣ سجّل الأصول مرّة واحدة
-        FilamentAsset::register([
-            Css::make('filament-extra', resource_path('css/filament-extra.css')),
-            // Js::make('echo', \Vite::asset('resources/js/echo.js'))->module(),
-        ]);
+        // FilamentAsset::register([
+        //     Css::make('filament-extra', resource_path('css/filament-extra.css')),
+        //     // Js::make('echo', \Vite::asset('resources/js/echo.js'))->module(),
+        // ]);
+
+
+
+FilamentView::registerRenderHook(
+    PanelsRenderHook::SCRIPTS_BEFORE,
+    fn (): \Illuminate\View\View => view('filament-preserve-sidebar-scroll')
+);
+
 
         // 2️⃣ دمج حقن <head> فى عرض واحد
         // Filament::serving(function () {
@@ -56,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
 
         // 3️⃣ إعداد الـ Language Switch (كما هو)
         \BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch::configureUsing(
-            fn ($switch) => $switch->locales(['ar', 'en', 'fr'])
+            fn($switch) => $switch->locales(['ar', 'en', 'fr'])
         );
     }
 }
