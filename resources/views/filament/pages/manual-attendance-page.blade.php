@@ -601,6 +601,7 @@
 
                     const gridOptions = {
                         // className: 'ag-theme-alpine',
+                        popupParent: gridDiv,
                         rowModelType: 'clientSide',
                         theme: 'legacy',
                         headerHeight: 40,
@@ -1094,6 +1095,14 @@
                     flex-grow: 1;
                     height: auto !important;
                 }
+                /* المعيار */
+:fullscreen::backdrop            { background:#fff; }
+
+/* Chrome, Edge, Safari */
+:-webkit-full-screen::backdrop    { background:#fff; }
+
+/* Firefox */
+:-moz-full-screen::backdrop       { background:#fff; }
             </style>
         @endpush
 
