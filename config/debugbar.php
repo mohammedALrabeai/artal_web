@@ -14,7 +14,7 @@ return [
      |
      */
 
- 'enabled' => env('DEBUGBAR_ENABLED', false),
+    'enabled' => env('DEBUGBAR_ENABLED', false),
     'hide_empty_tabs' => true, // Hide tabs until they have content
     'except' => [
         'telescope*',
@@ -177,7 +177,7 @@ return [
         'symfony_request' => true,  // Only one can be enabled..
         'mail'            => true,  // Catch mail messages
         'laravel'         => true, // Laravel version and environment
-        'events'          => false, // All events fired
+        'events'          => true, // All events fired
         'default_request' => false, // Regular or special Symfony request logger
         'logs'            => false, // Add the latest log messages
         'files'           => false, // Show the included files
@@ -217,7 +217,7 @@ return [
         'db' => [
             'with_params'       => true,   // Render SQL with the parameters substituted
             'exclude_paths'     => [       // Paths to exclude entirely from the collector
-//                'vendor/laravel/framework/src/Illuminate/Session', // Exclude sessions queries
+                //                'vendor/laravel/framework/src/Illuminate/Session', // Exclude sessions queries
             ],
             'backtrace'         => true,   // Use a backtrace to find the origin of the query in your files.
             'backtrace_exclude_paths' => [],   // Paths to exclude from backtrace. (in addition to defaults)
@@ -257,6 +257,9 @@ return [
         ],
         'events' => [
             'data' => false, // Collect events data, listeners
+            'enabled' => true,
+            'collect' => true,
+            'timeline' => true,
         ],
         'logs' => [
             'file' => null,

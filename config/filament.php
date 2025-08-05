@@ -102,6 +102,7 @@ return [
 
     'livewire_loading_delay' => 'default',
 
-    
+    'cache_resources' => true,
+
 
 ];

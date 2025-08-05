@@ -10,6 +10,12 @@ class ShiftEmployeeShortageOverview extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
+    public static function isLazy(): bool
+{
+    return true;
+}
+
+
     protected function getCards(): array
     {
         // اعمل نفس فلترة الجدول
