@@ -11,7 +11,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Shift extends Model
 {
-    use HasFactory,LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -30,14 +30,14 @@ class Shift extends Model
         'status',
         'exclude_from_auto_absence',
         'shortage_days_count',
-     
+
 
     ];
 
     protected $casts = [
 
         'exclude_from_auto_absence' => 'boolean',
-      
+
     ];
 
     // علاقة مع المواقع
@@ -83,9 +83,9 @@ class Shift extends Model
         return null;
     }
     public function slots()
-{
-    return $this->hasMany(\App\Models\ShiftSlot::class);
-}
+    {
+        return $this->hasMany(\App\Models\ShiftSlot::class);
+    }
 
 
     public function getLastEntryTimeAttribute($value)
@@ -366,24 +366,24 @@ class Shift extends Model
     // }
 
     public function getWorkPatternForDate(string $date): string
-{
-    if (! $this->zone || ! $this->zone->pattern || ! $this->start_date) {
-        return 'off';
+    {
+        if (! $this->zone || ! $this->zone->pattern || ! $this->start_date) {
+            return 'off';
+        }
+
+        $pattern = $this->zone->pattern;
+        $workingDays = (int) $pattern->working_days;
+        $offDays = (int) $pattern->off_days;
+        $cycleLength = $workingDays + $offDays;
+
+        $startDate = \Carbon\Carbon::parse($this->start_date);
+        $targetDate = \Carbon\Carbon::parse($date);
+        $totalDays = $startDate->diffInDays($targetDate);
+
+        $currentDayInCycle = $totalDays % $cycleLength;
+
+        return $currentDayInCycle < $workingDays ? 'working' : 'off';
     }
-
-    $pattern = $this->zone->pattern;
-    $workingDays = (int) $pattern->working_days;
-    $offDays = (int) $pattern->off_days;
-    $cycleLength = $workingDays + $offDays;
-
-    $startDate = \Carbon\Carbon::parse($this->start_date);
-    $targetDate = \Carbon\Carbon::parse($date);
-    $totalDays = $startDate->diffInDays($targetDate);
-
-    $currentDayInCycle = $totalDays % $cycleLength;
-
-    return $currentDayInCycle < $workingDays ? 'working' : 'off';
-}
 
 
     public function getShiftActiveStatus(Carbon $now): array
@@ -483,11 +483,11 @@ class Shift extends Model
     {
         $pattern = $this->zone?->pattern;
 
-       $startDate = Carbon::parse($this->start_date)->startOfDay();
+        $startDate = Carbon::parse($this->start_date)->startOfDay();
 
-if (! $pattern || ! $this->start_date || $startDate->gt($now->copy()->startOfDay())) {
-    return [false, null];
-}
+        if (! $pattern || ! $this->start_date || $startDate->gt($now->copy()->startOfDay())) {
+            return [false, null];
+        }
 
         $cycleLength = $pattern->working_days + $pattern->off_days;
         if ($cycleLength <= 0) {
@@ -699,12 +699,12 @@ if (! $pattern || ! $this->start_date || $startDate->gt($now->copy()->startOfDay
 
         if ($this->type === 'morning_evening') {
             return ($isOddCycle && $currentTime->between($morningStart, $morningEnd)) ||
-                   (! $isOddCycle && $currentTime->between($eveningStart, $eveningEnd));
+                (! $isOddCycle && $currentTime->between($eveningStart, $eveningEnd));
         }
 
         if ($this->type === 'evening_morning') {
             return ($isOddCycle && $currentTime->between($eveningStart, $eveningEnd)) ||
-                   (! $isOddCycle && $currentTime->between($morningStart, $morningEnd));
+                (! $isOddCycle && $currentTime->between($morningStart, $morningEnd));
         }
 
         return false;
@@ -726,7 +726,7 @@ if (! $pattern || ! $this->start_date || $startDate->gt($now->copy()->startOfDay
             foreach ($changes as $field => $newValue) {
                 if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
                     $changeDetails .= ucfirst(str_replace('_', ' ', $field))
-                        .": \"{$original[$field]}\" → \"{$newValue}\"\n";
+                        . ": \"{$original[$field]}\" → \"{$newValue}\"\n";
                 }
             }
 

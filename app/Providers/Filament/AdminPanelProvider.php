@@ -89,7 +89,7 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->databaseNotifications()
-->databaseNotificationsPolling(30) // تحديث الإشعارات كل 5 ثواني
+->databaseNotificationsPolling(120) // تحديث الإشعارات كل 5 ثواني
             // ->databaseNotificationsPolling(null)
             ;
         // ->renderHook( PanelsRenderHook::USER_MENU_BEFORE, function () {
