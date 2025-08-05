@@ -22,6 +22,8 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use pxlrbt\FilamentSpotlight\SpotlightPlugin;
+use Filament\Support\Enums\MaxWidth;
+
 use ShuvroRoy\FilamentSpatieLaravelBackup\FilamentSpatieLaravelBackupPlugin;
 
 class AdminPanelProvider extends PanelProvider
@@ -42,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
                 'secondary' => Color::Blue,
             ]) // تخصيص الألوان
             ->brandLogoHeight('120px')
+            ->maxContentWidth(MaxWidth::Full)
 
             ->darkMode() // تفعيل الوضع الليلي
             ->sidebarCollapsibleOnDesktop() // قابلية طي القائمة الجانبية
