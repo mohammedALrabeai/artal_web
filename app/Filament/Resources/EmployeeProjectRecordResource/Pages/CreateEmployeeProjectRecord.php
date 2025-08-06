@@ -68,6 +68,16 @@ class CreateEmployeeProjectRecord extends CreateRecord
 
         $this->halt();
     }
+    $slot = \App\Models\ShiftSlot::find($data['shift_slot_id']);
+if ($slot && $slot->shift_id !== $data['shift_id']) {
+    Notification::make()
+        ->title('❌ الشاغر لا يتبع الوردية المحددة')
+        ->danger()
+        ->body("يرجى التأكد من أن الشاغر المختار يتبع نفس الوردية ({$slot->shift?->name}).")
+        ->send();
+
+    $this->halt();
+}
 
         $zone = Zone::find($this->data['zone_id']);
         $project = Project::find($this->data['project_id']);

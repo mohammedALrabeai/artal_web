@@ -144,36 +144,56 @@ class EmployeeProjectRecordResource extends Resource
                 }),
 
             Select::make('shift_slot_id')
-                ->label(__('Slot'))
-                ->options(function (callable $get, ?EmployeeProjectRecord $record) {
-                    $shiftId = $get('shift_id');
-                    if (! $shiftId) return [];
+    ->label(__('Slot (الشاغر)'))
+    ->options(function (callable $get, ?EmployeeProjectRecord $record) {
+        $shiftId = $get('shift_id');
+        if (! $shiftId) return [];
 
-                    // جلب الـ IDs المحجوزة حاليًا
-                    $usedSlotIds = EmployeeProjectRecord::query()
-                        ->where('shift_id', $shiftId)
-                        ->where('status', true)
-                        ->whereNull('end_date')
-                        ->when($record, fn($q) => $q->where('id', '!=', $record->id)) // استثناء السجل الحالي
-                        ->pluck('shift_slot_id')
-                        ->filter()
-                        ->toArray();
+        // 🔄 الشواغر المتاحة
+        $usedSlots = \App\Models\EmployeeProjectRecord::query()
+            ->where('status', true)
+            ->whereNull('end_date')
+            ->where('shift_id', $shiftId)
+            ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+            ->pluck('shift_slot_id')
+            ->filter()
+            ->toArray();
 
-                    $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
-                        ->when(count($usedSlotIds), fn($q) => $q->whereNotIn('id', $usedSlotIds));
+        $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
+            ->when($usedSlots, fn($q) => $q->whereNotIn('id', $usedSlots));
 
-                    // ✅ إضافة مكانه الحالي ضمن القائمة إن وُجد حتى لو كان محجوزًا
-                    if ($record && $record->shift_slot_id) {
-                        $query->orWhere('id', $record->shift_slot_id);
-                    }
+        // ✅ إضافة الشاغر المختار حتى لو لا يتبع الوردية الحالية
+        if ($record && $record->shift_slot_id) {
+            $query->orWhere('id', $record->shift_slot_id);
+        }
 
-                    return $query->orderBy('slot_number')->get()->pluck('slot_number', 'id');
-                })
-                ->searchable()
-                ->required()
-                ->visible(fn(callable $get) => $get('shift_id'))
-                ->helperText('اختر شاغر متاح ضمن هذه الوردية')
-                ->reactive(),
+        // 👁️ عرض معلومات الشاغر بشكل واضح
+        return $query->with('shift')->get()->mapWithKeys(function ($slot) {
+            $label = 'شاغر #' . $slot->slot_number;
+            $label .= ' - وردية: ' . optional($slot->shift)->name;
+            return [$slot->id => $label];
+        });
+    })
+    ->searchable()
+    ->required()
+    ->visible(fn(callable $get) => $get('shift_id'))
+    ->helperText('اختر شاغر تابع للوردية المحددة')
+    ->reactive()
+    ->afterStateUpdated(function ($state, callable $get, callable $set) {
+        $shiftId = $get('shift_id');
+        $slot = \App\Models\ShiftSlot::with('shift')->find($state);
+
+        // ⚠️ تحذير إذا كان الشاغر لا يتبع الوردية الحالية
+        if ($slot && $slot->shift_id != $shiftId) {
+            Notification::make()
+                ->title('⚠️ الشاغر لا يتبع الوردية المحددة')
+                ->body('يرجى التأكد من اختيار شاغر صحيح')
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+    })
+,
 
 
 
@@ -316,12 +336,64 @@ class EmployeeProjectRecordResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                    TextColumn::make('slot_issue_type')
+    ->label('🛠️ حالة الشاغر')
+    ->getStateUsing(function ($record) {
+        if (is_null($record->shift_slot_id)) {
+            return '❌ بدون شاغر';
+        }
+
+        if ($record->shiftSlot?->shift_id != $record->shift_id) {
+            return '❌ الشاغر لا يتبع الوردية';
+        }
+
+        $count = \App\Models\EmployeeProjectRecord::query()
+            ->where('status', true)
+            ->whereNull('end_date')
+            ->where('shift_slot_id', $record->shift_slot_id)
+            ->count();
+
+        if ($count > 1) {
+            return "⚠️ مكرر ($count)";
+        }
+
+        return '✅ سليم';
+    })
+    ->badge()
+    ->color(fn($state) => match(true) {
+        str_contains($state, '❌') => 'danger',
+        str_contains($state, '⚠️') => 'warning',
+        default => 'success',
+    })
+     ->toggleable(isToggledHiddenByDefault: true),
+
 
             ])
 
             // ->persistSearchInSession()
             // ->persistColumnSearchesInSession()
             ->filters([
+
+                Filter::make('slot_issues')
+    ->label('⚠️ أخطاء الشواغر')
+    ->query(function (Builder $query) {
+        $query->where(function ($q) {
+            $q->whereNull('shift_slot_id') // بدون شاغر
+              ->orWhereHas('shiftSlot', fn($slotQ) =>
+                  $slotQ->whereColumn('shift_slots.shift_id', '!=', 'employee_project_records.shift_id') // شاغر لا يتبع وردية
+              )
+              ->orWhereIn('shift_slot_id', function ($sub) {
+                  $sub->select('shift_slot_id')
+                      ->from('employee_project_records')
+                      ->whereNotNull('shift_slot_id')
+                      ->where('status', true)
+                      ->whereNull('end_date')
+                      ->groupBy('shift_slot_id')
+                      ->havingRaw('COUNT(*) > 1');
+              });
+        });
+    })
+    ->indicator('⚠️ فقط الأخطاء'),
                 SelectFilter::make('project_id')
                     ->label(__('Project'))
                     ->options(Project::all()->pluck('name', 'id'))
