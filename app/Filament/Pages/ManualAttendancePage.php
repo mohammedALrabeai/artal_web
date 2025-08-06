@@ -3,9 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Models\ManualAttendanceEmployee;
-use App\Models\Project;
-use App\Models\Shift;
-use App\Models\Zone;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -23,17 +20,11 @@ class ManualAttendancePage extends Page implements HasForms
     protected static ?string $title = 'دفتر الحضور اليدوي';
     protected static string $view = 'filament.pages.manual-attendance-page';
 
-    #[Url(as: 'p', keep: true)]
-    public ?int $projectId = null;
-
-    #[Url(as: 'z', keep: true)]
-    public ?int $zoneId = null;
-
-    #[Url(as: 's', keep: true)]
-    public ?int $shiftId = null;
-
     #[Url(as: 'm', keep: true)]
     public ?string $month = null;
+
+    // حالة الحفظ السريع الافتراضية
+    public ?string $defaultStatus = 'M12';
 
     public array $filtersForGrid = [];
 
@@ -43,11 +34,10 @@ class ManualAttendancePage extends Page implements HasForms
             $this->month = now()->startOfMonth()->toDateString();
         }
 
+        // تعبئة الفورم بالقيم الأولية
         $this->form->fill([
-            'projectId' => $this->projectId,
-            'zoneId' => $this->zoneId,
-            'shiftId' => $this->shiftId,
             'month' => $this->month,
+            'defaultStatus' => $this->defaultStatus,
         ]);
 
         $this->updateGridFilters(dispatch: false);
@@ -56,38 +46,24 @@ class ManualAttendancePage extends Page implements HasForms
     protected function getFormSchema(): array
     {
         return [
-            Select::make('projectId')
-                ->label('المشروع')
-                ->options(Project::pluck('name', 'id'))
-                ->reactive()
-                ->afterStateUpdated(function ($state) {
-                    $this->zoneId = null;
-                    $this->shiftId = null;
-                    $this->form->fill(['zoneId' => null, 'shiftId' => null]);
-                }),
-
-            Select::make('zoneId')
-                ->label('الموقع')
-                ->options(fn () => $this->projectId
-                    ? Zone::where('project_id', $this->projectId)->pluck('name', 'id')
-                    : [])
-                ->reactive()
-                ->afterStateUpdated(function ($state) {
-                    $this->shiftId = null;
-                    $this->form->fill(['shiftId' => null]);
-                }),
-
-            Select::make('shiftId')
-                ->label('الوردية')
-                ->options(fn () => $this->zoneId
-                    ? Shift::where('zone_id', $this->zoneId)->pluck('name', 'id')
-                    : [])
-                ->reactive(),
-
             DatePicker::make('month')
                 ->label('الشهر')
                 ->displayFormat('F Y')
                 ->reactive(),
+            Select::make('defaultStatus')
+                ->label('حالة الحفظ السريع')
+                ->options([
+                    'M12' => 'M12', 'D' => 'D', 'X' => 'X', 'M' => 'M', 'D8' => 'D8', 'A' => 'A',
+                    'M8' => 'M8', 'N8' => 'N8', 'N12' => 'N12', 'N' => 'N', 'COV' => 'COV',
+                    'OFF' => 'OFF', 'BEFORE' => 'BEFORE', 'AFTER' => 'AFTER', 'PV' => 'PV',
+                    'UV' => 'UV', 'SL' => 'SL', 'UL' => 'UL',
+                ])
+                ->default('M12')
+                ->reactive()
+                // **تصحيح**: تحديث خاصية الكلاس مباشرة عند تغيير القيمة
+                ->afterStateUpdated(function ($state) {
+                    $this->defaultStatus = $state;
+                }),
         ];
     }
 
@@ -98,11 +74,14 @@ class ManualAttendancePage extends Page implements HasForms
 
     private function updateGridFilters(bool $dispatch = true): void
     {
+        // **تصحيح**: التأكد من أن بيانات الفورم هي المصدر الموثوق
+        $formData = $this->form->getState();
+        $this->month = $formData['month'];
+        $this->defaultStatus = $formData['defaultStatus'];
+
         $this->filtersForGrid = [
-            'projectId' => $this->projectId,
-            'zoneId' => $this->zoneId,
-            'shiftId' => $this->shiftId,
             'month' => $this->month,
+            'defaultStatus' => $this->defaultStatus,
             'today' => now()->format('Y-m-d'),
         ];
 
@@ -111,52 +90,41 @@ class ManualAttendancePage extends Page implements HasForms
         }
     }
 
-    public function saveStatus($employeeId, $date, $status)
+    /**
+     * دالة شاملة لحفظ كل تفاصيل الحضور لليوم المحدد.
+     */
+    public function saveAttendanceDetails(int $manualAttendanceEmployeeId, string $date, array $details)
+    {
+        $employeeAttendanceRecord = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
+        $attendance = $employeeAttendanceRecord->attendances()->updateOrCreate(
+            ['date' => $date],
+            [
+                'status' => $details['status'],
+                'notes' => $details['notes'] ?? null,
+                'has_coverage_shift' => $details['has_coverage'] ?? false,
+                'coverage_employee_id' => $details['coverage_employee_id'] ?? null,
+                'updated_by' => auth()->id(),
+            ]
+        );
+    }
+
+    /**
+     * دالة جديدة للحفظ السريع باستخدام الحالة الافتراضية
+     */
+    public function quickSaveStatus($employeeId, $date, $status)
     {
         $employee = ManualAttendanceEmployee::findOrFail($employeeId);
         $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
         $attendance->status = $status;
         $attendance->updated_by = auth()->id();
         $attendance->save();
-    }
 
-    public function saveCoverage($employeeId, $date, $covValue)
-    {
-        $employee = ManualAttendanceEmployee::findOrFail($employeeId);
-        $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
-
-        if (! $attendance->exists) {
-            $attendance->status = '';
-        }
-
-        $attendance->has_coverage_shift = ($covValue === 'COV');
-        $attendance->updated_by = auth()->id();
-        $attendance->save();
-    }
-
-       /**
-     * [جديد] دالة شاملة لحفظ كل تفاصيل الحضور لليوم المحدد.
-     * تتعامل مع الحالة، الملاحظات، وتغطية الدوام.
-     *
-     * @param int $manualAttendanceEmployeeId معرف سجل حضور الموظف للشهر.
-     * @param string $date التاريخ المراد تحديثه (Y-m-d).
-     * @param array $details مصفوفة تحتوي على بيانات الحضور.
-     */
-    public function saveAttendanceDetails(int $manualAttendanceEmployeeId, string $date, array $details)
-    {
-        $employeeAttendanceRecord = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
-
-        $attendance = $employeeAttendanceRecord->attendances()->updateOrCreate(
-            [
-                'date' => $date,
-            ],
-            [
-                'status' => $details['status'],
-                'notes' => $details['notes'],
-                'has_coverage_shift' => $details['has_coverage'],
-                'coverage_employee_id' => $details['coverage_employee_id'] ?? null, // ✨ [تعديل] حفظ معرف الموظف البديل
-                'updated_by' => auth()->id(),
-            ]
-        );
+        // إرجاع البيانات المحدثة لتحديث الواجهة
+        return [
+            'success' => true,
+            'status' => $status,
+            'employeeId' => $employeeId,
+            'date' => $date
+        ];
     }
 }
