@@ -167,13 +167,13 @@ class DistributeAssignments extends Page implements Forms\Contracts\HasForms
     private function loadZonesWithShiftsAndSlots($projectId): array
     {
         return Zone::where('project_id', $projectId)
-            ->with(['shifts.slots'])
+            ->with(['activeShifts.slots'])
             ->get()
             ->map(function ($zone) {
                 return [
                     'id' => $zone->id,
                     'name' => $zone->name,
-                    'shifts' => $zone->shifts->map(function ($shift) {
+                    'shifts' => $zone->activeShifts->map(function ($shift) {
                         return [
                             'id' => $shift->id,
                             'name' => $shift->name,
