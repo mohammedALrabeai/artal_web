@@ -202,7 +202,7 @@ class EmployeeProjectRecordResource extends Resource
 
             DatePicker::make('start_date')
                 ->label(__('Start Date'))
-                // ->minDate(fn(callable $get) => \App\Models\Shift::find($get('shift_id'))?->start_date)
+                ->minDate(fn(callable $get) => \App\Models\Shift::find($get('shift_id'))?->start_date)
 
                 ->required(),
 
