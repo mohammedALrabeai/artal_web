@@ -192,7 +192,21 @@
             width: 150,
             cellStyle: {
                 textAlign: 'center'
-            }
+            },
+              onCellClicked: (e) => {
+        if (!e.value) return;              // لا قيمة؟ لا تفعل شيئاً
+        navigator.clipboard.writeText(String(e.value))
+            .then(() => {
+                const box = document.getElementById('save-status');
+                if (box) {
+                    const prev = box.textContent;
+                    box.textContent = '✅ تم نسخ الهوية';
+                    setTimeout(() => box.textContent = prev, 1500);
+                }
+            })
+            .catch((err) => console.error('Clipboard copy failed', err));
+    },
+            
         }, {
             headerName: 'المشروع / الموقع',
             field: 'project_utilized',
@@ -646,6 +660,12 @@
          theme: 'legacy', 
         // suppressDoubleClickEdit: true,
         headerHeight: 40,
+//         onCellClicked: (e) => {
+//     if (e.colDef.field === 'national_id' && e.value) {
+//         navigator.clipboard.writeText(e.value) …;
+//     }
+// },
+
         getRowId: params => String(params.data.id),
         defaultColDef: {
             resizable: true,
