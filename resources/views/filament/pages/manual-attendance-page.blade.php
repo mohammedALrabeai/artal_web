@@ -231,6 +231,8 @@
                 cellEditorParams: {
                     currentDateStr: currentDateStr
                 },
+                cellDataType: false,  
+                valueFormatter: p => p.value ? p.value.status : '',
                 valueFormatter: params => params.value ? params.value.status : '',
                 onCellDoubleClicked: (event) => {
                      if (!isEditable) return; 
@@ -639,8 +641,10 @@
     const gridOptions = {
         popupParent: gridDiv,
         rowModelType: 'clientSide',
+        // suppressClickEdit: true, 
         suppressClickEdit: true, 
-        suppressDoubleClickEdit: true,
+         theme: 'legacy', 
+        // suppressDoubleClickEdit: true,
         headerHeight: 40,
         getRowId: params => String(params.data.id),
         defaultColDef: {
@@ -698,7 +702,8 @@
 
     function fetchDataAndUpdateGrid(filters) {
         if (!gridApi) return;
-        gridApi.showLoadingOverlay();
+        // gridApi.showLoadingOverlay();
+        gridApi.setGridOption('loading', true);
 
         fetch('/api/attendance-data', {
                 method: 'POST',
@@ -715,11 +720,13 @@
             .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
             .then(data => {
                 gridApi.setGridOption('rowData', data.rows);
-                gridApi.hideOverlay();
+                // gridApi.hideOverlay();
+                 gridApi.setGridOption('loading', false);
             })
             .catch((error) => {
                 console.error('Error fetching data:', error);
-                gridApi.hideOverlay();
+                // gridApi.hideOverlay();
+                 gridApi.setGridOption('loading', false);
             });
     }
 
@@ -795,7 +802,9 @@
 
         if (gridApi) {
             // setTimeout(() => gridApi.sizeColumnsToFit(), 150);
-                  setTimeout(() => gridApi.checkGridSize(), 150); 
+                //   setTimeout(() => gridApi.checkGridSize(), 150); 
+                //    setTimeout(() => gridApi.doLayout(), 0);  
+                   setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
         }
     }
 
