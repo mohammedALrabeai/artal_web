@@ -2,35 +2,36 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
-use App\Forms\Components\EmployeeSelect;
-use App\Models\Employee;
-use App\Models\EmployeeProjectRecord;
-use App\Models\Project;
-use App\Models\Shift;
-use App\Models\Zone;
-use App\Services\OtpService;
-use App\Tables\Filters\EmployeeFilter;
 use Filament\Forms;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
+use App\Models\Zone;
+use App\Models\Shift;
+use App\Models\Project;
+use App\Models\Employee;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Columns\BooleanColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\OtpService;
 use Illuminate\Support\Carbon;
+use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Filters\Filter;
+use App\Models\EmployeeProjectRecord;
+use Filament\Forms\Components\Select;
+use App\Tables\Filters\EmployeeFilter;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use App\Forms\Components\EmployeeSelect;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\EditRecord;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Columns\BooleanColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Actions\DeleteBulkAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Resources\EmployeeProjectRecordResource\Pages;
 use App\Filament\Resources\EmployeeProjectRecordResource\RelationManagers\ActivityLogsRelationManager;
 
 
@@ -71,7 +72,8 @@ class EmployeeProjectRecordResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            EmployeeSelect::make(),
+            EmployeeSelect::make()
+             ->disabled(fn ($livewire) => $livewire instanceof EditRecord),
 
             // Select::make('employee_id')
             // ->label(__('Employee'))
@@ -98,7 +100,8 @@ class EmployeeProjectRecordResource extends Resource
                 ->afterStateUpdated(function (callable $set) {
                     $set('zone_id', null); // إعادة تعيين اختيار الموقع عند تغيير المشروع
                     $set('shift_id', null); // إعادة تعيين اختيار الوردية عند تغيير المشروع
-                }),
+                })
+                ->disabled(fn ($livewire) => $livewire instanceof EditRecord),
 
             // اختيار الموقع
             Select::make('zone_id')
@@ -111,6 +114,7 @@ class EmployeeProjectRecordResource extends Resource
 
                     return \App\Models\Zone::where('project_id', $projectId)->pluck('name', 'id');
                 })
+                 ->disabled(fn ($livewire) => $livewire instanceof EditRecord)
                 ->searchable()
                 ->required()
                 ->reactive()
@@ -205,44 +209,44 @@ class EmployeeProjectRecordResource extends Resource
             DatePicker::make('end_date')
                 ->label(__('End Date')),
 
-            Forms\Components\Toggle::make('status')
-                ->label(__('Status'))
-                ->onColor('success') // لون عند التفعيل
-                ->offColor('danger') // لون عند الإيقاف
-                ->required()
-                ->default(true)
-                ->afterStateUpdated(function (callable $set, callable $get, $state, $livewire) {
-                    // ✅ فقط إذا تم تغيير الحالة إلى غير نشط
-                    if ($state === false) {
-                        // إذا لم يكن هناك تاريخ إنهاء نضبطه تلقائيًا
-                        if (empty($get('end_date'))) {
-                            $set('end_date', now('Asia/Riyadh')->format('Y-m-d'));
-                        }
+          Forms\Components\Toggle::make('status')
+    ->label(__('Status'))
+    ->onColor('success')
+    ->offColor('danger')
+    ->required()
+    ->default(true)
 
-                        try {
-                            $record = $livewire->record;
+    /* 1️⃣ أخفِ المفتاح تمامًا إذا كان السجل موجودًا وحالته مُعطَّلة */
+    ->visible(fn (?EmployeeProjectRecord $rec) =>
+        ! ($rec && (int) $rec->status === 0)
+    )
 
-                            $employee = \App\Models\Employee::find($record->employee_id);
-                            $project = \App\Models\Project::find($record->project_id);
+    /* 2️⃣ لا تُرسِل الحقل مع البيانات عند التعطيل */
+    ->dehydrated(fn (?EmployeeProjectRecord $rec) =>
+        ! ($rec && (int) $rec->status === 0)
+    )
 
-                            if (
-                                $employee &&
-                                $employee->mobile_number &&
-                                $project &&
-                                $project->has_whatsapp_group &&
-                                $project->whatsapp_group_id
-                            ) {
-                                $cleanNumber = preg_replace('/[^0-9]/', '', $employee->mobile_number);
-                                $whatsapp = new \App\Services\WhatsApp\WhatsAppGroupService();
-                                $whatsapp->removeParticipant($project->whatsapp_group_id, $cleanNumber);
-                            }
-                        } catch (\Throwable $e) {
-                            \Log::warning('فشل في إزالة الموظف من جروب واتساب عند تحويله إلى غير نشط', [
-                                'exception' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                }),
+    /* 3️⃣ عند التبديل من مفعَّل → مُعطَّل نفّذ الآتى */
+    ->afterStateUpdated(function ($state, callable $set, callable $get, $livewire) {
+
+        /* إذا أصبح مُعطَّلاً */
+        if ((int) $state === 0) {
+
+            /* ▸ أ. ضَبْط end_date إن كانت فارغة */
+            if (empty($get('end_date'))) {
+                $set('end_date', now('Asia/Riyadh')->toDateString());
+            }
+
+           
+        }
+    })
+
+    /* (اختياري) رسالة توضّح سبب إخفاء الحقل */
+    ->helperText(fn (?EmployeeProjectRecord $rec) =>
+        $rec && (int) $rec->status === 0
+            ? '🛑 هذا الإسناد مُعطَّل نهائيًا ولا يمكن إعادة تفعيله.'
+            : null
+    ),
 
         ]);
     }
