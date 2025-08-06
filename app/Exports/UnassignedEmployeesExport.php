@@ -2,51 +2,49 @@
 
 // app/Exports/UnassignedEmployeesExport.php
 
+// app/Exports/UnassignedEmployeesExport.php
 namespace App\Exports;
 
 use App\Models\EmployeeProjectRecord;
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\{FromCollection, WithHeadings};
 
 class UnassignedEmployeesExport implements FromCollection, WithHeadings
 {
-    public function collection()
+    public function collection(): Collection
     {
-        // استخراج جميع الإسنادات النشطة التي لا يوجد لها سلوت
-        $records = EmployeeProjectRecord::where('status', true)
-            ->whereNull('end_date')
-            ->whereNull('shift_slot_id')
+        return EmployeeProjectRecord::query()
+            ->active()                     // 🔎 scope موضَّح بالأسفل
+            ->whereNull('shift_slot_id')   // لا يملك شاغر
             ->with(['employee', 'shift', 'zone', 'project'])
-            ->get();
-
-        return $records->map(function ($record) {
-            return [
-                'اسم الموظف'      => optional($record->employee)->name ?? '',
-                'رقم الهوية'      => optional($record->employee)->national_id ?? '',
-                'الجوال'          => optional($record->employee)->mobile_number ?? '',
-                'المشروع'         => optional($record->project)->name ?? '',
-                'الموقع'          => optional($record->zone)->name ?? '',
-                'الوردية'         => optional($record->shift)->name ?? '',
-                'تاريخ البداية'   => $record->start_date,
-                'تاريخ النهاية'   => $record->end_date,
-                'رقم السجل'       => $record->id,
-            ];
-        });
+            ->get()
+            ->map(fn($rec) => $this->mapRow($rec));
     }
 
     public function headings(): array
     {
+        return $this->headings;
+    }
+
+    /* ----------  خصائص وأدوات شائعة ---------- */
+    protected array $headings = [
+        'اسم الموظف','رقم الهوية','الجوال',
+        'المشروع','الموقع','الوردية',
+        'تاريخ البداية','رقم السجل','ID الشاغر',
+    ];
+
+    protected function mapRow($rec): array
+    {
         return [
-            'اسم الموظف',
-            'رقم الهوية',
-            'الجوال',
-            'المشروع',
-            'الموقع',
-            'الوردية',
-            'تاريخ البداية',
-            'تاريخ النهاية',
-            'رقم السجل',
+            optional($rec->employee)->name,
+            optional($rec->employee)->national_id,
+            optional($rec->employee)->mobile_number,
+            optional($rec->project)->name,
+            optional($rec->zone)->name,
+            optional($rec->shift)->name,
+            $rec->start_date,
+            $rec->id,
+            '—',            // لا يوجد شاغر
         ];
     }
 }

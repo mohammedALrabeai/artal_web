@@ -146,6 +146,13 @@ class EmployeeProjectRecord extends Model
             );
     }
 
+    // داخل EmployeeProjectRecord.php
+public function scopeActive($q)
+{
+    return $q->where('status', true)->whereNull('end_date');
+}
+
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
