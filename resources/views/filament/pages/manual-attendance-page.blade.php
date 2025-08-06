@@ -1105,6 +1105,14 @@
 
 /* Firefox */
 :-moz-full-screen::backdrop       { background:#fff; }
+.fi-page.fullscreen-container #column-chooser-container{
+    overflow: visible;         /* لا تقصّ المحتوى */
+}
+
+/* واجعل الـ dropdown فوق الـ grid تماماً */
+#columnChooserDropdown{
+    z-index: 9999;             /* رقم كبير يضمن الظهور */
+}
             </style>
         @endpush
         @section('meta')
