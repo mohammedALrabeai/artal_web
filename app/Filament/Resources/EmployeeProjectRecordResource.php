@@ -144,62 +144,61 @@ class EmployeeProjectRecordResource extends Resource
                 }),
 
             Select::make('shift_slot_id')
-    ->label(__('Slot (الشاغر)'))
-    ->options(function (callable $get, ?EmployeeProjectRecord $record) {
-        $shiftId = $get('shift_id');
-        if (! $shiftId) return [];
+                ->label(__('Slot (الشاغر)'))
+                ->options(function (callable $get, ?EmployeeProjectRecord $record) {
+                    $shiftId = $get('shift_id');
+                    if (! $shiftId) return [];
 
-        // 🔄 الشواغر المتاحة
-        $usedSlots = \App\Models\EmployeeProjectRecord::query()
-            ->where('status', true)
-            ->whereNull('end_date')
-            ->where('shift_id', $shiftId)
-            ->when($record, fn($q) => $q->where('id', '!=', $record->id))
-            ->pluck('shift_slot_id')
-            ->filter()
-            ->toArray();
+                    // 🔄 الشواغر المتاحة
+                    $usedSlots = \App\Models\EmployeeProjectRecord::query()
+                        ->where('status', true)
+                        ->whereNull('end_date')
+                        ->where('shift_id', $shiftId)
+                        ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                        ->pluck('shift_slot_id')
+                        ->filter()
+                        ->toArray();
 
-        $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
-            ->when($usedSlots, fn($q) => $q->whereNotIn('id', $usedSlots));
+                    $query = \App\Models\ShiftSlot::where('shift_id', $shiftId)
+                        ->when($usedSlots, fn($q) => $q->whereNotIn('id', $usedSlots));
 
-        // ✅ إضافة الشاغر المختار حتى لو لا يتبع الوردية الحالية
-        if ($record && $record->shift_slot_id) {
-            $query->orWhere('id', $record->shift_slot_id);
-        }
+                    // ✅ إضافة الشاغر المختار حتى لو لا يتبع الوردية الحالية
+                    if ($record && $record->shift_slot_id) {
+                        $query->orWhere('id', $record->shift_slot_id);
+                    }
 
-        // 👁️ عرض معلومات الشاغر بشكل واضح
-        return $query->with('shift')->get()->mapWithKeys(function ($slot) {
-            $label = 'شاغر #' . $slot->slot_number;
-            $label .= ' - وردية: ' . optional($slot->shift)->name;
-            return [$slot->id => $label];
-        });
-    })
-    ->searchable()
-    ->required()
-    ->visible(fn(callable $get) => $get('shift_id'))
-    ->helperText('اختر شاغر تابع للوردية المحددة')
-    ->reactive()
-    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-        $shiftId = $get('shift_id');
-        $slot = \App\Models\ShiftSlot::with('shift')->find($state);
+                    // 👁️ عرض معلومات الشاغر بشكل واضح
+                    return $query->with('shift')->get()->mapWithKeys(function ($slot) {
+                        $label = 'شاغر #' . $slot->slot_number;
+                        $label .= ' - وردية: ' . optional($slot->shift)->name;
+                        return [$slot->id => $label];
+                    });
+                })
+                ->searchable()
+                ->required()
+                ->visible(fn(callable $get) => $get('shift_id'))
+                ->helperText('اختر شاغر تابع للوردية المحددة')
+                ->reactive()
+                ->afterStateUpdated(function ($state, callable $get, callable $set) {
+                    $shiftId = $get('shift_id');
+                    $slot = \App\Models\ShiftSlot::with('shift')->find($state);
 
-        // ⚠️ تحذير إذا كان الشاغر لا يتبع الوردية الحالية
-        if ($slot && $slot->shift_id != $shiftId) {
-            Notification::make()
-                ->title('⚠️ الشاغر لا يتبع الوردية المحددة')
-                ->body('يرجى التأكد من اختيار شاغر صحيح')
-                ->danger()
-                ->persistent()
-                ->send();
-        }
-    })
-,
+                    // ⚠️ تحذير إذا كان الشاغر لا يتبع الوردية الحالية
+                    if ($slot && $slot->shift_id != $shiftId) {
+                        Notification::make()
+                            ->title('⚠️ الشاغر لا يتبع الوردية المحددة')
+                            ->body('يرجى التأكد من اختيار شاغر صحيح')
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                    }
+                }),
 
 
 
             DatePicker::make('start_date')
                 ->label(__('Start Date'))
-    ->minDate(fn(callable $get) => \App\Models\Shift::find($get('shift_id'))?->start_date)
+                ->minDate(fn(callable $get) => \App\Models\Shift::find($get('shift_id'))?->start_date)
 
                 ->required(),
 
@@ -336,36 +335,36 @@ class EmployeeProjectRecordResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    TextColumn::make('slot_issue_type')
-    ->label('🛠️ حالة الشاغر')
-    ->getStateUsing(function ($record) {
-        if (is_null($record->shift_slot_id)) {
-            return '❌ بدون شاغر';
-        }
+                TextColumn::make('slot_issue_type')
+                    ->label('🛠️ حالة الشاغر')
+                    ->getStateUsing(function ($record) {
+                        if (is_null($record->shift_slot_id)) {
+                            return '❌ بدون شاغر';
+                        }
 
-        if ($record->shiftSlot?->shift_id != $record->shift_id) {
-            return '❌ الشاغر لا يتبع الوردية';
-        }
+                        if ($record->shiftSlot?->shift_id != $record->shift_id) {
+                            return '❌ الشاغر لا يتبع الوردية';
+                        }
 
-        $count = \App\Models\EmployeeProjectRecord::query()
-            ->where('status', true)
-            ->whereNull('end_date')
-            ->where('shift_slot_id', $record->shift_slot_id)
-            ->count();
+                        $count = \App\Models\EmployeeProjectRecord::query()
+                            ->where('status', true)
+                            ->whereNull('end_date')
+                            ->where('shift_slot_id', $record->shift_slot_id)
+                            ->count();
 
-        if ($count > 1) {
-            return "⚠️ مكرر ($count)";
-        }
+                        if ($count > 1) {
+                            return "⚠️ مكرر ($count)";
+                        }
 
-        return '✅ سليم';
-    })
-    ->badge()
-    ->color(fn($state) => match(true) {
-        str_contains($state, '❌') => 'danger',
-        str_contains($state, '⚠️') => 'warning',
-        default => 'success',
-    })
-     ->toggleable(isToggledHiddenByDefault: true),
+                        return '✅ سليم';
+                    })
+                    ->badge()
+                    ->color(fn($state) => match (true) {
+                        str_contains($state, '❌') => 'danger',
+                        str_contains($state, '⚠️') => 'warning',
+                        default => 'success',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
 
 
             ])
@@ -375,25 +374,27 @@ class EmployeeProjectRecordResource extends Resource
             ->filters([
 
                 Filter::make('slot_issues')
-    ->label('⚠️ أخطاء الشواغر')
-    ->query(function (Builder $query) {
-        $query->where(function ($q) {
-            $q->whereNull('shift_slot_id') // بدون شاغر
-              ->orWhereHas('shiftSlot', fn($slotQ) =>
-                  $slotQ->whereColumn('shift_slots.shift_id', '!=', 'employee_project_records.shift_id') // شاغر لا يتبع وردية
-              )
-              ->orWhereIn('shift_slot_id', function ($sub) {
-                  $sub->select('shift_slot_id')
-                      ->from('employee_project_records')
-                      ->whereNotNull('shift_slot_id')
-                      ->where('status', true)
-                      ->whereNull('end_date')
-                      ->groupBy('shift_slot_id')
-                      ->havingRaw('COUNT(*) > 1');
-              });
-        });
-    })
-    ->indicator('⚠️ فقط الأخطاء'),
+                    ->label('⚠️ أخطاء الشواغر')
+                    ->query(function (Builder $query) {
+                        $query->where(function ($q) {
+                            $q->whereNull('shift_slot_id') // بدون شاغر
+                                ->orWhereHas(
+                                    'shiftSlot',
+                                    fn($slotQ) =>
+                                    $slotQ->whereColumn('shift_slots.shift_id', '!=', 'employee_project_records.shift_id') // شاغر لا يتبع وردية
+                                )
+                                ->orWhereIn('shift_slot_id', function ($sub) {
+                                    $sub->select('shift_slot_id')
+                                        ->from('employee_project_records')
+                                        ->whereNotNull('shift_slot_id')
+                                        ->where('status', true)
+                                        ->whereNull('end_date')
+                                        ->groupBy('shift_slot_id')
+                                        ->havingRaw('COUNT(*) > 1');
+                                });
+                        });
+                    })
+                    ->indicator('⚠️ فقط الأخطاء'),
                 SelectFilter::make('project_id')
                     ->label(__('Project'))
                     ->options(Project::all()->pluck('name', 'id'))
@@ -712,7 +713,7 @@ class EmployeeProjectRecordResource extends Resource
 
         // ✅ حساب بداية الدورة من `shift.start_date`
         $startDate = Carbon::parse($record->shift->start_date);
-            $assignStart = \Carbon\Carbon::parse($record->start_date);
+        $assignStart = \Carbon\Carbon::parse($record->start_date);
 
         $currentDate = Carbon::now('Asia/Riyadh');
 
@@ -727,9 +728,9 @@ class EmployeeProjectRecordResource extends Resource
             // $minStart = $recordStart->greaterThan($shiftStart) ? $recordStart : $shiftStart;
             $displayDate = $targetDate->format('d M');
 
-             // ❗️إذا التاريخ قبل بداية الوردية أو بداية الإسناد
-        if ($targetDate->lt($shiftStart) || $targetDate->lt($assignStart)) {
-            $daysView[] = "
+            // ❗️إذا التاريخ قبل بداية الوردية أو بداية الإسناد
+            if ($targetDate->lt($shiftStart) || $targetDate->lt($assignStart)) {
+                $daysView[] = "
             <span style='
                 padding: 4px;
                 border-radius: 5px;
@@ -745,8 +746,8 @@ class EmployeeProjectRecordResource extends Resource
             '>
                 $displayDate - 🕒
             </span>";
-            continue;
-        }
+                continue;
+            }
             $totalDays = $startDate->diffInDays($targetDate); // ✅ حساب الفرق من بداية الوردية وليس من اليوم الحالي
 
             // ✅ حساب اليوم داخل الدورة بناءً على `totalDays`
