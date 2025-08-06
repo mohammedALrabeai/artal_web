@@ -13,6 +13,7 @@ class SlotIssuesReport implements WithMultipleSheets
             'بدون شاغر'       => new UnassignedEmployeesExport,
             'شاغر مكرر'       => new DuplicateSlotAssignmentsExport,
             'شاغر لا يتبع وردية' => new MismatchedSlotAssignmentsExport,
+             'نقص شواغر الوردية'  => new ShiftsMissingSlotsExport, 
         ];
     }
 }
