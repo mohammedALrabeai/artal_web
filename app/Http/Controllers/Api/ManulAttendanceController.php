@@ -171,46 +171,57 @@ class ManulAttendanceController extends Controller
     }
 
 
-     public function assignmentsList(Request $request)
-    {
-        $today  = Carbon::today()->toDateString();
-        $search = trim($request->get('q', ''));
+public function assignmentsList(Request $request)
+{
+    $search = trim($request->get('q', ''));
 
-        $query = EmployeeProjectRecord::query()
-            ->where(function ($q) use ($today) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>=', $today);
+    $query = EmployeeProjectRecord::query()
+        ->with([
+            'employee:id,first_name,father_name,grandfather_name,family_name,national_id,status',
+            'project:id,name',
+            'zone:id,name',
+            'shift:id,name',
+        ])
+        // موظّفون نشطون فقط
+        ->active();
+
+    /* 🔍 البحث */
+    if ($search !== '') {
+        $query->where(function ($q) use ($search) {
+            /* الاسم الكامل */
+            $q->whereHas('employee', function ($qq) use ($search) {
+                $qq->whereRaw(
+                    "CONCAT_WS(' ', first_name, father_name, grandfather_name, family_name) LIKE ?",
+                    ["%{$search}%"]
+                );
             })
-            ->whereHas('employee', fn ($q) => $q->where('status', 'active'))
-            ->with([
-                'employee:id,first_name,father_name,grandfather_name,family_name,national_id',
-                'project:id,name',
-                'zone:id,name',
-                'shift:id,type',
-            ]);
-
-        /** بحث اختياري بالاسم أو الهوية */
-        if ($search !== '') {
-            $query->whereHas('employee', function ($q) use ($search) {
-                $q->whereRaw("CONCAT_WS(' ', first_name, father_name, grandfather_name, family_name) LIKE ?", ["%{$search}%"])
-                  ->orWhere('national_id', 'LIKE', "%{$search}%");
-            });
-        }
-
-        // حد أعلى لـ 30 نتيجة لتجنب الحمل الزائد على الواجهة
-        $assignments = $query->limit(30)->get()->map(function ($epr) {
-            $emp = $epr->employee;
-
-            return [
-                'id'          => $epr->id,                                          // مُعرّف الإسناد
-                'name'        => "{$emp->first_name} {$emp->father_name} {$emp->grandfather_name} {$emp->family_name}",
-                'national_id' => $emp->national_id,
-                'location'    => "{$epr->project->name} / {$epr->zone->name}",
-                'shift'       => $epr->shift?->name ?? '—',
-                'employee_id' => $epr->employee_id,
-            ];
+            /* رقم الهوية (المعمود نص أو رقم) */
+            ->orWhereHas('employee', fn ($qq) =>
+                $qq->where('national_id', 'LIKE', "%{$search}%"))
+            /* اسم المشروع */
+            ->orWhereHas('project', fn ($qq) =>
+                $qq->where('name', 'LIKE', "%{$search}%"))
+            /* اسم الموقع/المنطقة */
+            ->orWhereHas('zone', fn ($qq) =>
+                $qq->where('name', 'LIKE', "%{$search}%"));
         });
-
-        return response()->json($assignments);
     }
+
+    /* حدّ أقصى 30 نتيجة */
+    return $query->limit(30)->get()->map(function ($epr) {
+        $emp = $epr->employee;
+
+        return [
+            'id'          => $epr->id,                                       // مُعرّف الإسناد
+            'name'        => trim("{$emp->first_name} {$emp->father_name} "
+                               ."{$emp->grandfather_name} {$emp->family_name}"),
+            'national_id' => $emp->national_id,
+            'location'    => "{$epr->project->name} / {$epr->zone->name}",
+            'shift'       => $epr->shift?->name ?? '—',
+            'employee_id' => $epr->employee_id,
+        ];
+    });
+}
+
+
 }

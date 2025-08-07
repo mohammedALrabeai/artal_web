@@ -142,25 +142,7 @@
                         });
                     }
 
-                    const getEmployees = (() => {
-                        let employeesPromise = null;
-                        return () => {
-                            if (!employeesPromise) {
-                                // بدّل الرابط:
-                                employeesPromise = fetch('/api/assignments-list')
-                                    .then(response => {
-                                        if (!response.ok) throw new Error('Network response was not ok');
-                                        return response.json();
-                                    })
-                                    .catch(error => {
-                                        console.error('Failed to fetch employees:', error);
-                                        employeesPromise = null; // Reset on error to allow retries
-                                        return [];
-                                    });
-                            }
-                            return employeesPromise;
-                        };
-                    })();
+
 
                     function createColumnDefs(monthStr, editableDateStr) {
                         if (!monthStr) return [];
@@ -503,9 +485,7 @@
                             this.attachEventListeners();
                             this.updateUI();
 
-                            getEmployees().then(employees => {
-                                this.allEmployees = employees;
-                            });
+
                         }
 
                         createUI() {
@@ -587,6 +567,15 @@
                                 }
                             });
                             document.addEventListener('click', this.handleDocumentClick.bind(this), true);
+                            // عند تغيير القائمة المنسدلة للحالة
+                            this.refs.statusSelect.addEventListener('change', (e) => {
+                                this.handleStateChange('status', e.target.value);
+                            });
+
+                            this.refs.notesTextarea.addEventListener('input', (e) =>
+                                this.state.notes = e.target.value);
+
+
 
                             this.refs.coverageLabel.addEventListener('click', (e) => {
                                 // بعد أن يغيّر المتصفّح حالة الـ checkbox، نقرأ قيمته
@@ -644,14 +633,17 @@
                             this.refs.notesTextarea.value = this.state.notes;
                             this.refs.coverageToggle.checked = this.state.has_coverage;
                             // حرّك الدائرة يدوياً إن أردت (tailwind peer لم يعد يشتغل مع click اليدوي)
-                            const knob = this.refs.coverageLabel.querySelector('div');
+                            // ضبط موضع ولون الزر عند كل تحديث
+                            const knobWrapper = this.refs.coverageLabel.querySelector('div');
+
                             if (this.state.has_coverage) {
-                                knob.classList.add('peer-checked:after:translate-x-full',
-                                'peer-checked:bg-primary-600');
+                                knobWrapper.classList.add('bg-primary-600');
+                                knobWrapper.style.setProperty('transform', 'translateX(20px)');
                             } else {
-                                knob.classList.remove('peer-checked:after:translate-x-full',
-                                    'peer-checked:bg-primary-600');
+                                knobWrapper.classList.remove('bg-primary-600');
+                                knobWrapper.style.setProperty('transform', 'translateX(0)');
                             }
+
 
                             this.refs.employeeSearchInput.value = this.state.replaced_employee_name || '';
 
