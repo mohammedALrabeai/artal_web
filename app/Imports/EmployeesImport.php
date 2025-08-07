@@ -43,8 +43,8 @@ class EmployeesImport implements ToCollection
         'سكن' => 'living_allowance',
         'آخرى' => 'other_allowances',
         'الوظيفة' => 'job_title',
-        'الأيبان' => 'bank_account', 
-        'الحالة'=> 'job_status',
+        'الأيبان' => 'bank_account',
+        'الحالة' => 'job_status',
         'اسم البنك' => 'bank_name',
         'التأمين الطبي' => 'health_insurance_status',
         'اسم شركة التأمين' => 'health_insurance_company',
@@ -52,11 +52,11 @@ class EmployeesImport implements ToCollection
         'الجوال' => 'mobile_number',
         'جوال إضافي (طواريء)' => 'phone_number',
         'البريد الإلكتروني' => 'email',
-        'اسم الموقع المرشح'=>'preferred_zone_name',
-       
-     
+        'اسم الموقع المرشح' => 'preferred_zone_name',
+
+
         'المباشرة' => 'actual_start',
-        'تاريخ الإضافة'=> 'contract_start',
+        'تاريخ الإضافة' => 'contract_start',
         'المؤهل' => 'qualification',
         'مكان الميلاد' => 'birth_place',
         'شركة' => 'company_name', // العمود الذي يحتوي على اسم الشركة
@@ -75,7 +75,7 @@ class EmployeesImport implements ToCollection
                 $columnIndex = $header->search($excelColumn);
                 $value = $columnIndex !== false ? $row[$columnIndex] : null;
 
-                   // استخدام المعرف من الملف أو توليد المعرف تلقائيًا
+                // استخدام المعرف من الملف أو توليد المعرف تلقائيًا
                 if ($modelField === 'id') {
                     if ($this->useIdsFromFile) {
                         $employeeData['id'] = $value; // استخدام القيمة من الملف
@@ -85,11 +85,11 @@ class EmployeesImport implements ToCollection
                     continue;
                 }
                 // معالجة القيم الخاصة
-                if ($modelField === 'national_id' ) {
+                if ($modelField === 'national_id') {
                     $value = (string) $value; // تحويل إلى نص
                 } elseif ($modelField === 'birth_date') {
                     $value = $this->parseGregorianDate($value); // تحويل التاريخ الميلادي إلى التنسيق الصحيح
-                    if($value == null){
+                    if ($value == null) {
                         $value = '1990-01-01';
                     }
                 } elseif ($modelField === 'actual_start') {
@@ -105,64 +105,55 @@ class EmployeesImport implements ToCollection
                         $value = '-'; // تحويل الجنسية إلى الإنجليزية
                     }
                 } elseif ($modelField === 'basic_salary') {
-                    
-                    if($value == null){
+
+                    if ($value == null) {
                         $value = 0;
-                    }else{
+                    } else {
                         // التحقق من قيمة basic_salary وجعلها رقمًا فقط
                         $value = is_numeric($value) ? (float) $value : 0;
-
                     }
                 } elseif ($modelField === 'bank_account') {
-                    if($value == null){
+                    if ($value == null) {
                         $value = '-';
                     }
-                    
                 } elseif ($modelField === 'email') {
                     $value = trim($value); // إزالة المسافات الزائدة
-                }elseif ($modelField === 'mobile_number') {
+                } elseif ($modelField === 'mobile_number') {
                     $value = $this->formatSaudiMobileNumber((string)$value); // تحويل إلى نص
                 }
 
                 $employeeData[$modelField] = $value;
             }
 
+            // ✅ معالجة حقل "company_name" لتحديد نوع التأمين والسجل
+            $originalCompanyName = $employeeData['company_name'] ?? null;
 
-               // البحث عن الشركة وإسناد `commercial_record_id`
-               if (!empty($employeeData['company_name'])) {
-                   // القيمة الأصلية من ملف الإكسل
-    $originalCompanyName = $employeeData['company_name'];
-
-    // استخراج الرقم من النص باستخدام Regex (يبحث عن أول رقم طويل)
-    preg_match('/\d{6,}/', $originalCompanyName, $matches);
-    $recordNumber = $matches[0] ?? null; // إذا تم العثور على رقم، يتم تخزينه
-
-    // البحث عن الشركة في جدول CommercialRecord باستخدام `record_number`
-    if ($recordNumber) {
-        $company = CommercialRecord::where('insurance_number', $recordNumber)->first();
-        $employeeData['commercial_record_id'] = $company ? $company->id : null;
-        $employeeData['insurance_type'] = "commercial_record"; 
-        \Log::info('Company number found'.$employeeData['commercial_record_id']);
-    } else {
-        $employeeData['commercial_record_id'] = null;
-        \Log::info('No company number  found');
-    }
-\Log::info('Extracted Record Number: ' . $recordNumber);
-    // طباعة القيم للتحقق من صحة البيانات
-    // dd([
-    //     'originalCompanyName' => $originalCompanyName,
-    //     'extractedRecordNumber' => $recordNumber,
-    //     'queryResult' => $company, // إظهار نتيجة البحث في قاعدة البيانات
-    //     'companyFound' => $company ? true : false // هل تم العثور على الشركة أم لا؟
-    // ]);
-            } else {
+            if (!$originalCompanyName || str_contains($originalCompanyName, 'بدون')) {
+                // إذا كان الحقل فارغ أو يحتوي "بدون" → لا تأمين
+                $employeeData['insurance_type'] = $originalCompanyName ? '' : 'commercial_record';
                 $employeeData['commercial_record_id'] = null;
-                \Log::info('No company name found');
-            }
-              // إزالة حقل `company_name` بعد استخدامه
-              unset($employeeData['company_name']);
+                \Log::info('Company name is empty or marked as بدون → insurance_type: ' . $employeeData['insurance_type']);
+            } else {
+                // محاولة استخراج رقم السجل التجاري من النص
+                preg_match('/\d{6,}/', $originalCompanyName, $matches);
+                $recordNumber = $matches[0] ?? null;
 
-                 // إضافة `insurance_number`
+                if ($recordNumber) {
+                    $company = CommercialRecord::where('insurance_number', $recordNumber)->first();
+                    $employeeData['commercial_record_id'] = $company?->id;
+                    $employeeData['insurance_type'] = 'commercial_record';
+                    \Log::info('Company number found: ' . $employeeData['commercial_record_id']);
+                } else {
+                    $employeeData['commercial_record_id'] = null;
+                    $employeeData['insurance_type'] = 'commercial_record'; // حتى لو لم نجد الرقم
+                    \Log::info('No valid record number found in company_name');
+                }
+            }
+
+            // إزالة حقل `company_name` بعد استخدامه
+            unset($employeeData['company_name']);
+
+            // إضافة `insurance_number`
             $employeeData['insurance_number'] = $employeeData['insurance_number'] ?? null;
 
 
@@ -182,22 +173,22 @@ class EmployeesImport implements ToCollection
 
             // تقسيم الاسم إلى أجزاء
             $fullName = $employeeData['full_name'] ?? null;
-           
+
             if ($fullName) {
 
                 // تقسيم الاسم بناءً على المسافات
                 $nameParts = explode(' ', trim($fullName));
-                
-            
+
+
                 // تعيين الاسم الأول (المقطع الأول)
                 $employeeData['first_name'] = $nameParts[0] ?? null;
-            
+
                 // تعيين اسم الأب (المقطع الثاني)
                 $employeeData['father_name'] = $nameParts[1] ?? null;
-            
+
                 // تعيين اسم العائلة (المقطع الأخير)
                 $employeeData['family_name'] = $nameParts[count($nameParts) - 1] ?? null;
-            
+
                 // تعيين اسم الجد (باقي المقاطع بين الاسم الأول والعائلة)
                 $employeeData['grandfather_name'] = count($nameParts) > 3
                     ? implode(' ', array_slice($nameParts, 2, -1)) // جمع المقاطع بين الثاني والأخير
@@ -224,7 +215,7 @@ class EmployeesImport implements ToCollection
 
             if ($validator->fails()) {
                 $errors[] = [
-                    'row' => $rowIndex + 1, 
+                    'row' => $rowIndex + 1,
                     'errors' => $validator->errors()->all(),
                 ];
                 continue; // تخطي الصف في حال وجود أخطاء
@@ -232,7 +223,7 @@ class EmployeesImport implements ToCollection
             $employeeData['added_by'] = $this->addedBy;
 
             unset($employeeData['full_name']); // إزالة الحقل المؤقت
-               // إذا كان التوليد التلقائي للمعرفات مفعّلًا
+            // إذا كان التوليد التلقائي للمعرفات مفعّلًا
             //    if ($this->generateIds) {
             //     unset($employeeData['id']); // إزالة الحقل من البيانات
             // }
@@ -282,36 +273,36 @@ class EmployeesImport implements ToCollection
                 return Carbon::createFromFormat('d/m/Y', $cleanedDate)->format('Y-m-d');
             }
 
-                // التحقق من التنسيق YYYY-MM-DD
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $cleanedDate)) {
-            return Carbon::createFromFormat('Y-m-d', $cleanedDate)->format('Y-m-d');
-        }
+            // التحقق من التنسيق YYYY-MM-DD
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $cleanedDate)) {
+                return Carbon::createFromFormat('Y-m-d', $cleanedDate)->format('Y-m-d');
+            }
 
-        // التحقق من التنسيق DD-MM-YYYY
-        if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $cleanedDate)) {
-            return Carbon::createFromFormat('d-m-Y', $cleanedDate)->format('Y-m-d');
-        }
+            // التحقق من التنسيق DD-MM-YYYY
+            if (preg_match('/^\d{2}-\d{2}-\d{4}$/', $cleanedDate)) {
+                return Carbon::createFromFormat('d-m-Y', $cleanedDate)->format('Y-m-d');
+            }
 
-           // التحقق من التنسيق D-MM-YYYY (بدون صفر في اليوم)
-           if (preg_match('/^\d{1}-\d{2}-\d{4}$/', $cleanedDate)) {
-            // إضافة صفر إلى اليوم ليصبح DD-MM-YYYY
-            $parts = explode('-', $cleanedDate);
-            $formattedDate = str_pad($parts[0], 2, '0', STR_PAD_LEFT) . '-' . $parts[1] . '-' . $parts[2];
-            return Carbon::createFromFormat('d-m-Y', $formattedDate)->format('Y-m-d');
-        }
+            // التحقق من التنسيق D-MM-YYYY (بدون صفر في اليوم)
+            if (preg_match('/^\d{1}-\d{2}-\d{4}$/', $cleanedDate)) {
+                // إضافة صفر إلى اليوم ليصبح DD-MM-YYYY
+                $parts = explode('-', $cleanedDate);
+                $formattedDate = str_pad($parts[0], 2, '0', STR_PAD_LEFT) . '-' . $parts[1] . '-' . $parts[2];
+                return Carbon::createFromFormat('d-m-Y', $formattedDate)->format('Y-m-d');
+            }
             // إذا لم يكن الرقم أو التاريخ صالحًا، اطرح استثناء
             throw new \Exception("Invalid date format: $cleanedDate");
         } catch (\Exception $e) {
-            if($date == null){
+            if ($date == null) {
                 return null;
             }
-            if($date == ''){
+            if ($date == '') {
                 return null;
             }
-            if($date == 'بدون تامينات'){
+            if ($date == 'بدون تامينات') {
                 return null;
             }
-            if($date == 'انتظار المباشرة'){
+            if ($date == 'انتظار المباشرة') {
                 return null;
             }
             dd($e);
@@ -325,26 +316,26 @@ class EmployeesImport implements ToCollection
     {
         // تنظيف الرقم من أي مسافات أو رموز غير رقمية
         $cleanedNumber = preg_replace('/\D/', '', trim($number));
-    
+
         // إذا كان الرقم يحتوي على رمز الدولة مسبقًا (+966 أو 00966)، قم بإزالته
         if (preg_match('/^(?:\+966|00966)/', $cleanedNumber)) {
             $cleanedNumber = preg_replace('/^(?:\+966|00966)/', '', $cleanedNumber);
         }
-    
+
         // إذا كان الرقم يبدأ بـ "05"، احذف الصفر الأول
         if (preg_match('/^05\d{8}$/', $cleanedNumber)) {
             $cleanedNumber = substr($cleanedNumber, 1);
         }
-    
+
         // إذا كان الرقم يبدأ بـ "5" مباشرة، فهو بالفعل في الصيغة الصحيحة
         if (preg_match('/^5\d{8}$/', $cleanedNumber)) {
             return '966' . $cleanedNumber;
         }
-    
+
         // إذا لم يكن الرقم بصيغة صحيحة، قم بإرجاع NULL أو رسالة خطأ
         return null;
     }
-    
+
 
     private function convertHijriToGregorian($hijriDate)
     {
