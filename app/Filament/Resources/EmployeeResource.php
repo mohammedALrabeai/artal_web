@@ -713,7 +713,7 @@ class EmployeeResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('insurance_number')
-                    ->label(__('Insurance Number'))
+                    ->label(__('Subscriber number'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
