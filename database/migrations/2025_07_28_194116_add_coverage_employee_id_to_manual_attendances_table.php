@@ -8,18 +8,38 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /** يشغَّل عند التقدُّم للأمام */
     public function up(): void
     {
         Schema::table('manual_attendances', function (Blueprint $table) {
-            $table->foreignId('coverage_employee_id')->nullable()->constrained('employees')->onDelete('set null');
+
+            // أضف العمود فقط إذا لم يكن موجودًا
+            if (! Schema::hasColumn('manual_attendances', 'coverage_employee_id')) {
+                $table->foreignId('coverage_employee_id')
+                      ->nullable()
+                      ->constrained('employees')
+                      ->nullOnDelete();
+            }
         });
     }
 
+    /** يشغَّل عند التراجع backward */
     public function down(): void
     {
         Schema::table('manual_attendances', function (Blueprint $table) {
-            $table->dropForeign(['coverage_employee_id']);
-            $table->dropColumn('coverage_employee_id');
+
+            // احذف القيد ثم العمود إذا كانا موجوديْن
+            if (Schema::hasColumn('manual_attendances', 'coverage_employee_id')) {
+
+                // قد يكون القيد موجودًا أو لا؛ جرِّب حذفه بحماية
+                try {
+                    $table->dropForeign(['coverage_employee_id']);
+                } catch (\Throwable $e) {
+                    // القيد غير موجود؛ تجاهل
+                }
+
+                $table->dropColumn('coverage_employee_id');
+            }
         });
     }
 };

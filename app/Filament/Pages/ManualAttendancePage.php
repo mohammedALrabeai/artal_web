@@ -93,38 +93,48 @@ class ManualAttendancePage extends Page implements HasForms
     /**
      * دالة شاملة لحفظ كل تفاصيل الحضور لليوم المحدد.
      */
-    public function saveAttendanceDetails(int $manualAttendanceEmployeeId, string $date, array $details)
-    {
-        $employeeAttendanceRecord = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
-        $attendance = $employeeAttendanceRecord->attendances()->updateOrCreate(
-            ['date' => $date],
-            [
-                'status' => $details['status'],
-                'notes' => $details['notes'] ?? null,
-                'has_coverage_shift' => $details['has_coverage'] ?? false,
-                'coverage_employee_id' => $details['coverage_employee_id'] ?? null,
-                'updated_by' => auth()->id(),
-            ]
-        );
-    }
+public function saveAttendanceDetails(
+    int $manualAttendanceEmployeeId,
+    string $date,
+    array $details
+) {
+    $record = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
+
+    $record->attendances()->updateOrCreate(
+        ['date' => $date],
+        [
+            'status'  => $details['status'],
+            'notes'   => $details['notes'] ?? null,
+
+            // ✔︎ الجديد
+            'is_coverage'                       => $details['has_coverage'] ?? false,
+            'replaced_employee_project_record_id' => $details['replaced_record_id'] ?? null,
+
+            // ✔︎ سجّل مَن أنشأ
+            'created_by' => auth()->id(),
+        ]
+    );
+}
+
 
     /**
      * دالة جديدة للحفظ السريع باستخدام الحالة الافتراضية
      */
-    public function quickSaveStatus($employeeId, $date, $status)
-    {
-        $employee = ManualAttendanceEmployee::findOrFail($employeeId);
-        $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
-        $attendance->status = $status;
-        $attendance->updated_by = auth()->id();
-        $attendance->save();
+  public function quickSaveStatus($employeeId, $date, $status)
+{
+    $employee   = ManualAttendanceEmployee::findOrFail($employeeId);
+    $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
 
-        // إرجاع البيانات المحدثة لتحديث الواجهة
-        return [
-            'success' => true,
-            'status' => $status,
-            'employeeId' => $employeeId,
-            'date' => $date
-        ];
-    }
+    $attendance->status     = $status;
+    $attendance->created_by = auth()->id();   // ← بدل updated_by
+    $attendance->save();
+
+    return [
+        'success'    => true,
+        'status'     => $status,
+        'employeeId' => $employeeId,
+        'date'       => $date,
+    ];
+}
+
 }

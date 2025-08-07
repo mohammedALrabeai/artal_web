@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\ManualAttendanceEmployee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Http\Controllers\Controller;
+use App\Models\EmployeeProjectRecord;
+use App\Models\ManualAttendanceEmployee;
 
 class ManulAttendanceController extends Controller
 {
@@ -48,7 +49,9 @@ class ManulAttendanceController extends Controller
                 'attendances' => fn($q) => $q->whereRaw('DATE(`date`) BETWEEN ? AND ?', [
                     $month->copy()->startOfMonth()->toDateString(),
                     $month->copy()->endOfMonth()->toDateString(),
-                ])->with('coverageEmployee:id,first_name,father_name,grandfather_name,family_name,national_id'), // ✨ [تعديل] تحميل بيانات الموظف البديل
+                ])->with([
+    'replacedRecord.employee:id,first_name,father_name,grandfather_name,family_name,national_id'
+]), // ✨ [تعديل] تحميل بيانات الموظف البديل
             ])
             ->get();
 
@@ -83,6 +86,11 @@ class ManulAttendanceController extends Controller
                 $attRec   = $attKeyed->get($dateStr); // استخدام .get() لتجنب الأخطاء
 
                 $status = $attRec?->status ?? $patternCache[$d];
+                $isCoverage   = $attRec?->is_coverage     ?? false;
+                $replacedId   = $attRec?->replaced_employee_project_record_id ?? null;
+                $replacedName = $attRec?->replacedRecord?->employee
+    ? "{$attRec->replacedRecord->employee->first_name} {$attRec->replacedRecord->employee->family_name}"
+    : null;
 
                 if ($record->start_date && $dateStr < $record->start_date) {
                     $status = 'BEFORE';
@@ -93,10 +101,10 @@ class ManulAttendanceController extends Controller
                 // ✨ [تعديل] بناء الكائن الذي يحتوي على كل المعلومات لليوم
                 $formattedAttend[$dayKey] = [
                     'status'       => $status,
-                    'has_coverage' => $attRec?->has_coverage_shift ?? false,
+                    'has_coverage' => $isCoverage,
                     'notes'        => $attRec?->notes ?? '', // إضافة الملاحظات
-                     'coverage_employee_id' => $attRec?->coverage_employee_id ?? null,
-                    'coverage_employee_name' => $attRec?->coverageEmployee?->name ?? null,
+                    'replaced_record_id'  => $replacedId,
+                     'replaced_employee_name' => $replacedName,
                     // 'coverage_employee_id' => $attRec?->coverage_employee_id ?? null, // إضافة معرف الموظف البديل
                 ];
             }
@@ -160,5 +168,49 @@ class ManulAttendanceController extends Controller
             }
         }
         return $cache;
+    }
+
+
+     public function assignmentsList(Request $request)
+    {
+        $today  = Carbon::today()->toDateString();
+        $search = trim($request->get('q', ''));
+
+        $query = EmployeeProjectRecord::query()
+            ->where(function ($q) use ($today) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>=', $today);
+            })
+            ->whereHas('employee', fn ($q) => $q->where('status', 'active'))
+            ->with([
+                'employee:id,first_name,father_name,grandfather_name,family_name,national_id',
+                'project:id,name',
+                'zone:id,name',
+                'shift:id,type',
+            ]);
+
+        /** بحث اختياري بالاسم أو الهوية */
+        if ($search !== '') {
+            $query->whereHas('employee', function ($q) use ($search) {
+                $q->whereRaw("CONCAT_WS(' ', first_name, father_name, grandfather_name, family_name) LIKE ?", ["%{$search}%"])
+                  ->orWhere('national_id', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // حد أعلى لـ 30 نتيجة لتجنب الحمل الزائد على الواجهة
+        $assignments = $query->limit(30)->get()->map(function ($epr) {
+            $emp = $epr->employee;
+
+            return [
+                'id'          => $epr->id,                                          // مُعرّف الإسناد
+                'name'        => "{$emp->first_name} {$emp->father_name} {$emp->grandfather_name} {$emp->family_name}",
+                'national_id' => $emp->national_id,
+                'location'    => "{$epr->project->name} / {$epr->zone->name}",
+                'shift'       => $epr->shift?->name ?? '—',
+                'employee_id' => $epr->employee_id,
+            ];
+        });
+
+        return response()->json($assignments);
     }
 }

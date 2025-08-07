@@ -1,7 +1,5 @@
 <?php
 
-// app/Models/ManualAttendance.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -9,27 +7,60 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ManualAttendance extends Model
 {
+    /*********************************************************
+     * الأعمدة القابلة للملء
+     *********************************************************/
     protected $fillable = [
         'manual_attendance_employee_id',
         'date',
         'status',
-        'has_coverage_shift',
+        'is_coverage',
         'notes',
-        'updated_by',
-        'coverage_employee_id'
+        'created_by',
+        'actual_zone_id',
+        'actual_shift_id',
+        'replaced_employee_project_record_id',
     ];
 
-    public function attendanceEmployee(): BelongsTo
+    /*********************************************************
+     * تحويل الأنواع (Casts)
+     *********************************************************/
+    protected $casts = [
+        'date'          => 'date',     // تُعاد ككائن Carbon
+        'is_coverage'   => 'boolean',  // true / false
+    ];
+
+    /*********************************************************
+     * العلاقات
+     *********************************************************/
+    public function monthlyRecord(): BelongsTo
     {
-        return $this->belongsTo(ManualAttendanceEmployee::class);
+        return $this->belongsTo(
+            ManualAttendanceEmployee::class,
+            'manual_attendance_employee_id'
+        );
     }
 
-    public function updatedBy(): BelongsTo
+    public function actualZone(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(Zone::class, 'actual_zone_id');
     }
-      public function coverageEmployee(): BelongsTo
+
+    public function actualShift(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'coverage_employee_id');
+        return $this->belongsTo(Shift::class, 'actual_shift_id');
+    }
+
+    public function replacedRecord(): BelongsTo
+    {
+        return $this->belongsTo(
+            EmployeeProjectRecord::class,
+            'replaced_employee_project_record_id'
+        );
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
