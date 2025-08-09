@@ -17,8 +17,8 @@ class ManualAttendance extends Model
         'is_coverage',
         'notes',
         'created_by',
-        'actual_zone_id',
-        'actual_shift_id',
+        // 'actual_zone_id',
+        // 'actual_shift_id',
         'replaced_employee_project_record_id',
     ];
 

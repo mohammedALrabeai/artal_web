@@ -75,4 +75,4 @@ class GenerateMonthlyAttendanceEmployeesCommand extends Command
 }
 
 
-// php artisan attendance:generate-month --month=2025-07-01 
+// php artisan attendance:generate-month --month=2025-08-01 
