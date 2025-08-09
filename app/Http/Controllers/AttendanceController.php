@@ -1980,39 +1980,104 @@ public function getAttendanceStatusV7(Request $request)
             ->whereHas('employee', fn($q) => $q->where('status', 1))
             ->get();
 
-        $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date) {
-            $employee   = $attendance->employee;
-            $statusData = $employeeStatuses[$employee->id] ?? null;
+            // 🧩 اجلب EPR النشط لكل موظف تغطية في هذا التاريخ
+$coverageEmployeeIds = $coverageAttendances->pluck('employee_id')->unique()->values();
 
-            $assignment = \App\Models\EmployeeProjectRecord::with(['project', 'zone', 'shift'])
-                ->where('employee_id', $employee->id)
-                ->where('start_date', '<=', $date)
-                ->where(function ($q) use ($date) {
-                    $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
-                })
-                ->latest('start_date')
-                ->first();
+$coverageEprs = \App\Models\EmployeeProjectRecord::query()
+    ->with(['project:id,name', 'zone:id,name', 'shift:id,name'])
+    ->whereIn('employee_id', $coverageEmployeeIds)
+    ->where('start_date', '<=', $date)
+    ->where(function ($q) use ($date) {
+        $q->whereNull('end_date')->orWhere('end_date', '>=', $date);
+    })
+    ->where('status', true)
+    ->get(['id','employee_id','project_id','zone_id','shift_id','start_date','end_date'])
+    ->groupBy('employee_id')
+    ->map(fn($rows) => $rows->sortByDesc('start_date')->first()); // آخر إسناد نشط
 
-            return [
-                'employee_id'    => $attendance->employee_id,
-                'employee_name'  => $employee->name(),
-                'status'         => 'coverage',
-                'check_in'       => $attendance->check_in,
-                'check_out'      => $attendance->check_out,
-                'notes'          => $attendance->notes,
-                'mobile_number'  => $employee->mobile_number,
-                'is_coverage'    => true,
-                'out_of_zone'    => $employee->out_of_zone,
-                'is_checked_in'  => true,
-                'is_late'        => false,
-                'gps_enabled'    => $statusData?->gps_enabled ?? null,
-                'is_inside'      => $statusData?->is_inside ?? null,
-                'last_seen_at'   => optional($statusData?->last_seen_at)?->toDateTimeString(),
-                'project_name'   => $assignment?->project?->name ?? 'غير معروف',
-                'zone_name'      => $assignment?->zone?->name ?? 'غير معروف',
-                'shift_name'     => $assignment?->shift?->name ?? 'غير معروف',
+// خريطة: employee_id => epr_id
+$covEprIdByEmp = $coverageEprs->mapWithKeys(fn($epr) => [$epr->employee_id => $epr->id]);
+
+// MAE لهذا الشهر ولنفس الموقع الحالي فقط (actual_zone_id = $zoneId) لموظفي التغطية
+$covMaeRows = $covEprIdByEmp->isNotEmpty()
+    ? \App\Models\ManualAttendanceEmployee::query()
+        ->whereIn('employee_project_record_id', $covEprIdByEmp->values())
+        ->where('attendance_month', \Illuminate\Support\Carbon::parse($date, 'Asia/Riyadh')->startOfMonth()->toDateString())
+        ->where('actual_zone_id', $zoneId)
+        ->get(['id','employee_project_record_id'])
+    : collect();
+
+// خريطة: epr_id => mae_id
+$covMaeIdByEprId = $covMaeRows->keyBy('employee_project_record_id')->map->id;
+
+// التحضير اليدوي لليوم فقط لموظفي التغطية
+$covMaeIds = $covMaeRows->pluck('id')->all();
+
+$covManualTodayByMaeId = $covMaeIds
+    ? \App\Models\ManualAttendance::query()
+        ->whereIn('manual_attendance_employee_id', $covMaeIds)
+        ->whereDate('date', $date)
+        ->with(['replacedRecord.employee:id,first_name,father_name,grandfather_name,family_name,national_id'])
+        ->get(['id','manual_attendance_employee_id','date','status','notes','is_coverage','replaced_employee_project_record_id','created_by','created_at'])
+        ->keyBy('manual_attendance_employee_id')
+    : collect();
+
+
+       $coverageEmployees = $coverageAttendances->map(function ($attendance) use ($employeeStatuses, $date, $coverageEprs, $covMaeIdByEprId, $covManualTodayByMaeId) {
+    $employee   = $attendance->employee;
+    $statusData = $employeeStatuses[$employee->id] ?? null;
+
+    // EPR النشط لهذا الموظف في التاريخ
+    $assignment = $coverageEprs[$employee->id] ?? null;
+    $eprId = $assignment?->id;
+
+    // manual_attendance_today لهذا الموقع فقط عبر MAE (إن وُجد)
+    $manualToday = null;
+    if ($eprId && isset($covMaeIdByEprId[$eprId])) {
+        $maeId = $covMaeIdByEprId[$eprId];
+        if (isset($covManualTodayByMaeId[$maeId])) {
+            $mt = $covManualTodayByMaeId[$maeId];
+            $manualToday = [
+                'status'        => $mt->status,
+                'notes'         => $mt->notes,
+                'is_coverage'   => (bool)$mt->is_coverage,
+                'replaced_epr'  => $mt->replaced_employee_project_record_id,
+                'created_by'    => $mt->created_by,
+                'created_at'    => optional($mt->created_at)?->toDateTimeString(),
+                'replaced_employee_name' => optional($mt->replacedRecord?->employee)?->first_name
+                    ? ($mt->replacedRecord->employee->first_name.' '.$mt->replacedRecord->employee->family_name)
+                    : null,
             ];
-        });
+        }
+    }
+
+    return [
+        // ⚠️ جديد: لتمكين التحضير اليدوي من الواجهة
+        'employee_project_record_id' => $eprId,
+
+        'employee_id'    => $attendance->employee_id,
+        'employee_name'  => $employee->name(),
+        'status'         => 'coverage',
+        'check_in'       => $attendance->check_in,
+        'check_out'      => $attendance->check_out,
+        'notes'          => $attendance->notes,
+        'mobile_number'  => $employee->mobile_number,
+        'is_coverage'    => true,
+        'out_of_zone'    => $employee->out_of_zone,
+        'is_checked_in'  => true,
+        'is_late'        => false,
+        'gps_enabled'    => $statusData?->gps_enabled ?? null,
+        'is_inside'      => $statusData?->is_inside ?? null,
+        'last_seen_at'   => optional($statusData?->last_seen_at)?->toDateTimeString(),
+        'project_name'   => $assignment?->project?->name ?? 'غير معروف',
+        'zone_name'      => $assignment?->zone?->name ?? 'غير معروف',
+        'shift_name'     => $assignment?->shift?->name ?? 'غير معروف',
+
+        // ✨ اليدوي لليوم فقط (لهذا الموقع الحالي)
+        'manual_attendance_today' => $manualToday, // null إذا لا يوجد
+    ];
+});
+
 
         return response()->json([
             'status'   => 'success',
