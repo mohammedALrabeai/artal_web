@@ -184,7 +184,7 @@
                                         if (box) {
                                             const prev = box.textContent;
                                             box.textContent = '✅ تم نسخ الهوية';
-                                            setTimeout(() => box.textContent = prev, 1500);
+                                            setTimeout(() => box.textContent = prev, 500);
                                         }
                                     })
                                     .catch((err) => console.error('Clipboard copy failed', err));

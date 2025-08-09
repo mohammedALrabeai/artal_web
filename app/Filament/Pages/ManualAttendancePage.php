@@ -10,6 +10,9 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
 use Livewire\Attributes\Url;
+use App\Models\EmployeeProjectRecord;
+use Illuminate\Validation\ValidationException;
+
 
 class ManualAttendancePage extends Page implements HasForms
 {
@@ -93,46 +96,84 @@ class ManualAttendancePage extends Page implements HasForms
     /**
      * دالة شاملة لحفظ كل تفاصيل الحضور لليوم المحدد.
      */
+ 
 public function saveAttendanceDetails(
     int $manualAttendanceEmployeeId,
     string $date,
     array $details
 ) {
+    // سجل الموظف على صفحة الحضور اليدوي
     $record = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
 
-    $record->attendances()->updateOrCreate(
-        ['date' => $date],
-        [
-            'status'  => $details['status'],
-            'notes'   => $details['notes'] ?? null,
+    // جلب الـ zone من employee_project_record_id
+    $eprId  = $record->employee_project_record_id;
+    $zoneId = optional($record->projectRecord)->zone_id
+           ?? optional(EmployeeProjectRecord::find($eprId))->zone_id;
 
-            // ✔︎ الجديد
-            'is_coverage'                       => $details['has_coverage'] ?? false,
+    if (!$zoneId) {
+        throw ValidationException::withMessages([
+            'actual_zone_id' => 'تعذّر تحديد موقع الموظف (zone) من سجل الإسناد.',
+        ]);
+    }
+
+    // حفظ/تحديث بناءً على (date + actual_zone_id) ضمن علاقة نفس الموظف
+    $record->attendances()->updateOrCreate(
+        [
+            'date'            => $date,
+            'actual_zone_id'  => $zoneId,
+        ],
+        [
+            // القيم المحدّثة
+            'status'   => $details['status'],                 // مطلوب
+            'notes'    => $details['notes'] ?? null,
+
+            // الجديد
+            'is_coverage'                         => $details['has_coverage'] ?? false,
             'replaced_employee_project_record_id' => $details['replaced_record_id'] ?? null,
 
-            // ✔︎ سجّل مَن أنشأ
+            // تثبيت المنطقة الفعلية دائمًا من الباك-إند
+            'actual_zone_id' => $zoneId,
+
+            // من أنشأ السجل
             'created_by' => auth()->id(),
         ]
     );
 }
 
 
-    /**
-     * دالة جديدة للحفظ السريع باستخدام الحالة الافتراضية
-     */
-  public function quickSaveStatus($employeeId, $date, $status)
-{
-    $employee   = ManualAttendanceEmployee::findOrFail($employeeId);
-    $attendance = $employee->attendances()->firstOrNew(['date' => $date]);
 
-    $attendance->status     = $status;
-    $attendance->created_by = auth()->id();   // ← بدل updated_by
+public function quickSaveStatus($manualAttendanceEmployeeId, $date, $status)
+{
+    $employee = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
+
+    // جلب الـ zone من employee_project_record_id
+    $eprId  = $employee->employee_project_record_id;
+    $zoneId = optional($employee->projectRecord)->zone_id
+           ?? optional(EmployeeProjectRecord::find($eprId))->zone_id;
+
+    if (!$zoneId) {
+        throw ValidationException::withMessages([
+            'actual_zone_id' => 'تعذّر تحديد موقع الموظف (zone) من سجل الإسناد.',
+        ]);
+    }
+
+    // الحصول على السجل حسب (date + actual_zone_id)
+    $attendance = $employee->attendances()->firstOrNew([
+        'date'           => $date,
+        'actual_zone_id' => $zoneId,
+    ]);
+
+    // تعبئة القيم
+    $attendance->status        = $status;        // حاضر/غائب/… حسب ما ترسله
+    $attendance->actual_zone_id = $zoneId;       // تثبيت المنطقة الفعلية
+    $attendance->created_by    = auth()->id();   // (حسب طلبك: created_by بدل updated_by)
+
     $attendance->save();
 
     return [
         'success'    => true,
         'status'     => $status,
-        'employeeId' => $employeeId,
+        'employeeId' => $manualAttendanceEmployeeId,
         'date'       => $date,
     ];
 }
