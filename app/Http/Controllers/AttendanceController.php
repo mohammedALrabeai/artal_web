@@ -1931,6 +1931,7 @@ public function getAttendanceStatusV7(Request $request)
                     });
 
                 return [
+                     'employee_project_record_id' => $record->id,
                     'employee_id'     => $record->employee_id,
                     'employee_name'   => $employee->name(),
                     // تلقائي
