@@ -41,20 +41,32 @@ class EmployeeProjectRecord extends Model
             }
         });
 
-        static::created(function (self $record) {
-            $month = Carbon::now('Asia/Riyadh')->startOfMonth()->toDateString();
 
-            $alreadyExists = ManualAttendanceEmployee::where('employee_project_record_id', $record->id)
-                ->where('attendance_month', $month)
-                ->exists();
+    static::created(function (self $record) {
+        $month = Carbon::now('Asia/Riyadh')->startOfMonth()->toDateString();
 
-            if (! $alreadyExists) {
-                ManualAttendanceEmployee::create([
-                    'employee_project_record_id' => $record->id,
-                    'attendance_month' => $month,
-                ]);
-            }
-        });
+        // نتأكد من وجود zone_id (مطلوب لعمود actual_zone_id غير القابل للنول)
+        if (empty($record->zone_id)) {
+            return;
+        }
+
+        // موجود مسبقًا؟
+        $exists = ManualAttendanceEmployee::where('employee_project_record_id', $record->id)
+            ->where('attendance_month', $month)
+            ->where('actual_zone_id', $record->zone_id)
+            ->exists();
+
+        if (!$exists) {
+            ManualAttendanceEmployee::create([
+                'employee_project_record_id' => $record->id,
+                'attendance_month'           => $month,
+                'actual_zone_id'             => $record->zone_id,
+                'is_main'                    => true,
+            ]);
+        }
+    });
+
+
 
         // عند التحديث: إذا تغيّر status من true إلى false → نحدّث end_date
         // static::saving(function (self $record) {

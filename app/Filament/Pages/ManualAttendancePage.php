@@ -102,39 +102,27 @@ public function saveAttendanceDetails(
     string $date,
     array $details
 ) {
-    // سجل الموظف على صفحة الحضور اليدوي
     $record = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
 
-    // جلب الـ zone من employee_project_record_id
-    $eprId  = $record->employee_project_record_id;
-    $zoneId = optional($record->projectRecord)->zone_id
-           ?? optional(EmployeeProjectRecord::find($eprId))->zone_id;
-
-    if (!$zoneId) {
+    // لم نعد نستخدم EPR هنا؛ نعتمد actual_zone_id المربوط بالسجل الشهري نفسه
+    $zoneId = $record->actual_zone_id;
+    if (! $zoneId) {
         throw ValidationException::withMessages([
-            'actual_zone_id' => 'تعذّر تحديد موقع الموظف (zone) من سجل الإسناد.',
+            'actual_zone_id' => 'تعذّر تحديد موقع السجل الشهري.',
         ]);
     }
 
-    // حفظ/تحديث بناءً على (date + actual_zone_id) ضمن علاقة نفس الموظف
+    // المفتاح الوحيد هو التاريخ — لأن manual_attendance_employee_id يأتي من العلاقة
     $record->attendances()->updateOrCreate(
+        ['date' => $date],
         [
-            'date'            => $date,
-            'actual_zone_id'  => $zoneId,
-        ],
-        [
-            // القيم المحدّثة
-            'status'   => $details['status'],                 // مطلوب
+            'status'   => $details['status'],
             'notes'    => $details['notes'] ?? null,
 
-            // الجديد
             'is_coverage'                         => $details['has_coverage'] ?? false,
             'replaced_employee_project_record_id' => $details['replaced_record_id'] ?? null,
 
-            // تثبيت المنطقة الفعلية دائمًا من الباك-إند
-            'actual_zone_id' => $zoneId,
-
-            // من أنشأ السجل
+            // لا نمرّر actual_zone_id هنا لأنه ليس عمودًا في manual_attendances
             'created_by' => auth()->id(),
         ]
     );
@@ -142,31 +130,27 @@ public function saveAttendanceDetails(
 
 
 
+
 public function quickSaveStatus($manualAttendanceEmployeeId, $date, $status)
 {
     $employee = ManualAttendanceEmployee::findOrFail($manualAttendanceEmployeeId);
 
-    // جلب الـ zone من employee_project_record_id
-    $eprId  = $employee->employee_project_record_id;
-    $zoneId = optional($employee->projectRecord)->zone_id
-           ?? optional(EmployeeProjectRecord::find($eprId))->zone_id;
-
-    if (!$zoneId) {
+    // نعتمد الموقع من السجل الشهري نفسه
+    $zoneId = $employee->actual_zone_id;
+    if (! $zoneId) {
         throw ValidationException::withMessages([
-            'actual_zone_id' => 'تعذّر تحديد موقع الموظف (zone) من سجل الإسناد.',
+            'actual_zone_id' => 'تعذّر تحديد موقع السجل الشهري.',
         ]);
     }
 
-    // الحصول على السجل حسب (date + actual_zone_id)
+    // المفتاح هو التاريخ فقط (العلاقة تضيف manual_attendance_employee_id)
     $attendance = $employee->attendances()->firstOrNew([
-        'date'           => $date,
-        'actual_zone_id' => $zoneId,
+        'date' => $date,
     ]);
 
-    // تعبئة القيم
-    $attendance->status        = $status;        // حاضر/غائب/… حسب ما ترسله
-    $attendance->actual_zone_id = $zoneId;       // تثبيت المنطقة الفعلية
-    $attendance->created_by    = auth()->id();   // (حسب طلبك: created_by بدل updated_by)
+    $attendance->status      = $status;
+    // لا يوجد actual_zone_id في manual_attendances
+    $attendance->created_by  = auth()->id();
 
     $attendance->save();
 
@@ -177,5 +161,6 @@ public function quickSaveStatus($manualAttendanceEmployeeId, $date, $status)
         'date'       => $date,
     ];
 }
+
 
 }

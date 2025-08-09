@@ -14,6 +14,8 @@ class ManualAttendanceEmployee extends Model
     protected $fillable = [
         'employee_project_record_id',
         'attendance_month',
+        'actual_zone_id',
+        'is_main'
     ];
 
    // app/Models/ManualAttendanceEmployee.php
@@ -28,4 +30,10 @@ public function projectRecord(): BelongsTo
     {
         return $this->hasMany(ManualAttendance::class);
     }
+
+    public function actualZone()
+{
+    return $this->belongsTo(\App\Models\Zone::class, 'actual_zone_id');
+}
+
 }
