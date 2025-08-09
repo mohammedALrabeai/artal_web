@@ -14,12 +14,14 @@ use App\Http\Controllers\Api\ZoneController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\Api\SlideController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\Api\FaceAuthController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\EmployeeStatusController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\AssignmentReportController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeCoordinateController;
+use App\Http\Controllers\Api\ManulAttendanceController;
 use App\Http\Controllers\Api\V2\AttendanceV2Controller;
 use App\Http\Controllers\Api\V3\AttendanceV3Controller;
 use App\Http\Controllers\attendance\CoverageController;
@@ -28,7 +30,6 @@ use App\Http\Controllers\EmployeeNotificationController;
 use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\V2\UncoveredZonesController;
 use App\Http\Controllers\Api\OperationNotificationController;
-use App\Http\Controllers\Api\ManulAttendanceController;
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -436,5 +437,12 @@ Route::post('/attendance-coverage-status', [ManulAttendanceController::class, 's
 
 Route::get('/assignments-list', [ManulAttendanceController::class, 'assignmentsList']);
 Route::post('/manual-attendance/record', [ManulAttendanceController::class, 'recordAttendance']);
+
+
+
+Route::prefix('face')->group(function () {
+    Route::post('/enroll', [FaceAuthController::class, 'enroll']); // Enrollment
+    Route::post('/verify', [FaceAuthController::class, 'verify']); // Verification
+});
 
 

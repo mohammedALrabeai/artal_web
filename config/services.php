@@ -38,4 +38,11 @@ return [
         ],
     ],
 
+      'rekognition' => [
+        'region'     => env('AWS_DEFAULT_REGION', 'me-south-1'),
+        'collection' => env('AWS_REKOGNITION_COLLECTION', 'employees-collection'),
+        'key'        => env('AWS_ACCESS_KEY_ID'),
+        'secret'     => env('AWS_SECRET_ACCESS_KEY'),
+    ],
+
 ];
