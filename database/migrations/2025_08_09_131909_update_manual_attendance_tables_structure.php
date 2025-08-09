@@ -8,10 +8,17 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        /** 1) manual_attendances: إسقاط FK/Index ثم حذف الأعمدة فقط إن كانت موجودة */
+        /**
+         * 1) manual_attendances:
+         *    إسقاط أي FK/Index على الأعمدة ثم حذفها "فقط إذا كانت موجودة"،
+         *    مع try/catch لتفادي 1072 حتى لو حصل اختلاف حالة بين الكاش/المخطط.
+         */
         if (Schema::hasTable('manual_attendances')) {
 
-            // تحقّق أي الأعمدة موجودة فعلاً
+            // حصر الأعمدة التي ننوي إسقاطها
+            $candidateCols = ['actual_zone_id', 'actual_shift_id'];
+
+            // معرفة الأعمدة الموجودة فعليًا الآن
             $existingCols = collect(DB::select("
                 SELECT COLUMN_NAME
                 FROM information_schema.COLUMNS
@@ -20,9 +27,9 @@ return new class extends Migration {
                   AND COLUMN_NAME IN ('actual_zone_id','actual_shift_id')
             "))->pluck('COLUMN_NAME')->all();
 
-            // دالة مساعدة لإسقاط FK/Index ثم إسقاط العمود بأمان
+            // دالة لإسقاط FK/Index ثم العمود بأمان
             $dropColSafely = function (string $col) {
-                // أسقط أي FK على هذا العمود مهما كان اسمه
+                // 1) إسقاط أي FK على هذا العمود
                 $fks = DB::select("
                     SELECT CONSTRAINT_NAME
                     FROM information_schema.KEY_COLUMN_USAGE
@@ -31,13 +38,14 @@ return new class extends Migration {
                       AND COLUMN_NAME = ?
                       AND REFERENCED_TABLE_NAME IS NOT NULL
                 ", [$col]);
+
                 foreach ($fks as $fk) {
                     try {
                         DB::statement("ALTER TABLE `manual_attendances` DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
-                    } catch (\Throwable $e) {}
+                    } catch (\Throwable $e) { /* تجاهل */ }
                 }
 
-                // أسقط أي فهارس تستخدم هذا العمود
+                // 2) إسقاط أي فهارس على نفس العمود
                 $idxRows = DB::select("SHOW INDEX FROM `manual_attendances`");
                 $toDrop = [];
                 foreach ($idxRows as $r) {
@@ -50,89 +58,108 @@ return new class extends Migration {
                 foreach (array_keys($toDrop) as $idx) {
                     try {
                         DB::statement("ALTER TABLE `manual_attendances` DROP INDEX `{$idx}`");
-                    } catch (\Throwable $e) {}
+                    } catch (\Throwable $e) { /* تجاهل */ }
                 }
 
-                // أخيرًا: إسقاط العمود نفسه إذا ما زال موجودًا
-                Schema::table('manual_attendances', function (Blueprint $table) use ($col) {
-                    if (Schema::hasColumn('manual_attendances', $col)) {
-                        $table->dropColumn($col);
+                // 3) إسقاط العمود نفسه (مع فحص إضافي + try/catch)
+                try {
+                    $exists = DB::selectOne("
+                        SELECT 1 AS e
+                        FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'manual_attendances'
+                          AND COLUMN_NAME = ?
+                        LIMIT 1
+                    ", [$col]);
+
+                    if ($exists) {
+                        DB::statement("ALTER TABLE `manual_attendances` DROP COLUMN `{$col}`");
                     }
-                });
+                } catch (\Throwable $e) {
+                    // تجاهل 1072 أو أي اختلاف حالة
+                }
             };
 
-            // نفّذ الإسقاط فقط للأعمدة الموجودة
-            if (in_array('actual_zone_id', $existingCols, true)) {
-                $dropColSafely('actual_zone_id');
-            }
-            if (in_array('actual_shift_id', $existingCols, true)) {
-                $dropColSafely('actual_shift_id');
-            }
-        }
-
-        /** 2) manual_attendance_employees: إضافة الأعمدة الجديدة (إن لم تكن موجودة) */
-        Schema::table('manual_attendance_employees', function (Blueprint $table) {
-            if (! Schema::hasColumn('manual_attendance_employees', 'actual_zone_id')) {
-                $table->unsignedBigInteger('actual_zone_id')->after('employee_project_record_id');
-            }
-            if (! Schema::hasColumn('manual_attendance_employees', 'is_main')) {
-                $table->boolean('is_main')->default(true)->after('actual_zone_id');
-            }
-        });
-
-        /** 3) إنشاء الفهرس الفريد الثلاثي بعد إسقاط أي أسماء متضاربة إن وُجدت */
-        $existingIndexes = collect(DB::select("SHOW INDEX FROM `manual_attendance_employees`"))
-            ->pluck('Key_name')
-            ->unique()
-            ->all();
-
-        foreach (['mae_month_epr_unique', 'mae_month_epr_zone_unique'] as $idxName) {
-            if (in_array($idxName, $existingIndexes, true)) {
-                try {
-                    DB::statement("ALTER TABLE `manual_attendance_employees` DROP INDEX `{$idxName}`");
-                } catch (\Throwable $e) {}
+            // تنفيذ الإسقاط فقط للأعمدة الموجودة فعلًا
+            foreach ($candidateCols as $col) {
+                if (in_array($col, $existingCols, true)) {
+                    $dropColSafely($col);
+                }
             }
         }
 
-        Schema::table('manual_attendance_employees', function (Blueprint $table) {
-            $table->unique(
-                ['attendance_month', 'employee_project_record_id', 'actual_zone_id'],
-                'mae_month_epr_zone_unique'
-            );
-        });
+        /**
+         * 2) manual_attendance_employees:
+         *    إضافة الأعمدة الجديدة إن لم تكن موجودة.
+         */
+        if (Schema::hasTable('manual_attendance_employees')) {
+            Schema::table('manual_attendance_employees', function (Blueprint $table) {
+                if (! Schema::hasColumn('manual_attendance_employees', 'actual_zone_id')) {
+                    $table->unsignedBigInteger('actual_zone_id')->after('employee_project_record_id');
+                }
+                if (! Schema::hasColumn('manual_attendance_employees', 'is_main')) {
+                    $table->boolean('is_main')->default(true)->after('actual_zone_id');
+                }
+            });
+
+            // 3) إنشاء الفهرس الفريد الثلاثي بعد إسقاط أي أسماء متضاربة إن وُجدت
+            $existingIndexes = collect(DB::select("SHOW INDEX FROM `manual_attendance_employees`"))
+                ->pluck('Key_name')
+                ->unique()
+                ->all();
+
+            foreach (['mae_month_epr_unique', 'mae_month_epr_zone_unique'] as $idxName) {
+                if (in_array($idxName, $existingIndexes, true)) {
+                    try {
+                        DB::statement("ALTER TABLE `manual_attendance_employees` DROP INDEX `{$idxName}`");
+                    } catch (\Throwable $e) { /* تجاهل */ }
+                }
+            }
+
+            Schema::table('manual_attendance_employees', function (Blueprint $table) {
+                $table->unique(
+                    ['attendance_month', 'employee_project_record_id', 'actual_zone_id'],
+                    'mae_month_epr_zone_unique'
+                );
+            });
+        }
     }
 
     public function down(): void
     {
-        /** إزالة الفهرس الفريد والأعمدة من manual_attendance_employees */
-        $existingIndexes = collect(DB::select("SHOW INDEX FROM `manual_attendance_employees`"))
-            ->pluck('Key_name')
-            ->unique()
-            ->all();
+        // إزالة الفهرس الفريد والأعمدة من manual_attendance_employees
+        if (Schema::hasTable('manual_attendance_employees')) {
+            $existingIndexes = collect(DB::select("SHOW INDEX FROM `manual_attendance_employees`"))
+                ->pluck('Key_name')
+                ->unique()
+                ->all();
 
-        if (in_array('mae_month_epr_zone_unique', $existingIndexes, true)) {
-            try {
-                DB::statement("ALTER TABLE `manual_attendance_employees` DROP INDEX `mae_month_epr_zone_unique`");
-            } catch (\Throwable $e) {}
+            if (in_array('mae_month_epr_zone_unique', $existingIndexes, true)) {
+                try {
+                    DB::statement("ALTER TABLE `manual_attendance_employees` DROP INDEX `mae_month_epr_zone_unique`");
+                } catch (\Throwable $e) { /* تجاهل */ }
+            }
+
+            Schema::table('manual_attendance_employees', function (Blueprint $table) {
+                if (Schema::hasColumn('manual_attendance_employees', 'is_main')) {
+                    $table->dropColumn('is_main');
+                }
+                if (Schema::hasColumn('manual_attendance_employees', 'actual_zone_id')) {
+                    $table->dropColumn('actual_zone_id');
+                }
+            });
         }
 
-        Schema::table('manual_attendance_employees', function (Blueprint $table) {
-            if (Schema::hasColumn('manual_attendance_employees', 'is_main')) {
-                $table->dropColumn('is_main');
-            }
-            if (Schema::hasColumn('manual_attendance_employees', 'actual_zone_id')) {
-                $table->dropColumn('actual_zone_id');
-            }
-        });
-
-        /** إعادة الأعمدة إلى manual_attendances (Nullable للسلامة) */
-        Schema::table('manual_attendances', function (Blueprint $table) {
-            if (! Schema::hasColumn('manual_attendances', 'actual_zone_id')) {
-                $table->unsignedBigInteger('actual_zone_id')->nullable()->after('employee_project_record_id');
-            }
-            if (! Schema::hasColumn('manual_attendances', 'actual_shift_id')) {
-                $table->unsignedBigInteger('actual_shift_id')->nullable()->after('actual_zone_id');
-            }
-        });
+        // إعادة الأعمدة إلى manual_attendances (Nullable للسلامة)
+        if (Schema::hasTable('manual_attendances')) {
+            Schema::table('manual_attendances', function (Blueprint $table) {
+                if (! Schema::hasColumn('manual_attendances', 'actual_zone_id')) {
+                    $table->unsignedBigInteger('actual_zone_id')->nullable()->after('employee_project_record_id');
+                }
+                if (! Schema::hasColumn('manual_attendances', 'actual_shift_id')) {
+                    $table->unsignedBigInteger('actual_shift_id')->nullable()->after('actual_zone_id');
+                }
+            });
+        }
     }
 };
