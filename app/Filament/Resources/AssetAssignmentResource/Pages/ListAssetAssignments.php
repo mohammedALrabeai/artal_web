@@ -9,6 +9,7 @@ use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
+use Filament\Actions;
 
 class ListAssetAssignments extends ListRecords
 {
@@ -64,5 +65,14 @@ class ListAssetAssignments extends ListRecords
         $this->resetPage();
     }
 }
+
+     protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+
+
 
 }
