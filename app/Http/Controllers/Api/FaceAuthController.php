@@ -146,7 +146,6 @@ class FaceAuthController extends Controller
             ]);
         }
 
-        // ✅ نفس أسلوب enroll
         $collectionId = config('services.rekognition.collection') ?: env('AWS_REKOGNITION_COLLECTION');
         if (empty($collectionId)) {
             return response()->json([
@@ -165,11 +164,11 @@ class FaceAuthController extends Controller
 
         try {
             $search = $client->searchFacesByImage([
-                'CollectionId' => $collectionId,
-                'Image' => ['Bytes' => $bytes],
-                'MaxFaces' => 1,
+                'CollectionId'       => $collectionId,
+                'Image'              => ['Bytes' => $bytes],
+                'MaxFaces'           => 1,
                 'FaceMatchThreshold' => max(0, min(100, $threshold)),
-                'QualityFilter' => 'AUTO',
+                'QualityFilter'      => 'AUTO',
             ]);
         } catch (\Aws\Rekognition\Exception\RekognitionException $e) {
             return response()->json([
@@ -181,76 +180,34 @@ class FaceAuthController extends Controller
 
         $match = $search['FaceMatches'][0] ?? null;
 
-        if (!$match) {
-            // نحاول رغم الفشل حفظ صورة المحاولة
-            $disk = 'public';
-            $dir  = "employees/{$data['employee_id']}/face/verify";
-            $ts   = now('Asia/Riyadh')->format('Ymd_His');
-            $imagePath = null;
-            $imageUrl  = null;
+        // إعدادات التخزين: مجلد موحّد لكل موظف + اسم ملف يتضمن التاريخ والوقت
+        $disk       = 'public';
+        $tz         = 'Asia/Riyadh';
+        $employeeId = (int)$data['employee_id'];
+        $dir        = "employees/{$employeeId}/face/verify";
+        $stamp      = now($tz)->format('Y-m-d_H-i-s'); // تاريخ + وقت
 
+        // دالة حفظ مع ضمان اسم فريد
+        $saveImage = function () use ($request, $data, $disk, $dir, $stamp) {
             try {
+                Storage::disk($disk)->makeDirectory($dir);
+
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
                     $ext  = strtolower($file->getClientOriginalExtension() ?: 'jpg');
-                    $name = "{$ts}_verify.{$ext}";
-                    Storage::disk($disk)->putFileAs($dir, $file, $name);
-                    $imagePath = "{$dir}/{$name}";
-                    $imageUrl  = Storage::disk($disk)->url($imagePath);
-                } elseif (!empty($data['image_base64'])) {
-                    $raw = $data['image_base64'];
-                    $ext = 'jpg';
-                    if (str_contains($raw, ',')) {
-                        [$meta, $raw] = explode(',', $raw, 2);
-                        if (preg_match('#^data:image/(jpeg|jpg|png|webp)#i', $meta, $m)) {
-                            $map = ['jpeg' => 'jpg', 'jpg' => 'jpg', 'png' => 'png', 'webp' => 'webp'];
-                            $ext = $map[strtolower($m[1])] ?? 'jpg';
-                        }
+                    $base = "{$stamp}_verify";
+                    $final = "{$base}.{$ext}";
+                    $i = 1;
+                    while (Storage::disk($disk)->exists("{$dir}/{$final}")) {
+                        $final = "{$base}-{$i}.{$ext}";
+                        $i++;
                     }
-                    $name = "{$ts}_verify.{$ext}";
-                    Storage::disk($disk)->put("{$dir}/{$name}", base64_decode($raw, true) ?: '');
-                    $imagePath = "{$dir}/{$name}";
-                    $imageUrl  = Storage::disk($disk)->url($imagePath);
+                    Storage::disk($disk)->putFileAs($dir, $file, $final);
+                    $path = "{$dir}/{$final}";
+                    return [$path, Storage::disk($disk)->url($path)];
                 }
-            } catch (\Throwable $e) {
-                Log::warning('Verify image save failed (no match)', [
-                    'employee_id' => $data['employee_id'],
-                    'error' => $e->getMessage(),
-                ]);
-            }
 
-            return response()->json([
-                'success' => false,
-                'passed'  => false,
-                'message' => 'لا يوجد تطابق كافٍ.',
-                'image_path' => $imagePath,
-                'image_url'  => $imageUrl,
-            ], 401);
-        }
-
-        $similarity = (float)($match['Similarity'] ?? 0);
-        $matchedExternal = $match['Face']['ExternalImageId'] ?? null;
-        $matchedEmployeeId = is_numeric($matchedExternal) ? (int)$matchedExternal : null;
-        $sameEmployee = $matchedEmployeeId === (int) $data['employee_id'];
-
-        $passed = $sameEmployee && $similarity >= $threshold;
-
-        // ✅ حفظ صورة التحقق (حتى لو passed)
-        $disk = 'public';
-        $dir  = "employees/{$data['employee_id']}/face/verify";
-        $ts   = now('Asia/Riyadh')->format('Ymd_His');
-        $imagePath = null;
-        $imageUrl  = null;
-
-        try {
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $ext  = strtolower($file->getClientOriginalExtension() ?: 'jpg');
-                $name = "{$ts}_verify.{$ext}";
-                Storage::disk($disk)->putFileAs($dir, $file, $name);
-                $imagePath = "{$dir}/{$name}";
-                $imageUrl  = Storage::disk($disk)->url($imagePath);
-            } elseif (!empty($data['image_base64'])) {
+                // Base64
                 $raw = $data['image_base64'];
                 $ext = 'jpg';
                 if (str_contains($raw, ',')) {
@@ -260,17 +217,50 @@ class FaceAuthController extends Controller
                         $ext = $map[strtolower($m[1])] ?? 'jpg';
                     }
                 }
-                $name = "{$ts}_verify.{$ext}";
-                Storage::disk($disk)->put("{$dir}/{$name}", base64_decode($raw, true) ?: '');
-                $imagePath = "{$dir}/{$name}";
-                $imageUrl  = Storage::disk($disk)->url($imagePath);
+                $binary = base64_decode($raw, true);
+                if ($binary === false) {
+                    throw new \RuntimeException('Base64 decode failed.');
+                }
+
+                $base  = "{$stamp}_verify";
+                $final = "{$base}.{$ext}";
+                $i = 1;
+                while (Storage::disk($disk)->exists("{$dir}/{$final}")) {
+                    $final = "{$base}-{$i}.{$ext}";
+                    $i++;
+                }
+                Storage::disk($disk)->put("{$dir}/{$final}", $binary);
+                $path = "{$dir}/{$final}";
+                return [$path, Storage::disk($disk)->url($path)];
+            } catch (\Throwable $e) {
+                Log::warning('Verify image save failed', [
+                    'employee_id' => $data['employee_id'] ?? null,
+                    'error'       => $e->getMessage(),
+                ]);
+                return [null, null];
             }
-        } catch (\Throwable $e) {
-            Log::warning('Verify image save failed (match case)', [
-                'employee_id' => $data['employee_id'],
-                'error' => $e->getMessage(),
-            ]);
+        };
+
+        if (!$match) {
+            [$imagePath, $imageUrl] = $saveImage();
+            return response()->json([
+                'success'    => false,
+                'passed'     => false,
+                'message'    => 'لا يوجد تطابق كافٍ.',
+                'image_path' => $imagePath,
+                'image_url'  => $imageUrl,
+            ], 401);
         }
+
+        $similarity       = (float)($match['Similarity'] ?? 0);
+        $matchedExternal  = $match['Face']['ExternalImageId'] ?? null;
+        $matchedEmployeeId = is_numeric($matchedExternal) ? (int)$matchedExternal : null;
+        $sameEmployee     = $matchedEmployeeId === $employeeId;
+
+        $passed = $sameEmployee && $similarity >= $threshold;
+
+        // احفظ الصورة دائمًا سواء نجحت المطابقة أم لا
+        [$imagePath, $imageUrl] = $saveImage();
 
         return response()->json([
             'success'             => $passed,
@@ -283,6 +273,7 @@ class FaceAuthController extends Controller
             'image_url'           => $imageUrl,
         ], $passed ? 200 : 401);
     }
+
 
 
 
