@@ -13,7 +13,12 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Employee extends Model
 {
-    use HasFactory,LogsActivity, Notifiable;
+    use HasFactory, LogsActivity, Notifiable;
+
+    public const FACE_NOT_ENROLLED = 'not_enrolled';
+    public const FACE_PENDING      = 'pending';
+    public const FACE_ENROLLED     = 'enrolled';
+    public const FACE_DISABLED     = 'disabled';
 
     protected $fillable = [
         'id',
@@ -63,7 +68,8 @@ class Employee extends Model
         'out_of_zone',
         'preferred_zone_name',
         'insurance_company_id',
-        'parent_insurance', 'insurance_company_name',
+        'parent_insurance',
+        'insurance_company_name',
         'commercial_record_id',
         'job_title',
         'bank_name',
@@ -73,12 +79,27 @@ class Employee extends Model
         'insurance_end_date',
         'contract_type',
         'last_active',
+        'face_enrollment_status',
+        'face_enrolled_at',
+        'face_last_update_at',
     ];
 
     protected $casts = [
         'out_of_zone' => 'boolean',
+        'face_enrolled_at'    => 'datetime',
+        'face_last_update_at' => 'datetime',
         // 'status' => 'boolean',
     ];
+
+    public function markFaceEnrolled(): void
+    {
+        $now = now('Asia/Riyadh');
+        $this->forceFill([
+            'face_enrollment_status' => self::FACE_ENROLLED,
+            'face_enrolled_at'       => $this->face_enrolled_at ?: $now,
+            'face_last_update_at'    => $now,
+        ])->save();
+    }
 
     // علاقة مع المستخدم الذي أضاف الموظف
     public function addedBy()
@@ -129,7 +150,7 @@ class Employee extends Model
 
     public function name()
     {
-        return $this->first_name.' '.$this->father_name.' '.$this->grandfather_name.' '.$this->family_name;
+        return $this->first_name . ' ' . $this->father_name . ' ' . $this->grandfather_name . ' ' . $this->family_name;
     }
 
     public function __call($method, $parameters)
@@ -143,14 +164,14 @@ class Employee extends Model
 
     public function getNameAttribute()
     {
-        return $this->first_name.' '.$this->father_name.' '.$this->grandfather_name.' '.$this->family_name;
+        return $this->first_name . ' ' . $this->father_name . ' ' . $this->grandfather_name . ' ' . $this->family_name;
     }
 
     public function getTotalSalaryAttribute(): float
     {
         return ($this->basic_salary ?? 0)
-             + ($this->living_allowance ?? 0)
-             + ($this->other_allowances ?? 0);
+            + ($this->living_allowance ?? 0)
+            + ($this->other_allowances ?? 0);
     }
 
     public function resignations()
@@ -165,7 +186,7 @@ class Employee extends Model
 
     public function fullAddress()
     {
-        return $this->region.' - '.$this->city.' - '.$this->street.' - '.$this->building_number.' - '.$this->apartment_number;
+        return $this->region . ' - ' . $this->city . ' - ' . $this->street . ' - ' . $this->building_number . ' - ' . $this->apartment_number;
     }
 
     public function insuranceCompany()
@@ -210,12 +231,12 @@ class Employee extends Model
             ->latest('start_date'); // جلب أحدث سجل بناءً على تاريخ البداية
     }
 
- public function latestZone()
-{
-    return $this->hasOne(EmployeeProjectRecord::class, 'employee_id')
-        ->whereNotNull('zone_id')
-        ->orderByDesc('start_date');
-}
+    public function latestZone()
+    {
+        return $this->hasOne(EmployeeProjectRecord::class, 'employee_id')
+            ->whereNotNull('zone_id')
+            ->orderByDesc('start_date');
+    }
 
 
 
@@ -300,7 +321,7 @@ class Employee extends Model
 
                 foreach ($changes as $field => $newValue) {
                     if (! in_array($field, $ignoredFields) && isset($original[$field]) && $original[$field] !== $newValue) {
-                        $changeDetails .= ucfirst(str_replace('_', ' ', $field)).": \"{$original[$field]}\" → \"{$newValue}\"\n";
+                        $changeDetails .= ucfirst(str_replace('_', ' ', $field)) . ": \"{$original[$field]}\" → \"{$newValue}\"\n";
                     }
                 }
 
