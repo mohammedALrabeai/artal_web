@@ -2,16 +2,20 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\AssetResource\Pages;
-use App\Models\Asset;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\TextColumn;
+use App\Models\Asset;
+use Filament\Forms\Form;
+use App\Enums\AssetStatus;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Illuminate\Database\Eloquent\Model;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Columns\BadgeColumn;
+use Filament\Forms\Components\DatePicker;
+use App\Filament\Resources\AssetResource\Pages;
 
 class AssetResource extends Resource
 {
@@ -64,14 +68,25 @@ class AssetResource extends Resource
             TextInput::make('condition')
                 ->label(__('Condition'))
                 ->placeholder('e.g., New, Good, Needs Maintenance'),
-            TextInput::make('status')
-                ->label(__('Asset Status'))
-                ->placeholder('e.g., Available, Assigned, Under Maintenance'),
+            Select::make('status')
+    ->label(__('Status'))
+    ->options(\App\Enums\AssetStatus::labels()) // نفس التسميات التي عرّفناها في enum
+    ->default(AssetStatus::AVAILABLE->value)
+    ->required(true),
         ]);
     }
 
     public static function table(Table $table): Table
     {
+
+        $table->recordClasses(function ($record): string {
+            if (! $record instanceof \App\Models\Asset) {
+                return '';
+            }
+            return ($record->status?->value === \App\Enums\AssetStatus::CHARGED->value)
+                ? 'bg-rose-50 dark:bg-rose-950/20'
+                : '';
+        });
         return $table->columns([
             TextColumn::make('asset_name')
                 ->label(__('Asset Name'))
@@ -88,9 +103,45 @@ class AssetResource extends Resource
                 ->label(__('Asset Value')),
             TextColumn::make('condition')
                 ->label(__('Condition')),
-            TextColumn::make('status')
-                ->label(__('Asset Status')),
+            BadgeColumn::make('status')
+                ->label(__('Status'))
+                ->getStateUsing(function ($record) {
+                    // قد يكون $record = null في بعض المراحل
+                    if (! $record instanceof \App\Models\Asset) {
+                        return AssetStatus::AVAILABLE->value;
+                    }
+                    return $record->status?->value ?? AssetStatus::AVAILABLE->value;
+                })
+                ->formatStateUsing(fn($state) => \App\Enums\AssetStatus::labels()[$state] ?? (string) $state)
+                ->colors([
+                    'success' => fn($state) => $state === AssetStatus::AVAILABLE->value,
+                    'danger'  => fn($state) => $state === AssetStatus::CHARGED->value,
+                    'warning' => fn($state) => in_array($state, [
+                        AssetStatus::MAINTENANCE->value,
+                        AssetStatus::DAMAGED->value,
+                        AssetStatus::LOST->value,
+                    ], true),
+                    'gray'    => fn($state) => $state === AssetStatus::RETIRED->value,
+                ])
+                ->toggleable(),
+
+
+
+            BadgeColumn::make('availability')
+                ->label(__('Availability'))
+                ->getStateUsing(fn($record) => $record->openAssignment ? 'Assigned' : 'Available')
+                ->colors([
+                    'success' => fn($state) => $state === 'Available',
+                    'warning' => fn($state) => $state === 'Assigned',
+                ]),
         ])
+            //         ->recordClasses(function (Model $record): array {
+            //     /** @var Asset $record */
+            //     return [
+            //         'bg-rose-50 dark:bg-rose-950/20' => $record instanceof Asset
+            //             && $record->status?->value === \App\Enums\AssetStatus::CHARGED->value,
+            //     ];
+            // })
             ->filters([
                 // يمكن إضافة فلاتر حسب الحاجة
             ])

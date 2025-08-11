@@ -662,11 +662,63 @@
     "Search for an employee...": "ابحث عن موظف...",
     "Pending Approvals": "الموافقات المعلقة",
     "Replacement Required": "مطلوب بديل",
+    "Transfer" : "نقل",
+    "Available": "متاح",
+    "All": "الكل",
+    "Assigned": "مٌسَلَمَة",
+    "Returned": "مستلمة",
+    "Replacement": "البديل",
+    "New Assigned Date": "تاريخ التسليم الجديد",
+    "Return": "استرجاع",
+    "Assigned By": "تم التسليم بواسطة",
+    "Returned By": "تم الاسترجاع بواسطة",
     "Replacement Not Required": "لا يتطلب بديل",
     "At least one attachment is required.": "يجب إضافة مرفق واحد على الأقل.",
     "You can upload a maximum of 5 attachments.": "يمكنك تحميل ما يصل إلى 5 مرفقات.",
     "Export Attendance": "تصدير الحضور",
+    "New Expected Return Date": "تاريخ الاسترجاع المتوقع الجديد",
+    "Condition at Return (Current)": "الحالة عند الاسترجاع (الحالية)",
+    "Condition at Assignment (New)": "الحالة عند التسليم (الجديدة)",
      "Requests Needing Approval": "طلبات بانتظار الموافقة",
-  "Upcoming Exclusions": "طلبات استبعاد مستقبلية"
+  "Upcoming Exclusions": "طلبات استبعاد مستقبلية",
+   "Bulk Add Assets": "إضافة عهدة جماعية",
+  "Basic": "الأساسيات",
+  "Base Name": "الاسم الأساسي",
+  "Quantity": "الكمية",
+  "Start From": "ابدأ من",
+  "Starting index for the name numbering (e.g., جاكت-1)": "رقم البداية لترقيم الاسم (مثال: جاكت-1)",
+  "Name Separator": "فاصل الاسم",
+  "Will produce: {name}{sep}{n} e.g. جاكت-1": "سيُنتج: {name}{sep}{n} مثال: جاكت-1",
+
+  "Digits Style": "نمط الأرقام",
+  "Western (1,2,3)": "أرقام إنجليزية (1، 2، 3)",
+  "Arabic-Indic (١،٢،٣)": "أرقام عربية-هندية (١، ٢، ٣)",
+
+ 
+  "Serial Prefix": "بادئة الرقم التسلسلي",
+  "Serial Pad Length": "عدد خانات الرقم التسلسلي",
+  "Serial Separator": "فاصل الرقم التسلسلي",
+
+  "Optional Fields": "حقول اختيارية",
+  "Charge from Salary": "خصم من الراتب",
+  "Asset charged and locked from reassignment": "تم خصم قيمة العهدة وقفلها من إعادة التسليم",
+
+  "Asset returned": "تم استرجاع العهدة",
+
+
+  "Maintenance": "صيانة",
+  "Lost": "مفقود",
+  "Damaged": "تالف",
+  "Charged": "تم التعويض/الخصم",
+  "Retired": "خارج الخدمة",
+
+
+  "Overdue": "متأخرة",
+  "No Expected Date": "بدون تاريخ متوقع",
+  "Charged Assets": "العهدة المخصومة",
+
+
+
+  "Assets created successfully": "تم إنشاء العهدة بنجاح"
 
 }
