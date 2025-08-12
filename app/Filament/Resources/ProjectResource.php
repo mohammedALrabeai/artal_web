@@ -167,6 +167,9 @@ class ProjectResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Updated At')),
+                    Tables\Columns\ToggleColumn::make('enable_face_verification')
+    ->label('التحقق بالوجه')
+    ->sortable()
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('area_id')
