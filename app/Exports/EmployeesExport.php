@@ -15,8 +15,8 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
     {
         // إذا لم يتم تمرير استعلام نستخدم الكل
         $this->query = $query
-            ? $query->with(['currentZone','latestZone.zone', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])
-            : Employee::with(['currentZone','latestZone.zone', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])->latest();
+            ? $query->with(['currentZone','latestZone.zone','commercialRecord', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])
+            : Employee::with(['currentZone','latestZone.zone','commercialRecord', 'exclusions' => fn($q) => $q->where('status', 'Approved')->latest()])->latest();
     }
 
     public function collection()
@@ -59,6 +59,9 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             'الحالة',
             'تاريخ الاستبعاد',         // ✅ جديد
             'سبب الاستبعاد',           // ✅ جديد
+            'الاشتراك في المؤسسة العامة للتامينات الاجتماعية',
+            'السجل التجاري',
+            'رقم المشترك'
         ];
     }
 
@@ -102,6 +105,9 @@ optional($employee->latestZone?->zone)->name,
             $employee->status == 1 ? 'نشط' : 'غير نشط',
             $exclusion?->exclusion_date,       // ✅ جديد
             $exclusion?->reason,               // ✅ جديد
+            $employee->insurance_type,
+            $employee->commercialRecord?->insurance_number, // السجل التجاري
+            $employee->insurance_number, // رقم المشترك
 
         ];
     }
