@@ -48,6 +48,8 @@ class ProjectController extends Controller
                     'id' => $record->project->id,
                     'name' => $record->project->name,
                     'description' => $record->project->description,
+                    'enable_face_verification' => (bool) ($record->project->enable_face_verification ?? false), // ← المهم
+
                     'area' => [
                         'id' => $record->project->area->id ?? null,
                         'name' => $record->project->area->name ?? null,

@@ -18,23 +18,25 @@ class Project extends Model
         'end_date',
         'emp_no',
         'status',
-          'has_whatsapp_group',
-    'whatsapp_group_id',
-    'whatsapp_group_name',
-    'whatsapp_group_created_at',
-    'whatsapp_created_by',
+        'has_whatsapp_group',
+        'whatsapp_group_id',
+        'whatsapp_group_name',
+        'whatsapp_group_created_at',
+        'whatsapp_created_by',
+
+        'enable_face_verification'
     ];
 
     protected $casts = [
+        'enable_face_verification' => 'boolean',
+        'has_whatsapp_group' => 'boolean',
+        'whatsapp_group_created_at' => 'datetime',
+    ];
 
-    'has_whatsapp_group' => 'boolean',
-    'whatsapp_group_created_at' => 'datetime',
-];
-
-public function whatsappCreator(): BelongsTo
-{
-    return $this->belongsTo(User::class, 'whatsapp_created_by');
-}
+    public function whatsappCreator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'whatsapp_created_by');
+    }
 
 
 
@@ -68,8 +70,7 @@ public function whatsappCreator(): BelongsTo
     }
 
     public function employeeProjectRecords()
-{
-    return $this->hasMany(\App\Models\EmployeeProjectRecord::class, 'project_id');
-}
-
+    {
+        return $this->hasMany(\App\Models\EmployeeProjectRecord::class, 'project_id');
+    }
 }
