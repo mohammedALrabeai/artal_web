@@ -66,12 +66,19 @@ class UserResource extends Resource
                 ->preload()
                 ->searchable(),
 
-            Forms\Components\TextInput::make('password')
-                ->label(__('Password')) // Translation
-                ->password()
-                ->required()
-                ->visibleOn(['create', 'edit']),
-
+            // Forms\Components\TextInput::make('password')
+            //     ->label(__('Password')) // Translation
+            //     ->password()
+            //     ->required()
+            //     ->visibleOn(['create', 'edit']),
+                
+Forms\Components\TextInput::make('password')
+    ->label(__('Password'))
+    ->password()
+    ->required(fn (string $context): bool => $context === 'create') // مطلوب فقط في الإنشاء
+    ->dehydrated(fn ($state) => filled($state)) // إذا كان الحقل فارغ لا يتم حفظه
+    // ->dehydrateStateUsing(fn ($state) => Hash::make($state)) // تشفير كلمة المرور
+    ->visibleOn(['create', 'edit'])
 
                 
             //     ->hiddenOn('edit'),
