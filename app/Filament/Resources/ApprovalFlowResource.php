@@ -87,9 +87,9 @@ class ApprovalFlowResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('request_type')->label('نوع الطلب'),
+                Tables\Columns\TextColumn::make('request_type')->label('نوع الطلب')->searchable(),
                 Tables\Columns\TextColumn::make('approval_level')->label('مستوى الموافقة'),
-                Tables\Columns\TextColumn::make('approver_role')->label('دور المراجع'),
+                Tables\Columns\TextColumn::make('approver_role')->label('دور المراجع')->searchable(),
                 Tables\Columns\TextColumn::make('conditions')
                 ->label(__('Conditions'))
                 ->formatStateUsing(fn($state) => $state ? json_encode($state) : '-'),
