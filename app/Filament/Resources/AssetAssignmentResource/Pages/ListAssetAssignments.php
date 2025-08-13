@@ -10,6 +10,15 @@ use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
 use Filament\Actions;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AssetAssignmentsExport;
+use Filament\Actions\Action;
+
+
+use Filament\Forms;
+
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use Maatwebsite\Excel\Excel as ExcelWriter;
 
 class ListAssetAssignments extends ListRecords
 {
@@ -66,12 +75,65 @@ class ListAssetAssignments extends ListRecords
     }
 }
 
-     protected function getHeaderActions(): array
-    {
-        return [
-            Actions\CreateAction::make(),
-        ];
-    }
+
+
+protected function getHeaderActions(): array
+{
+    return [
+        Actions\CreateAction::make(),
+
+      
+        Actions\Action::make('exportAssignments')
+            ->label(__('Export Assignments'))
+            ->icon('heroicon-o-arrow-up-tray')
+            ->color('success')
+            ->modalHeading(__('Export Assignments'))
+            ->form([
+                Forms\Components\DatePicker::make('start_date')
+                    ->label(__('From Date'))
+                    ->required(),
+                Forms\Components\DatePicker::make('end_date')
+                    ->label(__('To Date'))
+                    ->required(),
+                Forms\Components\Select::make('date_basis')
+                    ->label(__('Date Basis'))
+                    ->options([
+                        'assigned' => __('Assigned Date'),
+                        'returned' => __('Returned Date'),
+                        'both'     => __('Assigned OR Returned'),
+                    ])
+                    ->default('both')
+                    ->required(),
+                Forms\Components\TextInput::make('filename')
+                    ->label(__('Filename'))
+                    ->default('asset-assignments')
+                    ->helperText(__('Without extension')),
+            ])
+            ->action(function (array $data) {
+                $start = $data['start_date'];
+                $end   = $data['end_date'];
+                $basis = $data['date_basis'] ?? 'both';
+                $fname = trim($data['filename'] ?? 'asset-assignments');
+
+                // إن لم توجد صفوف، رجّع إشعار لطيف بدل ملف فارغ (اختياري)
+                $export = new AssetAssignmentsExport($start, $end, $basis);
+                $rowsCount = $export->collection()->count();
+                if ($rowsCount === 0) {
+                    \Filament\Notifications\Notification::make()
+                        ->title(__('No data to export for selected dates'))
+                        ->warning()
+                        ->send();
+                    return;
+                }
+
+                return Excel::download(
+                    $export,
+                    $fname . '_' . now('Asia/Riyadh')->format('Ymd_His') . '.xlsx'
+                );
+            }),
+    ];
+}
+
 
 
 
