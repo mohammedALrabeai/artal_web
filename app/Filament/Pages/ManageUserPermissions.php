@@ -10,10 +10,12 @@ use Spatie\Permission\Models\Permission;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
 
 class ManageUserPermissions extends Page implements HasForms
 {
+      use HasPageShield;
     use InteractsWithForms;
 
     public ?int $user_id = null;
