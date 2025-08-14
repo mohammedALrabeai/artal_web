@@ -168,12 +168,12 @@ class CoverageResource extends Resource
                 ->label(__('Zone'))
                 ->sortable()
                 ->searchable()
-                ->toggleable(),
+                ->toggleable(isToggledHiddenByDefault: false),
 
             Tables\Columns\TextColumn::make('date')
                 ->label(__('Date'))
                 ->sortable()
-                ->toggleable(),
+                ->toggleable(isToggledHiddenByDefault: false),
 
             Tables\Columns\BadgeColumn::make('status')
                 ->label(__('Status'))
@@ -181,7 +181,7 @@ class CoverageResource extends Resource
                     'success' => 'completed',
                     'danger' => 'cancelled',
                 ])
-                ->toggleable(),
+                ->toggleable(isToggledHiddenByDefault: false),
 
             Tables\Columns\TextColumn::make('addedBy.name')
                 ->label(__('Added By'))
@@ -193,13 +193,13 @@ class CoverageResource extends Resource
                 ->label(__('Created At'))
                 ->dateTime()
                 ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
+                ->toggleable(isToggledHiddenByDefault: false),
 
             Tables\Columns\TextColumn::make('updated_at')
                 ->label(__('Updated At'))
                 ->dateTime()
                 ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
+                ->toggleable(isToggledHiddenByDefault: false),
         ])
             ->filters([
                 SelectFilter::make('status')
