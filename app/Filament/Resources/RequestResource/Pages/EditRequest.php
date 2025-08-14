@@ -129,6 +129,12 @@ class EditRequest extends EditRecord
                 }
                 break;
 
+            case 'coverage':
+                // if (!isset($data['coverage_details'])) {
+                    // throw new \Exception(__('Coverage details are required for coverage requests.'));
+                // }
+                break;
+
             default:
                 throw new \Exception(__('Invalid request type.'));
         }

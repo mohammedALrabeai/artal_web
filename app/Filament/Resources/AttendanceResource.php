@@ -371,7 +371,7 @@ class AttendanceResource extends Resource
                         // ملاحظات إضافية
                         Forms\Components\Textarea::make('notes')
                             ->label(__('Notes'))
-                            ->nullable(),
+                            ->required(),
                     ])
                     ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending')
                     ->action(function ($record, array $data) {
