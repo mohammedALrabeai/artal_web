@@ -101,14 +101,28 @@ class CoverageResource extends Resource
             //     ->sortable()
             //     ->searchable()
             //     ->toggleable(),
-            Tables\Columns\TextColumn::make('employee.full_name')
-                ->label(__('Covering Employee'))
-                ->getStateUsing(function ($record) {
-                    return $record->employee->first_name.' '.
-                           $record->employee->family_name;
-                })
-                ->searchable()
-                ->sortable(),
+            Tables\Columns\TextColumn::make('full_name')
+                ->label(__('Employee'))
+                ->getStateUsing(
+                    fn($record) => $record->employee->first_name . ' ' .
+                        $record->employee->father_name . ' ' .
+                        $record->employee->grandfather_name . ' ' .
+                        $record->employee->family_name
+                )
+                ->searchable(query: function ($query, $search) {
+                    return $query->whereHas('employee', function ($subQuery) use ($search) {
+                        $subQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('father_name', 'like', "%{$search}%")
+                            ->orWhere('grandfather_name', 'like', "%{$search}%")
+                            ->orWhere('family_name', 'like', "%{$search}%")
+                            // ->orWhere('national_id', 'like', "%{$search}%")
+                        ;
+                    });
+                }),
+
+            Tables\Columns\TextColumn::make('employee.national_id')
+                ->label(__('National ID'))
+                ->searchable(),
 
             // Tables\Columns\TextColumn::make('absentEmployee.first_name')
             //     ->label(__('Absent Employee'))
@@ -118,14 +132,36 @@ class CoverageResource extends Resource
             //     })
             //     ->sortable()
             //     ->searchable(),
-            Tables\Columns\TextColumn::make('absentEmployee.full_name')
-                ->label(__('Absent Employee'))
-                ->getStateUsing(function ($record) {
-                    return $record->absentEmployee
-                        ? ($record->absentEmployee->first_name.' '.$record->absentEmployee->family_name)
-                        : __('Not Assigned'); // ✅ إذا لم يكن هناك موظف غائب، يظهر "غير مسند"
-                })
-                ->sortable()
+            // Tables\Columns\TextColumn::make('absentEmployee.full_name')
+            //     ->label(__('Absent Employee'))
+            //     ->getStateUsing(function ($record) {
+            //         return $record->absentEmployee
+            //             ? ($record->absentEmployee->first_name.' '.$record->absentEmployee->family_name)
+            //             : __('Not Assigned'); // ✅ إذا لم يكن هناك موظف غائب، يظهر "غير مسند"
+            //     })
+            //     ->sortable()
+            //     ->searchable(),
+                 Tables\Columns\TextColumn::make('full_name_absent')
+                ->label(__('Employee'))
+                ->getStateUsing(
+                    fn($record) => $record->absentEmployee
+                        ? $record->absentEmployee->first_name . ' ' .
+                        $record->absentEmployee->father_name . ' ' .
+                        $record->absentEmployee->grandfather_name . ' ' .
+                        $record->absentEmployee->family_name :""
+                )
+                ->searchable(query: function ($query, $search) {
+                    return $query->whereHas('employee', function ($subQuery) use ($search) {
+                        $subQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('father_name', 'like', "%{$search}%")
+                            ->orWhere('grandfather_name', 'like', "%{$search}%")
+                            ->orWhere('family_name', 'like', "%{$search}%")
+                            // ->orWhere('national_id', 'like', "%{$search}%")
+                        ;
+                    });
+                }),
+                Tables\Columns\TextColumn::make('absentEmployee.national_id')
+                ->label(__('National ID'))
                 ->searchable(),
 
             Tables\Columns\TextColumn::make('zone.name')
