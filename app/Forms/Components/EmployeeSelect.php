@@ -7,63 +7,105 @@ use Filament\Forms\Components\Select;
 
 class EmployeeSelect extends Select
 {
-    public static function make(string $name = 'employee_id', bool $onlyWithoutActiveProject = false): static
-    {
+    /**
+     * @param  string   $name                      اسم الحقل (افتراضي employee_id)
+     * @param  bool     $onlyWithoutActiveProject  استبعاد من لديهم سجل إسناد نشط
+     * @param  int|null $projectId                 عند تمريره يُعاد فقط موظفو هذا المشروع
+     */
+    public static function make(
+        string $name = 'employee_id',
+        bool $onlyWithoutActiveProject = false,
+        ?int $projectId = null
+    ): static {
         return parent::make($name)
             ->label(__('Employee'))
             ->preload()
             ->searchable()
             ->placeholder(__('Search for an employee...'))
-            ->options(fn () => self::getDefaultOptions($onlyWithoutActiveProject)) // تحميل الموظفين عند فتح القائمة
-            ->getSearchResultsUsing(fn (string $search) => self::searchEmployees($search, $onlyWithoutActiveProject))
+            ->options(fn () => self::getDefaultOptions($onlyWithoutActiveProject, $projectId))
+            ->getSearchResultsUsing(fn (string $search) => self::searchEmployees($search, $onlyWithoutActiveProject, $projectId))
             ->getOptionLabelUsing(fn ($value) => self::getEmployeeLabel($value))
             ->required();
     }
 
-    protected static function searchEmployees(string $search, bool $onlyWithoutActiveProject = false)
+    /**
+     * نتائج البحث الديناميكية
+     */
+    protected static function searchEmployees(string $search, bool $onlyWithoutActiveProject = false, ?int $projectId = null)
     {
-        $query = Employee::active()->where(function ($query) use ($search) {
-            $query->where('national_id', 'like', "%{$search}%") // البحث برقم الهوية
-                ->orWhere('first_name', 'like', "%{$search}%")  // البحث بالاسم الأول
-                ->orWhere('family_name', 'like', "%{$search}%") // البحث باسم العائلة
-                ->orWhere('id', 'like', "%{$search}%"); // البحث بمعرف الموظف
-        });
+        $query = Employee::active()
+            ->where(function ($q) use ($search) {
+                $q->where('national_id', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('family_name', 'like', "%{$search}%")
+                  ->orWhere('id', 'like', "%{$search}%");
+            });
 
+        // استبعاد من لديهم إسناد نشط
         if ($onlyWithoutActiveProject) {
-            $query->whereDoesntHave('employeeProjectRecords', function ($query) {
-                $query->where('status', 1); // تأكد من أن الموظف ليس لديه سجل نشط
+            $query->whereDoesntHave('projectRecords', function ($q) {
+                $q->where('status', 1);
             });
         }
 
-        return $query->limit(50)
-            ->get()
+        // التصفية حسب مشروع معيّن
+        if (!is_null($projectId)) {
+            $query->whereHas('projectRecords', function ($q) use ($projectId) {
+                $q->where('project_id', $projectId)
+                // إن أردت قصرها على السجلات النشطة فقط أضف:
+                ->where('status', 1);
+            });
+        }
+
+        return $query
+            ->orderBy('first_name')
+            ->limit(50)
+            ->get(['id', 'first_name', 'family_name', 'national_id'])
             ->mapWithKeys(fn ($employee) => [
                 $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})",
             ]);
     }
 
+    /**
+     * تسمية الخيار عند وجود قيمة محفوظة
+     */
     protected static function getEmployeeLabel($value)
     {
-        $employee = Employee::active()->find($value);
+        $employee = Employee::active()
+            ->select(['id', 'first_name', 'family_name', 'national_id'])
+            ->find($value);
 
         return $employee
             ? "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})"
             : null;
     }
 
-    protected static function getDefaultOptions(bool $onlyWithoutActiveProject = false)
+    /**
+     * خيارات التحميل الأولي (preload)
+     */
+    protected static function getDefaultOptions(bool $onlyWithoutActiveProject = false, ?int $projectId = null): array
     {
-        $query = Employee::active()->limit(50);
+        $query = Employee::active();
 
         if ($onlyWithoutActiveProject) {
-            $query->whereDoesntHave('projectRecords', function ($query) {
-                $query->where('status', 1);
+            $query->whereDoesntHave('projectRecords', function ($q) {
+                $q->where('status', 1);
             });
         }
 
-        return $query->get()
+        if (!is_null($projectId)) {
+            $query->whereHas('projectRecords', function ($q) use ($projectId) {
+                $q->where('project_id', $projectId);
+                // إن رغبت: ->where('status', 1);
+            });
+        }
+
+        return $query
+            ->orderBy('first_name')
+            ->limit(50)
+            ->get(['id', 'first_name', 'family_name', 'national_id'])
             ->mapWithKeys(fn ($employee) => [
-                $employee->id => "{$employee->name} - {$employee->national_id} ({$employee->id})",
+                $employee->id => "{$employee->first_name} {$employee->family_name} - {$employee->national_id} ({$employee->id})",
             ])
             ->toArray();
     }

@@ -78,13 +78,13 @@ class AttendanceResource extends Resource
                 ->label(__('Zone'))
                 ->options(\App\Models\Zone::all()->pluck('name', 'id'))
 
-            // ->options(function (callable $get) {
-            //     $projectId = $get('project_id');
-            //     if (!$projectId) {
-            //         return [];
-            //     }
-            //     return \App\Models\Zone::where('project_id', $projectId)->pluck('name', 'id');
-            // })
+                // ->options(function (callable $get) {
+                //     $projectId = $get('project_id');
+                //     if (!$projectId) {
+                //         return [];
+                //     }
+                //     return \App\Models\Zone::where('project_id', $projectId)->pluck('name', 'id');
+                // })
                 ->searchable()
                 ->required()
                 ->reactive()
@@ -165,10 +165,11 @@ class AttendanceResource extends Resource
         return $table->columns([
             Tables\Columns\TextColumn::make('full_name')
                 ->label(__('Employee'))
-                ->getStateUsing(fn ($record) => $record->employee->first_name.' '.
-                    $record->employee->father_name.' '.
-                    $record->employee->grandfather_name.' '.
-                    $record->employee->family_name
+                ->getStateUsing(
+                    fn($record) => $record->employee->first_name . ' ' .
+                        $record->employee->father_name . ' ' .
+                        $record->employee->grandfather_name . ' ' .
+                        $record->employee->family_name
                 )
                 ->searchable(query: function ($query, $search) {
                     return $query->whereHas('employee', function ($subQuery) use ($search) {
@@ -224,7 +225,7 @@ class AttendanceResource extends Resource
                         'coverage' => __('Coverage'),
                         'M' => __('Morbid'),
                         'leave' => __('Paid Leave'),
-                       
+
                         'UV' => __('Unpaid Leave'),
                         'absent' => __('Absent'),
 
@@ -235,14 +236,14 @@ class AttendanceResource extends Resource
                     };
                 })
                 ->colors([
-                    'success' => fn ($state) => $state === __('OFF'), // أخضر
-                    'primary' => fn ($state) => $state === __('Present'), // أزرق فاتح
-                    'warning' => fn ($state) => $state === __('Coverage'), // برتقالي
-                    'secondary' => fn ($state) => $state === __('Morbid'), // رمادي
-                    'blue-dark' => fn ($state) => $state === __('Paid Leave'), // أزرق غامق
+                    'success' => fn($state) => $state === __('OFF'), // أخضر
+                    'primary' => fn($state) => $state === __('Present'), // أزرق فاتح
+                    'warning' => fn($state) => $state === __('Coverage'), // برتقالي
+                    'secondary' => fn($state) => $state === __('Morbid'), // رمادي
+                    'blue-dark' => fn($state) => $state === __('Paid Leave'), // أزرق غامق
                     // 'blue-dark' => fn ($state) => $state === __('Paid Vacation'), // أزرق
-                    'orange-dark' => fn ($state) => $state === __('Unpaid Leave'), // برتقالي غامق
-                    'danger' => fn ($state) => $state === __('Absent'), // أحمر
+                    'orange-dark' => fn($state) => $state === __('Unpaid Leave'), // برتقالي غامق
+                    'danger' => fn($state) => $state === __('Absent'), // أحمر
                 ]),
 
             Tables\Columns\TextColumn::make('work_hours')
@@ -253,14 +254,14 @@ class AttendanceResource extends Resource
 
             Tables\Columns\BadgeColumn::make('is_late')
                 ->label(__('Is Late'))
-                ->getStateUsing(fn ($record) => $record->is_late ? __('Yes') : __('No'))
+                ->getStateUsing(fn($record) => $record->is_late ? __('Yes') : __('No'))
                 ->colors([
-                    'danger' => fn ($state) => $state === __('Yes'),
-                    'success' => fn ($state) => $state === __('No'),
+                    'danger' => fn($state) => $state === __('Yes'),
+                    'success' => fn($state) => $state === __('No'),
                 ]),
             Tables\Columns\BadgeColumn::make('approval_status')
                 ->label(__('Approval Status'))
-                ->formatStateUsing(fn (string $state): string => ucfirst($state)) // تنسيق النص
+                ->formatStateUsing(fn(string $state): string => ucfirst($state)) // تنسيق النص
                 ->colors([
                     'pending' => 'warning',
                     'submitted' => 'warning',
@@ -286,7 +287,7 @@ class AttendanceResource extends Resource
             ->filters([
 
                 Tables\Filters\Filter::make('present_status')
-                    ->query(fn (Builder $query) => $query->where('status', 'present'))
+                    ->query(fn(Builder $query) => $query->where('status', 'present'))
                     ->label(__('Present')),
                 EmployeeFilter::make('employee_filter'),
 
@@ -351,29 +352,30 @@ class AttendanceResource extends Resource
             ->actions([
                 Tables\Actions\Action::make('Approve')
                     ->label(__('Approve'))
-                    ->form([
-                        // اختيار سبب التغطية
-                        Forms\Components\Select::make('coverage_reason')
-                            ->label(__('Coverage Reason'))
-                            ->options(CoverageReason::labels())
-                            ->required()
-                            ->reactive(),
 
-                        // اختيار الموظف البديل إذا كان السبب يتطلب ذلك
-                        // Forms\Components\Select::make('absent_employee_id')
-                        //     ->label(__('Select Replacement Employee'))
-                        //     ->options(\App\Models\Employee::pluck('first_name', 'id'))
-                        //     ->searchable()
-                        //     ->required(fn ($get) => CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement() ?? false)
-                        //     ->hidden(fn ($get) => ! CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement()),
-                        EmployeeSelect::make('absent_employee_id')
-                            ->hidden(fn ($get) => ! CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement()),
-                        // ملاحظات إضافية
-                        Forms\Components\Textarea::make('notes')
-                            ->label(__('Notes'))
-                            ->required(),
-                    ])
-                    ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending')
+                    // ✅ ابني الفورم داخل Closure حتى يتوفر $record
+                    ->form(function (Attendance $record) {
+                        $projectId = optional($record->zone)->project_id; // المشروع من الموقع
+
+                        return [
+                            Forms\Components\Select::make('coverage_reason')
+                                ->label(__('Coverage Reason'))
+                                ->options(\App\Enums\CoverageReason::labels())
+                                ->required()
+                                ->reactive(),
+
+                            // ✅ هنا تستخدم EmployeeSelect مباشرة مع تمرير رقم المشروع
+                            \App\Forms\Components\EmployeeSelect::make('absent_employee_id', false, $projectId)
+                                ->label(__('Select Replacement Employee'))
+                                ->hidden(fn($get) => ! \App\Enums\CoverageReason::tryFrom($get('coverage_reason'))?->requiresReplacement()),
+
+                            Forms\Components\Textarea::make('notes')
+                                ->label(__('Notes'))
+                                ->required(),
+                        ];
+                    })
+
+                    ->visible(fn($record) => $record->status === 'coverage' && $record->approval_status === 'pending')
                     ->action(function ($record, array $data) {
                         $reasonEnum = CoverageReason::tryFrom($data['coverage_reason']);
 
@@ -432,8 +434,8 @@ class AttendanceResource extends Resource
 
                 Tables\Actions\Action::make('Reject')
                     ->label(__('Reject'))
-                    ->visible(fn ($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // الشرط لإظهار الزر
-                    ->action(fn ($record) => $record->update(['approval_status' => 'rejected'])),
+                    ->visible(fn($record) => $record->status === 'coverage' && $record->approval_status === 'pending') // الشرط لإظهار الزر
+                    ->action(fn($record) => $record->update(['approval_status' => 'rejected'])),
 
                 Tables\Actions\EditAction::make(),
             ])
