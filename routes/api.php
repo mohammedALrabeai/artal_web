@@ -223,6 +223,7 @@ Route::get('/active-shifts-summary-v2', [\App\Http\Controllers\Api\ActiveShiftCo
 // routes/api.php
 
 Route::get('/assigned-employees-mobiles', [AssignmentReportController::class, 'mobileNumbers']);
+Route::get('/active-employees-mobiles', [AssignmentReportController::class, 'activeMobileNumbers']);
 
 Route::get('/slides', [SlideController::class, 'getActiveSlides']);
 Route::get('/test-email', [\App\Http\Controllers\TestEmailController::class, 'send']);

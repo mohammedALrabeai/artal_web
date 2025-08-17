@@ -22,4 +22,19 @@ class AssignmentReportController extends Controller
         return response($output, 200)
             ->header('Content-Type', 'text/plain');
     }
+
+       public function activeMobileNumbers()
+    {
+        $employees = Employee::where('status', true)
+            ->whereNotNull('mobile_number')
+            ->pluck('mobile_number')
+            ->unique()
+            ->values();
+
+        $output = $employees->implode("\n");
+        $output .= "\n" . $employees->count();
+
+        return response($output, 200)
+            ->header('Content-Type', 'text/plain');
+    }
 }
