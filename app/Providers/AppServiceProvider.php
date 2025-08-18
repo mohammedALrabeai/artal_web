@@ -49,6 +49,10 @@ class AppServiceProvider extends ServiceProvider
         //     // Js::make('echo', \Vite::asset('resources/js/echo.js'))->module(),
         // ]);
 
+        Filament::registerRenderHook(
+        PanelsRenderHook::BODY_END, // نضع السكربت قبل </body>
+        fn (): string => view('partials.clarity')->render()
+    );
 
 
 FilamentView::registerRenderHook(

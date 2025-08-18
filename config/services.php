@@ -45,4 +45,9 @@ return [
         'secret'     => env('AWS_SECRET_ACCESS_KEY'),
     ],
 
+    'clarity' => [
+    'id' => env('CLARITY_ID'),
+],
+
+
 ];
