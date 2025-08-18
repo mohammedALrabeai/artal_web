@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ProjectResource\Pages;
-use App\Forms\Components\EmployeeSelectV2;
-use App\Models\Project;
-use App\Services\WhatsApp\WhatsAppGroupService;
-use App\Services\WhatsApp\WhatsAppMessageService;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Project;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
 use Illuminate\Support\Collection;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Support\Facades\Auth;
+use App\Forms\Components\EmployeeSelectV2;
+use App\Services\WhatsApp\WhatsAppGroupService;
+use App\Filament\Resources\ProjectResource\Pages;
+use App\Services\WhatsApp\WhatsAppMessageService;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class ProjectResource extends Resource
@@ -141,7 +142,8 @@ class ProjectResource extends Resource
                             ->label('عرض الموظفين')
                             ->modalHeading('الموظفون المسندون للمشروع')
                             ->modalSubmitAction(false)
-                            ->modalWidth('4xl')
+                            ->modalWidth('7xl')
+                            // ->modalWidth(MaxWidth::Full) 
                             ->action(fn() => null)
                            ->mountUsing(function (Tables\Actions\Action $action, $record) {
     // نحمّل السلاسل اللازمة لحساب وعرض النمط (shift ⟶ zone ⟶ pattern)
