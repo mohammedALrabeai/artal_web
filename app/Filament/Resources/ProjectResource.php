@@ -133,7 +133,7 @@ class ProjectResource extends Resource
                     //     return $record->employeeProjectRecords()->count().' موظف';
                     // })
                     ->state(function ($record) {
-                        return $record->emp_no.' موظف';
+                        return $record->emp_no . ' موظف';
                     })
                     ->extraAttributes(['class' => 'cursor-pointer text-primary underline'])
                     ->action(
@@ -142,16 +142,31 @@ class ProjectResource extends Resource
                             ->modalHeading('الموظفون المسندون للمشروع')
                             ->modalSubmitAction(false)
                             ->modalWidth('4xl')
-                            ->action(fn () => null)
-                            ->mountUsing(function (Tables\Actions\Action $action, $record) {
-                                $employees = \App\Models\EmployeeProjectRecord::with(['employee', 'zone', 'shift'])
-                                    ->where('project_id', $record->id)
-                                    ->where('status', 1) // ✅ فقط الإسنادات النشطة
-                                    ->get()
-                                    ->sortBy(fn ($record) => $record->zone->name ?? '');
+                            ->action(fn() => null)
+                           ->mountUsing(function (Tables\Actions\Action $action, $record) {
+    // نحمّل السلاسل اللازمة لحساب وعرض النمط (shift ⟶ zone ⟶ pattern)
+    $employees = \App\Models\EmployeeProjectRecord::with(['employee', 'shift.zone.pattern'])
+        ->where('project_id', $record->id)
+        ->where('status', 1) // فقط الإسنادات النشطة
+        ->get();
 
-                                $action->modalContent(view('filament.modals.project-employees', compact('employees')));
-                            })
+    // مجموعتان مرتبتان للتبديل في الواجهة
+    $employeesByShift = $employees->sortBy(fn ($r) => $r->shift->name ?? '')->values();
+    $employeesByZone  = $employees->sortBy(fn ($r) => $r->zone->name  ?? '')->values();
+
+    $action->modalContent(
+        view('filament.modals.project-employees', [
+            'project'                => $record,
+            'employeesByShift'       => $employeesByShift,
+            'employeesByZone'        => $employeesByZone,
+            // نفس الدالة التي تستخدمها في مورد المواقع (تُعيد HTML جاهز)
+            'calculateWorkPattern'   => [\App\Filament\Resources\EmployeeProjectRecordResource::class, 'calculateWorkPattern'],
+        ])
+    );
+})
+
+
+
                     ),
 
                 Tables\Columns\IconColumn::make('status')
@@ -167,9 +182,9 @@ class ProjectResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Updated At')),
-                    Tables\Columns\ToggleColumn::make('enable_face_verification')
-    ->label('التحقق بالوجه')
-    ->sortable()
+                Tables\Columns\ToggleColumn::make('enable_face_verification')
+                    ->label('التحقق بالوجه')
+                    ->sortable()
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('area_id')
@@ -183,73 +198,73 @@ class ProjectResource extends Resource
             ])
             ->actions([
 
-             
 
-Tables\Actions\Action::make('add_members_to_group')
-    ->label('➕ إضافة أعضاء للجروب')
-    // ->icon('heroicon-o-user-plus')
-    ->color('primary')
-    ->visible(fn($record) => $record->has_whatsapp_group && $record->whatsapp_group_id)
-    ->form([
-        \App\Forms\Components\EmployeeSelectV2::make('employee_ids')
-            ->label('اختر الموظفين لإرسال رابط دعوة')
-            ->multiple()
-            ->required()
-    ])
-    ->action(function (Project $record, array $data) {
-        $groupJid = $record->whatsapp_group_id;
 
-        // جلب أرقام الجوال للموظفين المحددين
-        $mobileNumbers = \App\Models\Employee::whereIn('id', $data['employee_ids'])
-            ->pluck('mobile_number')
-            ->map(fn($num) => preg_replace('/[^0-9]/', '', $num))
-            ->filter(fn($num) => strlen($num) >= 10)
-            ->values()
-            ->toArray();
+                Tables\Actions\Action::make('add_members_to_group')
+                    ->label('➕ إضافة أعضاء للجروب')
+                    // ->icon('heroicon-o-user-plus')
+                    ->color('primary')
+                    ->visible(fn($record) => $record->has_whatsapp_group && $record->whatsapp_group_id)
+                    ->form([
+                        \App\Forms\Components\EmployeeSelectV2::make('employee_ids')
+                            ->label('اختر الموظفين لإرسال رابط دعوة')
+                            ->multiple()
+                            ->required()
+                    ])
+                    ->action(function (Project $record, array $data) {
+                        $groupJid = $record->whatsapp_group_id;
 
-        if (empty($mobileNumbers)) {
-            \Filament\Notifications\Notification::make()
-                ->title('لم يتم العثور على أرقام جوال صالحة')
-                ->danger()
-                ->send();
-            return;
-        }
+                        // جلب أرقام الجوال للموظفين المحددين
+                        $mobileNumbers = \App\Models\Employee::whereIn('id', $data['employee_ids'])
+                            ->pluck('mobile_number')
+                            ->map(fn($num) => preg_replace('/[^0-9]/', '', $num))
+                            ->filter(fn($num) => strlen($num) >= 10)
+                            ->values()
+                            ->toArray();
 
-        $groupService = new WhatsAppGroupService();
-        $messageService = new WhatsAppMessageService();
+                        if (empty($mobileNumbers)) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('لم يتم العثور على أرقام جوال صالحة')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
 
-        // 1. محاولة الإضافة (ولو لن نستفيد من النتيجة مباشرة)
-        $groupService->addParticipants($groupJid, $mobileNumbers);
+                        $groupService = new WhatsAppGroupService();
+                        $messageService = new WhatsAppMessageService();
 
-        // 2. جلب رابط الدعوة
-        $inviteLink = $groupService->getInviteLink($groupJid);
+                        // 1. محاولة الإضافة (ولو لن نستفيد من النتيجة مباشرة)
+                        $groupService->addParticipants($groupJid, $mobileNumbers);
 
-        if (!$inviteLink) {
-            \Filament\Notifications\Notification::make()
-                ->title('فشل في جلب رابط الدعوة')
-                ->danger()
-                ->send();
-            return;
-        }
+                        // 2. جلب رابط الدعوة
+                        $inviteLink = $groupService->getInviteLink($groupJid);
 
-        // 3. إرسال رسالة لكل رقم برابط الدعوة
-        foreach ($mobileNumbers as $number) {
-            $messageService->sendMessage($number, "تمت إضافتك إلى مجموعة المشروع: {$record->name}\nانضم عبر الرابط:\n{$inviteLink}");
-        }
+                        if (!$inviteLink) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('فشل في جلب رابط الدعوة')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
 
-        \Filament\Notifications\Notification::make()
-            ->title('📤 تم إرسال رابط الدعوة')
-            ->body("عدد الرسائل المرسلة: " . count($mobileNumbers))
-            ->success()
-            ->send();
-    }),
+                        // 3. إرسال رسالة لكل رقم برابط الدعوة
+                        foreach ($mobileNumbers as $number) {
+                            $messageService->sendMessage($number, "تمت إضافتك إلى مجموعة المشروع: {$record->name}\nانضم عبر الرابط:\n{$inviteLink}");
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('📤 تم إرسال رابط الدعوة')
+                            ->body("عدد الرسائل المرسلة: " . count($mobileNumbers))
+                            ->success()
+                            ->send();
+                    }),
 
 
                 Tables\Actions\Action::make('create_whatsapp_group')
                     ->label('تفعيل جروب واتساب')
                     ->icon('heroicon-o-chat-bubble-left-right')
                     ->color('success')
-                    ->visible(fn ($record) => ! $record->has_whatsapp_group)
+                    ->visible(fn($record) => ! $record->has_whatsapp_group)
                     ->requiresConfirmation()
                     ->modalHeading('تأكيد إنشاء جروب واتساب')
                     ->modalDescription('سيتم إنشاء جروب وإرسال رابط دعوة لمن لم يُضاف تلقائيًا.')
