@@ -1,5 +1,5 @@
-{{-- @if(app()->isProduction() && config('services.clarity.id')) --}}
-@if(config('services.clarity.id'))
+@if(app()->isProduction() && config('services.clarity.id'))
+{{-- @if(config('services.clarity.id')) --}}
 <script>
   (function(c,l,a,r,i,t,y){
       c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
