@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Zone;
 
 use Illuminate\Support\Arr;
-    use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB;
 use App\Models\Shift;
 
 class EmployeeStatusController extends Controller
 {
+
+    // ⚙️ عتبة الثبات (دقائق)
+    private const STATIONARY_MINUTES = 10;
     /**
      * جلب بيانات حالات الموظفين مع بيانات الموظف المختصرة.
      */
@@ -56,6 +59,11 @@ class EmployeeStatusController extends Controller
                 ];
             }
 
+            // ✅ الفصل بين داخل/خارج النطاق
+            $status->is_stationary_inside  = (bool) ($status->is_stationary && $status->is_inside);
+            $status->is_stationary_outside = (bool) ($status->is_stationary && !$status->is_inside);
+
+
             return $status;
         });
 
@@ -81,6 +89,10 @@ class EmployeeStatusController extends Controller
         $lastLocation = $request->input('last_location');
         $zoneId = $request->input('zone_id');
         $now = Carbon::now('Asia/Riyadh');
+
+        $motionDetected = $request->has('motion_detected')
+            ? $request->boolean('motion_detected')
+            : null;
 
         $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
         $status->last_seen_at = $now;
@@ -125,15 +137,27 @@ class EmployeeStatusController extends Controller
             }
         }
 
+        if ($motionDetected === true) {
+            $status->last_movement_at = $now;
+            $status->is_stationary    = false;
+        } elseif ($motionDetected === false) {
+            if (!$status->last_movement_at) {
+                $status->last_movement_at = $now;
+                $status->is_stationary    = false;
+            } else {
+                $minutes = $status->last_movement_at->diffInMinutes($now);
+                $status->is_stationary = $minutes >= self::STATIONARY_MINUTES; // 10 دقائق
+            }
+        }
         $status->save();
 
-           $employee = \App\Models\Employee::find($employeeId);
-if ($employee && $status->is_inside === true) {
-    $employee->updateQuietly([
-        'out_of_zone' => false,
-        'last_active' => $now,
-    ]);
-}
+        $employee = \App\Models\Employee::find($employeeId);
+        if ($employee && $status->is_inside === true) {
+            $employee->updateQuietly([
+                'out_of_zone' => false,
+                'last_active' => $now,
+            ]);
+        }
 
         return response()->json(['message' => 'Employee status updated successfully']);
     }
@@ -144,19 +168,22 @@ if ($employee && $status->is_inside === true) {
             $location = json_decode($location, true);
         }
 
-        $lat1 = (float) Arr::get($location, 'lat');
-        $lon1 = (float) Arr::get($location, 'long');
+        // 👈 fallback ذكي بدون normalize شامل
+        $lat1 = Arr::get($location, 'lat')  ?? Arr::get($location, 'latitude');
+        $lon1 = Arr::get($location, 'long') ?? Arr::get($location, 'lng') ?? Arr::get($location, 'longitude');
 
-        if (! $lat1 || ! $lon1) {
-            return true; // ← نعتبره داخل النطاق لحماية النظام من الأعطال
+        if (!is_numeric($lat1) || !is_numeric($lon1)) {
+            return true; // نفس سلوكك الوقائي السابق
         }
 
-        $lat2 = (float) $zone->lat;
-        $lon2 = (float) $zone->longg;
+        $lat1 = (float) $lat1;
+        $lon1 = (float) $lon1;
+
+        $lat2   = (float) $zone->lat;
+        $lon2   = (float) $zone->longg;
         $radius = $zone->area ?? 50;
 
         $earthRadius = 6371000;
-
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
@@ -172,32 +199,33 @@ if ($employee && $status->is_inside === true) {
 
 
 
-public function getEmployeeStatusInActiveShifts()
-{
-    $enabledShifts = Shift::with(['zone.pattern'])
-        ->where('status', true)
-        ->where('exclude_from_auto_absence', false)
-        ->get();
 
-    $activeShiftIds = [];
+    public function getEmployeeStatusInActiveShifts()
+    {
+        $enabledShifts = Shift::with(['zone.pattern'])
+            ->where('status', true)
+            ->where('exclude_from_auto_absence', false)
+            ->get();
 
-    foreach ($enabledShifts as $shift) {
-        [$isActive] = $shift->getShiftActiveStatus2(now());
-        if ($isActive) {
-            $activeShiftIds[] = $shift->id;
+        $activeShiftIds = [];
+
+        foreach ($enabledShifts as $shift) {
+            [$isActive] = $shift->getShiftActiveStatus2(now());
+            if ($isActive) {
+                $activeShiftIds[] = $shift->id;
+            }
         }
-    }
 
-    if (empty($activeShiftIds)) {
-        return response()->json([
-            'data' => [],
-            'message' => 'لا توجد ورديات حالية نشطة.',
-        ]);
-    }
+        if (empty($activeShiftIds)) {
+            return response()->json([
+                'data' => [],
+                'message' => 'لا توجد ورديات حالية نشطة.',
+            ]);
+        }
 
-    $shiftIdsStr = implode(',', $activeShiftIds);
+        $shiftIdsStr = implode(',', $activeShiftIds);
 
-    $results = DB::select("
+        $results = DB::select("
         SELECT 
             es.id,
             es.employee_id,
@@ -211,6 +239,10 @@ public function getEmployeeStatusInActiveShifts()
             es.updated_at,
             es.is_inside,
             es.notification_enabled,
+
+            es.is_stationary,
+            es.last_movement_at,
+
             p.name AS project_name,
             z.name AS zone_name,
             s.name AS shift_name
@@ -237,11 +269,57 @@ public function getEmployeeStatusInActiveShifts()
             END
     ");
 
-    return response()->json([
-        'data' => $results,
-    ]);
-}
+        return response()->json([
+            'data' => $results,
+        ]);
+    }
 
 
 
+    /**
+     * تُعيد مصفوفة قياسية: ['lat' => float, 'long' => float]
+     * تقبل مفاتيح: lat/long أو latitude/longitude أو lat/lng
+     * وتتعامل مع string/array/JSON.
+     */
+    private function normalizeLocation($location): ?array
+    {
+        if (empty($location)) {
+            return null;
+        }
+
+        if (is_string($location)) {
+            $decoded = json_decode($location, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $location = $decoded;
+            } else {
+                return null;
+            }
+        }
+
+        if (!is_array($location)) {
+            return null;
+        }
+
+        // جرّب كل الأسماء المحتملة
+        $lat  = $location['lat']
+            ?? $location['latitude']
+            ?? null;
+
+        $long = $location['long']
+            ?? $location['longitude']
+            ?? $location['lng']
+            ?? null;
+
+        // حوّل إلى float لو كانت قيم نصية
+        if ($lat !== null && $long !== null) {
+            $lat  = is_numeric($lat)  ? (float) $lat  : null;
+            $long = is_numeric($long) ? (float) $long : null;
+        }
+
+        if ($lat === null || $long === null) {
+            return null;
+        }
+
+        return ['lat' => $lat, 'long' => $long];
+    }
 }

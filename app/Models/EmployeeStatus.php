@@ -25,6 +25,9 @@ class EmployeeStatus extends Model
         'last_present_at',
         'exclude_from_absence_report',
 
+             'is_stationary',      // هل الجهاز ساكن
+        'last_movement_at',   // آخر وقت تحرك فيه
+
     ];
 
     /**
@@ -40,6 +43,9 @@ class EmployeeStatus extends Model
 
         'last_present_at' => 'date',
         'exclude_from_absence_report' => 'boolean',
+
+      'is_stationary' => 'boolean',
+        'last_movement_at' => 'datetime',
 
     ];
 
