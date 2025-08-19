@@ -43,6 +43,9 @@ class Settings extends Page
             'whatsapp_notifications' => false,
                 'show_secure_code_widget' => false, // ✅ جديد
 
+                 'face_verification_enabled' => false,
+    'face_verification_required' => false,
+
         ];
     
         $this->settings = array_merge($defaultSettings, $this->settings);
@@ -99,6 +102,19 @@ class Settings extends Page
                 ->label('تفعيل التغطيات')
                 ->default($this->settings['coverages_enabled'])
                 ->reactive(),
+
+                Forms\Components\Toggle::make('settings.face_verification_enabled')
+    ->label('تفعيل التحقق بالوجه')
+    ->default($this->settings['face_verification_enabled'] ?? false)
+    ->reactive(),
+
+Forms\Components\Toggle::make('settings.face_verification_required')
+    ->label('التحقق بالوجه إجباري')
+    ->helperText('عند التفعيل، لن يُسمح بالحضور بدون بصمة الوجه')
+    ->default($this->settings['face_verification_required'] ?? false)
+    ->visible(fn ($get) => $get('settings.face_verification_enabled') === true)
+    ->reactive(),
+
             
             Forms\Components\Toggle::make('settings.show_attendance_log')
                 ->label('عرض سجل التحضير')
