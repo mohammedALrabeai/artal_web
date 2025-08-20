@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\EmployeeStatusController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\AssignmentReportController;
+use App\Http\Controllers\AttendanceRenewalController;
 use App\Http\Controllers\Auth\EmployeeAuthController;
 use App\Http\Controllers\EmployeeCoordinateController;
 use App\Http\Controllers\Api\ManulAttendanceController;
@@ -450,3 +451,10 @@ Route::get('/face/employees/{employee}/today', [FaceAuthController::class, 'toda
 Route::get('/face/today', [FaceAuthController::class, 'todayVerificationsQuery']); // ?employee_id=123
 
 
+// routes/api.php
+
+// 1) باستخدام Route Param:
+Route::post('/attendances/{attendance}/renewals', [AttendanceRenewalController::class, 'store']);
+
+// 2) بدون Route Param (تمرير attendance_id في البودي):
+Route::post('/attendance-renewals', [AttendanceRenewalController::class, 'store']);

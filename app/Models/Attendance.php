@@ -98,4 +98,72 @@ public function scopeLastToday($q, int $employeeId)
             ->logOnlyDirty() // تسجيل الحقول التي تغيرت فقط
             ->dontSubmitEmptyLogs(); // تجاهل التعديلات الفارغة
     }
+
+
+    // داخل ملف app/Models/Attendance.php
+
+// 1) العلاقات
+public function renewals()
+{
+    return $this->hasMany(\App\Models\AttendanceRenewal::class);
+}
+
+public function lastRenewal()
+{
+    // آخر تجديد بحسب renewed_at
+    return $this->hasOne(\App\Models\AttendanceRenewal::class)->latestOfMany('renewed_at');
+}
+
+// 2) مساعدات للواجهة/المنطق
+/**
+ * وقت آخر تجديد (إن وجد)
+ */
+public function lastRenewedAt(): ?\Illuminate\Support\Carbon
+{
+    return $this->lastRenewal?->renewed_at;
+}
+
+/**
+ * هل نحن داخل نافذة التجديد (30 دقيقة حسب الإعداد)؟
+ * يرجع false إذا لا يوجد أي تجديد بعد.
+ */
+public function isWithinRenewalWindow(?\Illuminate\Support\Carbon $now = null): bool
+{
+    $last = $this->lastRenewedAt();
+    if (!$last) {
+        return false;
+    }
+
+    $now ??= now();
+    $minutes = (int) config('attendance.renewal_window_minutes', 30);
+
+    return $last->diffInMinutes($now) < $minutes;
+}
+
+/**
+ * وقت انتهاء النافذة الحالية (لإظهار عدّاد تنازلي في الواجهة)
+ */
+public function renewalExpiresAt(): ?\Illuminate\Support\Carbon
+{
+    $last = $this->lastRenewedAt();
+    if (!$last) {
+        return null;
+    }
+
+    return $last->copy()->addMinutes((int) config('attendance.renewal_window_minutes', 30));
+}
+
+/**
+ * مُنشئ مختصر لتجديد جديد (اختياري للاستخدام المباشر)
+ */
+public function renew(string $kind = 'manual', string $status = 'ok', ?array $payload = null): \App\Models\AttendanceRenewal
+{
+    return $this->renewals()->create([
+        'renewed_at' => now(),
+        'kind'       => $kind,
+        'status'     => $status,
+        'payload'    => $payload,
+    ]);
+}
+
 }
