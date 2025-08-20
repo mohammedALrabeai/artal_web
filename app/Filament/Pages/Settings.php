@@ -3,6 +3,7 @@ namespace App\Filament\Pages;
 
 use Filament\Forms;
 use App\Models\Setting;
+use Filament\Forms\Get;
 use Filament\Pages\Page;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
@@ -45,6 +46,9 @@ class Settings extends Page
 
                  'face_verification_enabled' => false,
     'face_verification_required' => false,
+    'show_renewal_button' => false,
+    'renewal_duration_minutes' => null, 
+
 
         ];
     
@@ -102,6 +106,19 @@ class Settings extends Page
                 ->label('تفعيل التغطيات')
                 ->default($this->settings['coverages_enabled'])
                 ->reactive(),
+
+                Forms\Components\Toggle::make('settings.show_renewal_button')
+    ->label('إظهار زر التجديد')
+    ->default($this->settings['show_renewal_button'] ?? false)
+    ->reactive(),
+    Forms\Components\TextInput::make('settings.renewal_duration_minutes')
+    ->label('مدة التجديد (بالدقائق)')
+    ->numeric()
+    ->minValue(1)
+    ->required(fn (Get $get) => (bool) $get('settings.show_renewal_button'))
+    ->visible(fn (Get $get) => (bool) $get('settings.show_renewal_button'))
+    ->default($this->settings['renewal_duration_minutes'] ?? null),
+
 
                 Forms\Components\Toggle::make('settings.face_verification_enabled')
     ->label('تفعيل التحقق بالوجه')

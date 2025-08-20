@@ -82,6 +82,7 @@ class Employee extends Model
         'face_enrollment_status',
         'face_enrolled_at',
         'face_last_update_at',
+        'face_image',
     ];
 
     protected $casts = [
@@ -91,15 +92,50 @@ class Employee extends Model
         // 'status' => 'boolean',
     ];
 
-    public function markFaceEnrolled(): void
-    {
-        $now = now('Asia/Riyadh');
-        $this->forceFill([
-            'face_enrollment_status' => self::FACE_ENROLLED,
-            'face_enrolled_at'       => $this->face_enrolled_at ?: $now,
-            'face_last_update_at'    => $now,
-        ])->save();
+   public function markFaceEnrolled(?string $faceImagePath = null): bool
+{
+    $now = now('Asia/Riyadh');
+
+    $data = [
+        'face_enrollment_status' => self::FACE_ENROLLED,
+        'face_enrolled_at'       => $this->face_enrolled_at ?: $now,
+        'face_last_update_at'    => $now,
+    ];
+
+    if (!empty($faceImagePath)) {
+        $data['face_image'] = $faceImagePath;
     }
+
+    try {
+        // جرّب saveQuietly لتجنّب أي Observers/Activity قد تعيق الحفظ
+        $this->forceFill($data);
+        $dirty = $this->isDirty();
+
+        if ($dirty) {
+            $saved = $this->saveQuietly(); // ← جرّب saveQuietly
+        } else {
+            $saved = true;
+        }
+
+        \Log::info('markFaceEnrolled result', [
+            'employee_id' => $this->id,
+            'dirty'       => $dirty,
+            'saved'       => $saved,
+            'face_image'  => $this->face_image,
+            'status'      => $this->face_enrollment_status,
+        ]);
+
+        return (bool) $saved;
+    } catch (\Throwable $e) {
+        \Log::error('markFaceEnrolled failed', [
+            'employee_id' => $this->id ?? null,
+            'error'       => $e->getMessage(),
+        ]);
+        return false;
+    }
+}
+
+
 
     // علاقة مع المستخدم الذي أضاف الموظف
     public function addedBy()

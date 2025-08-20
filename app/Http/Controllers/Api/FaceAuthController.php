@@ -113,7 +113,7 @@ class FaceAuthController extends Controller
 
         // ⚠️ إن رغبت: تحديث حالة الموظف إلى enrolled (لو لديك الدالة جاهزة)
         $employee = \App\Models\Employee::find($data['employee_id']);
-        $employee?->markFaceEnrolled();
+        $employee?->markFaceEnrolled($imagePath);
 
         return response()->json([
             'success'     => true,

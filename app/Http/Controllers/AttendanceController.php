@@ -1779,7 +1779,7 @@ public function getAttendanceStatusV7(Request $request)
         /* A) الحالة اللحظية + الإجازات (كما هي) */
         $threshold = now()->subHours(12);
 
-        $employeeStatuses = \App\Models\EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number')
+        $employeeStatuses = \App\Models\EmployeeStatus::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number,national_id')
             ->whereHas('employee.attendances', function ($query) use ($threshold) {
                 $query->where(function ($q) use ($threshold) {
                     $q->where('check_in_datetime', '>=', $threshold)
@@ -1800,7 +1800,7 @@ public function getAttendanceStatusV7(Request $request)
             ->keyBy('employee_id');
 
         /* B) جميع إسنادات هذا المشروع/الموقع النشطة في هذا التاريخ (لنجمع MAE/Manual مرّة واحدة) */
-        $allEprs = \App\Models\EmployeeProjectRecord::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number,status')
+        $allEprs = \App\Models\EmployeeProjectRecord::with('employee:id,first_name,father_name,grandfather_name,family_name,mobile_number,status,national_id')
             ->where('project_id', $projectId)
             ->where('zone_id', $zoneId)
             ->where('status', true)
@@ -1934,6 +1934,7 @@ public function getAttendanceStatusV7(Request $request)
                      'employee_project_record_id' => $record->id,
                     'employee_id'     => $record->employee_id,
                     'employee_name'   => $employee->name(),
+                    'national_id'     => $employee->national_id,
                     // تلقائي
                     'status'          => $attendance?->status ?? 'absent',
                     'check_in'        => $attendance?->check_in,
@@ -2057,6 +2058,7 @@ $covManualTodayByMaeId = $covMaeIds
 
         'employee_id'    => $attendance->employee_id,
         'employee_name'  => $employee->name(),
+        'national_id'    => $employee->national_id,
         'status'         => 'coverage',
         'check_in'       => $attendance->check_in,
         'check_out'      => $attendance->check_out,
