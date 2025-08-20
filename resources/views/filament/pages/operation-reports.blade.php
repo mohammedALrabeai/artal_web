@@ -35,7 +35,10 @@
                 <div class="space-y-2">
                     <label for="to" class="text-sm font-medium text-gray-700 dark:text-gray-300">إلى تاريخ</label>
                     <input type="date" id="to" name="to" required
-                        class="w-full border-gray-300 rounded-lg shadow-sm filament-input dark:border-gray-700" />
+       value="{{ old('to', now('Asia/Riyadh')->toDateString()) }}"
+
+       class="w-full border-gray-300 rounded-lg shadow-sm filament-input dark:border-gray-700" />
+
                 </div>
             </div>
 

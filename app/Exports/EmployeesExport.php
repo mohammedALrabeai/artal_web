@@ -95,7 +95,7 @@ class EmployeesExport implements FromCollection, WithHeadings, WithMapping
             $employee->actual_start,
             $employee->contract_start,
             $employee->qualification,
-            $employee->birth_place,
+            $employee->city,
             $employee->insurance_number,
             $employee->preferred_zone_name, // اسم الموقع المرشح ✅ جديد
             // optional($employee->currentZone)->name,

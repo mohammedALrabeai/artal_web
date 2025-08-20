@@ -99,6 +99,13 @@ class ShiftShortageResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
 
+                    Tables\Columns\TextColumn::make('work_pattern')
+    ->label('نمط العمل (30 يوم)')
+    ->html() // لعرض HTML
+    ->toggleable(isToggledHiddenByDefault: false) // غيّرها لو تحب يكون مخفي افتراضيًا
+    ->getStateUsing(fn (Shift $record) => self::calculateShiftWorkPattern($record)),
+
+
             ])
             ->filters([
                 // فلتر لحالة المشروع (نشط / معطل / الكل)
@@ -174,17 +181,18 @@ class ShiftShortageResource extends Resource
     //     });
     // }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->where('status', 1) // حالة الوردية نفسها
-            ->whereHas('zone', function ($zoneQuery) {
-                $zoneQuery->where('status', 1)
-                    ->whereHas('project', function ($projectQuery) {
-                        $projectQuery->where('status', 1);
-                    });
-            });
-    }
+   public static function getEloquentQuery(): Builder
+{
+    return parent::getEloquentQuery()
+        ->with(['zone.pattern', 'zone.project.area']) // ✅ مهم للعمود الجديد
+        ->where('status', 1) // حالة الوردية نفسها
+        ->whereHas('zone', function ($zoneQuery) {
+            $zoneQuery->where('status', 1)
+                ->whereHas('project', function ($projectQuery) {
+                    $projectQuery->where('status', 1);
+                });
+        });
+}
 
     public static function getPages(): array
     {
@@ -199,4 +207,105 @@ class ShiftShortageResource extends Resource
             ShiftEmployeeShortageOverview::class,
         ];
     }
+
+
+    private static function calculateShiftWorkPattern(Shift $shift, int $days = 30): string
+{
+    // تحقق من وجود النمط
+    $pattern = $shift->zone->pattern ?? null;
+    if (! $pattern) {
+        return '<span style="color: red; font-weight: bold; padding: 4px; display: inline-block; width: 100px; text-align: center;">❌ غير متوفر</span>';
+    }
+
+    $workingDays = (int) $pattern->working_days;
+    $offDays     = (int) $pattern->off_days;
+    $cycleLength = max(1, $workingDays + $offDays); // أمان
+
+    // نبدأ حساب الدورة من تاريخ بداية الوردية
+    $shiftStart = \Illuminate\Support\Carbon::parse($shift->start_date);
+    $today      = \Illuminate\Support\Carbon::now('Asia/Riyadh');
+
+    $out = [];
+
+    for ($i = 0; $i < $days; $i++) {
+        $dateObj     = $today->copy()->addDays($i);
+        $displayDate = $dateObj->format('d M');
+
+        // قبل بداية الوردية: نعرضها كغير سارية
+        if ($dateObj->lt($shiftStart)) {
+            $out[] = "
+            <span style='
+                padding: 4px;
+                border-radius: 5px;
+                background-color: #9E9E9E;
+                color: white;
+                display: inline-block;
+                width: 110px;
+                height: 30px;
+                margin-bottom: 0px;
+                text-align: center;
+                margin-right: 5px;
+                font-weight: bold;
+            '>
+                $displayDate - 🕒
+            </span>";
+            continue;
+        }
+
+        // حساب موقع اليوم داخل الدورة
+        $totalDaysSinceStart = $shiftStart->diffInDays($dateObj);
+        $dayInCycle          = $totalDaysSinceStart % $cycleLength;
+        $cycleNumber         = (int) floor($totalDaysSinceStart / $cycleLength) + 1;
+
+        $isWorkDay = $dayInCycle < $workingDays;
+
+        // لون اليوم: أخضر عمل / أحمر إجازة
+        $color = $isWorkDay ? 'green' : 'red';
+        $label = '';
+
+        // تحديد صباح/مساء لأيام العمل فقط وفق نوع الوردية
+        if ($isWorkDay) {
+            // افتراضيًا تناوب حسب رقم الدورة
+            $shiftType = ($cycleNumber % 2 === 1) ? 'ص' : 'م';
+
+            // احترام نوع الوردية إن كان محددًا
+            switch ($shift->type) {
+                case 'morning':
+                    $shiftType = 'ص';
+                    break;
+                case 'evening':
+                    $shiftType = 'م';
+                    break;
+                case 'morning_evening':
+                    // اترك الافتراضي (أو ثبّت 'ص' لو تفضّل)
+                    break;
+                case 'evening_morning':
+                    $shiftType = ($cycleNumber % 2 === 1) ? 'م' : 'ص';
+                    break;
+            }
+
+            $label = " - {$shiftType}";
+        }
+
+        $out[] = "
+        <span style='
+            padding: 4px;
+            border-radius: 5px;
+            background-color: {$color};
+            color: white;
+            display: inline-block;
+            width: 110px;
+            height: 30px;
+            margin-bottom: 0px;
+            text-align: center;
+            margin-right: 5px;
+            font-weight: bold;
+        '>
+            {$displayDate}{$label}
+        </span>";
+    }
+
+    return implode(' ', $out);
+}
+
 }
