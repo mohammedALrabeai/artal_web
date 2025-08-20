@@ -209,6 +209,15 @@
                                 textAlign: 'center'
                             }
                         }];
+
+                        const statusOrder = [
+                            '', ' ', 'OFF', 'D', 'D8', 'N', 'N8', 'N12', 'M', 'M8', 'M12', 'A',
+                            'PV', 'UV', 'SL', 'UL', 'COV', 'BEFORE', 'AFTER', 'X'
+                        ];
+                        const rank = s => {
+                            const i = statusOrder.indexOf((s || '').toUpperCase());
+                            return i === -1 ? 999 : i;
+                        };
                         const dayColumns = [];
                         for (let i = 1; i <= daysInMonth; i++) {
                             const day = String(i).padStart(2, '0');
@@ -229,6 +238,17 @@
                                     currentDateStr: currentDateStr
                                 },
                                 cellDataType: false,
+                                sortable: true,
+                                comparator: (a, b) => {
+                                    const sa = (a && typeof a === 'object') ? (a.status ?? '') : (a ?? '');
+                                    const sb = (b && typeof b === 'object') ? (b.status ?? '') : (b ?? '');
+                                    // ترتيب مخصص حسب المصفوفة أعلاه:
+                                    return rank(sa) - rank(sb);
+
+                                    // أو لو تفضل ترتيباً أبجدياً بسيطاً:
+                                    // return sa.localeCompare(sb, 'ar');
+                                },
+                                getQuickFilterText: params => params.value?.status ?? '',
                                 // valueFormatter: p => p.value ? p.value.status : '',
                                 valueFormatter: params => params.value ? params.value.status : '',
                                 onCellDoubleClicked: (event) => {
