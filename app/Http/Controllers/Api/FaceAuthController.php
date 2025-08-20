@@ -9,6 +9,11 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Models\EmployeeFaceEvent;
+use App\Models\Employee;
+
+
+
 
 class FaceAuthController extends Controller
 {
@@ -114,6 +119,31 @@ class FaceAuthController extends Controller
         // ⚠️ إن رغبت: تحديث حالة الموظف إلى enrolled (لو لديك الدالة جاهزة)
         $employee = \App\Models\Employee::find($data['employee_id']);
         $employee?->markFaceEnrolled($imagePath);
+
+        try {
+            if ($imagePath) {
+                EmployeeFaceEvent::create([
+                    'employee_id' => (int) $data['employee_id'],
+                    'type'        => EmployeeFaceEvent::TYPE_ENROLL,
+                    'disk'        => $disk,          // 'public'
+                    'path'        => $imagePath,     // مثل employees/{id}/face/enrollment/...
+                    'captured_at' => now('Asia/Riyadh'),
+                    'rek_face_id' => $record['FaceId']  ?? null,
+                    'rek_image_id' => $record['ImageId'] ?? null,
+                    'meta'        => [
+                        'source' => 'mobile',
+                        'ip'     => $request->ip(),
+                        // أضف ما تحتاجه
+                    ],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Enroll event db save failed', [
+                'employee_id' => $data['employee_id'],
+                'error'       => $e->getMessage(),
+            ]);
+        }
+
 
         return response()->json([
             'success'     => true,
@@ -243,6 +273,33 @@ class FaceAuthController extends Controller
 
         if (!$match) {
             [$imagePath, $imageUrl] = $saveImage();
+
+            // NEW (DB event): حفظ سجل التحقق حتى لو فشل
+            try {
+                if ($imagePath) {
+                    EmployeeFaceEvent::create([
+                        'employee_id' => (int) $data['employee_id'],
+                        'type'        => EmployeeFaceEvent::TYPE_VERIFY,
+                        'disk'        => $disk,
+                        'path'        => $imagePath,
+                        'captured_at' => now($tz),
+                        'similarity'  => null,
+                        'rek_face_id' => null,
+                        'rek_image_id' => null,
+                        'meta'        => [
+                            'passed'    => false,
+                            'threshold' => (float)($data['threshold'] ?? 95.0),
+                            'ip'        => $request->ip(),
+                        ],
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Verify event db save failed (no match)', [
+                    'employee_id' => $data['employee_id'],
+                    'error'       => $e->getMessage(),
+                ]);
+            }
+
             return response()->json([
                 'success'    => false,
                 'passed'     => false,
@@ -251,6 +308,7 @@ class FaceAuthController extends Controller
                 'image_url'  => $imageUrl,
             ], 401);
         }
+
 
         $similarity       = (float)($match['Similarity'] ?? 0);
         $matchedExternal  = $match['Face']['ExternalImageId'] ?? null;
@@ -261,6 +319,37 @@ class FaceAuthController extends Controller
 
         // احفظ الصورة دائمًا سواء نجحت المطابقة أم لا
         [$imagePath, $imageUrl] = $saveImage();
+
+        // احفظ الصورة دائمًا سواء نجحت المطابقة أم لا
+
+
+        // NEW (DB event): حفظ سجل التحقق
+        try {
+            if ($imagePath) {
+                EmployeeFaceEvent::create([
+                    'employee_id' => $employeeId,
+                    'type'        => EmployeeFaceEvent::TYPE_VERIFY,
+                    'disk'        => $disk,
+                    'path'        => $imagePath,
+                    'captured_at' => now($tz),
+                    'similarity'  => $similarity, // نسبة المطابقة
+                    'rek_face_id' => $match['Face']['FaceId']  ?? null,
+                    'rek_image_id' => $match['Face']['ImageId'] ?? null,
+                    'meta'        => [
+                        'passed'              => (bool) $passed,
+                        'threshold'           => $threshold,
+                        'matched_employee_id' => $matchedEmployeeId,
+                        'ip'                  => $request->ip(),
+                    ],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Verify event db save failed', [
+                'employee_id' => $employeeId,
+                'error'       => $e->getMessage(),
+            ]);
+        }
+
 
         return response()->json([
             'success'             => $passed,
@@ -293,4 +382,91 @@ class FaceAuthController extends Controller
         }
         return base64_decode($b64);
     }
+
+
+
+    /**
+ * GET /api/face/employees/{employee}/today
+ * يرجع صورة التسجيل الأساسية + جميع تحقق اليوم مع التفاصيل
+ */
+public function todayVerifications(int $employee, Request $request)
+{
+    $tz = 'Asia/Riyadh';
+
+    /** @var Employee|null $emp */
+    $emp = Employee::find($employee);
+    if (!$emp) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الموظف غير موجود.',
+        ], 404);
+    }
+
+    // صورة التسجيل الأساسية (من جدول الأحداث إن وجدت، وإلا من حقل employee.face_image)
+    $baseEnroll = EmployeeFaceEvent::latestEnrollFor($emp->id)->first();
+    $baseImageUrlFromEmployee = $emp->face_image
+        ? Storage::disk('public')->url($emp->face_image)
+        : null;
+
+    // تحقق اليوم
+    $todayVerifies = EmployeeFaceEvent::forEmployee($emp->id)
+        ->verifies()
+        ->today($tz)
+        ->latestFirst()
+        ->get();
+
+    // تحويل النتائج إلى مصفوفة مرتبة
+    $verifications = $todayVerifies->map(function (EmployeeFaceEvent $ev) {
+        return [
+            'id'         => $ev->id,
+            'captured_at'=> optional($ev->captured_at)->timezone('Asia/Riyadh')->format('Y-m-d H:i:s'),
+            'similarity' => $ev->similarity !== null ? (float) $ev->similarity : null,
+            'passed'     => (bool) data_get($ev->meta, 'passed', false),
+            'threshold'  => data_get($ev->meta, 'threshold'),
+            'url'        => $ev->url,        // من الـ accessor
+            'thumb_url'  => $ev->thumb_url,  // من الـ accessor (أو نفس الأصل إن لا يوجد مصغّر)
+            'rek_face_id'=> $ev->rek_face_id,
+            'rek_image_id'=> $ev->rek_image_id,
+            'meta'       => $ev->meta,
+        ];
+    })->values();
+
+    return response()->json([
+        'success'      => true,
+        'employee_id'  => $emp->id,
+        'date'         => now($tz)->toDateString(),
+        'base' => [
+            'enrollment_event' => $baseEnroll ? [
+                'id'          => $baseEnroll->id,
+                'captured_at' => optional($baseEnroll->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                'url'         => $baseEnroll->url,
+                'thumb_url'   => $baseEnroll->thumb_url,
+                'path'        => $baseEnroll->path,
+                'disk'        => $baseEnroll->disk,
+                'rek_face_id' => $baseEnroll->rek_face_id,
+                'rek_image_id'=> $baseEnroll->rek_image_id,
+            ] : null,
+            'employee_face_image_url' => $baseImageUrlFromEmployee, // fallback (حقل employee.face_image)
+        ],
+        'today' => [
+            'total'         => $verifications->count(),
+            'verifications' => $verifications,
+        ],
+    ]);
+}
+
+/**
+ * GET /api/face/today?employee_id=123
+ * نفس استجابة todayVerifications ولكن عبر كويري بارامتر
+ */
+public function todayVerificationsQuery(Request $request)
+{
+    $data = $request->validate([
+        'employee_id' => 'required|integer',
+    ]);
+
+    return $this->todayVerifications((int) $data['employee_id'], $request);
+}
+
+
 }

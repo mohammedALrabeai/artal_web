@@ -445,5 +445,8 @@ Route::prefix('face')->group(function () {
     Route::post('/enroll', [FaceAuthController::class, 'enroll']); // Enrollment
     Route::post('/verify', [FaceAuthController::class, 'verify']); // Verification
 });
+Route::get('/face/employees/{employee}/today', [FaceAuthController::class, 'todayVerifications']); // RESTful
+// أو:
+Route::get('/face/today', [FaceAuthController::class, 'todayVerificationsQuery']); // ?employee_id=123
 
 
