@@ -245,7 +245,11 @@ class EmployeeStatusController extends Controller
             es.is_stationary,
             es.last_movement_at,
             es.last_renewal_at,
-        TIMESTAMPDIFF(MINUTE, CONVERT_TZ(last_renewal_at,'+00:00','+03:00'), NOW()) AS minutes_since_last_renewal,
+       TIMESTAMPDIFF(
+  MINUTE,
+  es.last_renewal_at,
+  CONVERT_TZ(NOW(), '+00:00', '+03:00')
+) AS minutes_since_last_renewal,
 
             p.name AS project_name,
             z.name AS zone_name,
