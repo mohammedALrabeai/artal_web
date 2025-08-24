@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+
 
 class EmployeeStatus extends Model
 {
@@ -27,6 +29,8 @@ class EmployeeStatus extends Model
 
              'is_stationary',      // هل الجهاز ساكن
         'last_movement_at',   // آخر وقت تحرك فيه
+          'last_renewal_at',
+           'last_renewal_at'      => 'datetime',
 
     ];
 
@@ -55,5 +59,20 @@ class EmployeeStatus extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+     // (اختياري) سكوب سريع للي ما جدّدوا خلال X دقيقة
+    public function scopeRenewalOverdue($query, int $minutes)
+    {
+        return $query->where(function ($q) use ($minutes) {
+            $q->whereNull('last_renewal_at')
+              ->orWhereRaw('TIMESTAMPDIFF(MINUTE, last_renewal_at, NOW()) > ?', [$minutes]);
+        });
+    }
+
+    // (اختياري) أكسسور يحسب الدقائق منذ آخر تجديد
+    public function getMinutesSinceLastRenewalAttribute(): ?int
+    {
+        if (!$this->last_renewal_at instanceof Carbon) return null;
+        return $this->last_renewal_at->diffInMinutes(now());
     }
 }

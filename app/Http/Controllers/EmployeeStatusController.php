@@ -58,7 +58,7 @@ class EmployeeStatusController extends Controller
                     'mobile_number' => $employee->mobile_number,
                 ];
             }
-            
+
             // ✅ الفصل بين داخل/خارج النطاق
             $status->is_stationary_inside  = (bool) ($status->is_stationary && $status->is_inside);
             $status->is_stationary_outside = (bool) ($status->is_stationary && !$status->is_inside);
@@ -224,6 +224,8 @@ class EmployeeStatusController extends Controller
         }
 
         $shiftIdsStr = implode(',', $activeShiftIds);
+        $limit = (int) request('renewal_limit_minutes', 0); // 0 = لا فلترة
+
 
         $results = DB::select("
         SELECT 
@@ -242,6 +244,11 @@ class EmployeeStatusController extends Controller
 
             es.is_stationary,
             es.last_movement_at,
+            es.last_renewal_at,
+            CASE
+                WHEN es.last_renewal_at IS NULL THEN NULL
+                ELSE TIMESTAMPDIFF(MINUTE, es.last_renewal_at, NOW())
+            END AS minutes_since_last_renewal,
 
             p.name AS project_name,
             z.name AS zone_name,
