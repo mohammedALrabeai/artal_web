@@ -365,8 +365,26 @@ class EmployeeResource extends Resource
                 Forms\Components\Wizard\Step::make(__('Contact Information'))
                     ->schema([
                         Forms\Components\TextInput::make('mobile_number')
-                            ->label(__('Mobile Number'))
-                            ->required(),
+    ->label(__('Mobile Number'))
+    ->tel()
+    ->required()
+    // تنظيف أي محارف غير رقمية أثناء الكتابة والحفظ
+    ->afterStateUpdated(function ($state, callable $set) {
+        $set('mobile_number', preg_replace('/\D+/', '', (string) $state));
+    })
+    ->dehydrateStateUsing(fn ($state) => preg_replace('/\D+/', '', (string) $state))
+    // الطول ثابت 12 رقم
+    ->minLength(12)
+    ->maxLength(12)
+    // تحقق صارم: يبدأ بـ 966 ثم 9 أرقام
+    ->rule('regex:/^966\d{9}$/')
+    // رسائل واضحة للمستخدم
+    ->validationMessages([
+        'regex' => 'يجب أن يبدأ الرقم بـ 966 ويتكون من 12 رقمًا (مثال: 9665XXXXXXXX).',
+        'min'   => 'الرقم يجب أن يكون مكوّنًا من 12 رقمًا بالضبط.',
+        'max'   => 'الرقم يجب أن يكون مكوّنًا من 12 رقمًا بالضبط.',
+    ])
+    ->placeholder('9665XXXXXXXX'),
 
                         Forms\Components\TextInput::make('phone_number')
                             ->label(__('Phone Number')),
