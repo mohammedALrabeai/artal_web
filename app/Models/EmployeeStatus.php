@@ -30,7 +30,7 @@ class EmployeeStatus extends Model
              'is_stationary',      // هل الجهاز ساكن
         'last_movement_at',   // آخر وقت تحرك فيه
           'last_renewal_at',
-           'last_renewal_at'      => 'datetime',
+         
 
     ];
 
@@ -50,8 +50,19 @@ class EmployeeStatus extends Model
 
       'is_stationary' => 'boolean',
         'last_movement_at' => 'datetime',
+         'last_renewal_at' => 'datetime', 
 
     ];
+
+    protected $appends = [
+    'minutes_since_last_renewal',
+];
+
+public function getMinutesSinceLastRenewalAttribute(): ?int
+{
+    if (!$this->last_renewal_at instanceof \Illuminate\Support\Carbon) return null;
+    return $this->last_renewal_at->diffInMinutes(now());
+}
 
     /**
      * علاقة الحالة بالموظف.
@@ -70,9 +81,5 @@ class EmployeeStatus extends Model
     }
 
     // (اختياري) أكسسور يحسب الدقائق منذ آخر تجديد
-    public function getMinutesSinceLastRenewalAttribute(): ?int
-    {
-        if (!$this->last_renewal_at instanceof Carbon) return null;
-        return $this->last_renewal_at->diffInMinutes(now());
-    }
+ 
 }
