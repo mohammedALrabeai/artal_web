@@ -245,10 +245,7 @@ class EmployeeStatusController extends Controller
             es.is_stationary,
             es.last_movement_at,
             es.last_renewal_at,
-        CASE 
-          WHEN es.last_renewal_at IS NULL THEN NULL
-          ELSE TIMESTAMPDIFF(MINUTE, es.last_renewal_at, NOW())
-        END AS minutes_since_last_renewal,
+        TIMESTAMPDIFF(MINUTE, CONVERT_TZ(last_renewal_at,'+00:00','+03:00'), NOW()) AS minutes_since_last_renewal,
 
             p.name AS project_name,
             z.name AS zone_name,
