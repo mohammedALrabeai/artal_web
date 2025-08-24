@@ -46,7 +46,7 @@ class AttendanceRenewal extends Model
             // ✅ تحديث لحظي لحقل آخر تجديد وأيضًا آخر حضور كما كان لديك
             \App\Models\EmployeeStatus::query()
                 ->where('employee_id', $attendance->employee_id)
-                ->update(['last_renewal_at' => now()]);
+                ->update(['last_renewal_at' => now('Asia/Riyadh')]);
         });
     }
 }
