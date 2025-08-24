@@ -58,7 +58,7 @@ class EmployeeStatusController extends Controller
                     'mobile_number' => $employee->mobile_number,
                 ];
             }
-
+            
             // ✅ الفصل بين داخل/خارج النطاق
             $status->is_stationary_inside  = (bool) ($status->is_stationary && $status->is_inside);
             $status->is_stationary_outside = (bool) ($status->is_stationary && !$status->is_inside);

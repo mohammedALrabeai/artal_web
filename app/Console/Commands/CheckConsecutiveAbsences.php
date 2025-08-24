@@ -112,7 +112,7 @@ class CheckConsecutiveAbsences extends Command
             try {
                 Mail::send([], [], function ($mail) use ($emails, $fullPath, $htmlMessage) {
                     $mail->to('mohammed.artalgroup@gmail.com')
-                        ->bcc($emails)
+                        ->cc($emails)
                         ->subject('📄 تقرير الغياب المتتالي للموظفين')
                         ->html($htmlMessage)
                         ->attach($fullPath);
