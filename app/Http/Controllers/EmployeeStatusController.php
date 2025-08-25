@@ -116,6 +116,7 @@ public function updateStatus(Request $request)
         'gps_enabled'   => $gpsEnabled,
         'zone_id'       => $zoneId,
         'x_client_source'  => $request->header('X-Client-Source'),
+          'x_hb_reason'      => $request->header('X-Heartbeat-Reason'),
         'has_location'  => (bool) $lastLocation,
         'raw_location'  => is_string($lastLocation) ? 'string' : (is_array($lastLocation) ? 'array' : gettype($lastLocation)),
         'motion_flag'   => $motionDetected,   // true/false/null
