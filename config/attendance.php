@@ -2,5 +2,5 @@
 
 return [
     // نافذة صلاحية التجديد بالدقائق
-    'renewal_window_minutes' => (int) env('ATTENDANCE_RENEWAL_WINDOW', 30),
+    'renewal_window_minutes' => (int) env('ATTENDANCE_RENEWAL_WINDOW', 60),
 ];

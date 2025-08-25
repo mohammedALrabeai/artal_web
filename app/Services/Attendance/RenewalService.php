@@ -31,13 +31,13 @@ class RenewalService
                     ->update(['last_present_at' => now()]);
             }
 
-            $expiresAt = $renewal->renewed_at->copy()->addMinutes(config('attendance.renewal_window_minutes', 30));
+            $expiresAt = $renewal->renewed_at->copy()->addMinutes(config('attendance.renewal_window_minutes', 60));
 
             return [
                 'renewal_id'        => $renewal->id,
                 'attendance_id'     => $attendance->id,
                 'renewed_at'        => $renewal->renewed_at->toIso8601String(),
-                'window_minutes'    => (int) config('attendance.renewal_window_minutes', 30),
+                'window_minutes'    => (int) config('attendance.renewal_window_minutes', 60),
                 'expires_at'        => $expiresAt->toIso8601String(),
                 'seconds_remaining' => max(0, $expiresAt->diffInSeconds(now(), false) * -1),
                 'is_within_window'  => now()->lt($expiresAt),
