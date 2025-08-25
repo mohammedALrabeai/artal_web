@@ -183,13 +183,23 @@ class ZoneResource extends Resource
                     ->label(__('Active'))
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('map_url')
-                    ->label(__('Map'))
-                    ->getStateUsing(fn(Zone $record): string => $record->map_url)
-                    ->formatStateUsing(fn(string $state): string => 'View')
-                    ->url(fn(string $state): string => $state)
-                    ->openUrlInNewTab()
-                    ->sortable(false),
+                // Tables\Columns\TextColumn::make('map_url')
+                //     ->label(__('Map'))
+                //     ->getStateUsing(fn(Zone $record): string => $record->map_url)
+                //     ->formatStateUsing(fn(string $state): string => 'View')
+                //     ->url(fn(string $state): string => $state)
+                //     ->openUrlInNewTab()
+                //     ->sortable(false),
+                    Tables\Columns\TextColumn::make('map_url')
+    ->label('نسخ الموقع')
+    ->getStateUsing(fn (Zone $record): string => $record->map_url) // الحالة = الرابط الحقيقي
+    ->formatStateUsing(fn (): string => 'نسخ الموقع')              // النص المعروض كزر
+    ->copyable()                                                    // يفعّل النسخ
+    ->copyableState(fn (Zone $record): string => $record->map_url)  // ماذا يُنسخ فعليًا
+    ->copyMessage('تم نسخ الرابط ✅')
+    ->copyMessageDuration(1500)
+    ->sortable(false)
+    ->searchable(false),
             ])
             ->headerActions([
                 ExportAction::make()
