@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Shift;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+
 class EmployeeStatusController extends Controller
 {
 
@@ -76,7 +77,9 @@ class EmployeeStatusController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-  public function updateStatus(Request $request)
+
+
+public function updateStatus(Request $request)
 {
     $employee = Auth::user();
     if (! $employee) {
@@ -85,12 +88,11 @@ class EmployeeStatusController extends Controller
 
     $employeeId = (int) $employee->id;
 
-    // ✅ فعّل التتبّع فقط لموظف رقم 1
-    $TRACE_ENABLED = ($employeeId === 1);
-    $TRACE_FINGERPRINT = '[#E1-TRACE]';
-    $TRACE_REQ_ID = Str::uuid()->toString();
+    // ✅ التتبّع فقط لموظف رقم 1
+    $TRACE_ENABLED    = ($employeeId === 1);
+    $TRACE_FINGERPRINT = '[#E1-TRACE:ISIN]';
+    $TRACE_REQ_ID      = Str::uuid()->toString();
 
-    // دالة صغيرة لكتابة اللوج عند الحاجة
     $trace = function (string $message, array $ctx = []) use ($TRACE_ENABLED, $TRACE_FINGERPRINT, $TRACE_REQ_ID) {
         if ($TRACE_ENABLED) {
             Log::info("{$TRACE_FINGERPRINT} [{$TRACE_REQ_ID}] {$message}", $ctx);
@@ -100,7 +102,7 @@ class EmployeeStatusController extends Controller
     $trace('BEGIN updateStatus');
 
     $gpsEnabled          = $request->boolean('gps_enabled', false);
-    $isInsideFromRequest = $request->boolean('is_inside', false); // عند غياب zone_id
+    $isInsideFromRequest = $request->boolean('is_inside', false); // ← يُستخدم فقط عند غياب zone_id
     $lastLocation        = $request->input('last_location');
     $zoneId              = $request->input('zone_id');
     $now                 = Carbon::now('Asia/Riyadh');
@@ -114,36 +116,33 @@ class EmployeeStatusController extends Controller
         'gps_enabled'   => $gpsEnabled,
         'zone_id'       => $zoneId,
         'has_location'  => (bool) $lastLocation,
+        'raw_location'  => is_string($lastLocation) ? 'string' : (is_array($lastLocation) ? 'array' : gettype($lastLocation)),
         'motion_flag'   => $motionDetected,   // true/false/null
         'req_is_inside' => $isInsideFromRequest,
         'now'           => (string) $now,
     ]);
 
     $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
-
     $trace('STATUS loaded', [
-        'exists'              => $status->exists,
-        'prev_last_seen_at'   => optional($status->last_seen_at)->toDateTimeString(),
-        'prev_gps_enabled'    => $status->gps_enabled,
-        'prev_last_gps_at'    => optional($status->last_gps_status_at)->toDateTimeString(),
-        'prev_is_inside'      => $status->is_inside,
-        'prev_last_move_at'   => optional($status->last_movement_at)->toDateTimeString(),
-        'has_prev_location'   => (bool) $status->last_location,
+        'exists'            => $status->exists,
+        'prev_last_seen_at' => optional($status->last_seen_at)->toDateTimeString(),
+        'prev_gps_enabled'  => $status->gps_enabled,
+        'prev_last_gps_at'  => optional($status->last_gps_status_at)->toDateTimeString(),
+        'was_is_inside'     => $status->is_inside,
+        'prev_last_move_at' => optional($status->last_movement_at)->toDateTimeString(),
+        'has_prev_location' => (bool) $status->last_location,
     ]);
 
     $status->last_seen_at = $now;
 
     // تحديث حالة GPS
     if ($status->gps_enabled !== $gpsEnabled) {
-        $trace('GPS change detected', [
-            'from' => $status->gps_enabled,
-            'to'   => $gpsEnabled,
-        ]);
+        $trace('GPS change detected', ['from' => $status->gps_enabled, 'to' => $gpsEnabled]);
         $status->gps_enabled = $gpsEnabled;
         $status->last_gps_status_at = $now;
     }
 
-    // جلب الموقع السابق (من الكائن)
+    // جلب الموقع السابق من الكائن (لا يتم حفظه في الجدول)
     $previousLocation = $status->last_location ?? null;
 
     // تحديث الموقع الحالي
@@ -155,52 +154,118 @@ class EmployeeStatusController extends Controller
         $trace('LOCATION updated', [
             'prev_had_location' => (bool) $previousLocation,
             'curr_has_location' => true,
-            // تجنّب طباعة الإحداثيات كاملة إذا لا تريد إغراق اللوج
         ]);
     }
 
-    // 🧠 منطق تحديد is_inside
+    // 🧠 منطق تحديد is_inside مع تتبّع تفصيلي — دون تغيير المنطق
+    $trace('INPUTS for inside-check', [
+        'zone_id'      => $zoneId,
+        'has_location' => (bool) $lastLocation,
+        'loc_type'     => is_array($status->last_location) ? 'array' : (is_string($lastLocation) ? 'string' : gettype($lastLocation)),
+    ]);
+
     if ($lastLocation) {
+        // تأكد أن last_location مصفوفة
+        if (!is_array($status->last_location)) {
+            try {
+                $status->last_location = json_decode((string)$lastLocation, true);
+            } catch (\Throwable $e) {
+                $trace('LOCATION parse failed', ['error' => $e->getMessage(), 'last_location' => $lastLocation]);
+            }
+        }
+
         if ($zoneId) {
             $zone = Zone::find($zoneId);
-            if ($zone) {
-                $currentInside = $this->isInsideZone($status->last_location, $zone);
-                $previousInside = $previousLocation
-                    ? $this->isInsideZone($previousLocation, $zone)
-                    : true;
+
+            if ($zone && is_array($status->last_location)) {
+                // نفترض حقول Zone: lat, longg, area (متر)
+                $zoneLat   = (float) $zone->lat;
+                $zoneLng   = (float) $zone->longg;
+                $zoneAreaM = (float) $zone->area;
+
+                // المسافة الحالية إلى مركز الـ Zone
+                [$currDistanceM, $currDistanceOk] = $this->calcDistanceMetersSafe(
+                    $status->last_location['latitude'] ?? null,
+                    $status->last_location['longitude'] ?? null,
+                    $zoneLat,
+                    $zoneLng
+                );
+
+                // فحص الداخل الحالي وفق دالتك
+                $currentInside   = $this->isInsideZone($status->last_location, $zone);
+                $previousInside  = false;
+                $prevDistanceM   = null;
+                $prevDistanceOk  = false;
+
+                if ($previousLocation && is_array($previousLocation)) {
+                    [$prevDistanceM, $prevDistanceOk] = $this->calcDistanceMetersSafe(
+                        $previousLocation['latitude'] ?? null,
+                        $previousLocation['longitude'] ?? null,
+                        $zoneLat,
+                        $zoneLng
+                    );
+                    $previousInside = $this->isInsideZone($previousLocation, $zone);
+                } else {
+                    // منطقك الأصلي: اعتبر السابق true إذا غير متوفر
+                    $previousInside = true;
+                }
 
                 $finalInside = $currentInside || $previousInside;
 
                 $trace('INSIDE decision (with zone)', [
-                    'zone_id'        => $zoneId,
-                    'currentInside'  => $currentInside,
-                    'previousInside' => $previousInside,
-                    'finalInside'    => $finalInside,
-                    'was_is_inside'  => $status->is_inside,
+                    'zone_id'           => $zoneId,
+                    'zone_center'       => ['lat' => $zoneLat, 'lng' => $zoneLng],
+                    'zone_radius_m'     => $zoneAreaM,
+                    'curr_point'        => $status->last_location,
+                    'curr_distance_m'   => $currDistanceOk ? round($currDistanceM, 2) : null,
+                    'prev_point'        => $previousLocation,
+                    'prev_distance_m'   => $prevDistanceOk ? round($prevDistanceM, 2) : null,
+                    'currentInside'     => $currentInside,
+                    'previousInside'    => $previousInside,
+                    'finalInside'       => $finalInside,
+                    'was_is_inside'     => $status->is_inside,
                 ]);
 
                 if ($status->is_inside !== $finalInside) {
+                    $trace('is_inside CHANGED', [
+                        'from'   => $status->is_inside,
+                        'to'     => $finalInside,
+                        'reason' => $currentInside
+                            ? 'currentInside=true'
+                            : ($previousInside ? 'previousInside=true' : 'both=false'),
+                    ]);
                     $status->is_inside = $finalInside;
+                } else {
+                    $trace('is_inside NO-CHANGE', ['value' => $status->is_inside]);
                 }
             } else {
-                $trace('ZONE not found', ['zone_id' => $zoneId]);
+                $trace('ZONE not found or location invalid', [
+                    'zone_found'     => (bool) $zone,
+                    'location_valid' => is_array($status->last_location),
+                ]);
             }
         } else {
-            // اعتماد مباشر للقيمة القادمة من التطبيق عند غياب zone_id
+            // عدم إرسال zone_id → اعتماد مباشر للقيمة القادمة من التطبيق
             $trace('INSIDE decision (no zone)', [
-                'req_is_inside'  => $isInsideFromRequest,
-                'was_is_inside'  => $status->is_inside,
+                'req_is_inside' => $isInsideFromRequest,
+                'was_is_inside' => $status->is_inside,
             ]);
 
             if ($status->is_inside !== $isInsideFromRequest) {
+                $trace('is_inside CHANGED (no zone)', [
+                    'from' => $status->is_inside,
+                    'to'   => $isInsideFromRequest,
+                ]);
                 $status->is_inside = $isInsideFromRequest;
+            } else {
+                $trace('is_inside NO-CHANGE (no zone)', ['value' => $status->is_inside]);
             }
         }
     } else {
         $trace('SKIP inside decision: no location in request');
     }
 
-    // حركة/سكون
+    // الحركة/السكون
     if ($motionDetected === true) {
         $trace('MOTION detected: MOVING');
         $status->last_movement_at = $now;
@@ -214,7 +279,7 @@ class EmployeeStatusController extends Controller
             $status->is_stationary    = false;
         } else {
             $minutes = $status->last_movement_at->diffInMinutes($now);
-            $status->is_stationary = $minutes >= self::STATIONARY_MINUTES; // 10 دقائق
+            $status->is_stationary = $minutes >= self::STATIONARY_MINUTES; // مثال: 10 دقائق
             $trace('MOTION reported STILL -> stationary check', [
                 'minutes_since_move' => $minutes,
                 'threshold_minutes'  => self::STATIONARY_MINUTES,
@@ -230,7 +295,7 @@ class EmployeeStatusController extends Controller
         'is_inside'        => $status->is_inside,
         'gps_enabled'      => $status->gps_enabled,
         'is_stationary'    => $status->is_stationary,
-        'last_seen_at'     => (string) $status->last_seen_at,
+        'last_seen_at'     => optional($status->last_seen_at)->toDateTimeString(),
         'last_gps_status'  => optional($status->last_gps_status_at)->toDateTimeString(),
         'last_movement_at' => optional($status->last_movement_at)->toDateTimeString(),
     ]);
@@ -251,6 +316,25 @@ class EmployeeStatusController extends Controller
 
     return response()->json(['message' => 'Employee status updated successfully']);
 }
+
+/**
+ * يحسب المسافة بالمتر بين نقطتين (lat,lng). يعيد [distance, ok]
+ */
+private function calcDistanceMetersSafe($lat1, $lng1, $lat2, $lng2): array
+{
+    if ($lat1 === null || $lng1 === null || $lat2 === null || $lng2 === null) {
+        return [null, false];
+    }
+    $earthRadius = 6371000; // meters
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLng = deg2rad($lng2 - $lng1);
+    $a = sin($dLat/2) * sin($dLat/2) +
+         cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+         sin($dLng/2) * sin($dLng/2);
+    $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+    return [$earthRadius * $c, true];
+}
+
 
 
     protected function isInsideZone($location, Zone $zone): bool
