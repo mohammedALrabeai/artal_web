@@ -11,7 +11,8 @@ use App\Models\Zone;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use App\Models\Shift;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 class EmployeeStatusController extends Controller
 {
 
@@ -75,92 +76,182 @@ class EmployeeStatusController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateStatus(Request $request)
-    {
-        $employee = Auth::user();
-        if (! $employee) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+  public function updateStatus(Request $request)
+{
+    $employee = Auth::user();
+    if (! $employee) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    $employeeId = (int) $employee->id;
+
+    // ✅ فعّل التتبّع فقط لموظف رقم 1
+    $TRACE_ENABLED = ($employeeId === 1);
+    $TRACE_FINGERPRINT = '[#E1-TRACE]';
+    $TRACE_REQ_ID = Str::uuid()->toString();
+
+    // دالة صغيرة لكتابة اللوج عند الحاجة
+    $trace = function (string $message, array $ctx = []) use ($TRACE_ENABLED, $TRACE_FINGERPRINT, $TRACE_REQ_ID) {
+        if ($TRACE_ENABLED) {
+            Log::info("{$TRACE_FINGERPRINT} [{$TRACE_REQ_ID}] {$message}", $ctx);
         }
+    };
 
-        $employeeId = $employee->id;
+    $trace('BEGIN updateStatus');
 
-        $gpsEnabled = $request->boolean('gps_enabled', false);
-        $isInsideFromRequest = $request->boolean('is_inside', false); // ← فقط عند غياب zone_id
-        $lastLocation = $request->input('last_location');
-        $zoneId = $request->input('zone_id');
-        $now = Carbon::now('Asia/Riyadh');
+    $gpsEnabled          = $request->boolean('gps_enabled', false);
+    $isInsideFromRequest = $request->boolean('is_inside', false); // عند غياب zone_id
+    $lastLocation        = $request->input('last_location');
+    $zoneId              = $request->input('zone_id');
+    $now                 = Carbon::now('Asia/Riyadh');
 
-        $motionDetected = $request->has('motion_detected')
-            ? $request->boolean('motion_detected')
-            : null;
+    $motionDetected = $request->has('motion_detected')
+        ? $request->boolean('motion_detected')
+        : null;
 
-        $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
-        $status->last_seen_at = $now;
+    $trace('INPUTS parsed', [
+        'employee_id'   => $employeeId,
+        'gps_enabled'   => $gpsEnabled,
+        'zone_id'       => $zoneId,
+        'has_location'  => (bool) $lastLocation,
+        'motion_flag'   => $motionDetected,   // true/false/null
+        'req_is_inside' => $isInsideFromRequest,
+        'now'           => (string) $now,
+    ]);
 
-        // تحديث حالة GPS
-        if ($status->gps_enabled !== $gpsEnabled) {
-            $status->gps_enabled = $gpsEnabled;
-            $status->last_gps_status_at = $now;
-        }
+    $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
 
-        // جلب الموقع السابق من الكائن (لا يتم حفظه في الجدول)
-        $previousLocation = $status->last_location ?? null;
+    $trace('STATUS loaded', [
+        'exists'              => $status->exists,
+        'prev_last_seen_at'   => optional($status->last_seen_at)->toDateTimeString(),
+        'prev_gps_enabled'    => $status->gps_enabled,
+        'prev_last_gps_at'    => optional($status->last_gps_status_at)->toDateTimeString(),
+        'prev_is_inside'      => $status->is_inside,
+        'prev_last_move_at'   => optional($status->last_movement_at)->toDateTimeString(),
+        'has_prev_location'   => (bool) $status->last_location,
+    ]);
 
-        // تحديث الموقع الحالي
-        if ($lastLocation) {
-            $status->last_location = is_array($lastLocation)
-                ? $lastLocation
-                : json_decode($lastLocation, true);
-        }
+    $status->last_seen_at = $now;
 
-        // 🧠 منطق تحديد is_inside
-        if ($lastLocation) {
-            if ($zoneId) {
-                $zone = Zone::find($zoneId);
-                if ($zone) {
-                    $currentInside = $this->isInsideZone($status->last_location, $zone);
-                    $previousInside = $previousLocation
-                        ? $this->isInsideZone($previousLocation, $zone)
-                        : true;
+    // تحديث حالة GPS
+    if ($status->gps_enabled !== $gpsEnabled) {
+        $trace('GPS change detected', [
+            'from' => $status->gps_enabled,
+            'to'   => $gpsEnabled,
+        ]);
+        $status->gps_enabled = $gpsEnabled;
+        $status->last_gps_status_at = $now;
+    }
 
-                    $finalInside = $currentInside || $previousInside;
+    // جلب الموقع السابق (من الكائن)
+    $previousLocation = $status->last_location ?? null;
 
-                    if ($status->is_inside !== $finalInside) {
-                        $status->is_inside = $finalInside;
-                    }
+    // تحديث الموقع الحالي
+    if ($lastLocation) {
+        $status->last_location = is_array($lastLocation)
+            ? $lastLocation
+            : json_decode($lastLocation, true);
+
+        $trace('LOCATION updated', [
+            'prev_had_location' => (bool) $previousLocation,
+            'curr_has_location' => true,
+            // تجنّب طباعة الإحداثيات كاملة إذا لا تريد إغراق اللوج
+        ]);
+    }
+
+    // 🧠 منطق تحديد is_inside
+    if ($lastLocation) {
+        if ($zoneId) {
+            $zone = Zone::find($zoneId);
+            if ($zone) {
+                $currentInside = $this->isInsideZone($status->last_location, $zone);
+                $previousInside = $previousLocation
+                    ? $this->isInsideZone($previousLocation, $zone)
+                    : true;
+
+                $finalInside = $currentInside || $previousInside;
+
+                $trace('INSIDE decision (with zone)', [
+                    'zone_id'        => $zoneId,
+                    'currentInside'  => $currentInside,
+                    'previousInside' => $previousInside,
+                    'finalInside'    => $finalInside,
+                    'was_is_inside'  => $status->is_inside,
+                ]);
+
+                if ($status->is_inside !== $finalInside) {
+                    $status->is_inside = $finalInside;
                 }
             } else {
-                // ✅ إذا لم يُرسل zone_id → اعتماد مباشر كما في المنطق السابق
-                if ($status->is_inside !== $isInsideFromRequest) {
-                    $status->is_inside = $isInsideFromRequest;
-                }
+                $trace('ZONE not found', ['zone_id' => $zoneId]);
+            }
+        } else {
+            // اعتماد مباشر للقيمة القادمة من التطبيق عند غياب zone_id
+            $trace('INSIDE decision (no zone)', [
+                'req_is_inside'  => $isInsideFromRequest,
+                'was_is_inside'  => $status->is_inside,
+            ]);
+
+            if ($status->is_inside !== $isInsideFromRequest) {
+                $status->is_inside = $isInsideFromRequest;
             }
         }
+    } else {
+        $trace('SKIP inside decision: no location in request');
+    }
 
-        if ($motionDetected === true) {
+    // حركة/سكون
+    if ($motionDetected === true) {
+        $trace('MOTION detected: MOVING');
+        $status->last_movement_at = $now;
+        $status->is_stationary    = false;
+    } elseif ($motionDetected === false) {
+        if (!$status->last_movement_at) {
+            $trace('MOTION reported STILL but no last_movement_at, initializing', [
+                'set_last_movement_at' => (string) $now,
+            ]);
             $status->last_movement_at = $now;
             $status->is_stationary    = false;
-        } elseif ($motionDetected === false) {
-            if (!$status->last_movement_at) {
-                $status->last_movement_at = $now;
-                $status->is_stationary    = false;
-            } else {
-                $minutes = $status->last_movement_at->diffInMinutes($now);
-                $status->is_stationary = $minutes >= self::STATIONARY_MINUTES; // 10 دقائق
-            }
-        }
-        $status->save();
-
-        $employee = \App\Models\Employee::find($employeeId);
-        if ($employee && $status->is_inside === true) {
-            $employee->updateQuietly([
-                'out_of_zone' => false,
-                'last_active' => $now,
+        } else {
+            $minutes = $status->last_movement_at->diffInMinutes($now);
+            $status->is_stationary = $minutes >= self::STATIONARY_MINUTES; // 10 دقائق
+            $trace('MOTION reported STILL -> stationary check', [
+                'minutes_since_move' => $minutes,
+                'threshold_minutes'  => self::STATIONARY_MINUTES,
+                'is_stationary'      => $status->is_stationary,
             ]);
         }
-
-        return response()->json(['message' => 'Employee status updated successfully']);
+    } else {
+        $trace('MOTION flag missing (null) — no change');
     }
+
+    $status->save();
+    $trace('STATUS saved', [
+        'is_inside'        => $status->is_inside,
+        'gps_enabled'      => $status->gps_enabled,
+        'is_stationary'    => $status->is_stationary,
+        'last_seen_at'     => (string) $status->last_seen_at,
+        'last_gps_status'  => optional($status->last_gps_status_at)->toDateTimeString(),
+        'last_movement_at' => optional($status->last_movement_at)->toDateTimeString(),
+    ]);
+
+    $employee = \App\Models\Employee::find($employeeId);
+    if ($employee && $status->is_inside === true) {
+        $employee->updateQuietly([
+            'out_of_zone' => false,
+            'last_active' => $now,
+        ]);
+        $trace('EMPLOYEE updatedQuietly because is_inside=true', [
+            'out_of_zone' => false,
+            'last_active' => (string) $now,
+        ]);
+    }
+
+    $trace('END updateStatus');
+
+    return response()->json(['message' => 'Employee status updated successfully']);
+}
+
 
     protected function isInsideZone($location, Zone $zone): bool
     {
