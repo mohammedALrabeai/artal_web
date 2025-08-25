@@ -86,13 +86,13 @@ class EmployeeStatusController extends Controller
         // ===== إعدادات محليّة داخل الدالة (بدون .env) =====
         $DEBUG_ENABLED        = true;   // غيّرها إلى false لإيقاف التتبّع
         $DEBUG_EMPLOYEE_ID    = 1;      // رقم الموظف المراد تتبّعه فقط
-        $INSIDE_MARGIN_METERS = 20;     // هامش الأمان للأمتار (مثلاً 10 أو 20)
+        $INSIDE_MARGIN_METERS = 10;     // هامش الأمان للأمتار (مثلاً 10 أو 20)
 
         // دالة تتبّع محليّة (لا تعمل إلا إذا مُفعّلة ومع الموظف المحدد)
         $trace = function (int $empId, string $msg, array $ctx = []) use ($DEBUG_ENABLED, $DEBUG_EMPLOYEE_ID) {
             if (!$DEBUG_ENABLED) return;
             if ($empId !== $DEBUG_EMPLOYEE_ID) return;
-            \Log::info('[#E1-TRACE:ISIN] ' . $msg, $ctx);
+            \Log::info('[#E1-TRACE:ISIN]  empId: ' . $empId . ' - ' . $msg, $ctx);
         };
         // ================================================
 
