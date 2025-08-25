@@ -19,6 +19,8 @@ class EmployeeStatusController extends Controller
 
     // ⚙️ عتبة الثبات (دقائق)
     private const STATIONARY_MINUTES = 10;
+
+
     /**
      * جلب بيانات حالات الموظفين مع بيانات الموظف المختصرة.
      */
@@ -81,29 +83,41 @@ class EmployeeStatusController extends Controller
 
     public function updateStatus(Request $request)
     {
+        // ===== إعدادات محليّة داخل الدالة (بدون .env) =====
+        $DEBUG_ENABLED        = true;   // غيّرها إلى false لإيقاف التتبّع
+        $DEBUG_EMPLOYEE_ID    = 1;      // رقم الموظف المراد تتبّعه فقط
+        $INSIDE_MARGIN_METERS = 20;     // هامش الأمان للأمتار (مثلاً 10 أو 20)
+
+        // دالة تتبّع محليّة (لا تعمل إلا إذا مُفعّلة ومع الموظف المحدد)
+        $trace = function (int $empId, string $msg, array $ctx = []) use ($DEBUG_ENABLED, $DEBUG_EMPLOYEE_ID) {
+            if (!$DEBUG_ENABLED) return;
+            if ($empId !== $DEBUG_EMPLOYEE_ID) return;
+            \Log::info('[#E1-TRACE:ISIN] ' . $msg, $ctx);
+        };
+        // ================================================
+
         $employee = Auth::user();
         if (! $employee) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $employeeId    = $employee->id;
-        $gpsEnabled    = $request->boolean('gps_enabled', false);
-        $isInsideReq   = $request->boolean('is_inside', false); // يُتجاهل إذا لم يصل zone_id
-        $lastLocation  = $request->input('last_location');
-        $zoneId        = $request->input('zone_id');
-        $now           = Carbon::now('Asia/Riyadh');
+        $employeeId   = $employee->id;
+        $gpsEnabled   = $request->boolean('gps_enabled', false);
+        $isInsideReq  = $request->boolean('is_inside', false); // يُتجاهل إن لم يصل zone_id
+        $lastLocation = $request->input('last_location');
+        $zoneId       = $request->input('zone_id');
+        $now          = \Carbon\Carbon::now('Asia/Riyadh');
 
-        // هيدرات تشخيصية (اختيارية)
-        $xClient       = $request->header('X-Client-Source');
-        $xReason       = $request->header('X-Heartbeat-Reason');
+        // هيدرات وصف مصدر الطلب (اختياري للتشخيص)
+        $xClient = $request->header('X-Client-Source');
+        $xReason = $request->header('X-Heartbeat-Reason');
 
         $motionDetected = $request->has('motion_detected')
             ? $request->boolean('motion_detected')
             : null;
 
-        // حمل أو أنشئ سجل الحالة
         /** @var \App\Models\EmployeeStatus $status */
-        $status = EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
+        $status = \App\Models\EmployeeStatus::firstOrNew(['employee_id' => $employeeId]);
         $status->last_seen_at = $now;
 
         // تحديث حالة GPS
@@ -112,74 +126,70 @@ class EmployeeStatusController extends Controller
             $status->last_gps_status_at = $now;
         }
 
-        // احتفظ بالموقع السابق في ذاكرة المتغير فقط
+        // احتفظ بالموقع السابق في المتغيّر فقط
         $previousLocation = $status->last_location ?? null;
 
-        // تحديث الموقع الحالي (نفس منطقك: يقبل JSON نص/مصفوفة)
+        // تحديث الموقع الحالي (يقبل array أو JSON string)
         if ($lastLocation) {
             $status->last_location = is_array($lastLocation)
                 ? $lastLocation
                 : json_decode($lastLocation, true);
         }
 
-        // =============== منطق تحديد is_inside ===============
-        // السابق: عند وجود zone_id نحسب currentInside/previousInside ونعتمد OR
-        // التعديل: عند عدم وجود zone_id → لا نغيّر is_inside مطلقًا (نتجاهل isInsideReq)
+        // ===== منطق is_inside =====
+        // شرط أساسي: وجود last_location في الطلب
         if ($lastLocation) {
             if ($zoneId) {
-                $zone = Zone::find($zoneId);
+                $zone = \App\Models\Zone::find($zoneId);
                 if ($zone) {
-                    $currentInside = $this->isInsideZone($status->last_location, $zone);
+                    // نفترض isInsideZone(location, zone, margin) متوفّرة لديك
+                    $currentInside  = $this->isInsideZone($status->last_location, $zone, $INSIDE_MARGIN_METERS);
                     $previousInside = $previousLocation
-                        ? $this->isInsideZone($previousLocation, $zone)
-                        : true; // نفس افتراضك السابق
+                        ? $this->isInsideZone($previousLocation, $zone, $INSIDE_MARGIN_METERS)
+                        : true; // افتراض وقائي كما في منطقك السابق
 
                     $finalInside = $currentInside || $previousInside;
 
                     if ($status->is_inside !== $finalInside) {
-                        \Log::info('[#E1-TRACE:ISIN] is_inside CHANGED (with zone)', [
-                            'employee_id'   => $employeeId,
-                            'zone_id'       => $zoneId,
-                            'currentInside' => $currentInside,
+                        $trace($employeeId, 'is_inside CHANGED (with zone)', [
+                            'zone_id'        => $zoneId,
+                            'currentInside'  => $currentInside,
                             'previousInside' => $previousInside,
-                            'finalInside'   => $finalInside,
-                            'from'          => $status->is_inside,
-                            'to'            => $finalInside,
-                            'x_client'      => $xClient,
-                            'x_reason'      => $xReason,
+                            'finalInside'    => $finalInside,
+                            'from'           => $status->is_inside,
+                            'to'             => $finalInside,
+                            'x_client'       => $xClient,
+                            'x_reason'       => $xReason,
+                            'margin_m'       => $INSIDE_MARGIN_METERS,
                         ]);
                         $status->is_inside = $finalInside;
                     }
                 } else {
-                    \Log::warning('[#E1-TRACE:ISIN] zone not found, skip inside change', [
-                        'employee_id' => $employeeId,
-                        'zone_id'     => $zoneId,
-                        'x_client'    => $xClient,
-                        'x_reason'    => $xReason,
+                    $trace($employeeId, 'zone not found, skip inside change', [
+                        'zone_id'  => $zoneId,
+                        'x_client' => $xClient,
+                        'x_reason' => $xReason,
                     ]);
                 }
             } else {
-                // ✅ تعديلك المطلوب: لا نغيّر is_inside إذا لم يصل zone_id
-                \Log::info('[#E1-TRACE:ISIN] SKIP is_inside (no zone_id)', [
-                    'employee_id' => $employeeId,
-                    'kept'        => $status->is_inside,
+                // لا تغيّر is_inside إذا لم يصل zone_id
+                $trace($employeeId, 'SKIP is_inside (no zone_id)', [
+                    'kept'          => $status->is_inside,
                     'req_is_inside' => $isInsideReq,
                     'has_location'  => true,
                     'x_client'      => $xClient,
                     'x_reason'      => $xReason,
                 ]);
-                // لا تغيير على $status->is_inside
             }
         } else {
             // لا يوجد موقع في الطلب — لا تغيّر is_inside
-            \Log::info('[#E1-TRACE:ISIN] SKIP is_inside (no location in request)', [
-                'employee_id' => $employeeId,
-                'zone_id'     => $zoneId,
-                'x_client'    => $xClient,
-                'x_reason'    => $xReason,
+            $trace($employeeId, 'SKIP is_inside (no location in request)', [
+                'zone_id'  => $zoneId,
+                'x_client' => $xClient,
+                'x_reason' => $xReason,
             ]);
         }
-        // =============== نهاية منطق is_inside ===============
+        // ===== نهاية منطق is_inside =====
 
         // منطق الحركة
         if ($motionDetected === true) {
@@ -197,75 +207,58 @@ class EmployeeStatusController extends Controller
 
         $status->save();
 
-        // تحديث الموظف عند التأكد أنه داخل
-        $employee = \App\Models\Employee::find($employeeId);
-        if ($employee && $status->is_inside === true) {
-            $employee->updateQuietly([
+        // تحديث سجل الموظف عند التأكد أنه داخل
+        $employeeModel = \App\Models\Employee::find($employeeId);
+        if ($employeeModel && $status->is_inside === true) {
+            $employeeModel->updateQuietly([
                 'out_of_zone' => false,
                 'last_active' => $now,
             ]);
-            \Log::info('[#E1-TRACE:ISIN] EMPLOYEE updatedQuietly (is_inside=true)', [
-                'employee_id' => $employeeId,
-            ]);
+            $trace($employeeId, 'EMPLOYEE updatedQuietly (is_inside=true)');
         }
 
         return response()->json(['message' => 'Employee status updated successfully']);
     }
 
 
-    /**
-     * يحسب المسافة بالمتر بين نقطتين (lat,lng). يعيد [distance, ok]
-     */
-    private function calcDistanceMetersSafe($lat1, $lng1, $lat2, $lng2): array
+
+
+
+
+
+    protected function isInsideZone($location, Zone $zone, int $marginMeters = 20): bool
     {
-        if ($lat1 === null || $lng1 === null || $lat2 === null || $lng2 === null) {
-            return [null, false];
+        if (is_string($location)) {
+            $location = json_decode($location, true);
         }
-        $earthRadius = 6371000; // meters
+
+        $lat1 = Arr::get($location, 'lat')  ?? Arr::get($location, 'latitude');
+        $lon1 = Arr::get($location, 'long') ?? Arr::get($location, 'lng') ?? Arr::get($location, 'longitude');
+
+        if (!is_numeric($lat1) || !is_numeric($lon1)) {
+            return true; // fallback مثل السابق
+        }
+
+        $lat1 = (float) $lat1;
+        $lon1 = (float) $lon1;
+
+        $lat2   = (float) $zone->lat;
+        $lon2   = (float) $zone->longg;
+        $radius = ($zone->area ?? 50) + $marginMeters; // ✅ أضف المسافة الاحتياطية
+
+        $earthRadius = 6371000;
         $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-        $a = sin($dLat / 2) * sin($dLat / 2) +
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) ** 2 +
             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-            sin($dLng / 2) * sin($dLng / 2);
+            sin($dLon / 2) ** 2;
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        return [$earthRadius * $c, true];
+        $distance = $earthRadius * $c;
+
+        return $distance <= $radius;
     }
-
-
-
-  protected function isInsideZone($location, Zone $zone, int $marginMeters = 20): bool
-{
-    if (is_string($location)) {
-        $location = json_decode($location, true);
-    }
-
-    $lat1 = Arr::get($location, 'lat')  ?? Arr::get($location, 'latitude');
-    $lon1 = Arr::get($location, 'long') ?? Arr::get($location, 'lng') ?? Arr::get($location, 'longitude');
-
-    if (!is_numeric($lat1) || !is_numeric($lon1)) {
-        return true; // fallback مثل السابق
-    }
-
-    $lat1 = (float) $lat1;
-    $lon1 = (float) $lon1;
-
-    $lat2   = (float) $zone->lat;
-    $lon2   = (float) $zone->longg;
-    $radius = ($zone->area ?? 50) + $marginMeters; // ✅ أضف المسافة الاحتياطية
-
-    $earthRadius = 6371000;
-    $dLat = deg2rad($lat2 - $lat1);
-    $dLon = deg2rad($lon2 - $lon1);
-
-    $a = sin($dLat / 2) ** 2 +
-        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-        sin($dLon / 2) ** 2;
-
-    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-    $distance = $earthRadius * $c;
-
-    return $distance <= $radius;
-}
 
 
 
