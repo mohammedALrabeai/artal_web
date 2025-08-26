@@ -268,7 +268,7 @@ class EmployeeStatusController extends Controller
     {
         $enabledShifts = Shift::with(['zone.pattern'])
             ->where('status', true)
-            // ->where('exclude_from_auto_absence', false)
+            ->where('exclude_from_auto_absence', false)
             ->get();
 
         $activeShiftIds = [];
