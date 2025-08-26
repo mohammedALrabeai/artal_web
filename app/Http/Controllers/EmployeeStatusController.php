@@ -347,6 +347,112 @@ class EmployeeStatusController extends Controller
     }
 
 
+    public function getTodayAttendedWithOverdueRenewal()
+{
+    // 1) اجلب الورديات النشطة كما تفعل الآن
+    $enabledShifts = Shift::with(['zone.pattern'])
+        ->where('status', true)
+        ->where('exclude_from_auto_absence', false)
+        ->get();
+
+    $activeShiftIds = [];
+    foreach ($enabledShifts as $shift) {
+        [$isActive] = $shift->getShiftActiveStatus2(now());
+        if ($isActive) {
+            $activeShiftIds[] = $shift->id;
+        }
+    }
+
+    if (empty($activeShiftIds)) {
+        return response()->json([
+            'data' => [],
+            'message' => 'لا توجد ورديات حالية نشطة.',
+        ]);
+    }
+
+    $shiftIdsStr = implode(',', $activeShiftIds);
+
+    // 2) حد الدقائق: من الإعدادات أو من باراميتر الطلب كـ fallback
+    // غيّر طريقة الجلب حسب نظام الإعدادات لديك
+    $defaultLimit = 30;
+    $settingsLimit = (int) request('renewal_limit_minutes', $defaultLimit);
+
+    // 3) الاستعلام
+    // شروطنا:
+    //  - حضر اليوم: تاريخ last_seen_at (بتوقيت الرياض) = تاريخ اليوم (بتوقيت السيرفر بعد تحويله +03).
+    //  - لديه تجديد: last_renewal_at IS NOT NULL
+    //  - متأخر: TIMESTAMPDIFF(MINUTE, last_renewal_at, NOW(+03)) > limit
+    $results = \DB::select("
+        SELECT 
+            es.id,
+            es.employee_id,
+            CONCAT(e.first_name, ' ', e.father_name, ' ', e.grandfather_name, ' ', e.family_name) AS full_name,
+            e.mobile_number,
+            es.last_seen_at,
+            es.gps_enabled,
+            es.last_gps_status_at,
+            es.last_location,
+            es.created_at,
+            es.updated_at,
+            es.is_inside,
+            es.notification_enabled,
+
+            es.is_stationary,
+            es.last_movement_at,
+            es.last_renewal_at,
+
+            TIMESTAMPDIFF(
+                MINUTE,
+                es.last_renewal_at,
+                CONVERT_TZ(NOW(), '+00:00', '+03:00')
+            ) AS minutes_since_last_renewal,
+
+            p.name AS project_name,
+            z.name AS zone_name,
+            s.name AS shift_name
+
+        FROM employee_statuses es
+        JOIN employees e               ON e.id = es.employee_id
+        JOIN employee_project_records epr ON epr.employee_id = e.id
+        JOIN projects p                ON p.id = epr.project_id
+        JOIN zones z                   ON z.id = epr.zone_id
+        JOIN shifts s                  ON s.id = epr.shift_id
+
+        WHERE epr.shift_id IN ($shiftIdsStr)
+          AND epr.status = true
+          AND epr.start_date <= CURDATE()
+          AND (epr.end_date IS NULL OR epr.end_date >= CURDATE())
+
+          -- حضر اليوم (إذا كان last_seen_at مخزّن UTC استعمل التحويل للرياض)
+          AND DATE(CONVERT_TZ(es.last_seen_at, '+00:00', '+03:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+03:00'))
+
+          -- لديه تجديد
+          AND es.last_renewal_at IS NOT NULL
+
+          -- متأخر عن حد الدقائق
+          AND TIMESTAMPDIFF(
+                MINUTE,
+                es.last_renewal_at,
+                CONVERT_TZ(NOW(), '+00:00', '+03:00')
+              ) > ?
+
+        ORDER BY 
+            CASE
+                WHEN es.gps_enabled = 0 THEN 1
+                WHEN es.is_inside = 0 THEN 2
+                WHEN TIMESTAMPDIFF(MINUTE, es.updated_at, NOW()) > 30 THEN 3
+                ELSE 4
+            END
+    ", [$settingsLimit]);
+
+    return response()->json([
+        'data' => $results,
+        'limit_minutes' => $settingsLimit,
+    ]);
+}
+
+
+
 
     /**
      * تُعيد مصفوفة قياسية: ['lat' => float, 'long' => float]
