@@ -24,11 +24,11 @@ class RenewalService
                 'payload'    => $payload,
             ]);
 
-            // تحديث last_present_at (حسب طلبك)
+            // تحديث last_seen_at (حسب طلبك)
             if (isset($attendance->employee_id)) {
                 EmployeeStatus::query()
                     ->where('employee_id', $attendance->employee_id)
-                    ->update(['last_present_at' => now()]);
+                    ->update(['last_seen_at' => now()]);
             }
 
             $expiresAt = $renewal->renewed_at->copy()->addMinutes(config('attendance.renewal_window_minutes', 60));
