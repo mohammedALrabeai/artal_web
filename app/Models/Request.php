@@ -328,21 +328,17 @@ class Request extends Model
 
     public function makeLeaveAttendance()
     {
-        if (! $this->leave) {
-            \Log::error('Leave record not found for this request.', ['request_id' => $this->id]);
+        if (! $this->leave || ! $this->employee) {
+            \Log::error('Leave or Employee not found for this request.', [
+                'request_id' => $this->id,
+            ]);
             return;
         }
 
         $startDate = \Carbon\Carbon::parse($this->leave->start_date);
         $endDate = \Carbon\Carbon::parse($this->leave->end_date);
 
-        if (! $this->employee) {
-            \Log::error('Employee not found for this request.', ['request_id' => $this->id]);
-            return;
-        }
-
-        $projectRecord = $this->employee->currentProjectRecord;
-
+        $projectRecord = $this->leave->employeeProjectRecord ?? $this->employee->currentProjectRecord;
         if (! $projectRecord || ! $projectRecord->zone || ! $projectRecord->shift) {
             \Log::error('Project record, zone, or shift not found for employee.', [
                 'employee_id' => $this->employee->id,
@@ -353,40 +349,41 @@ class Request extends Model
 
         $zoneId = $projectRecord->zone_id;
         $shiftId = $projectRecord->shift_id;
-        $leaveCode = $this->leave->leaveType?->code ?? 'LV'; // رمز الإجازة
+        $leaveCode = $this->leave->leaveType?->code ?? 'LV';
         $reason = $this->leave->reason ?? '-';
 
         $currentDate = $startDate->copy();
         while ($currentDate->lte($endDate)) {
-            try {
-                \App\Models\Attendance::firstOrCreate(
-                    ['employee_id' => $this->employee_id, 'date' => $currentDate->toDateString()],
-                    [
-                        'zone_id' => $zoneId,
-                        'shift_id' => $shiftId,
-                        'ismorning' => true,
-                        'status' => $leaveCode,
-                        'notes' => "{$this->leave->leaveType?->name} - {$reason}",
-                    ]
-                );
+            $attendance = \App\Models\Attendance::firstOrNew([
+                'employee_id' => $this->employee_id,
+                'date' => $currentDate->toDateString(),
+            ]);
 
-                \Log::info('Attendance record created for leave.', [
-                    'employee_id' => $this->employee_id,
-                    'date' => $currentDate->toDateString(),
-                    'status' => 'leave',
-                    'code' => $leaveCode,
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('Failed to create attendance record.', [
-                    'employee_id' => $this->employee_id,
-                    'date' => $currentDate->toDateString(),
-                    'error' => $e->getMessage(),
-                ]);
+            // ✅ لا نكتب فوق حالة غير الغياب
+            if ($attendance->exists && $attendance->status !== 'absent') {
+                $currentDate->addDay();
+                continue;
             }
+
+            // ✅ نكتب الإجازة أو نعدل الغياب
+            $attendance->fill([
+                'zone_id' => $zoneId,
+                'shift_id' => $shiftId,
+                'ismorning' => true,
+                'status' => $leaveCode,
+                'notes' => $this->leave->leaveType?->name . ' - ' . $reason,
+            ])->save();
+
+            \Log::info('Leave attendance updated/created.', [
+                'employee_id' => $this->employee_id,
+                'date' => $currentDate->toDateString(),
+                'status' => $leaveCode,
+            ]);
 
             $currentDate->addDay();
         }
     }
+
 
 
     public function attachments()
