@@ -81,7 +81,7 @@ class AttendanceMissingCheckoutController extends Controller
             'p.name as project_name',
 
             'z.name as zone_name',
-            'z.map_url as map_url',
+            // 'z.map_url as map_url',
 
             'sh.name as shift_name',
         ];
@@ -122,7 +122,7 @@ class AttendanceMissingCheckoutController extends Controller
                 'check_in'        => $r->check_in,
                 'check_in_datetime'=> $r->check_in_datetime,
                 'elapsed_hours'   => (float) $r->elapsed_hours,
-                'map_url'         => $r->map_url,
+                'map_url'         => null,
             ];
         })->values();
 
