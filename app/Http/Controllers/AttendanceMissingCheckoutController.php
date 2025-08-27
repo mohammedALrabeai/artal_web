@@ -77,6 +77,8 @@ class AttendanceMissingCheckoutController extends Controller
             'emp.family_name',
             'emp.mobile_number',
 
+            'emp.national_id',
+
             'p.id as project_id',
             'p.name as project_name',
 
@@ -111,6 +113,7 @@ class AttendanceMissingCheckoutController extends Controller
                 'employee_id'     => (int) $r->employee_id,
                 'employee_name'   => $employeeName !== '' ? $employeeName : null,
                 'mobile_number'   => $r->mobile_number,
+                'national_id'     => $r->national_id,
 
                 'project_id'      => $r->project_id ? (int) $r->project_id : null,
                 'project_name'    => $r->project_name,
