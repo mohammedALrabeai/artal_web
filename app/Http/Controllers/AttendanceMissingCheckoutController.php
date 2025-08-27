@@ -23,20 +23,37 @@ class AttendanceMissingCheckoutController extends Controller
         $threshold = $now->copy()->subHours(12)->format('Y-m-d H:i:s');
 
         // (اختياري) ترقيم الصفحات
+        // per_page=0 → يرجع كل النتائج بدون تقسيم
         $perPage = (int) $request->get('per_page', 50);
+
+        // ✅ Subquery لعدّ مرات "حضور بدون انصراف" على مستوى الموظف (بنفس منطق الشروط)
+        $missingAgg = DB::table('attendances as a')
+            ->select([
+                'a.employee_id',
+                DB::raw('COUNT(*) as missing_checkout_count'),
+            ])
+            ->whereNull('a.check_out')
+            ->whereNotNull('a.check_in')
+            ->whereIn('a.status', ['present', 'coverage'])
+            ->whereRaw("TIMESTAMP(CONCAT(a.`date`,' ',a.`check_in`)) <= ?", [$threshold])
+            ->groupBy('a.employee_id');
 
         $base = Attendance::query()
             ->leftJoin('employees as emp', 'emp.id', '=', 'attendances.employee_id')
             ->leftJoin('zones as z', 'z.id', '=', 'attendances.zone_id')
             ->leftJoin('projects as p', 'p.id', '=', 'z.project_id')
             ->leftJoin('shifts as sh', 'sh.id', '=', 'attendances.shift_id')
+            // ✅ ضم العدّادات الجاهزة لكل موظف مرّة واحدة
+            ->leftJoinSub($missingAgg, 'mc', function ($join) {
+                $join->on('mc.employee_id', '=', 'attendances.employee_id');
+            })
             ->whereDate('attendances.date', $date)
             ->whereNull('attendances.check_out')
             ->whereNotNull('attendances.check_in')
             ->whereIn('attendances.status', ['present', 'coverage'])
             // ✅ أقدم من 12 ساعة بالنسبة للآن
             ->whereRaw("TIMESTAMP(CONCAT(attendances.`date`,' ',attendances.`check_in`)) <= ?", [$threshold])
-            // ✅ تحقق الإسناد النشط (status=true) وغير مستثنى، على نفس (employee, zone), وفي نفس التاريخ
+            // ✅ تحقق الإسناد النشط (status=true) وغير مستثنى، على نفس (employee, zone)، وفي نفس التاريخ
             ->whereExists(function ($q) use ($date) {
                 $q->select(DB::raw(1))
                     ->from('employee_project_records as epr')
@@ -52,10 +69,8 @@ class AttendanceMissingCheckoutController extends Controller
                         $q->whereNull('epr.end_date')
                           ->orWhereDate('epr.end_date', '>=', $date);
                     })
-                    // حالة الإسناد الفعلية لديك:
-                    ->where('epr.status', true)
-                    // استبعاد الورديات المستثناة:
-                    ->where('s.exclude_from_auto_absence', false);
+                    ->where('epr.status', true) // الإسناد فعّال
+                    ->where('s.exclude_from_auto_absence', false); // الوردية غير مستثناة
             });
 
         // فرز افتراضي: الأقدم أولاً
@@ -76,16 +91,16 @@ class AttendanceMissingCheckoutController extends Controller
             'emp.father_name',
             'emp.family_name',
             'emp.mobile_number',
-
             'emp.national_id',
 
             'p.id as project_id',
             'p.name as project_name',
 
             'z.name as zone_name',
-            // 'z.map_url as map_url',
-
             'sh.name as shift_name',
+
+            // ✅ العدّاد الجاهز من الـ subquery (على مستوى الموظف)
+            DB::raw('COALESCE(mc.missing_checkout_count, 0) as missing_checkout_times'),
         ];
 
         // حساب الساعات المنقضية (اختياري مفيد للواجهة)
@@ -109,23 +124,28 @@ class AttendanceMissingCheckoutController extends Controller
             ])));
 
             return [
-                'attendance_id'   => (int) $r->attendance_id,
-                'employee_id'     => (int) $r->employee_id,
-                'employee_name'   => $employeeName !== '' ? $employeeName : null,
-                'mobile_number'   => $r->mobile_number,
-                'national_id'     => $r->national_id,
+                'attendance_id'        => (int) $r->attendance_id,
+                'employee_id'          => (int) $r->employee_id,
+                'employee_name'        => $employeeName !== '' ? $employeeName : null,
+                'mobile_number'        => $r->mobile_number,
+                'national_id'          => $r->national_id,
 
-                'project_id'      => $r->project_id ? (int) $r->project_id : null,
-                'project_name'    => $r->project_name,
-                'zone_name'       => $r->zone_name,
-                'shift_name'      => $r->shift_name,
+                'project_id'           => $r->project_id ? (int) $r->project_id : null,
+                'project_name'         => $r->project_name,
+                'zone_name'            => $r->zone_name,
+                'shift_name'           => $r->shift_name,
 
-                'status'          => $r->status, // present | coverage
-                'date'            => $r->date,
-                'check_in'        => $r->check_in,
-                'check_in_datetime'=> $r->check_in_datetime,
-                'elapsed_hours'   => (float) $r->elapsed_hours,
-                'map_url'         => null,
+                'status'               => $r->status, // present | coverage
+                'date'                 => $r->date,
+                'check_in'             => $r->check_in,
+                'check_in_datetime'    => $r->check_in_datetime,
+                'elapsed_hours'        => (float) $r->elapsed_hours,
+
+                // ✅ عدد مرات الحضور بدون انصراف على مستوى الموظف
+                'missing_checkout_times' => (int) ($r->missing_checkout_times ?? 0),
+
+                // لا يوجد map_url في جدول zones لديك؛ نرجعه null
+                'map_url'              => null,
             ];
         })->values();
 
