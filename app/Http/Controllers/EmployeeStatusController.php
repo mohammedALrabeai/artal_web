@@ -348,41 +348,41 @@ class EmployeeStatusController extends Controller
 
 
     public function getTodayAttendedWithOverdueRenewal()
-{
-    // 1) اجلب الورديات النشطة كما تفعل الآن
-    $enabledShifts = Shift::with(['zone.pattern'])
-        ->where('status', true)
-        ->where('exclude_from_auto_absence', false)
-        ->get();
+    {
+        // 1) اجلب الورديات النشطة كما تفعل الآن
+        $enabledShifts = Shift::with(['zone.pattern'])
+            ->where('status', true)
+            ->where('exclude_from_auto_absence', false)
+            ->get();
 
-    $activeShiftIds = [];
-    foreach ($enabledShifts as $shift) {
-        [$isActive] = $shift->getShiftActiveStatus2(now());
-        if ($isActive) {
-            $activeShiftIds[] = $shift->id;
+        $activeShiftIds = [];
+        foreach ($enabledShifts as $shift) {
+            [$isActive] = $shift->getShiftActiveStatus2(now());
+            if ($isActive) {
+                $activeShiftIds[] = $shift->id;
+            }
         }
-    }
 
-    if (empty($activeShiftIds)) {
-        return response()->json([
-            'data' => [],
-            'message' => 'لا توجد ورديات حالية نشطة.',
-        ]);
-    }
+        if (empty($activeShiftIds)) {
+            return response()->json([
+                'data' => [],
+                'message' => 'لا توجد ورديات حالية نشطة.',
+            ]);
+        }
 
-    $shiftIdsStr = implode(',', $activeShiftIds);
+        $shiftIdsStr = implode(',', $activeShiftIds);
 
-    // 2) حد الدقائق: من الإعدادات أو من باراميتر الطلب كـ fallback
-    // غيّر طريقة الجلب حسب نظام الإعدادات لديك
-    $defaultLimit = 30;
-    $settingsLimit = (int) request('renewal_limit_minutes', $defaultLimit);
+        // 2) حد الدقائق: من الإعدادات أو من باراميتر الطلب كـ fallback
+        // غيّر طريقة الجلب حسب نظام الإعدادات لديك
+        $defaultLimit = 30;
+        $settingsLimit = (int) request('renewal_limit_minutes', $defaultLimit);
 
-    // 3) الاستعلام
-    // شروطنا:
-    //  - حضر اليوم: تاريخ last_seen_at (بتوقيت الرياض) = تاريخ اليوم (بتوقيت السيرفر بعد تحويله +03).
-    //  - لديه تجديد: last_renewal_at IS NOT NULL
-    //  - متأخر: TIMESTAMPDIFF(MINUTE, last_renewal_at, NOW(+03)) > limit
-    $results = \DB::select("
+        // 3) الاستعلام
+        // شروطنا:
+        //  - حضر اليوم: تاريخ last_seen_at (بتوقيت الرياض) = تاريخ اليوم (بتوقيت السيرفر بعد تحويله +03).
+        //  - لديه تجديد: last_renewal_at IS NOT NULL
+        //  - متأخر: TIMESTAMPDIFF(MINUTE, last_renewal_at, NOW(+03)) > limit
+        $results = \DB::select("
         SELECT 
             es.id,
             es.employee_id,
@@ -445,11 +445,11 @@ class EmployeeStatusController extends Controller
             END
     ", [$settingsLimit]);
 
-    return response()->json([
-        'data' => $results,
-        'limit_minutes' => $settingsLimit,
-    ]);
-}
+        return response()->json([
+            'data' => $results,
+            'limit_minutes' => $settingsLimit,
+        ]);
+    }
 
 
 

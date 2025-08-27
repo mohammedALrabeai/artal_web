@@ -31,6 +31,8 @@ use App\Http\Controllers\EmployeeNotificationController;
 use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\V2\UncoveredZonesController;
 use App\Http\Controllers\Api\OperationNotificationController;
+use App\Http\Controllers\Reports\AttendanceReportController;
+
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
 Route::get('/download-apk/{filename}', [App\Http\Controllers\ApkController::class, 'downloadApk']);
@@ -459,3 +461,8 @@ Route::post('/attendances/{attendance}/renewals', [AttendanceRenewalController::
 
 // 2) بدون Route Param (تمرير attendance_id في البودي):
 Route::post('/attendance-renewals', [AttendanceRenewalController::class, 'store']);
+
+
+// routes/api.php
+Route::get('/attendances/missing-checkout', [\App\Http\Controllers\AttendanceMissingCheckoutController::class, 'index'])
+    ->middleware('auth:sanctum');
