@@ -107,6 +107,11 @@ public function renewals()
 {
     return $this->hasMany(\App\Models\AttendanceRenewal::class);
 }
+public function renewalsOrdered()
+{
+    return $this->hasMany(\App\Models\AttendanceRenewal::class, 'attendance_id')
+        ->orderBy('renewed_at');
+}
 
 public function lastRenewal()
 {

@@ -2317,10 +2317,21 @@ class AttendanceController extends Controller
         $end   = now('Asia/Riyadh')->endOfDay();
         $start = $end->copy()->subDays($days - 1)->startOfDay();
 
+        // $records = Attendance::query()
+        //     ->where('employee_id', $employeeId)
+        //     ->whereBetween('date', [$start, $end])
+        //     ->with(['zone:id,name', 'shift:id,name'])
+        //     ->orderByDesc('date')
+        //     ->orderByDesc('check_in_datetime')
+        //     ->get();
         $records = Attendance::query()
             ->where('employee_id', $employeeId)
             ->whereBetween('date', [$start, $end])
-            ->with(['zone:id,name', 'shift:id,name'])
+            ->with([
+                'zone:id,name',
+                'shift:id,name',
+                'renewalsOrdered:id,attendance_id,renewed_at,kind,status' // 👈 الجديد
+            ])
             ->orderByDesc('date')
             ->orderByDesc('check_in_datetime')
             ->get();

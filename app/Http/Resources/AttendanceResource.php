@@ -23,6 +23,13 @@ class AttendanceResource extends JsonResource
             'zone_name'  => $this->zone?->name,
             'shift_id'   => $this->shift_id,
             'shift_name' => $this->shift?->name,
+             'renewals'    => $this->whenLoaded('renewals', function () {
+            return $this->renewals->map(fn($r) => [
+                'renewed_at' => optional($r->renewed_at)->timezone('Asia/Riyadh')->format('Y-m-d H:i:s'),
+                'kind'       => $r->kind,   // manual | auto | voice
+                'status'     => $r->status, // ok | canceled | expired
+            ]);
+        }),
         ];
     }
 }
