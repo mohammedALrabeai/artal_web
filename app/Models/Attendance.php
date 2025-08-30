@@ -105,8 +105,10 @@ public function scopeLastToday($q, int $employeeId)
 // 1) العلاقات
 public function renewals()
 {
-    return $this->hasMany(\App\Models\AttendanceRenewal::class);
+    return $this->hasMany(\App\Models\AttendanceRenewal::class, 'attendance_id', 'id');
 }
+
+
 public function renewalsOrdered()
 {
     return $this->hasMany(\App\Models\AttendanceRenewal::class, 'attendance_id')

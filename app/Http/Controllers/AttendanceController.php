@@ -2324,20 +2324,26 @@ class AttendanceController extends Controller
         //     ->orderByDesc('date')
         //     ->orderByDesc('check_in_datetime')
         //     ->get();
-       $records = Attendance::query()
+       $records = \App\Models\Attendance::query()
     ->where('employee_id', $employeeId)
     ->whereBetween('date', [$start, $end])
     ->with([
         'zone:id,name',
         'shift:id,name',
-        'renewalsOrdered' => function ($q) {
-            $q->select('id','attendance_id','renewed_at','kind','status')
-              ->orderBy('renewed_at');
+        'renewals' => function ($q) {
+            $q->select([
+                'id',
+                'attendance_id',   // 👈 ضروري
+                'renewed_at',
+                'kind',
+                'status'
+            ])->orderBy('renewed_at');
         },
     ])
     ->orderByDesc('date')
     ->orderByDesc('check_in_datetime')
     ->get();
+
 
         $last = Attendance::where('employee_id', $employeeId)
             ->latest('check_in_datetime')
