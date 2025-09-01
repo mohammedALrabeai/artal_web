@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Models\EmployeeFaceEvent;
 use App\Models\Employee;
+use Illuminate\Support\Carbon;
+
 
 
 
@@ -403,58 +405,73 @@ class FaceAuthController extends Controller
             ], 404);
         }
 
+        // ✅ اليوم المطلوب (إن لم يرسل يعود إلى اليوم)
+        $requestedDate = $request->query('date'); // شكل متوقع: YYYY-MM-DD
+        $day          = $requestedDate
+            ? Carbon::parse($requestedDate, $tz)->startOfDay()
+            : now($tz)->startOfDay();
+
+        $startOfDay = $day->copy();
+        $endOfDay   = $day->copy()->endOfDay();
+
         // صورة التسجيل الأساسية (من جدول الأحداث إن وجدت، وإلا من حقل employee.face_image)
         $baseEnroll = EmployeeFaceEvent::latestEnrollFor($emp->id)->first();
         $baseImageUrlFromEmployee = $emp->face_image
             ? Storage::disk('public')->url($emp->face_image)
             : null;
 
-        // تحقق اليوم
-        $todayVerifies = EmployeeFaceEvent::forEmployee($emp->id)
-            ->verifies()
-            ->today($tz)
-            ->latestFirst()
-            ->get();
+        // ✅ تحقّقات اليوم المطلوب
+        $verifiesQuery = EmployeeFaceEvent::query()
+            ->where('employee_id', $emp->id)
+            ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
+            ->whereBetween('captured_at', [$startOfDay, $endOfDay])
+            ->orderByDesc('captured_at'); // بدلاً من latestFirst() لضمان الترتيب
+
+        $todayVerifies = $verifiesQuery->get();
 
         // تحويل النتائج إلى مصفوفة مرتبة
-        $verifications = $todayVerifies->map(function (EmployeeFaceEvent $ev) {
+        $verifications = $todayVerifies->map(function (EmployeeFaceEvent $ev) use ($tz) {
             return [
-                'id'         => $ev->id,
-                'captured_at' => optional($ev->captured_at)->timezone('Asia/Riyadh')->format('Y-m-d H:i:s'),
-                'similarity' => $ev->similarity !== null ? (float) $ev->similarity : null,
-                'passed'     => (bool) data_get($ev->meta, 'passed', false),
-                'threshold'  => data_get($ev->meta, 'threshold'),
-                'url'        => $ev->url,        // من الـ accessor
-                'thumb_url'  => $ev->thumb_url,  // من الـ accessor (أو نفس الأصل إن لا يوجد مصغّر)
+                'id'          => $ev->id,
+                'captured_at' => optional($ev->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                'similarity'  => $ev->similarity !== null ? (float) $ev->similarity : null,
+                'passed'      => (bool) data_get($ev->meta, 'passed', false),
+                'threshold'   => data_get($ev->meta, 'threshold'),
+                'url'         => $ev->url,
+                'thumb_url'   => $ev->thumb_url,
                 'rek_face_id' => $ev->rek_face_id,
                 'rek_image_id' => $ev->rek_image_id,
-                'meta'       => $ev->meta,
+                'meta'        => $ev->meta,
             ];
         })->values();
 
         return response()->json([
-            'success'      => true,
-            'employee_id'  => $emp->id,
-            'date'         => now($tz)->toDateString(),
+            'success'     => true,
+            'employee_id' => $emp->id,
+            // ✅ التاريخ المعروض من الخادم هو اليوم المطلوب
+            'date'        => $startOfDay->toDateString(),
+
             'base' => [
                 'enrollment_event' => $baseEnroll ? [
-                    'id'          => $baseEnroll->id,
-                    'captured_at' => optional($baseEnroll->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
-                    'url'         => $baseEnroll->url,
-                    'thumb_url'   => $baseEnroll->thumb_url,
-                    'path'        => $baseEnroll->path,
-                    'disk'        => $baseEnroll->disk,
-                    'rek_face_id' => $baseEnroll->rek_face_id,
+                    'id'           => $baseEnroll->id,
+                    'captured_at'  => optional($baseEnroll->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                    'url'          => $baseEnroll->url,
+                    'thumb_url'    => $baseEnroll->thumb_url,
+                    'path'         => $baseEnroll->path,
+                    'disk'         => $baseEnroll->disk,
+                    'rek_face_id'  => $baseEnroll->rek_face_id,
                     'rek_image_id' => $baseEnroll->rek_image_id,
                 ] : null,
-                'employee_face_image_url' => $baseImageUrlFromEmployee, // fallback (حقل employee.face_image)
+                'employee_face_image_url' => $baseImageUrlFromEmployee,
             ],
+
             'today' => [
                 'total'         => $verifications->count(),
                 'verifications' => $verifications,
             ],
         ]);
     }
+
 
     /**
      * GET /api/face/today?employee_id=123
@@ -464,6 +481,7 @@ class FaceAuthController extends Controller
     {
         $data = $request->validate([
             'employee_id' => 'required|integer',
+            'date'        => 'nullable|date', // ✅ تاريخ اختياري
         ]);
 
         return $this->todayVerifications((int) $data['employee_id'], $request);
@@ -591,3 +609,8 @@ class FaceAuthController extends Controller
         ]);
     }
 }
+
+
+
+// للاستعلام عن عدد الاستخدام لكل موظف 
+// SELECT employee_id, COUNT(*) AS total_events FROM employee_face_events GROUP BY employee_id ORDER BY total_events DESC;
