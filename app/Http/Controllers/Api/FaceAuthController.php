@@ -15,6 +15,7 @@ use App\Models\Employee;
 
 
 
+
 class FaceAuthController extends Controller
 {
     public function __construct(private RekognitionService $rek)
@@ -386,87 +387,207 @@ class FaceAuthController extends Controller
 
 
     /**
- * GET /api/face/employees/{employee}/today
- * يرجع صورة التسجيل الأساسية + جميع تحقق اليوم مع التفاصيل
- */
-public function todayVerifications(int $employee, Request $request)
-{
-    $tz = 'Asia/Riyadh';
+     * GET /api/face/employees/{employee}/today
+     * يرجع صورة التسجيل الأساسية + جميع تحقق اليوم مع التفاصيل
+     */
+    public function todayVerifications(int $employee, Request $request)
+    {
+        $tz = 'Asia/Riyadh';
 
-    /** @var Employee|null $emp */
-    $emp = Employee::find($employee);
-    if (!$emp) {
+        /** @var Employee|null $emp */
+        $emp = Employee::find($employee);
+        if (!$emp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الموظف غير موجود.',
+            ], 404);
+        }
+
+        // صورة التسجيل الأساسية (من جدول الأحداث إن وجدت، وإلا من حقل employee.face_image)
+        $baseEnroll = EmployeeFaceEvent::latestEnrollFor($emp->id)->first();
+        $baseImageUrlFromEmployee = $emp->face_image
+            ? Storage::disk('public')->url($emp->face_image)
+            : null;
+
+        // تحقق اليوم
+        $todayVerifies = EmployeeFaceEvent::forEmployee($emp->id)
+            ->verifies()
+            ->today($tz)
+            ->latestFirst()
+            ->get();
+
+        // تحويل النتائج إلى مصفوفة مرتبة
+        $verifications = $todayVerifies->map(function (EmployeeFaceEvent $ev) {
+            return [
+                'id'         => $ev->id,
+                'captured_at' => optional($ev->captured_at)->timezone('Asia/Riyadh')->format('Y-m-d H:i:s'),
+                'similarity' => $ev->similarity !== null ? (float) $ev->similarity : null,
+                'passed'     => (bool) data_get($ev->meta, 'passed', false),
+                'threshold'  => data_get($ev->meta, 'threshold'),
+                'url'        => $ev->url,        // من الـ accessor
+                'thumb_url'  => $ev->thumb_url,  // من الـ accessor (أو نفس الأصل إن لا يوجد مصغّر)
+                'rek_face_id' => $ev->rek_face_id,
+                'rek_image_id' => $ev->rek_image_id,
+                'meta'       => $ev->meta,
+            ];
+        })->values();
+
         return response()->json([
-            'success' => false,
-            'message' => 'الموظف غير موجود.',
-        ], 404);
+            'success'      => true,
+            'employee_id'  => $emp->id,
+            'date'         => now($tz)->toDateString(),
+            'base' => [
+                'enrollment_event' => $baseEnroll ? [
+                    'id'          => $baseEnroll->id,
+                    'captured_at' => optional($baseEnroll->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                    'url'         => $baseEnroll->url,
+                    'thumb_url'   => $baseEnroll->thumb_url,
+                    'path'        => $baseEnroll->path,
+                    'disk'        => $baseEnroll->disk,
+                    'rek_face_id' => $baseEnroll->rek_face_id,
+                    'rek_image_id' => $baseEnroll->rek_image_id,
+                ] : null,
+                'employee_face_image_url' => $baseImageUrlFromEmployee, // fallback (حقل employee.face_image)
+            ],
+            'today' => [
+                'total'         => $verifications->count(),
+                'verifications' => $verifications,
+            ],
+        ]);
     }
 
-    // صورة التسجيل الأساسية (من جدول الأحداث إن وجدت، وإلا من حقل employee.face_image)
-    $baseEnroll = EmployeeFaceEvent::latestEnrollFor($emp->id)->first();
-    $baseImageUrlFromEmployee = $emp->face_image
-        ? Storage::disk('public')->url($emp->face_image)
-        : null;
+    /**
+     * GET /api/face/today?employee_id=123
+     * نفس استجابة todayVerifications ولكن عبر كويري بارامتر
+     */
+    public function todayVerificationsQuery(Request $request)
+    {
+        $data = $request->validate([
+            'employee_id' => 'required|integer',
+        ]);
 
-    // تحقق اليوم
-    $todayVerifies = EmployeeFaceEvent::forEmployee($emp->id)
-        ->verifies()
-        ->today($tz)
-        ->latestFirst()
-        ->get();
-
-    // تحويل النتائج إلى مصفوفة مرتبة
-    $verifications = $todayVerifies->map(function (EmployeeFaceEvent $ev) {
-        return [
-            'id'         => $ev->id,
-            'captured_at'=> optional($ev->captured_at)->timezone('Asia/Riyadh')->format('Y-m-d H:i:s'),
-            'similarity' => $ev->similarity !== null ? (float) $ev->similarity : null,
-            'passed'     => (bool) data_get($ev->meta, 'passed', false),
-            'threshold'  => data_get($ev->meta, 'threshold'),
-            'url'        => $ev->url,        // من الـ accessor
-            'thumb_url'  => $ev->thumb_url,  // من الـ accessor (أو نفس الأصل إن لا يوجد مصغّر)
-            'rek_face_id'=> $ev->rek_face_id,
-            'rek_image_id'=> $ev->rek_image_id,
-            'meta'       => $ev->meta,
-        ];
-    })->values();
-
-    return response()->json([
-        'success'      => true,
-        'employee_id'  => $emp->id,
-        'date'         => now($tz)->toDateString(),
-        'base' => [
-            'enrollment_event' => $baseEnroll ? [
-                'id'          => $baseEnroll->id,
-                'captured_at' => optional($baseEnroll->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
-                'url'         => $baseEnroll->url,
-                'thumb_url'   => $baseEnroll->thumb_url,
-                'path'        => $baseEnroll->path,
-                'disk'        => $baseEnroll->disk,
-                'rek_face_id' => $baseEnroll->rek_face_id,
-                'rek_image_id'=> $baseEnroll->rek_image_id,
-            ] : null,
-            'employee_face_image_url' => $baseImageUrlFromEmployee, // fallback (حقل employee.face_image)
-        ],
-        'today' => [
-            'total'         => $verifications->count(),
-            'verifications' => $verifications,
-        ],
-    ]);
-}
-
-/**
- * GET /api/face/today?employee_id=123
- * نفس استجابة todayVerifications ولكن عبر كويري بارامتر
- */
-public function todayVerificationsQuery(Request $request)
-{
-    $data = $request->validate([
-        'employee_id' => 'required|integer',
-    ]);
-
-    return $this->todayVerifications((int) $data['employee_id'], $request);
-}
+        return $this->todayVerifications((int) $data['employee_id'], $request);
+    }
 
 
+
+
+
+
+
+
+    public function resetEnrollment(Request $request)
+    {
+        $data = $request->validate([
+            'employee_id' => 'required|integer',
+        ]);
+
+        $employee = Employee::find($data['employee_id']);
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الموظف غير موجود.',
+            ], 404);
+        }
+
+        $tz           = 'Asia/Riyadh';
+        $collectionId = config('services.rekognition.collection') ?: env('AWS_REKOGNITION_COLLECTION');
+
+        // 1) حذف وجوه الموظف من Rekognition
+        if (!empty($collectionId)) {
+            try {
+                $client  = $this->rek->client();
+
+                // نجلب FaceIds المُسجلة سابقًا في أحداث enroll (أخفّ تكلفة)
+                $faceIds = EmployeeFaceEvent::query()
+                    ->where('employee_id', $employee->id)
+                    ->where('type', EmployeeFaceEvent::TYPE_ENROLL)
+                    ->whereNotNull('rek_face_id')
+                    ->pluck('rek_face_id')
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                // خطة بديلة: مسح المجموعة بحثًا عن ExternalImageId = employee_id (لو لم نكن نحفظ rek_face_id)
+                if (empty($faceIds)) {
+                    $token = null;
+                    do {
+                        $args = ['CollectionId' => $collectionId, 'MaxResults' => 4096];
+                        if ($token) $args['NextToken'] = $token;
+                        $out = $client->listFaces($args);
+                        foreach ($out['Faces'] as $f) {
+                            if (($f['ExternalImageId'] ?? null) === (string)$employee->id) {
+                                $faceIds[] = $f['FaceId'];
+                            }
+                        }
+                        $token = $out['NextToken'] ?? null;
+                    } while ($token);
+                }
+
+                if (!empty($faceIds)) {
+                    $client->deleteFaces([
+                        'CollectionId' => $collectionId,
+                        'FaceIds'      => array_values(array_unique($faceIds)),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('resetEnrollment: purge Rekognition failed', [
+                    'employee_id' => $employee->id,
+                    'error'       => $e->getMessage(),
+                ]);
+                // لا نفشل الطلب
+            }
+        }
+
+        // 2) حذف صور التسجيل فقط من التخزين (لا نلمس verify)
+        try {
+            $disk = 'public';
+            $dir  = "employees/{$employee->id}/face/enrollment";
+            if (Storage::disk($disk)->exists($dir)) {
+                // حذف الملفات داخل مجلد enrollment فقط
+                foreach (Storage::disk($disk)->allFiles($dir) as $file) {
+                    Storage::disk($disk)->delete($file);
+                }
+                // حذف المجلدات الفارغة تحت enrollment
+                foreach (Storage::disk($disk)->allDirectories($dir) as $sub) {
+                    Storage::disk($disk)->deleteDirectory($sub);
+                }
+                // لا نحذف مجلد verify ولا أي شيء خارجه
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('resetEnrollment: purge enrollment storage failed', [
+                'employee_id' => $employee->id,
+                'error'       => $e->getMessage(),
+            ]);
+        }
+
+        // (اختياري) تنظيف سجلات أحداث التسجيل فقط (نترك verify كما هي)
+        try {
+            EmployeeFaceEvent::query()
+                ->where('employee_id', $employee->id)
+                ->where('type', EmployeeFaceEvent::TYPE_ENROLL)
+                ->delete(); // لو عندك SoftDeletes استعمل ->forceDelete() حسب سياستك
+        } catch (\Throwable $e) {
+            \Log::warning('resetEnrollment: delete enroll events failed', [
+                'employee_id' => $employee->id,
+                'error'       => $e->getMessage(),
+            ]);
+        }
+
+        // 3) تصفير حالة الوجه ورابط الصورة
+        $employee->markFaceNotEnrolled(true); // true = تصفير face_image
+
+        return response()->json([
+            'success'     => true,
+            'message'     => 'تم حذف وجوه Rekognition وصور التسجيل فقط. الموظف جاهز لتسجيل صورة جديدة.',
+            'employee_id' => $employee->id,
+            'status'      => $employee->face_enrollment_status, // not_enrolled
+            'face_image'  => $employee->face_image, // null الآن
+            'info'        => [
+                'rekognition_collection' => $collectionId,
+                'deleted_only'           => 'enrollment images',
+                'verify_images_untouched' => true,
+            ],
+        ]);
+    }
 }

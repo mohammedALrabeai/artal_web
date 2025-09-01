@@ -382,6 +382,9 @@ class Request extends Model
 
             $currentDate->addDay();
         }
+
+        // هنا يفترض تصفير عداد الغياب المتتالي إذا لزم الأمر
+        // $this->employee->employeeStatus->update(['consecutive_absence_count' => 0]); // تحديث عداد الغياب();
     }
 
 

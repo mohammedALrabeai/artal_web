@@ -341,6 +341,24 @@ class Employee extends Model
             ->exists();
     }
 
+    // app/Models/Employee.php
+public function markFaceNotEnrolled(bool $clearImage = true): bool
+{
+    $now = now('Asia/Riyadh');
+
+    $data = [
+        'face_enrollment_status' => self::FACE_NOT_ENROLLED,
+        'face_last_update_at'    => $now,
+        'face_enrolled_at'       => null,
+    ];
+    if ($clearImage) {
+        $data['face_image'] = null;
+    }
+    $this->forceFill($data);
+    return $this->saveQuietly();
+}
+
+
     public function getDescriptionForEvent(string $eventName): string
     {
         // إرسال إشعار عند التعديل فقط
