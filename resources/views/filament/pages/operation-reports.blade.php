@@ -17,40 +17,78 @@
             </iframe>
         </div>
     </x-filament::section> --}}
-    <x-filament::section>
-        <x-slot name="heading">تقرير المتغيرات</x-slot>
-        <x-slot name="description">تصدير الموظفين الذين تم توظيفهم خلال فترة معينة مع تحديد الموظف المستبدل إن
-            وجد.</x-slot>
+ <x-filament::section>
+    <x-slot name="heading">تقرير المتغيرات</x-slot>
+    <x-slot name="description">
+        تصدير الموظفين الذين تم توظيفهم خلال فترة معينة مع تحديد الموظف المستبدل إن وجد.
+    </x-slot>
 
+    <div 
+        x-data="{
+            openReport() {
+                const from = $refs.from.value;
+                const to   = $refs.to.value;
+                if (!from || !to || from > to) {
+                    alert('تأكد من صحة التواريخ');
+                    return;
+                }
+                window.open('{{ route('reports.employee-changes') }}' + `?from=${from}&to=${to}`, '_blank');
+            }
+        }"
+    >
         <form method="POST" action="{{ route('exports.employee-changes') }}" class="space-y-4">
             @csrf
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                     <label for="from" class="text-sm font-medium text-gray-700 dark:text-gray-300">من تاريخ</label>
-                    <input type="date" id="from" name="from" required
-                        class="w-full border-gray-300 rounded-lg shadow-sm filament-input dark:border-gray-700" />
+                    <input
+                        type="date"
+                        id="from"
+                        name="from"
+                        required
+                        x-ref="from"
+                        class="w-full border-gray-300 rounded-lg shadow-sm dark:border-gray-700"
+                    />
                 </div>
 
                 <div class="space-y-2">
                     <label for="to" class="text-sm font-medium text-gray-700 dark:text-gray-300">إلى تاريخ</label>
-                    <input type="date" id="to" name="to" required
-       value="{{ old('to', now('Asia/Riyadh')->toDateString()) }}"
-
-       class="w-full border-gray-300 rounded-lg shadow-sm filament-input dark:border-gray-700" />
-
+                    <input
+                        type="date"
+                        id="to"
+                        name="to"
+                        required
+                        x-ref="to"
+                        value="{{ old('to', now('Asia/Riyadh')->toDateString()) }}"
+                        class="w-full border-gray-300 rounded-lg shadow-sm dark:border-gray-700"
+                    />
                 </div>
             </div>
 
-            <div class="mt-6">
-                <button type="submit"
-                    class="inline-flex items-center px-4 py-2 text-white transition rounded-lg filament-button bg-primary-600 hover:bg-primary-700">
+            <div class="flex items-center gap-3 mt-6">
+                <button
+                    type="submit"
+                    class="inline-flex items-center px-4 py-2 text-white transition rounded-lg bg-primary-600 hover:bg-primary-700"
+                >
                     <x-heroicon-o-arrow-down-tray class="w-5 h-5 mr-2" />
                     تصدير تقرير المتغيرات
                 </button>
+
+                <x-filament::button
+                    type="button"
+                    icon="heroicon-o-eye"
+                    color="gray"
+                    @click="openReport()"
+                >
+                    عرض التقرير
+                </x-filament::button>
             </div>
         </form>
-    </x-filament::section>
+    </div>
+</x-filament::section>
+
+
     <x-filament::section>
         <x-slot name="heading">تقرير جدول التشغيل (نمط العمل)</x-slot>
         <x-slot name="description">تصدير نمط العمل لمدة 30 يومًا للمشاريع المختارة حسب التاريخ.</x-slot>

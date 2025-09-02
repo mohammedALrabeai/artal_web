@@ -22,13 +22,17 @@ use App\Http\Controllers\attendance\AttendanceExport2Controller;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\ExportWorkPatternPayrollJob;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+
+use Illuminate\Pagination\LengthAwarePaginator;
+
 
 
 
 use App\Http\Controllers\attendance\AttendanceYearlyExportController;
 use App\Http\Controllers\attendance\ImprovedAttendanceExport2Controller;
 
-  use App\Models\Shift;
+use App\Models\Shift;
 
 Route::get('/', function () {
     return view('welcome');
@@ -122,7 +126,7 @@ Route::get('/timeline-slots', [App\Http\Controllers\TimelineController::class, '
 Route::get('/admin/timeline-demo/{project}', [\App\Http\Controllers\TimelineController::class, 'show'])
     ->name('timeline-demo');
 
-    Route::get('/slot-timeline', [SlotTimelineController::class, 'index'])->name('slot.timeline');
+Route::get('/slot-timeline', [SlotTimelineController::class, 'index'])->name('slot.timeline');
 
 
 
@@ -143,6 +147,75 @@ Route::post('/exports/employee-changes', function () {
     return Excel::download(new EmployeeChangesExport($from, $to), $fileName);
 })->name('exports.employee-changes')->middleware(['auth']);
 
+
+
+
+
+Route::get('/reports/employee-changes', function () {
+    $from    = request('from');
+    $to      = request('to');
+    $q       = trim((string) request('q', ''));
+    $perPage = (int) request('per_page', 50);
+
+    if (! $from || ! $to || $from > $to) {
+        abort(400, 'تأكد من صحة التواريخ');
+    }
+
+    $records = EmployeeProjectRecord::with(['employee', 'project', 'zone', 'shift', 'shiftSlot'])
+        ->whereBetween('created_at', [$from, $to])
+        ->get();
+
+    $rows = $records->map(function ($record) {
+        $previous = EmployeeProjectRecord::with('employee')
+            ->where('shift_slot_id', $record->shift_slot_id)
+            ->where('created_at', '<', $record->created_at)
+            ->latest('created_at')
+            ->first();
+
+        return [
+            'employee_name'   => $record->employee?->name,
+            'national_id'     => $record->employee?->national_id,
+            'hired_at'        => optional($record->created_at)->format('Y-m-d H:i'),
+            'project_name'    => $record->project?->name,
+            'zone_name'       => $record->zone?->name,
+            'shift_name'      => $record->shift?->name,
+            'replaced_by'     => $previous?->employee?->name,
+            'replaced_end_at' => $previous?->end_date ? Carbon::parse($previous->end_date)->format('Y-m-d') : '-',
+        ];
+    });
+
+    if ($q !== '') {
+        $qLower = mb_strtolower($q);
+        $rows = $rows->filter(function ($r) use ($qLower) {
+            return str_contains(mb_strtolower($r['employee_name'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($r['national_id'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($r['project_name'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($r['zone_name'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($r['shift_name'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($r['replaced_by'] ?? ''), $qLower);
+        })->values();
+    }
+
+    $page  = LengthAwarePaginator::resolveCurrentPage();
+    $total = $rows->count();
+    $items = $rows->forPage($page, $perPage)->values();
+
+    $paginator = new LengthAwarePaginator(
+        $items,
+        $total,
+        $perPage,
+        $page,
+        ['path' => request()->url(), 'query' => request()->query()]
+    );
+
+    return view('reports.employee-changes', [
+        'from'      => $from,
+        'to'        => $to,
+        'q'         => $q,
+        'perPage'   => $perPage,
+        'paginator' => $paginator,
+    ]);
+})->name('reports.employee-changes')->middleware(['auth']);
 
 
 

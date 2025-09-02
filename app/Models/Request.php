@@ -393,4 +393,22 @@ class Request extends Model
     {
         return $this->morphMany(Attachment::class, 'model');
     }
+
+    // App/Models/Request.php
+public function getIsExclusionDueTodayAndWasFutureAttribute(): bool
+{
+    if ($this->type !== 'exclusion' || !$this->relationLoaded('exclusion') && !$this->exclusion) {
+        return false;
+    }
+
+    $today = \Carbon\Carbon::today('Asia/Riyadh')->toDateString();
+    $exDate = optional($this->exclusion)->exclusion_date;
+
+    if (!$exDate) return false;
+
+    // كان مستقبليًا (أُنشئ قبل اليوم) وأصبح اليوم
+    return \Illuminate\Support\Str::of($exDate)->is($today)
+        && $this->created_at->lt(\Carbon\Carbon::today('Asia/Riyadh'));
+}
+
 }

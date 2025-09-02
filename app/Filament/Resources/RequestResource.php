@@ -138,7 +138,7 @@ class RequestResource extends Resource
                             // تاريخ النهاية
                             Forms\Components\DatePicker::make('end_date')
                                 ->label(__('End Date'))
-                                ->minDate(fn (callable $get) => $get('start_date') ?? now()->startOfMonth())
+                                ->minDate(fn(callable $get) => $get('start_date') ?? now()->startOfMonth())
                                 ->required()
                                 ->reactive()
                                 ->visible(fn($get) => $get('type') === 'leave'),
@@ -419,6 +419,32 @@ class RequestResource extends Resource
     public static function table(Tables\Table $table): Tables\Table
     {
         return $table
+            // داخل public static function table(Tables\Table $table)
+            ->recordClasses(function ($record) {
+                $tz = 'Asia/Riyadh';
+                $now = \Carbon\Carbon::now($tz);
+                $startOfToday = $now->copy()->startOfDay();
+                $endOfToday   = $now->copy()->endOfDay();
+
+                // لازم يكون استبعاد ومعه تاريخ
+                if ($record->type !== 'exclusion' || ! $record->exclusion?->exclusion_date) {
+                    return null;
+                }
+
+                $exDate = \Carbon\Carbon::parse($record->exclusion->exclusion_date, $tz);
+
+                // لم يعد "مستقبلي": تاريخ الاستبعاد اليوم أو أصبح في الماضي
+                $isDueOrPast = $exDate->lte($endOfToday);
+
+                // كان مستقبليًا (الطلب أُنشئ قبل اليوم)
+                $wasFutureWhenCreated = $record->created_at->lt($startOfToday);
+
+                $highlight = $isDueOrPast && $wasFutureWhenCreated;
+
+                return $highlight ? 'bg-red-50 text-red-800 font-semibold ring-2 ring-red-400/60' : null;
+            })
+
+
             ->columns([
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Type'))
@@ -470,6 +496,14 @@ class RequestResource extends Resource
                     ->label(__('Exclusion Date'))
                     ->getStateUsing(fn($record) => $record->exclusion?->exclusion_date)
                     ->formatStateUsing(fn($state) => $state ? \Carbon\Carbon::parse($state)->format('Y-m-d') : '-')
+                    ->color(function ($record) {
+                        $today = \Carbon\Carbon::today('Asia/Riyadh');
+                        $exDate = $record->exclusion?->exclusion_date;
+                        if ($record->type === 'exclusion' && $exDate && \Carbon\Carbon::parse($exDate)->lte($today)) {
+                            return 'danger'; // أو success / warning حسب المعنى
+                        }
+                        return null;
+                    })
                     ->sortable(),
 
 
