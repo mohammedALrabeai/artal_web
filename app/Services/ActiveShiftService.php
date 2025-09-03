@@ -13,7 +13,7 @@ class ActiveShiftService
     $now = $now ? $now->copy()->tz('Asia/Riyadh') : \Illuminate\Support\Carbon::now('Asia/Riyadh');
 
     // بصمة[Cache30]: كاش لنتيجة الملخص لمدة 30 ثانية
-    $cacheKey = 'active_shifts_summary';
+    $cacheKey = 'active_shifts_summary_v4';
     return cache()->remember($cacheKey, now()->addSeconds(30), function () use ($now) {
 
         // بصمة[O1]: تحضيرات عامة
