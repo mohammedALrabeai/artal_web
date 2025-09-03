@@ -7,6 +7,340 @@ use Carbon\Carbon;
 
 class ActiveShiftService
 {
+
+    public function getActiveShiftsSummaryV4(?Carbon $now = null): array
+{
+    $now = $now ? $now->copy()->tz('Asia/Riyadh') : \Illuminate\Support\Carbon::now('Asia/Riyadh');
+
+    // بصمة[Cache30]: كاش لنتيجة الملخص لمدة 30 ثانية
+    $cacheKey = 'active_shifts_summary';
+    return cache()->remember($cacheKey, now()->addSeconds(30), function () use ($now) {
+
+        // بصمة[O1]: تحضيرات عامة
+        $todayStart     = $now->copy()->startOfDay();
+        $yesterdayStart = $now->copy()->subDay()->startOfDay();
+        $lookbackHours  = 13; // يمكن جعله إعدادًا
+
+        // بصمة[O2]: تحميل هيكل Area → Projects → Zones → Shifts دفعة واحدة
+        $areas = \App\Models\Area::with([
+            'projects' => fn($q) => $q->where('status', 1),
+            'projects.zones' => fn($q) => $q->where('status', 1),
+            'projects.zones.shifts' => fn($q) => $q->where('status', 1),
+        ])->get();
+
+        // بصمة[O3]: تحديد الأزواج (zone:shift) الحالية وتقسيمها (اليوم/أمس)
+        $allZoneIds   = [];
+        $allShiftIds  = [];
+        $currentPairsToday     = []; // key => true
+        $currentPairsYesterday = []; // key => true
+        $zonesHasYesterday     = []; // zone_id => true
+
+        foreach ($areas as $area) {
+            foreach ($area->projects as $project) {
+                foreach ($project->zones as $zone) {
+                    $allZoneIds[$zone->id] = true;
+                    foreach ($zone->shifts as $shift) {
+                        $allShiftIds[$shift->id] = true;
+
+                        [$isCurrent, $startedAt] = $shift->getShiftActiveStatus2($now);
+                        if ($isCurrent) {
+                            $key = $zone->id . ':' . $shift->id;
+                            if ($startedAt === 'yesterday') {
+                                $currentPairsYesterday[$key] = true;
+                                $zonesHasYesterday[$zone->id] = true;
+                            } elseif ($startedAt === 'today') {
+                                $currentPairsToday[$key] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $allZoneIds  = array_keys($allZoneIds);
+        $allShiftIds = array_keys($allShiftIds);
+
+        // بصمة[O4]: استعلامات مجمّعة
+
+        // (A) الحاضرون الآن لكل زوج (اليوم)
+        $presentNowByPair = []; // 'zone:shift' => ['count'=>int,'ids'=>[emp_id=>true]]
+        if (!empty($currentPairsToday)) {
+            $zoneIdsToday  = array_unique(array_map(fn($k) => (int) explode(':', $k)[0], array_keys($currentPairsToday)));
+            $shiftIdsToday = array_unique(array_map(fn($k) => (int) explode(':', $k)[1], array_keys($currentPairsToday)));
+
+            $rows = \App\Models\Attendance::query()
+                ->select(['zone_id','shift_id','employee_id'])
+                ->where('status','present')
+                ->whereNull('check_out')
+                ->whereIn('zone_id', $zoneIdsToday)
+                ->whereIn('shift_id', $shiftIdsToday)
+                ->where('created_at', '>=', $todayStart)
+                ->get();
+
+            foreach ($rows as $r) {
+                $k = $r->zone_id . ':' . $r->shift_id;
+                if (!isset($currentPairsToday[$k])) continue;
+                $presentNowByPair[$k]['count'] = ($presentNowByPair[$k]['count'] ?? 0) + 1;
+                $presentNowByPair[$k]['ids'][$r->employee_id] = true;
+            }
+        }
+
+        // (B) الحاضرون الآن لكل زوج (وردية بدأت أمس)
+        if (!empty($currentPairsYesterday)) {
+            $zoneIdsYest  = array_unique(array_map(fn($k) => (int) explode(':', $k)[0], array_keys($currentPairsYesterday)));
+            $shiftIdsYest = array_unique(array_map(fn($k) => (int) explode(':', $k)[1], array_keys($currentPairsYesterday)));
+
+            $rows = \App\Models\Attendance::query()
+                ->select(['zone_id','shift_id','employee_id'])
+                ->where('status','present')
+                ->whereNull('check_out')
+                ->whereIn('zone_id', $zoneIdsYest)
+                ->whereIn('shift_id', $shiftIdsYest)
+                ->where('created_at', '>=', $yesterdayStart)
+                ->get();
+
+            foreach ($rows as $r) {
+                $k = $r->zone_id . ':' . $r->shift_id;
+                if (!isset($currentPairsYesterday[$k])) continue;
+                $presentNowByPair[$k]['count'] = ($presentNowByPair[$k]['count'] ?? 0) + 1;
+                $presentNowByPair[$k]['ids'][$r->employee_id] = true;
+            }
+        }
+
+        // (C) المسندون (EPR) لكل زوج
+        $assignedByPair = []; // 'zone:shift' => [emp_id=>true]
+        if (!empty($allZoneIds) && !empty($allShiftIds)) {
+            $rows = \App\Models\EmployeeProjectRecord::query()
+                ->select(['employee_id','zone_id','shift_id','end_date'])
+                ->whereIn('zone_id', $allZoneIds)
+                ->whereIn('shift_id', $allShiftIds)
+                ->where('status', true)
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('end_date')->orWhere('end_date', '>=', $now->toDateString());
+                })
+                ->get();
+
+            foreach ($rows as $r) {
+                $k = $r->zone_id . ':' . $r->shift_id;
+                // نجمع فقط للأزواج الحالية
+                if (!isset($currentPairsToday[$k]) && !isset($currentPairsYesterday[$k])) continue;
+                $assignedByPair[$k][$r->employee_id] = true;
+            }
+        }
+
+        // (D) التغطيات النشطة الآن — نافذة ديناميكية
+        $yestZoneIds   = array_keys($zonesHasYesterday);
+        $normalZoneIds = array_values(array_diff($allZoneIds, $yestZoneIds));
+
+        $coverageActiveCountByZone = []; // zone_id => count
+        $coverageActiveEmployeeIds = []; // set عالمي لخصم المغطين من المفقودين
+
+        // مناطق وردياتها الحالية من "اليوم": من بداية اليوم
+        if (!empty($normalZoneIds)) {
+            $rows = \App\Models\Attendance::query()
+                ->select(['zone_id','employee_id','check_in_datetime','created_at'])
+                ->whereIn('zone_id', $normalZoneIds)
+                ->where('status','coverage')
+                ->where('is_coverage', true)
+                ->whereNull('check_out')
+                ->whereRaw('COALESCE(check_in_datetime, created_at) >= ?', [$todayStart])
+                ->get();
+
+            foreach ($rows as $r) {
+                $coverageActiveCountByZone[$r->zone_id] = ($coverageActiveCountByZone[$r->zone_id] ?? 0) + 1;
+                $coverageActiveEmployeeIds[$r->employee_id] = true;
+            }
+        }
+
+        // مناطق لديها وردية حالية بدأت "أمس": من الأقدم بين (todayStart) و(now - lookback)
+        if (!empty($yestZoneIds)) {
+            $cutoff = $now->copy()->subHours($lookbackHours);
+            $windowStart = $cutoff->lt($todayStart) ? $cutoff : $todayStart;
+
+            $rows = \App\Models\Attendance::query()
+                ->select(['zone_id','employee_id','check_in_datetime','created_at'])
+                ->whereIn('zone_id', $yestZoneIds)
+                ->where('status','coverage')
+                ->where('is_coverage', true)
+                ->whereNull('check_out')
+                ->whereRaw('COALESCE(check_in_datetime, created_at) >= ?', [$windowStart])
+                ->get();
+
+            foreach ($rows as $r) {
+                $coverageActiveCountByZone[$r->zone_id] = ($coverageActiveCountByZone[$r->zone_id] ?? 0) + 1;
+                $coverageActiveEmployeeIds[$r->employee_id] = true;
+            }
+        }
+
+        // (E) out_of_zone لكل Zone (انضمام employees لتصفية out_of_zone = true)
+        $outOfZoneCountByZone = [];
+        if (!empty($allZoneIds)) {
+            $rows = \App\Models\Attendance::query()
+                ->select(['attendances.zone_id'])
+                ->join('employees','employees.id','=','attendances.employee_id')
+                ->whereIn('attendances.zone_id', $allZoneIds)
+                ->where('attendances.status','present')
+                ->whereNull('attendances.check_out')
+                ->whereDate('attendances.date', $now->toDateString())
+                ->where('employees.out_of_zone', true)
+                ->get();
+
+            foreach ($rows as $r) {
+                $outOfZoneCountByZone[$r->zone_id] = ($outOfZoneCountByZone[$r->zone_id] ?? 0) + 1;
+            }
+        }
+
+        // بصمة[O5]: تركيب الناتج بدون استعلامات داخل الحلقات
+        $missingMap = [];
+        $summary = $areas->map(function ($area) use (
+            $now,
+            $presentNowByPair,
+            $assignedByPair,
+            $coverageActiveCountByZone,
+            $coverageActiveEmployeeIds,
+            $outOfZoneCountByZone,
+            &$missingMap
+        ) {
+            return [
+                'id' => $area->id,
+                'name' => $area->name,
+                'projects' => $area->projects->map(function ($project) use (
+                    $now,
+                    $presentNowByPair,
+                    $assignedByPair,
+                    $coverageActiveCountByZone,
+                    $coverageActiveEmployeeIds,
+                    $outOfZoneCountByZone,
+                    &$missingMap
+                ) {
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'emp_no' => $project->emp_no,
+                        'zones' => $project->zones->map(function ($zone) use (
+                            $now,
+                            $presentNowByPair,
+                            $assignedByPair,
+                            $coverageActiveCountByZone,
+                            $coverageActiveEmployeeIds,
+                            $outOfZoneCountByZone,
+                            &$missingMap
+                        ) {
+                            $activeShifts = [];
+                            $currentShiftEmpNo = 0;
+                            $allCurrentShiftsAttendeesCount = 0;
+
+                            // حساب attendees_count و missing لكل وردية حالية
+                            foreach ($zone->shifts as $shift) {
+                                [$isCurrent, $startedAt] = $shift->getShiftActiveStatus2($now);
+                                $pairKey = $zone->id . ':' . $shift->id;
+
+                                $attendeesCount = 0;
+                                $presentIdsSet  = [];
+                                if ($isCurrent && isset($presentNowByPair[$pairKey])) {
+                                    $attendeesCount = $presentNowByPair[$pairKey]['count'] ?? 0;
+                                    $presentIdsSet  = $presentNowByPair[$pairKey]['ids']   ?? [];
+                                }
+
+                                if ($isCurrent && !$shift->exclude_from_auto_absence) {
+                                    $assignedIdsSet = $assignedByPair[$pairKey] ?? [];
+
+                                    // إذا كان الموظف يُغطي "الآن" في أي مكان، لا يُعتبر مفقودًا
+                                    $coveredIdsSet  = $coverageActiveEmployeeIds;
+
+                                    // المفقودون = المسنَّدون − (الحاضرون الآن ∪ المغطون الآن)
+                                    $missing = array_diff(
+                                        array_keys($assignedIdsSet),
+                                        array_keys($presentIdsSet + $coveredIdsSet)
+                                    );
+
+                                    $missingMap[] = [
+                                        'shift_id'     => $shift->id,
+                                        'zone_id'      => $zone->id,
+                                        'project_id'   => $zone->project_id,
+                                        'employee_ids' => array_values($missing),
+                                    ];
+                                }
+
+                                $shiftItem = [
+                                    'id' => $shift->id,
+                                    'name' => $shift->name,
+                                    'type' => $shift->type,
+                                    'is_current_shift' => $isCurrent,
+                                    'attendees_count' => $attendeesCount, // حاضرون "الآن"
+                                    'emp_no' => $shift->emp_no,
+                                ];
+                                if ($shift->exclude_from_auto_absence) {
+                                    $shiftItem['exclude_from_auto_absence'] = true;
+                                }
+
+                                $activeShifts[] = $shiftItem;
+
+                                if ($isCurrent) {
+                                    $currentShiftEmpNo += $shift->emp_no;
+                                    $allCurrentShiftsAttendeesCount += $attendeesCount;
+                                }
+                            }
+
+                            // حساب أقدم بداية وردية نشطة لعرض unattended_duration_start (نفس منطقك)
+                            $earliestStart = null;
+                            foreach ($zone->shifts as $s2) {
+                                [$isCur2, $startedAt2] = $s2->getShiftActiveStatus2($now);
+                                if (!$isCur2) continue;
+
+                                $baseDate = $startedAt2 === 'yesterday'
+                                    ? $now->copy()->subDay()->startOfDay()
+                                    : $now->copy()->startOfDay();
+
+                                $shiftType = $s2->getShiftTypeAttribute(); // 1=صباح، 2=مساء
+                                $startTime = $shiftType === 1 ? $s2->morning_start : $s2->evening_start;
+                                if (!$startTime) continue;
+
+                                $shiftStart = \Illuminate\Support\Carbon::parse("{$baseDate->toDateString()} {$startTime}", 'Asia/Riyadh');
+                                if (!$earliestStart || $shiftStart->lt($earliestStart)) {
+                                    $earliestStart = $shiftStart;
+                                }
+                            }
+
+                            $unattendedStart = null;
+                            if ($zone->last_unattended_started_at) {
+                                $unattendedStart = $zone->last_unattended_started_at->gt($earliestStart ?? $now)
+                                    ? $zone->last_unattended_started_at
+                                    : $earliestStart;
+                            } elseif ($earliestStart) {
+                                $unattendedStart = $earliestStart;
+                            }
+
+                            // أعداد مُجمّعة
+                            $active_coverages_count = $coverageActiveCountByZone[$zone->id] ?? 0;
+                            $out_of_zone_count      = $outOfZoneCountByZone[$zone->id] ?? 0;
+
+                            $missingCount = max(0, $currentShiftEmpNo - ($allCurrentShiftsAttendeesCount + $active_coverages_count));
+
+                            return array_merge([
+                                'id' => $zone->id,
+                                'name' => $zone->name,
+                                'emp_no' => $zone->emp_no,
+                                'shifts' => $activeShifts,
+                                'current_shift_emp_no' => $currentShiftEmpNo,
+                                'active_coverages_count' => $active_coverages_count,
+                                'out_of_zone_count' => $out_of_zone_count,
+                            ], array_filter([
+                                'unattended_duration_start' => $missingCount > 0 ? $unattendedStart : null,
+                            ]));
+                        }),
+                    ];
+                }),
+            ];
+        })->toArray();
+
+        // بصمة[O6]: كاش خريطة المفقودين (كما كان)
+        cache()->put('missing_employees_summary_' . $now->toDateString(), $missingMap, now()->addMinutes(3));
+
+        return $summary;
+    });
+}
+
     public function getActiveShiftsSummaryV3(?Carbon $now = null): array
 {
     $now = $now ? $now->copy()->tz('Asia/Riyadh') : Carbon::now('Asia/Riyadh');
