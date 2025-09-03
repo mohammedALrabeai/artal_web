@@ -222,6 +222,7 @@ Route::get('/attendance7', [AttendanceController::class, 'getAttendanceStatusV7'
 
 Route::get('/active-shifts-summary', [\App\Http\Controllers\Api\ActiveShiftController::class, 'index']);
 Route::get('/active-shifts-summary-v2', [\App\Http\Controllers\Api\ActiveShiftController::class, 'indexV2']);
+Route::get('/active-shifts-summary-v3', [\App\Http\Controllers\Api\ActiveShiftController::class, 'indexV3']);
 
 // routes/api.php
 

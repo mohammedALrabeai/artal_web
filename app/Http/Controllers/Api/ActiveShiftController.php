@@ -27,4 +27,10 @@ class ActiveShiftController extends Controller
 
         return response()->json($data);
     }
+      public function indexV3(): JsonResponse
+    {
+        $data = $this->service->getActiveShiftsSummaryV3();
+
+        return response()->json($data);
+    }
 }
