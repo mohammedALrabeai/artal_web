@@ -2115,9 +2115,10 @@ class AttendanceController extends Controller
 
             $monthStart   = \Illuminate\Support\Carbon::parse($date, 'Asia/Riyadh')->startOfMonth()->toDateString();
 
-            /* بصمة[COV0]: حدود يوم $date لاستخدامها فقط عند الحاجة */
+            /* بصمة[COV-LBH]: حدود يوم التاريخ + عدد الساعات للنافذة */
             $dateStart    = \Illuminate\Support\Carbon::parse($date, 'Asia/Riyadh')->startOfDay();
             $dateEnd      = \Illuminate\Support\Carbon::parse($date, 'Asia/Riyadh')->endOfDay();
+            $lookbackHours = 13; // يمكنك تعديله لاحقًا
 
             /* A) الحالة اللحظية + الإجازات (كما هي) */
             $threshold = now()->subHours(12);
@@ -2156,7 +2157,7 @@ class AttendanceController extends Controller
 
             $eprIds = $allEprs->pluck('id')->all();
 
-            // MAE لهذا الشهر ولنفس الموقع فقط (كما هو)
+            // MAE لهذا الشهر ولنفس الموقع فقط
             $maeRows = $eprIds
                 ? \App\Models\ManualAttendanceEmployee::query()
                 ->whereIn('employee_project_record_id', $eprIds)
@@ -2168,7 +2169,7 @@ class AttendanceController extends Controller
             $maeByEprId = $maeRows->keyBy('employee_project_record_id')->map->id; // epr_id => mae_id
             $maeIds     = $maeRows->pluck('id')->all();
 
-            // التحضير اليدوي لليوم فقط لكل MAE (كما هو)
+            // التحضير اليدوي لليوم فقط لكل MAE
             $manualTodayRows = $maeIds
                 ? \App\Models\ManualAttendance::query()
                 ->whereIn('manual_attendance_employee_id', $maeIds)
@@ -2316,10 +2317,7 @@ class AttendanceController extends Controller
                 ];
             }
 
-            /* بصمة[COV1]: نفّذ تعديل التغطيات فقط عندما:
-           - $date هو تاريخ اليوم الحالي
-           - توجد وردية "حالية" في هذا الـ Zone بدأت أمس
-        */
+            /* بصمة[COV-CHK]: فعّل الحالة الخاصة فقط عندما التاريخ هو اليوم الحالي وفيه وردية حالية بدأت أمس */
             $applyOverlapCoverage = false;
             if ($date === $currentTime->toDateString()) {
                 foreach ($shifts as $__s) {
@@ -2333,19 +2331,34 @@ class AttendanceController extends Controller
 
             /* D) تغطيات اليوم (تلقائي) */
             if ($applyOverlapCoverage) {
-                // بصمة[COV2]: اجلب أي تغطية تتداخل مع يوم $date (حتى لو بدأت قبل منتصف الليل)
-                $coverageAttendances = \App\Models\Attendance::with('employee')
+                // بصمة[COV2.1]: تغطيات "اليوم" للموقع المطلوب (كما هي)
+                $coverageToday = \App\Models\Attendance::with('employee')
                     ->where('zone_id', $zoneId)
                     ->where('status', 'coverage')
+                    ->whereDate('date', $date)
                     ->whereHas('employee', fn($q) => $q->where('status', 1))
-                    ->whereRaw('COALESCE(check_in_datetime, created_at) < ?', [$dateEnd])   // بدأت قبل نهاية اليوم
-                    ->where(function ($q) use ($dateStart) {
-                        $q->whereNull('check_out')                                          // ولم تُغلق
-                            ->orWhere('check_out', '>=', $dateStart);                          // أو أُغلِقت بعد بداية اليوم
-                    })
                     ->get();
+
+                // بصمة[COV2.2]: أضف فقط التغطيات "النشِطة الآن" التي بدأت خلال آخر 13 ساعة قبل بداية اليوم (ما قبل منتصف الليل)
+                $cutoff = $currentTime->copy()->subHours($lookbackHours);
+                $windowStart = $cutoff->lt($dateStart) ? $cutoff : $dateStart;
+
+                $coverageActiveFromLastHours = \App\Models\Attendance::with('employee')
+                    ->where('zone_id', $zoneId)                           // ← نفس الموقع المطلوب فقط
+                    ->where('status', 'coverage')
+                    ->whereNull('check_out')                               // نشِطة الآن
+                    ->whereRaw('COALESCE(check_in_datetime, created_at) >= ?', [$windowStart])
+                    ->whereRaw('COALESCE(check_in_datetime, created_at) < ?',  [$dateStart]) // بدأت قبل اليوم
+                    ->whereHas('employee', fn($q) => $q->where('status', 1))
+                    ->get();
+
+                // بصمة[COV2.3]: دمج و إزالة التكرار
+                $coverageAttendances = $coverageToday
+                    ->merge($coverageActiveFromLastHours)
+                    ->unique('id')
+                    ->values();
             } else {
-                // بصمة[COV3]: السلوك القديم كما هو
+                // بصمة[COV3]: السلوك القديم كما هو (اليوم فقط)
                 $coverageAttendances = \App\Models\Attendance::with('employee')
                     ->where('zone_id', $zoneId)
                     ->where('status', 'coverage')
@@ -2354,7 +2367,7 @@ class AttendanceController extends Controller
                     ->get();
             }
 
-            // 🧩 بقية منطق EPR/MAE للتغطيات (كما هو)
+            // 🧩 اجلب EPR النشط لكل موظف تغطية في هذا التاريخ (كما هو)
             $coverageEmployeeIds = $coverageAttendances->pluck('employee_id')->unique()->values();
 
             $coverageEprs = \App\Models\EmployeeProjectRecord::query()
@@ -2369,8 +2382,10 @@ class AttendanceController extends Controller
                 ->groupBy('employee_id')
                 ->map(fn($rows) => $rows->sortByDesc('start_date')->first()); // آخر إسناد نشط
 
+            // خريطة: employee_id => epr_id
             $covEprIdByEmp = $coverageEprs->mapWithKeys(fn($epr) => [$epr->employee_id => $epr->id]);
 
+            // MAE لهذا الشهر ولنفس الموقع الحالي فقط (actual_zone_id = $zoneId) لموظفي التغطية (كما هو)
             $covMaeRows = $covEprIdByEmp->isNotEmpty()
                 ? \App\Models\ManualAttendanceEmployee::query()
                 ->whereIn('employee_project_record_id', $covEprIdByEmp->values())
@@ -2379,8 +2394,10 @@ class AttendanceController extends Controller
                 ->get(['id', 'employee_project_record_id'])
                 : collect();
 
+            // خريطة: epr_id => mae_id
             $covMaeIdByEprId = $covMaeRows->keyBy('employee_project_record_id')->map->id;
 
+            // التحضير اليدوي لليوم فقط لموظفي التغطية
             $covMaeIds = $covMaeRows->pluck('id')->all();
 
             $covManualTodayByMaeId = $covMaeIds
@@ -2396,9 +2413,11 @@ class AttendanceController extends Controller
                 $employee   = $attendance->employee;
                 $statusData = $employeeStatuses[$employee->id] ?? null;
 
+                // EPR النشط لهذا الموظف في التاريخ
                 $assignment = $coverageEprs[$employee->id] ?? null;
                 $eprId = $assignment?->id;
 
+                // manual_attendance_today لهذا الموقع فقط عبر MAE (إن وُجد)
                 $manualToday = null;
                 if ($eprId && isset($covMaeIdByEprId[$eprId])) {
                     $maeId = $covMaeIdByEprId[$eprId];
@@ -2419,7 +2438,9 @@ class AttendanceController extends Controller
                 }
 
                 return [
-                    'employee_project_record_id' => $eprId, // لتمكين اليدوي من الواجهة
+                    // ⚠️ لتمكين التحضير اليدوي من الواجهة
+                    'employee_project_record_id' => $eprId,
+
                     'employee_id'    => $attendance->employee_id,
                     'employee_name'  => $employee->name(),
                     'national_id'    => $employee->national_id,
@@ -2438,7 +2459,9 @@ class AttendanceController extends Controller
                     'project_name'   => $assignment?->project?->name ?? 'غير معروف',
                     'zone_name'      => $assignment?->zone?->name ?? 'غير معروف',
                     'shift_name'     => $assignment?->shift?->name ?? 'غير معروف',
-                    'manual_attendance_today' => $manualToday,
+
+                    // ✨ اليدوي لليوم فقط (لهذا الموقع الحالي)
+                    'manual_attendance_today' => $manualToday, // null إذا لا يوجد
                 ];
             });
 
@@ -2459,6 +2482,7 @@ class AttendanceController extends Controller
             ], 500);
         }
     }
+
 
 
 
