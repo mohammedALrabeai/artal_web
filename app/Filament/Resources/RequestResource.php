@@ -420,29 +420,30 @@ class RequestResource extends Resource
     {
         return $table
             // داخل public static function table(Tables\Table $table)
-            ->recordClasses(function ($record) {
-                $tz = 'Asia/Riyadh';
-                $now = \Carbon\Carbon::now($tz);
-                $startOfToday = $now->copy()->startOfDay();
-                $endOfToday   = $now->copy()->endOfDay();
+           ->recordClasses(function ($record) {
+    $tz = 'Asia/Riyadh';
+    $now = \Carbon\Carbon::now($tz);
+    $startOfToday = $now->copy()->startOfDay();
 
-                // لازم يكون استبعاد ومعه تاريخ
-                if ($record->type !== 'exclusion' || ! $record->exclusion?->exclusion_date) {
-                    return null;
-                }
+    if ($record->type !== 'exclusion' || ! $record->exclusion?->exclusion_date) {
+        return null;
+    }
 
-                $exDate = \Carbon\Carbon::parse($record->exclusion->exclusion_date, $tz);
+    $exDate = \Carbon\Carbon::parse($record->exclusion->exclusion_date, $tz);
 
-                // لم يعد "مستقبلي": تاريخ الاستبعاد اليوم أو أصبح في الماضي
-                // $isDueOrPast = $exDate->lte($endOfToday);
+    // ✅ اليوم فقط (بدون الماضي)
+    $isToday = $exDate->isSameDay($now);
 
-                // كان مستقبليًا (الطلب أُنشئ قبل اليوم)
-                $wasFutureWhenCreated = $record->created_at->lt($startOfToday);
+    // ✅ كان مستقبليًا وقت الإنشاء (ليس مضافًا اليوم)
+    $wasFutureWhenCreated = $record->created_at->lt($startOfToday);
 
-                $highlight =  $wasFutureWhenCreated;
+    $highlight = $isToday && $wasFutureWhenCreated;
 
-                return $highlight ? 'bg-red-50 text-red-800 font-semibold ring-2 ring-red-400/60' : null;
-            })
+    return $highlight
+        ? 'bg-amber-50 text-amber-900 ring-2 ring-amber-400/60 hover:bg-amber-100'
+        : null;
+})
+
 
 
             ->columns([
