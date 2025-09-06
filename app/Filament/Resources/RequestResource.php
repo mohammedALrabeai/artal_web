@@ -22,6 +22,9 @@ use App\Filament\Resources\RequestResource\Pages;
 
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\RequestResource\RelationManagers;
+  use Illuminate\Support\Facades\DB;
+
+
 
 class RequestResource extends Resource
 {
@@ -131,14 +134,14 @@ class RequestResource extends Resource
                             Forms\Components\DatePicker::make('start_date')
                                 ->label(__('Start Date'))
                                 ->required()
-                                ->minDate(now()->startOfMonth())
+    ->minDate(now()->subMonthNoOverflow()->startOfMonth()) // 👈 بداية الشهر الماضي
                                 ->reactive()
                                 ->visible(fn($get) => $get('type') === 'leave'),
 
                             // تاريخ النهاية
                             Forms\Components\DatePicker::make('end_date')
                                 ->label(__('End Date'))
-                                ->minDate(fn(callable $get) => $get('start_date') ?? now()->startOfMonth())
+                                ->minDate(fn(callable $get) => $get('start_date') ?? now()->subMonthNoOverflow()->startOfMonth())
                                 ->required()
                                 ->reactive()
                                 ->visible(fn($get) => $get('type') === 'leave'),
@@ -420,29 +423,29 @@ class RequestResource extends Resource
     {
         return $table
             // داخل public static function table(Tables\Table $table)
-           ->recordClasses(function ($record) {
-    $tz = 'Asia/Riyadh';
-    $now = \Carbon\Carbon::now($tz);
-    $startOfToday = $now->copy()->startOfDay();
+            ->recordClasses(function ($record) {
+                $tz = 'Asia/Riyadh';
+                $now = \Carbon\Carbon::now($tz);
+                $startOfToday = $now->copy()->startOfDay();
 
-    if ($record->type !== 'exclusion' || ! $record->exclusion?->exclusion_date) {
-        return null;
-    }
+                if ($record->type !== 'exclusion' || ! $record->exclusion?->exclusion_date) {
+                    return null;
+                }
 
-    $exDate = \Carbon\Carbon::parse($record->exclusion->exclusion_date, $tz);
+                $exDate = \Carbon\Carbon::parse($record->exclusion->exclusion_date, $tz);
 
-    // ✅ اليوم فقط (بدون الماضي)
-    $isToday = $exDate->isSameDay($now);
+                // ✅ اليوم فقط (بدون الماضي)
+                $isToday = $exDate->isSameDay($now);
 
-    // ✅ كان مستقبليًا وقت الإنشاء (ليس مضافًا اليوم)
-    $wasFutureWhenCreated = $record->created_at->lt($startOfToday);
+                // ✅ كان مستقبليًا وقت الإنشاء (ليس مضافًا اليوم)
+                $wasFutureWhenCreated = $record->created_at->lt($startOfToday);
 
-    $highlight = $isToday && $wasFutureWhenCreated;
+                $highlight = $isToday && $wasFutureWhenCreated;
 
-    return $highlight
-        ? 'bg-amber-50 text-amber-900 ring-2 ring-amber-400/60 hover:bg-amber-100'
-        : null;
-})
+                return $highlight
+                    ? 'bg-amber-50 text-amber-900 ring-2 ring-amber-400/60 hover:bg-amber-100'
+                    : null;
+            })
 
 
 
@@ -583,6 +586,11 @@ class RequestResource extends Resource
                         return $query->where('submitted_by', auth()->id());
                     })
                     ->toggle(),
+             
+
+
+
+
 
                 // حسب الموظف
                 // EmployeeFilter::make('employee_id'), // إضافة فلتر الموظفين
