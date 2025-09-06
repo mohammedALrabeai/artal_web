@@ -434,12 +434,12 @@ class RequestResource extends Resource
                 $exDate = \Carbon\Carbon::parse($record->exclusion->exclusion_date, $tz);
 
                 // لم يعد "مستقبلي": تاريخ الاستبعاد اليوم أو أصبح في الماضي
-                $isDueOrPast = $exDate->lte($endOfToday);
+                // $isDueOrPast = $exDate->lte($endOfToday);
 
                 // كان مستقبليًا (الطلب أُنشئ قبل اليوم)
                 $wasFutureWhenCreated = $record->created_at->lt($startOfToday);
 
-                $highlight = $isDueOrPast && $wasFutureWhenCreated;
+                $highlight =  $wasFutureWhenCreated;
 
                 return $highlight ? 'bg-red-50 text-red-800 font-semibold ring-2 ring-red-400/60' : null;
             })
