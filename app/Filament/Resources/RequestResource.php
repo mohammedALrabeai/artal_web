@@ -22,7 +22,7 @@ use App\Filament\Resources\RequestResource\Pages;
 
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Resources\RequestResource\RelationManagers;
-  use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\DB;
 
 
 
@@ -134,7 +134,7 @@ class RequestResource extends Resource
                             Forms\Components\DatePicker::make('start_date')
                                 ->label(__('Start Date'))
                                 ->required()
-    ->minDate(now()->subMonthNoOverflow()->startOfMonth()) // 👈 بداية الشهر الماضي
+                                ->minDate(now()->subMonthNoOverflow()->startOfMonth()) // 👈 بداية الشهر الماضي
                                 ->reactive()
                                 ->visible(fn($get) => $get('type') === 'leave'),
 
@@ -586,8 +586,26 @@ class RequestResource extends Resource
                         return $query->where('submitted_by', auth()->id());
                     })
                     ->toggle(),
-             
 
+
+
+                Tables\Filters\Filter::make('exclusion_due_or_past_with_notice')
+                    ->label('استبعادات حالية/ماضية مع إشعار')
+                    ->query(function (Builder $query) {
+                        $tz    = 'Asia/Riyadh';
+                        $today = \Carbon\Carbon::today($tz)->toDateString();
+
+                        $requests = (new \App\Models\Request())->getTable(); // غالبًا 'requests'
+
+                        return $query
+                            ->where($requests . '.type', 'exclusion')
+                            ->whereNotNull($requests . '.exclusion_id')
+                            ->whereHas('exclusion', function (Builder $q) use ($today, $requests) {
+                                $q->whereDate('exclusion_date', '<=', $today) // الاستبعاد اليوم أو ماضي
+                                    ->whereColumn('exclusion_date', '>', $requests . '.created_at'); // تاريخ الإنشاء أصغر من الاستبعاد
+                            });
+                    })
+                    ->toggle(),
 
 
 
