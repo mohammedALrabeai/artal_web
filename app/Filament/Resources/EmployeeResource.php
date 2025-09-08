@@ -180,7 +180,7 @@ class EmployeeResource extends Resource
                                     ->values()
                                     ->toArray()
                             )
-                                ->disabled(fn () => !auth()->user()->can('edit_employee_bank')) // ⛔️ منع التعديل
+                            ->disabled(fn() => !auth()->user()->can('edit_employee_bank')) // ⛔️ منع التعديل
 
                             ->required()
                             ->reactive()
@@ -199,7 +199,7 @@ class EmployeeResource extends Resource
                         Forms\Components\TextInput::make('bank_account')
                             ->label('رقم الآيبان')
                             ->required()
-                                ->disabled(fn () => !auth()->user()->can('edit_employee_bank')) // ⛔️ منع التعديل
+                            ->disabled(fn() => !auth()->user()->can('edit_employee_bank')) // ⛔️ منع التعديل
 
                             ->rule(new \App\Rules\ValidSaudiIban())
                             ->reactive()
@@ -365,26 +365,26 @@ class EmployeeResource extends Resource
                 Forms\Components\Wizard\Step::make(__('Contact Information'))
                     ->schema([
                         Forms\Components\TextInput::make('mobile_number')
-    ->label(__('Mobile Number'))
-    ->tel()
-    ->required()
-    // تنظيف أي محارف غير رقمية أثناء الكتابة والحفظ
-    ->afterStateUpdated(function ($state, callable $set) {
-        $set('mobile_number', preg_replace('/\D+/', '', (string) $state));
-    })
-    ->dehydrateStateUsing(fn ($state) => preg_replace('/\D+/', '', (string) $state))
-    // الطول ثابت 12 رقم
-    ->minLength(12)
-    ->maxLength(12)
-    // تحقق صارم: يبدأ بـ 966 ثم 9 أرقام
-    ->rule('regex:/^966\d{9}$/')
-    // رسائل واضحة للمستخدم
-    ->validationMessages([
-        'regex' => 'يجب أن يبدأ الرقم بـ 966 ويتكون من 12 رقمًا (مثال: 9665XXXXXXXX).',
-        'min'   => 'الرقم يجب أن يكون مكوّنًا من 12 رقمًا بالضبط.',
-        'max'   => 'الرقم يجب أن يكون مكوّنًا من 12 رقمًا بالضبط.',
-    ])
-    ->placeholder('9665XXXXXXXX'),
+                            ->label(__('Mobile Number'))
+                            ->tel()
+                            ->required()
+                            // تنظيف أي محارف غير رقمية أثناء الكتابة والحفظ
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                $set('mobile_number', preg_replace('/\D+/', '', (string) $state));
+                            })
+                            ->dehydrateStateUsing(fn($state) => preg_replace('/\D+/', '', (string) $state))
+                            // الطول ثابت 12 رقم
+                            ->minLength(12)
+                            ->maxLength(12)
+                            // تحقق صارم: يبدأ بـ 966 ثم 9 أرقام
+                            ->rule('regex:/^966\d{9}$/')
+                            // رسائل واضحة للمستخدم
+                            ->validationMessages([
+                                'regex' => 'يجب أن يبدأ الرقم بـ 966 ويتكون من 12 رقمًا (مثال: 9665XXXXXXXX).',
+                                'min'   => 'الرقم يجب أن يكون مكوّنًا من 12 رقمًا بالضبط.',
+                                'max'   => 'الرقم يجب أن يكون مكوّنًا من 12 رقمًا بالضبط.',
+                            ])
+                            ->placeholder('9665XXXXXXXX'),
 
                         Forms\Components\TextInput::make('phone_number')
                             ->label(__('Phone Number')),
@@ -491,7 +491,7 @@ class EmployeeResource extends Resource
                 ->offColor('danger')
                 ->default(true)
                 ->required()
-                ->disabled(fn () => !auth()->user()->can('edit_employee_status'))
+                ->disabled(fn() => !auth()->user()->can('edit_employee_status'))
                 ->afterStateUpdated(function ($state, callable $set, $livewire) {
                     $set('job_status', $state ? 'يعمل' : 'لا يعمل');
 
@@ -513,9 +513,9 @@ class EmployeeResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-        // ->query(
-        //     fn () => Employee::query()->with(['latestZone.zone'])
-        // )
+            // ->query(
+            //     fn () => Employee::query()->with(['latestZone.zone'])
+            // )
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label(__('ID'))
@@ -569,7 +569,7 @@ class EmployeeResource extends Resource
                     ->copyMessageDuration(1500)
                     ->sortable()
                     // ->searchable()
-                    ->toggleable(isToggledHiddenByDefault:true),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('currentZone.name')
                     ->label(__('Current Zone'))
@@ -1289,7 +1289,7 @@ class EmployeeResource extends Resource
             RelationManagers\ResignationsRelationManager::class,
             RelationManagers\RequestsRelationManager::class,
             RelationManagers\AssetAssignmentsRelationManager::class,
-             RelationManagers\EmployeeActivityRelationManager::class,
+            RelationManagers\EmployeeActivityRelationManager::class,
 
         ];
     }

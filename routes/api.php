@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\V2\UncoveredZonesController;
 use App\Http\Controllers\Api\OperationNotificationController;
 use App\Http\Controllers\Reports\AttendanceReportController;
+    use App\Http\Controllers\AntiSpoofingAlertController;
 
 
 Route::post('/install-apk', [App\Http\Controllers\ApkController::class, 'installApk']);
@@ -472,3 +473,7 @@ Route::post('/attendance-renewals', [AttendanceRenewalController::class, 'store'
 // routes/api.php
 Route::get('/attendances/missing-checkout', [\App\Http\Controllers\AttendanceMissingCheckoutController::class, 'index'])
     ->middleware('auth:sanctum');
+
+
+
+Route::middleware('auth:employee')->post('/spoofing/alert', [AntiSpoofingAlertController::class, 'store']);

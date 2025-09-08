@@ -134,3 +134,6 @@ class CheckConsecutiveAbsences extends Command
         }
     }
 }
+
+
+//.   php artisan attendance:check-absences
