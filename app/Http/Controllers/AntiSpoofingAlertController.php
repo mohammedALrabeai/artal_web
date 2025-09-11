@@ -15,8 +15,8 @@ class AntiSpoofingAlertController extends Controller
      *             أو معرف مجموعة واتساب (مثال: 120363419460071587@g.us)
      * - اللغة: 'ar' أو 'en'
      */
-    // private const SPOOF_ALERT_RECIPIENT = '120363418395565157@g.us'; 
-    private const SPOOF_ALERT_RECIPIENT = '966571718153';
+    private const SPOOF_ALERT_RECIPIENT = '120363418395565157@g.us'; 
+    // private const SPOOF_ALERT_RECIPIENT = '966571718153';
     private const SPOOF_ALERT_LOCALE    = 'ar';
 
     public function store(Request $r)
