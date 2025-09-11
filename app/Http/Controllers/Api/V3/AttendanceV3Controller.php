@@ -17,6 +17,8 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
+
 
 class AttendanceV3Controller extends Controller
 {
@@ -255,6 +257,10 @@ class AttendanceV3Controller extends Controller
         $request->validate([
             'zone_id' => 'required|exists:zones,id',
             // 'shift_id' => 'required|exists:shifts,id',
+              'shift_id' => ['sometimes', 'nullable', 'integer', Rule::exists('shifts', 'id')
+        // (اختياري) تأكيد أن الوردية تتبع نفس الـ zone:
+        ->where(fn ($q) => $q->where('zone_id', $request->zone_id))
+    ],
             'notes' => 'nullable|string',
         ]);
 
@@ -277,6 +283,7 @@ class AttendanceV3Controller extends Controller
             'employee_id' => $employee->id,
             'zone_id' => $request->zone_id,
             // 'shift_id' => $request->shift_id,
+            'shift_id'           => $request->input('shift_id'),
             'date' => $date,
             'check_in' => Carbon::now('Asia/Riyadh')->toTimeString(),
             'check_in_datetime' => $currentDateTime,
