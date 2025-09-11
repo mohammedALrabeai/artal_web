@@ -45,8 +45,19 @@ class ListAttendances extends ListRecords
         ];
     }
 
-    protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
+    // protected function getTableQuery(): ?\Illuminate\Database\Eloquent\Builder
+    // {
+    //     return parent::getTableQuery()->latest();
+    // }
+      protected function getTableQuery():?\Illuminate\Database\Eloquent\Builder
     {
-        return parent::getTableQuery()->latest();
+        return parent::getTableQuery()
+            ->with([
+                // حمّل فقط الأعمدة اللازمة لتخفيف الحمل:
+                'employee:id,first_name,father_name,grandfather_name,family_name,national_id',
+                'zone:id,name',
+                'shift:id,name',
+            ])
+            ->latest('date'); // أو ->latest('check_in_datetime') حسب ما تفضّل
     }
 }

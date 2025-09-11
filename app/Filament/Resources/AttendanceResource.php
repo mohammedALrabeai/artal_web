@@ -162,7 +162,9 @@ class AttendanceResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
+        return $table
+
+        ->columns([
             Tables\Columns\TextColumn::make('full_name')
                 ->label(__('Employee'))
                 ->getStateUsing(
@@ -213,7 +215,23 @@ class AttendanceResource extends Resource
                 ->toggleable(isToggledHiddenByDefault: true),
 
             Tables\Columns\TextColumn::make('check_out')
-                ->label(__('Check Out')),
+                ->label(__('Check Out'))
+                ->formatStateUsing(function ($state, $record) {
+                    if (empty($state)) {
+                        return '-';
+                    }
+
+                    // نضيف وسم صغير "تلقائي" إذا كان الانصراف تلقائي
+                    $auto = $record->auto_checked_out
+                        ? ' <span class="text-xs text-gray-500">(' . __('Auto') . ')</span>'
+                        : '';
+
+                    // ملاحظة: إن أردت ترجمة “Auto” للعربية تمامًا:
+                    // $auto = $record->auto_checked_out ? ' <span class="text-xs text-gray-500">(تلقائي)</span>' : '';
+
+                    return e($state) . $auto;
+                })
+                ->html(),
 
             Tables\Columns\TextColumn::make('status')
                 ->label(__('Status'))
@@ -324,6 +342,17 @@ class AttendanceResource extends Resource
                         'SL' => __('Sick Leave'),
                         'UL' => __('UL'),
                     ]),
+
+                SelectFilter::make('auto_checked_out')
+                    ->label(__('Auto Check-out'))
+                    ->options([
+                        '1' => __('Yes'),
+                        '0' => __('No'),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (! isset($data['value']) || $data['value'] === '') return;
+                        $query->where('auto_checked_out', (bool) $data['value']);
+                    }),
                 // فلتر الحالة
 
                 // فلتر الموظف
