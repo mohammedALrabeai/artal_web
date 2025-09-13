@@ -458,6 +458,7 @@ Route::post('/face/reset-enrollment', [FaceAuthController::class, 'resetEnrollme
 
 Route::get('/face/day/summary', [FaceAuthController::class, 'daySummary']); // ?date=YYYY-MM-DD
 Route::get('/face/day',        [FaceAuthController::class, 'dayDetail']);  // ?employee_id=123&date=YYYY-MM-DD
+Route::get('/face/day/gallery', [FaceAuthController::class, 'dayGallery']);
 
 
 

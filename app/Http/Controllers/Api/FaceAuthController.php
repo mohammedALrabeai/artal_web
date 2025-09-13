@@ -615,57 +615,57 @@ class FaceAuthController extends Controller
     }
 
     public function daySummary(Request $request)
-{
-    $tz = 'Asia/Riyadh';
-    // التاريخ اختياري؛ افتراضي اليوم بتوقيت الرياض
-    $dateStr = $request->query('date', now($tz)->toDateString());
+    {
+        $tz = 'Asia/Riyadh';
+        // التاريخ اختياري؛ افتراضي اليوم بتوقيت الرياض
+        $dateStr = $request->query('date', now($tz)->toDateString());
 
-    try {
-        $dayStartLocal = Carbon::parse($dateStr, $tz)->startOfDay();
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'صيغة التاريخ غير صحيحة. استخدم YYYY-MM-DD.',
-        ], 422);
-    }
+        try {
+            $dayStartLocal = Carbon::parse($dateStr, $tz)->startOfDay();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'صيغة التاريخ غير صحيحة. استخدم YYYY-MM-DD.',
+            ], 422);
+        }
 
-    // حول إلى UTC (يفترض أن الحقل captured_at محفوظ على UTC)
-    $fromUtc = $dayStartLocal->clone()->setTimezone('UTC');
-    $toUtc   = $dayStartLocal->clone()->endOfDay()->setTimezone('UTC');
+        // حول إلى UTC (يفترض أن الحقل captured_at محفوظ على UTC)
+        $fromUtc = $dayStartLocal->clone()->setTimezone('UTC');
+        $toUtc   = $dayStartLocal->clone()->endOfDay()->setTimezone('UTC');
 
-    // نستهدف سجلات التحقق فقط
-    $baseQuery = EmployeeFaceEvent::query()
-        ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
-        ->whereBetween('captured_at', [$fromUtc, $toUtc]);
+        // نستهدف سجلات التحقق فقط
+        $baseQuery = EmployeeFaceEvent::query()
+            ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
+            ->whereBetween('captured_at', [$fromUtc, $toUtc]);
 
-    // الإجماليات
-    $total  = (clone $baseQuery)->count();
-    // JSON_EXTRACT(meta, '$.passed') يرجع true/false في MySQL 5.7+ / 8
-    $passed = (clone $baseQuery)
-        ->whereRaw("JSON_EXTRACT(meta, '$.passed') = true")
-        ->count();
-    $failed = $total - $passed;
+        // الإجماليات
+        $total  = (clone $baseQuery)->count();
+        // JSON_EXTRACT(meta, '$.passed') يرجع true/false في MySQL 5.7+ / 8
+        $passed = (clone $baseQuery)
+            ->whereRaw("JSON_EXTRACT(meta, '$.passed') = true")
+            ->count();
+        $failed = $total - $passed;
 
-    // تجميع لكل موظف
-    $perEmployee = (clone $baseQuery)
-        ->selectRaw("
+        // تجميع لكل موظف
+        $perEmployee = (clone $baseQuery)
+            ->selectRaw("
             employee_id,
             COUNT(*) AS verifies_count,
             SUM(CASE WHEN JSON_EXTRACT(meta, '$.passed') = true THEN 1 ELSE 0 END) AS passed_count,
             SUM(CASE WHEN JSON_EXTRACT(meta, '$.passed') = true THEN 0 ELSE 1 END) AS failed_count,
             MAX(captured_at) AS last_time
         ")
-        ->groupBy('employee_id');
+            ->groupBy('employee_id');
 
-    // اربط للحصول على تفاصيل آخر محاولة (similarity, passed) + اسم الموظف
-    $items = DB::table(DB::raw("({$perEmployee->toSql()}) x"))
-        ->mergeBindings($perEmployee->getQuery())
-        ->leftJoin('employee_face_events as e2', function ($j) {
-            $j->on('e2.employee_id', '=', 'x.employee_id')
-              ->on('e2.captured_at', '=', 'x.last_time');
-        })
-        ->leftJoin('employees as emp', 'emp.id', '=', 'x.employee_id')
-        ->selectRaw("
+        // اربط للحصول على تفاصيل آخر محاولة (similarity, passed) + اسم الموظف
+        $items = DB::table(DB::raw("({$perEmployee->toSql()}) x"))
+            ->mergeBindings($perEmployee->getQuery())
+            ->leftJoin('employee_face_events as e2', function ($j) {
+                $j->on('e2.employee_id', '=', 'x.employee_id')
+                    ->on('e2.captured_at', '=', 'x.last_time');
+            })
+            ->leftJoin('employees as emp', 'emp.id', '=', 'x.employee_id')
+            ->selectRaw("
             x.employee_id,
             CONCAT(COALESCE(emp.first_name, ''), ' ', COALESCE(emp.family_name, '')) as employee_name,
             x.verifies_count,
@@ -675,128 +675,249 @@ class FaceAuthController extends Controller
             e2.similarity as last_similarity,
             JSON_EXTRACT(e2.meta, '$.passed') as last_passed
         ")
-        ->orderByDesc('x.verifies_count')
-        ->get()
-        ->map(function ($row) use ($tz) {
-            return [
-                'employee_id'    => (int)$row->employee_id,
-                'employee_name'  => trim($row->employee_name) ?: (string)$row->employee_id,
-                'verifies_count' => (int)$row->verifies_count,
-                'passed_count'   => (int)$row->passed_count,
-                'failed_count'   => (int)$row->failed_count,
-                'last_time'      => $row->last_time ? Carbon::parse($row->last_time, 'UTC')->setTimezone($tz)->format('Y-m-d H:i:s') : null,
-                'last_similarity'=> $row->last_similarity !== null ? (float)$row->last_similarity : null,
-                'last_passed'    => $row->last_passed === 'true' || $row->last_passed === 1,
-            ];
-        })
-        ->values();
+            ->orderByDesc('x.verifies_count')
+            ->get()
+            ->map(function ($row) use ($tz) {
+                return [
+                    'employee_id'    => (int)$row->employee_id,
+                    'employee_name'  => trim($row->employee_name) ?: (string)$row->employee_id,
+                    'verifies_count' => (int)$row->verifies_count,
+                    'passed_count'   => (int)$row->passed_count,
+                    'failed_count'   => (int)$row->failed_count,
+                    'last_time'      => $row->last_time ? Carbon::parse($row->last_time, 'UTC')->setTimezone($tz)->format('Y-m-d H:i:s') : null,
+                    'last_similarity' => $row->last_similarity !== null ? (float)$row->last_similarity : null,
+                    'last_passed'    => $row->last_passed === 'true' || $row->last_passed === 1,
+                ];
+            })
+            ->values();
 
-    return response()->json([
-        'success' => true,
-        'date'    => $dayStartLocal->toDateString(),
-        'stats'   => [
-            'total'     => $total,
-            'passed'    => $passed,
-            'failed'    => $failed,
-            'pass_rate' => $total ? round($passed / max(1, $total) * 100, 2) : 0.0,
-        ],
-        'items'   => $items,
-    ]);
-}
-
-public function dayDetail(Request $request)
-{
-    $tz = 'Asia/Riyadh';
-    $data = $request->validate([
-        'employee_id' => 'required|integer',
-        'date'        => 'nullable|date_format:Y-m-d',
-    ]);
-
-    $emp = Employee::find($data['employee_id']);
-    if (!$emp) {
         return response()->json([
-            'success' => false,
-            'message' => 'الموظف غير موجود.',
-        ], 404);
+            'success' => true,
+            'date'    => $dayStartLocal->toDateString(),
+            'stats'   => [
+                'total'     => $total,
+                'passed'    => $passed,
+                'failed'    => $failed,
+                'pass_rate' => $total ? round($passed / max(1, $total) * 100, 2) : 0.0,
+            ],
+            'items'   => $items,
+        ]);
     }
 
-    $dateStr = $data['date'] ?? now($tz)->toDateString();
-    try {
-        $dayStartLocal = Carbon::parse($dateStr, $tz)->startOfDay();
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'صيغة التاريخ غير صحيحة. استخدم YYYY-MM-DD.',
-        ], 422);
-    }
-    $fromUtc = $dayStartLocal->clone()->setTimezone('UTC');
-    $toUtc   = $dayStartLocal->clone()->endOfDay()->setTimezone('UTC');
+    public function dayDetail(Request $request)
+    {
+        $tz = 'Asia/Riyadh';
+        $data = $request->validate([
+            'employee_id' => 'required|integer',
+            'date'        => 'nullable|date_format:Y-m-d',
+        ]);
 
-    // صورة التسجيل الأساسية: أحدث enroll أو fallback من عمود employee.face_image
-    $enrollEvent = EmployeeFaceEvent::query()
-        ->where('employee_id', $emp->id)
-        ->where('type', EmployeeFaceEvent::TYPE_ENROLL)
-        ->latest('captured_at')
-        ->first();
-
-    $enrollUrl = null;
-    if ($enrollEvent?->path && $enrollEvent?->disk) {
-        try {
-            $enrollUrl = Storage::disk($enrollEvent->disk)->url($enrollEvent->path);
-        } catch (\Throwable $e) {
-            $enrollUrl = null;
+        $emp = Employee::find($data['employee_id']);
+        if (!$emp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الموظف غير موجود.',
+            ], 404);
         }
+
+        $dateStr = $data['date'] ?? now($tz)->toDateString();
+        try {
+            $dayStartLocal = Carbon::parse($dateStr, $tz)->startOfDay();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'صيغة التاريخ غير صحيحة. استخدم YYYY-MM-DD.',
+            ], 422);
+        }
+        $fromUtc = $dayStartLocal->clone()->setTimezone('UTC');
+        $toUtc   = $dayStartLocal->clone()->endOfDay()->setTimezone('UTC');
+
+        // صورة التسجيل الأساسية: أحدث enroll أو fallback من عمود employee.face_image
+        $enrollEvent = EmployeeFaceEvent::query()
+            ->where('employee_id', $emp->id)
+            ->where('type', EmployeeFaceEvent::TYPE_ENROLL)
+            ->latest('captured_at')
+            ->first();
+
+        $enrollUrl = null;
+        if ($enrollEvent?->path && $enrollEvent?->disk) {
+            try {
+                $enrollUrl = Storage::disk($enrollEvent->disk)->url($enrollEvent->path);
+            } catch (\Throwable $e) {
+                $enrollUrl = null;
+            }
+        }
+        $fallbackUrl = $emp->face_image ? Storage::disk('public')->url($emp->face_image) : null;
+
+        // عمليات تحقق اليوم
+        $verifies = EmployeeFaceEvent::query()
+            ->where('employee_id', $emp->id)
+            ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
+            ->whereBetween('captured_at', [$fromUtc, $toUtc])
+            ->orderByDesc('captured_at')
+            ->get()
+            ->map(function (EmployeeFaceEvent $ev) use ($tz) {
+                return [
+                    'id'          => $ev->id,
+                    'captured_at' => optional($ev->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                    'similarity'  => $ev->similarity !== null ? (float)$ev->similarity : null,
+                    'passed'      => (bool)data_get($ev->meta, 'passed', false),
+                    'threshold'   => data_get($ev->meta, 'threshold'),
+                    'url'         => $ev->url,       // accessors في الموديل
+                    'thumb_url'   => $ev->thumb_url, // أو نفس الأصل إن ما في مصغّر
+                    'rek_face_id'  => $ev->rek_face_id,
+                    'rek_image_id' => $ev->rek_image_id,
+                    'meta'         => $ev->meta,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success'     => true,
+            'employee_id' => $emp->id,
+            'date'        => $dayStartLocal->toDateString(),
+            'base'        => [
+                'enrollment_event' => $enrollEvent ? [
+                    'id'          => $enrollEvent->id,
+                    'captured_at' => optional($enrollEvent->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                    'url'         => $enrollEvent->url,
+                    'thumb_url'   => $enrollEvent->thumb_url,
+                    'path'        => $enrollEvent->path,
+                    'disk'        => $enrollEvent->disk,
+                    'rek_face_id'  => $enrollEvent->rek_face_id,
+                    'rek_image_id' => $enrollEvent->rek_image_id,
+                ] : null,
+                'employee_face_image_url' => $fallbackUrl,
+            ],
+            'today' => [
+                'total'         => $verifies->count(),
+                'verifications' => $verifies,
+            ],
+        ]);
     }
-    $fallbackUrl = $emp->face_image ? Storage::disk('public')->url($emp->face_image) : null;
 
-    // عمليات تحقق اليوم
-    $verifies = EmployeeFaceEvent::query()
-        ->where('employee_id', $emp->id)
-        ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
-        ->whereBetween('captured_at', [$fromUtc, $toUtc])
-        ->orderByDesc('captured_at')
-        ->get()
-        ->map(function (EmployeeFaceEvent $ev) use ($tz) {
+    public function dayGallery(Request $request)
+    {
+        $tz      = 'Asia/Riyadh';
+        $dateStr = $request->query('date', now($tz)->toDateString());
+        $limit   = (int) min(max((int)$request->query('limit', 100), 1), 200);
+        $filter  = $request->query('filter', 'all'); // all|passed|failed
+        $q       = trim((string)$request->query('q', ''));
+        $cursor  = $request->query('cursor'); // صيغة: "2025-08-20T14:52:45Z|12345"
+
+        try {
+            $dayLocal = Carbon::parse($dateStr, $tz)->startOfDay();
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'صيغة التاريخ غير صحيحة (YYYY-MM-DD).'], 422);
+        }
+
+        // نطاق اليوم بتوقيت UTC
+        $fromUtc = $dayLocal->clone()->setTimezone('UTC');
+        $toUtc   = $dayLocal->clone()->endOfDay()->setTimezone('UTC');
+
+        // قاعدة البيانات: نستهدف سجلات التحقق فقط
+        $qbase = EmployeeFaceEvent::query()
+            ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
+            ->whereBetween('captured_at', [$fromUtc, $toUtc]);
+
+        // فلتر النجاح/الفشل
+        if ($filter === 'passed') {
+            $qbase->whereRaw("JSON_EXTRACT(meta, '$.passed') = true");
+            // بدائل MariaDB:
+            // $qbase->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(meta, '$.passed')) AS UNSIGNED) = 1");
+        } elseif ($filter === 'failed') {
+            $qbase->where(function ($w) {
+                $w->whereNull('meta')
+                    ->orWhereRaw("JSON_EXTRACT(meta, '$.passed') IS NULL")
+                    ->orWhereRaw("JSON_EXTRACT(meta, '$.passed') = false");
+                // بديل:
+                // ->orWhereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(meta, '$.passed')) AS UNSIGNED) = 0");
+            });
+        }
+
+        // بحث بالاسم/الرقم (انضمام على employees)
+        if ($q !== '') {
+            $qbase->join('employees as emp', 'emp.id', '=', 'employee_face_events.employee_id')
+                ->where(function ($w) use ($q) {
+                    $w->where('emp.id', $q)
+                        ->orWhere('emp.first_name', 'like', "%{$q}%")
+                        ->orWhere('emp.family_name', 'like', "%{$q}%")
+                        ->orWhere(DB::raw("CONCAT(COALESCE(emp.first_name,''),' ',COALESCE(emp.family_name,''))"), 'like', "%{$q}%");
+                })
+                ->select('employee_face_events.*'); // أعد اختيار الأعمدة الأصلية
+        }
+
+        // ترتيب ثابت: الأحدث أولًا (captured_at DESC, id DESC)
+        $qbase->orderByDesc('captured_at')->orderByDesc('id');
+
+        // Cursor: (captured_at < T) OR (captured_at = T AND id < ID)
+        if ($cursor) {
+            // نتوقع "ISO|id"
+            [$ctStr, $cidStr] = array_pad(explode('|', $cursor, 2), 2, null);
+            try {
+                $ct = Carbon::parse($ctStr); // cursor time UTC أو ISO
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'message' => 'صيغة cursor غير صحيحة.'], 422);
+            }
+            $cid = (int) $cidStr;
+            $qbase->where(function ($w) use ($ct, $cid) {
+                $w->where('captured_at', '<', $ct)
+                    ->orWhere(function ($w2) use ($ct, $cid) {
+                        $w2->where('captured_at', '=', $ct)
+                            ->where('id', '<', $cid);
+                    });
+            });
+        }
+
+        // نجلب limit+1 لاكتشاف وجود صفحة تالية
+        $rows = $qbase->limit($limit + 1)->get();
+
+        $hasMore = $rows->count() > $limit;
+        if ($hasMore) $rows = $rows->slice(0, $limit);
+
+        // لضم اسم الموظف بكفاءة، نجلب الأسماء دفعة واحدة
+        $empIds = $rows->pluck('employee_id')->unique()->values();
+        $names = Employee::whereIn('id', $empIds)->get(['id', 'first_name', 'family_name'])
+            ->mapWithKeys(fn($e) => [$e->id => trim(($e->first_name ?? '') . ' ' . ($e->family_name ?? ''))])
+            ->all();
+
+        // بناء العناصر
+        $items = $rows->map(function (EmployeeFaceEvent $ev) use ($tz, $names) {
+            $url  = method_exists($ev, 'getUrlAttribute')     ? $ev->url     : ($ev->path && $ev->disk ? Storage::disk($ev->disk)->url($ev->path) : null);
+            $turl = method_exists($ev, 'getThumbUrlAttribute') ? $ev->thumb_url : $url;
+
             return [
-                'id'          => $ev->id,
-                'captured_at' => optional($ev->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
-                'similarity'  => $ev->similarity !== null ? (float)$ev->similarity : null,
-                'passed'      => (bool)data_get($ev->meta, 'passed', false),
-                'threshold'   => data_get($ev->meta, 'threshold'),
-                'url'         => $ev->url,       // accessors في الموديل
-                'thumb_url'   => $ev->thumb_url, // أو نفس الأصل إن ما في مصغّر
-                'rek_face_id'  => $ev->rek_face_id,
-                'rek_image_id' => $ev->rek_image_id,
-                'meta'         => $ev->meta,
+                'id'            => $ev->id,
+                'employee_id'   => (int)$ev->employee_id,
+                'employee_name' => $names[$ev->employee_id] ?? (string)$ev->employee_id,
+                'captured_at'   => optional($ev->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
+                'similarity'    => $ev->similarity !== null ? (float)$ev->similarity : null,
+                'passed'        => (bool) data_get($ev->meta, 'passed', false),
+                'threshold'     => data_get($ev->meta, 'threshold'),
+                'url'           => $url,
+                'thumb_url'     => $turl,
             ];
-        })
-        ->values();
+        })->values();
 
-    return response()->json([
-        'success'     => true,
-        'employee_id' => $emp->id,
-        'date'        => $dayStartLocal->toDateString(),
-        'base'        => [
-            'enrollment_event' => $enrollEvent ? [
-                'id'          => $enrollEvent->id,
-                'captured_at' => optional($enrollEvent->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
-                'url'         => $enrollEvent->url,
-                'thumb_url'   => $enrollEvent->thumb_url,
-                'path'        => $enrollEvent->path,
-                'disk'        => $enrollEvent->disk,
-                'rek_face_id'  => $enrollEvent->rek_face_id,
-                'rek_image_id' => $enrollEvent->rek_image_id,
-            ] : null,
-            'employee_face_image_url' => $fallbackUrl,
-        ],
-        'today' => [
-            'total'         => $verifies->count(),
-            'verifications' => $verifies,
-        ],
-    ]);
-}
+        // next cursor من آخر عنصر
+        $nextCursor = null;
+        if ($hasMore && $items->isNotEmpty()) {
+            $last = $rows->last();
+            // captured_at يجب أن يكون UTC في القاعدة
+            $nextCursor = optional($last->captured_at)->copy()->setTimezone('UTC')->toIso8601String() . '|' . $last->id;
+        }
 
-
+        return response()->json([
+            'success' => true,
+            'date'    => $dayLocal->toDateString(),
+            'page'    => [
+                'limit'       => $limit,
+                'has_more'    => $hasMore,
+                'next_cursor' => $nextCursor,
+            ],
+            'items'   => $items,
+        ]);
+    }
 }
 
 
