@@ -799,112 +799,160 @@ class FaceAuthController extends Controller
     public function dayGallery(Request $request)
     {
         $tz      = 'Asia/Riyadh';
-        $dateStr = $request->query('date', now($tz)->toDateString());
-        $limit   = (int) min(max((int)$request->query('limit', 100), 1), 200);
-        $filter  = $request->query('filter', 'all'); // all|passed|failed
-        $q       = trim((string)$request->query('q', ''));
+        $dateStr = (string) $request->query('date', now($tz)->toDateString());
+        $limit   = (int) $request->integer('limit', 100);
+        $limit   = max(1, min($limit, 200)); // من 1 إلى 200
+        $filter  = (string) $request->query('filter', 'all'); // all|passed|failed
+        $q       = trim((string) $request->query('q', ''));
         $cursor  = $request->query('cursor'); // صيغة: "2025-08-20T14:52:45Z|12345"
 
         try {
+            // بداية اليوم المحلي
             $dayLocal = Carbon::parse($dateStr, $tz)->startOfDay();
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => 'صيغة التاريخ غير صحيحة (YYYY-MM-DD).'], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'صيغة التاريخ غير صحيحة (YYYY-MM-DD).',
+            ], 422);
         }
 
-        // نطاق اليوم بتوقيت UTC
-        $fromUtc = $dayLocal->clone()->setTimezone('UTC');
-        $toUtc   = $dayLocal->clone()->endOfDay()->setTimezone('UTC');
+        // نطاق اليوم بتوقيت UTC لاستخدامه في قاعدة البيانات
+        $fromUtc = $dayLocal->copy()->setTimezone('UTC');
+        $toUtc   = $dayLocal->copy()->endOfDay()->setTimezone('UTC');
 
-        // قاعدة البيانات: نستهدف سجلات التحقق فقط
+        // قاعدة الاستعلام الأساسية على جدول أحداث الوجوه
+        /** @var \Illuminate\Database\Eloquent\Builder $qbase */
         $qbase = EmployeeFaceEvent::query()
-            ->where('type', EmployeeFaceEvent::TYPE_VERIFY)
-            ->whereBetween('captured_at', [$fromUtc, $toUtc]);
+            ->where('employee_face_events.type', EmployeeFaceEvent::TYPE_VERIFY)
+            ->whereBetween('employee_face_events.captured_at', [$fromUtc, $toUtc]);
 
-        // فلتر النجاح/الفشل
+        // فلتر النجاح/الفشل مع تأهيل الحقول
         if ($filter === 'passed') {
-            $qbase->whereRaw("JSON_EXTRACT(meta, '$.passed') = true");
-            // بدائل MariaDB:
-            // $qbase->whereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(meta, '$.passed')) AS UNSIGNED) = 1");
+            // MySQL 8+: يدعم JSON_EXTRACT = true
+            $qbase->whereRaw("JSON_EXTRACT(`employee_face_events`.`meta`, '$.passed') = true");
+            // بديل متوافق مع MariaDB عند الحاجة:
+            // $qbase->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(`employee_face_events`.`meta`, '$.passed')) = 'true'");
         } elseif ($filter === 'failed') {
             $qbase->where(function ($w) {
-                $w->whereNull('meta')
-                    ->orWhereRaw("JSON_EXTRACT(meta, '$.passed') IS NULL")
-                    ->orWhereRaw("JSON_EXTRACT(meta, '$.passed') = false");
-                // بديل:
-                // ->orWhereRaw("CAST(JSON_UNQUOTE(JSON_EXTRACT(meta, '$.passed')) AS UNSIGNED) = 0");
+                $w->whereNull('employee_face_events.meta')
+                    ->orWhereRaw("JSON_EXTRACT(`employee_face_events`.`meta`, '$.passed') IS NULL")
+                    ->orWhereRaw("JSON_EXTRACT(`employee_face_events`.`meta`, '$.passed') = false");
+                // بديل متوافق MariaDB:
+                // ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(`employee_face_events`.`meta`, '$.passed')) = 'false'");
             });
         }
 
-        // بحث بالاسم/الرقم (انضمام على employees)
+        // البحث بالاسم/الرقم عبر JOIN على employees مع إعادة اختيار أعمدة الجدول الأساسي
         if ($q !== '') {
             $qbase->join('employees as emp', 'emp.id', '=', 'employee_face_events.employee_id')
                 ->where(function ($w) use ($q) {
-                    $w->where('emp.id', $q)
-                        ->orWhere('emp.first_name', 'like', "%{$q}%")
+                    // لو كان q رقمًا، اسمح بالمطابقة على emp.id مباشرة
+                    if (ctype_digit($q)) {
+                        $w->orWhere('emp.id', (int) $q);
+                    }
+                    $w->orWhere('emp.first_name', 'like', "%{$q}%")
                         ->orWhere('emp.family_name', 'like', "%{$q}%")
                         ->orWhere(DB::raw("CONCAT(COALESCE(emp.first_name,''),' ',COALESCE(emp.family_name,''))"), 'like', "%{$q}%");
                 })
-                ->select('employee_face_events.*'); // أعد اختيار الأعمدة الأصلية
+                ->select('employee_face_events.*'); // مهم بعد الـJOIN لتفادي أعمدة ملتبسة
         }
 
-        // ترتيب ثابت: الأحدث أولًا (captured_at DESC, id DESC)
-        $qbase->orderByDesc('captured_at')->orderByDesc('id');
+        // ترتيب ثابت يطابق مفاتيح الـcursor
+        $qbase->orderByDesc('employee_face_events.captured_at')
+            ->orderByDesc('employee_face_events.id');
 
-        // Cursor: (captured_at < T) OR (captured_at = T AND id < ID)
-        if ($cursor) {
-            // نتوقع "ISO|id"
-            [$ctStr, $cidStr] = array_pad(explode('|', $cursor, 2), 2, null);
+        // منطق الـcursor (seek pagination) مؤهَّل بالكامل
+        if (!empty($cursor)) {
+            [$ctStr, $cidStr] = array_pad(explode('|', (string) $cursor, 2), 2, null);
             try {
-                $ct = Carbon::parse($ctStr); // cursor time UTC أو ISO
+                // نتوقع وقت UTC بصيغة ISO
+                $ct = Carbon::parse((string) $ctStr);
             } catch (\Throwable $e) {
-                return response()->json(['success' => false, 'message' => 'صيغة cursor غير صحيحة.'], 422);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'صيغة cursor غير صحيحة.',
+                ], 422);
             }
+
             $cid = (int) $cidStr;
+
             $qbase->where(function ($w) use ($ct, $cid) {
-                $w->where('captured_at', '<', $ct)
+                $w->where('employee_face_events.captured_at', '<', $ct)
                     ->orWhere(function ($w2) use ($ct, $cid) {
-                        $w2->where('captured_at', '=', $ct)
-                            ->where('id', '<', $cid);
+                        $w2->where('employee_face_events.captured_at', '=', $ct)
+                            ->where('employee_face_events.id', '<', $cid);
                     });
             });
         }
 
-        // نجلب limit+1 لاكتشاف وجود صفحة تالية
+        // نجلب (limit + 1) لاكتشاف وجود صفحة تالية
         $rows = $qbase->limit($limit + 1)->get();
 
         $hasMore = $rows->count() > $limit;
-        if ($hasMore) $rows = $rows->slice(0, $limit);
+        if ($hasMore) {
+            $rows = $rows->slice(0, $limit);
+        }
 
-        // لضم اسم الموظف بكفاءة، نجلب الأسماء دفعة واحدة
+        // جلب أسماء الموظفين دفعةً واحدة لتقليل الاستعلامات
         $empIds = $rows->pluck('employee_id')->unique()->values();
         $names = Employee::whereIn('id', $empIds)->get(['id', 'first_name', 'family_name'])
-            ->mapWithKeys(fn($e) => [$e->id => trim(($e->first_name ?? '') . ' ' . ($e->family_name ?? ''))])
-            ->all();
+            ->mapWithKeys(function ($e) {
+                $full = trim(($e->first_name ?? '') . ' ' . ($e->family_name ?? ''));
+                return [$e->id => ($full !== '' ? $full : (string) $e->id)];
+            })->all();
 
-        // بناء العناصر
+        // تحويل الصفوف إلى عناصر واجهة
         $items = $rows->map(function (EmployeeFaceEvent $ev) use ($tz, $names) {
-            $url  = method_exists($ev, 'getUrlAttribute')     ? $ev->url     : ($ev->path && $ev->disk ? Storage::disk($ev->disk)->url($ev->path) : null);
-            $turl = method_exists($ev, 'getThumbUrlAttribute') ? $ev->thumb_url : $url;
+            // روابط الصور (يدعم وجود accessors إن وُجدت)
+            $url  = method_exists($ev, 'getUrlAttribute')
+                ? $ev->url
+                : (($ev->path && $ev->disk) ? Storage::disk($ev->disk)->url($ev->path) : null);
+
+            $turl = method_exists($ev, 'getThumbUrlAttribute')
+                ? $ev->thumb_url
+                : $url;
+
+            // قراءة meta بأمان (قد تكون مصفوفة/كائن/نص JSON)
+            $meta = $ev->meta;
+            if (!is_array($meta)) {
+                // حاول فك JSON عند الحاجة
+                try {
+                    $decoded = is_string($meta) ? json_decode($meta, true) : null;
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $meta = $decoded;
+                    } else {
+                        $meta = [];
+                    }
+                } catch (\Throwable $e) {
+                    $meta = [];
+                }
+            }
+
+            $capturedUtc  = optional($ev->captured_at)->copy(); // من المفترض محفوظ UTC
+            $capturedLocal = $capturedUtc ? $capturedUtc->copy()->timezone($tz) : null;
 
             return [
-                'id'            => $ev->id,
-                'employee_id'   => (int)$ev->employee_id,
-                'employee_name' => $names[$ev->employee_id] ?? (string)$ev->employee_id,
-                'captured_at'   => optional($ev->captured_at)->timezone($tz)->format('Y-m-d H:i:s'),
-                'similarity'    => $ev->similarity !== null ? (float)$ev->similarity : null,
-                'passed'        => (bool) data_get($ev->meta, 'passed', false),
-                'threshold'     => data_get($ev->meta, 'threshold'),
-                'url'           => $url,
-                'thumb_url'     => $turl,
+                'id'                 => (int) $ev->id,
+                'employee_id'        => (int) $ev->employee_id,
+                'employee_name'      => $names[$ev->employee_id] ?? (string) $ev->employee_id,
+                // نص محلي للعرض + ISO مضبوط للمزيد من الدقة في العميل إن احتيج
+                'captured_at'        => $capturedLocal?->format('Y-m-d H:i:s'),
+                'captured_at_iso'    => $capturedLocal?->toIso8601String(),
+                'similarity'         => $ev->similarity !== null ? (float) $ev->similarity : null,
+                'passed'             => (bool) data_get($meta, 'passed', false),
+                'threshold'          => data_get($meta, 'threshold'),
+                'url'                => $url,
+                'thumb_url'          => $turl,
             ];
         })->values();
 
-        // next cursor من آخر عنصر
+        // بناء next_cursor من آخر صف (بـ UTC)
         $nextCursor = null;
-        if ($hasMore && $items->isNotEmpty()) {
+        if ($hasMore && $rows->isNotEmpty()) {
+            /** @var EmployeeFaceEvent $last */
             $last = $rows->last();
-            // captured_at يجب أن يكون UTC في القاعدة
-            $nextCursor = optional($last->captured_at)->copy()->setTimezone('UTC')->toIso8601String() . '|' . $last->id;
+            $lastUtc = optional($last->captured_at)->copy()->setTimezone('UTC');
+            $nextCursor = ($lastUtc?->toIso8601String() ?? '') . '|' . $last->id;
         }
 
         return response()->json([
@@ -915,7 +963,7 @@ class FaceAuthController extends Controller
                 'has_more'    => $hasMore,
                 'next_cursor' => $nextCursor,
             ],
-            'items'   => $items,
+            'items' => $items,
         ]);
     }
 }
