@@ -456,6 +456,12 @@ Route::post('/face/reset-enrollment', [FaceAuthController::class, 'resetEnrollme
 
 
 
+Route::get('/face/day/summary', [FaceAuthController::class, 'daySummary']); // ?date=YYYY-MM-DD
+Route::get('/face/day',        [FaceAuthController::class, 'dayDetail']);  // ?employee_id=123&date=YYYY-MM-DD
+
+
+
+
 Route::get('/face/employees/{employee}/today', [FaceAuthController::class, 'todayVerifications']); // RESTful
 // أو:
 Route::get('/face/today', [FaceAuthController::class, 'todayVerificationsQuery']); // ?employee_id=123
